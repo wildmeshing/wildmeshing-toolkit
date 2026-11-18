@@ -188,6 +188,18 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // The `envelope` input names a mesh of the call on the memory route, as simwild's does.
     const auto envelope_selector = json_params.value("envelope", nlohmann::json());
     if (component_io.memory()) json_params.erase("envelope");
+    // So does `sizing_mesh`.
+    if (json_params.contains("sizing_mesh") && json_params["sizing_mesh"].is_null()) {
+        json_params.erase("sizing_mesh"); // null, as Python's None: none
+    }
+    const std::string sizing_selector = json_params.value("sizing_mesh", std::string());
+    if (component_io.memory()) json_params.erase("sizing_mesh");
+    // limit_collapse_length has no fixed default (spec: "skip"): unless set, it is on with a sizing
+    // mesh, whose field is then a bound -- without the limit a collapse leaves edges past it that
+    // nothing splits again (docs/tutorials/workflows/sizing-mesh.md) -- and off without.
+    if (!json_params.contains("limit_collapse_length")) {
+        json_params["limit_collapse_length"] = !sizing_selector.empty();
+    }
     using wmtk::utils::resolve_path;
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
@@ -211,6 +223,11 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     params.epsr = json_params["eps_rel"];
     params.lr = json_params["length_rel"];
+    // Absolute values win when positive (OptimizerParameters::init_lengths_from_diagonal), as
+    // simwild's and triwild's eps and length.
+    params.eps = json_params["eps"];
+    params.l = json_params["length"];
+    params.limit_collapse_length = json_params["limit_collapse_length"]; // OptimizerParameters
     params.order2_envelope_ratio = json_params["order2_envelope_ratio"];
     params.feature_envelope_ratio = json_params["feature_envelope_ratio"];
     params.stop_energy = json_params["stop_energy"];
@@ -351,6 +368,18 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             "curve and point inputs: not with use_legacy_code, which carries no feature curves or "
             "points");
     }
+    // Nor does it run the base's operations (TetOptimizerMesh::local_operations()), which apply
+    // the sizing mesh and the collapse length limit: both would be ignored without a word.
+    if (json_params["use_legacy_code"] && !sizing_selector.empty()) {
+        log_and_throw_error(
+            "sizing_mesh: not with use_legacy_code, which runs the original TetWild's operations "
+            "and would ignore it");
+    }
+    if (json_params["use_legacy_code"] && params.limit_collapse_length) {
+        log_and_throw_error(
+            "limit_collapse_length: not with use_legacy_code, which runs the original TetWild's "
+            "operations and would ignore it");
+    }
     if (tagged) {
         // What the route has no use for, refused rather than ignored.
         if (!json_params["input_names"].empty()) {
@@ -396,6 +425,15 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 "`envelope`: a reference is held to and checked against exactly, not with "
                 "use_sample_envelope");
         }
+    }
+    // The `sizing_mesh` input: a mesh of the call on the memory route, a mesh file on the file
+    // route (relative to input_dir), read here so that a bad one fails before any work.
+    std::shared_ptr<const SizingMesh> sizing_mesh;
+    if (!sizing_selector.empty()) {
+        sizing_mesh = std::make_shared<SizingMesh>(
+            component_io.memory() ? component_io.mesh(sizing_selector)
+                                  : io::read_mesh(resolve_path(root, sizing_selector)),
+            SizingMesh::Kind::Volume);
     }
     // The labels of the output's tags, the same on both routes. Of the surface route: the tracked
     // faces of each input surface and the tet edges tiling each input curve, named by their
@@ -541,7 +579,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         phase_timer.start(); // surface simplification begins
 
         double diag = (box_minmax.first - box_minmax.second).norm();
-        const double envelope_size = params.epsr * diag;
+        // eps when positive, else eps_rel of the diagonal: the rule params.init() applies below.
+        const double envelope_size = params.eps > 0 ? params.eps : params.epsr * diag;
         // Held by pointer so it can be dropped once vsimp/fsimp are extracted below: it is a full
         // TriMesh over the input, with its own envelope and preallocated slots, and nothing reads
         // it after the extraction -- but as a plain local it would outlive the whole optimization.
@@ -1382,6 +1421,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         logger().warn("Using legacy code for mesh improvement!");
         mesh_new.mesh_improvement_legacy(max_its);
     } else {
+        // The sizing mesh sets the vertices' sizing before the improvement, and caps it after
+        // every pass (TetOptimizerMesh::apply_sizing_mesh).
+        if (sizing_mesh) mesh_new.set_sizing_mesh(sizing_mesh);
         mesh_new.mesh_improvement(max_its);
         // The open-boundary guarantee, audited: every edge still carrying the order2 tag lies in
         // its tube (tag_order2_edges()). Edges the operations made open carry no tag and are not
@@ -1441,8 +1483,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // The finalization's per-tet annotations, each computed only when something uses it:
     //
     //   input winding numbers  the whole input's, which filter "input" uses, and each input's
-    //                          (the wn_<i> output fields). Always, unless skip_winding_number
-    //                          opts out where no filter needs them.
+    //                          (the wn_<i> output fields). When a filter needs them, or with
+    //                          skip_winding_number false (it defaults to true).
     //   tracked winding number filter "tracked", or compute_tracked_winding_number.
     //   flood-fill parts       filter "flood", or compute_flood_fill. A serial BFS over every
     //                          tet: ~1-2 min on 765k tets / 6600 parts.
@@ -1455,12 +1497,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
     // that the others do not bound what it keeps; the others are of every input.
     const bool skip_winding =
         tagged || (json_params["skip_winding_number"] && filter_option == "none");
-    if (!tagged && json_params["skip_winding_number"] && filter_option != "none") {
-        logger().warn(
-            "skip_winding_number is set but filter='{}' requires the winding number; "
-            "computing it anyway.",
-            filter_option);
-    }
+    // skip_winding_number is the default; a filter that needs the winding numbers computes them
+    // regardless, so there is nothing to warn about.
     const bool need_tracked =
         filter_option == "tracked" || json_params["compute_tracked_winding_number"];
     const bool need_parts = filter_option == "flood" || json_params["compute_flood_fill"];
@@ -1845,6 +1883,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         report["max_energy"] = max_energy;
         report["avg_energy"] = avg_energy;
         report["eps"] = params.eps;
+        report["length"] = params.l;
+        report["sizing_mesh"] = !sizing_selector.empty();
         report["threads"] = NUM_THREADS;
         report["#iterations"] = mesh_new.m_iterations_used;
         // What the final coarsening pass bought. All zero when coarsen_pass is off, which is

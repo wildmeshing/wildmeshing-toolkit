@@ -209,9 +209,11 @@ py::tuple call_component(MemoryComponent component, nlohmann::json options, cons
           "envelope",
           "tet_mesh",
           "output_tet_mesh",
-          "features"}) {
+          "features",
+          "sizing_mesh"}) {
         const auto it = options.find(role);
         if (it == options.end() || it->is_null()) continue;
+        if (it->is_string() && it->get<std::string>().empty()) continue; // "": none
         if (it->is_array())
             for (const auto& name : *it) select(name);
         else

@@ -1,4 +1,5 @@
 #include <wmtk/utils/AMIPS.h>
+#include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/components/topological_offset/OffsetPotential.hpp>
 #include <wmtk/components/topological_offset/SimplicialComplexBVH.hpp>
 #include <wmtk/envelope/Envelope.hpp>
@@ -12,8 +13,11 @@
 
 #include <Eigen/Eigenvalues>
 
+#include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
+#include <limits>
 #include <random>
 #include <set>
 #include <string>
@@ -1009,99 +1013,6 @@ TEST_CASE("offset-potential-3d-support", "[offset][potential]")
 }
 
 
-TEST_CASE("stencil-energy-2d-derivatives", "[offset][potential]")
-{
-    // StencilEnergy2D, the 2D front smoother's offset term, against finite differences: the
-    // gradient of the value and both Hessian forms of the gradient. As in 3D, x enters only
-    // through the samples sliding with it, q_i = a_i x + b_i q1, so the chain rule is the moving
-    // vertex's own weight a_i; the stencils carry a_i = 1, a_i = 0 and 0 < a_i < 1. The exact
-    // Hessian (the default) must match the difference directly; the Gauss-Newton form must be
-    // symmetric PSD and, with the dropped 2 a_i^2 r hess Phi / c term added back from the
-    // potential's own hessian(), must recover the exact one. On the smooth field around a point and
-    // on the Euclidean field of a segment (via the BVH, as TopoOffsetTriMesh builds it).
-    const double delta = 0.25;
-    MatrixXd V(1, 2);
-    V << 0., 0.;
-    const auto smooth = std::make_shared<const SmoothOffsetPotential2D>(
-        V,
-        MatrixXi(0, 2),
-        MatrixXi(0, 3),
-        std::vector<int>{0},
-        delta,
-        DHAT_FACTOR);
-    auto bvh = std::make_shared<SimplicialComplexBVH>();
-    {
-        MatrixXd SV(2, 2);
-        SV << -1., 0., 1., 0.;
-        MatrixXi SE(1, 2);
-        SE << 0, 1;
-        bvh->init(SV, MatrixXi(0, 4), MatrixXi(0, 3), SE, MatrixXi(0, 1));
-    }
-    const auto euclid = std::make_shared<const EuclideanOffsetPotential2D>(bvh, delta);
-
-    struct Case
-    {
-        const char* name;
-        std::shared_ptr<const OffsetPotential2D> pot;
-        Eigen::Vector2d x, q1, q2; // chords (x, q1) and (x, q2)
-    };
-    const std::vector<Case> cases = {
-        {"smooth, around a point", smooth, {0.21, 0.13}, {0.31, -0.05}, {0.09, 0.33}},
-        {"euclid, above a segment", euclid, {0.1, 0.31}, {0.35, 0.22}, {-0.2, 0.28}}};
-    for (const Case& cs : cases) {
-        std::vector<StencilEnergy2D::Edge> edges(2);
-        edges[0].q1 = cs.q1;
-        edges[0].samples = {{1., 0.}, {0., 1.}, {0.5, 0.5}};
-        edges[1].q1 = cs.q2;
-        edges[1].samples = {{1., 0.}, {0., 1.}, {0.75, 0.25}, {0.25, 0.75}, {0.5, 0.5}};
-        const double w = 0.9;
-        StencilEnergy2D energy(cs.pot, edges, w);
-        VectorXd xv = cs.x;
-        INFO(cs.name);
-
-        const double h = 1e-6;
-        VectorXd g(2);
-        energy.gradient(xv, g);
-        MatrixXd H;
-        energy.hessian(xv, H);
-        for (int k = 0; k < 2; ++k) {
-            VectorXd xp = xv, xm = xv;
-            xp[k] += h;
-            xm[k] -= h;
-            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
-            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
-            VectorXd gp(2), gm(2);
-            energy.gradient(xp, gp);
-            energy.gradient(xm, gm);
-            for (int j = 0; j < 2; ++j) {
-                const double fdh = (gp[j] - gm[j]) / (2. * h);
-                CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., H.norm()));
-            }
-        }
-
-        StencilEnergy2D energy_gn(cs.pot, edges, w, true);
-        MatrixXd Hgn;
-        energy_gn.hessian(xv, Hgn);
-        CHECK((Hgn - Hgn.transpose()).norm() <= 1e-12 * std::max(1., Hgn.norm()));
-        const Eigen::SelfAdjointEigenSolver<MatrixXd> es(Hgn);
-        CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., Hgn.norm()));
-        // The dropped term, added back independently: per chord, the mean over its samples of
-        // 2 a^2 r hess Phi / c, times the weight.
-        const double c = cs.pot->target_level();
-        Eigen::Matrix2d dropped = Eigen::Matrix2d::Zero();
-        for (const StencilEnergy2D::Edge& e : edges) {
-            Eigen::Matrix2d sum = Eigen::Matrix2d::Zero();
-            for (const StencilEnergy2D::Sample& sm : e.samples) {
-                const Eigen::Vector2d q = sm.a * cs.x + sm.b * e.q1;
-                const double r = (cs.pot->value(q) - c) / c;
-                sum += (2. * sm.a * sm.a * r / c) * cs.pot->hessian(q);
-            }
-            dropped += sum / double(e.samples.size());
-        }
-        CHECK((Hgn + w * dropped - H).norm() <= 1e-9 * std::max(1., H.norm()));
-    }
-}
-
 TEST_CASE("cubed-amips-energy-3d-volume-weighted", "[offset][potential]")
 {
     // The energy's AMIPS term: w sum_t vol(t) AMIPS(t)^3 with the moving vertex first in each
@@ -1160,6 +1071,138 @@ TEST_CASE("cubed-amips-energy-3d-volume-weighted", "[offset][potential]")
                 CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., std::abs(H(j, k))));
             }
         }
+    }
+}
+
+TEST_CASE("cubed-amips-energy-2d-area-weighted", "[offset][potential][2d]")
+{
+    // The 2D twin of cubed-amips-energy-3d-volume-weighted: the energy's AMIPS term, w sum_t
+    // area(t) AMIPS(t)^3 with the moving vertex first in each face, AMIPS the engine's AMIPS2D.
+    // The value against the determinant's area and AMIPS2D computed independently, gradient and
+    // Hessian against central differences. Over the range: a ring of three faces around the
+    // origin, a ring with a needle face (height 1e-3 of its base), and a nearly flat face alone
+    // (height 1e-6), each at scales 1e-3, 1 and 1e3, at the origin and translated by 10.6 times
+    // its scale (AMIPS2D reads absolute coordinates), and at three positions of the moving vertex.
+    // The difference step balances the truncation error, (h / hmin)^2 with hmin the shortest
+    // distance from x to a line through a face's fixed corners (the length on which the term
+    // varies), against the rounding of AMIPS2D's determinant, eps L / h at coordinates of size L:
+    // h = cbrt(eps L hmin^2). The derivatives' thresholds are 3D's (gradient 1e-5, Hessian 1e-4,
+    // relative); the value's is 3D's 1e-12 plus AMIPS2D's own rounding (see `cond` below). The
+    // measured maxima are printed.
+    using Ring = std::vector<std::array<Vector2d, 2>>;
+    const std::vector<std::pair<const char*, Ring>> rings = {
+        {"three faces",
+         {{Vector2d(1., 0.1), Vector2d(-0.4, 0.9)},
+          {Vector2d(-0.4, 0.9), Vector2d(-0.6, -0.8)},
+          {Vector2d(-0.6, -0.8), Vector2d(1., 0.1)}}},
+        {"needle",
+         {{Vector2d(1., 0.001), Vector2d(-1., 0.001)},
+          {Vector2d(-1., 0.001), Vector2d(0.2, -0.9)},
+          {Vector2d(0.2, -0.9), Vector2d(1., 0.001)}}},
+        {"nearly flat face", {{Vector2d(1., 1e-6), Vector2d(-1., 1e-6)}}}};
+    const double w = 0.7;
+    double worst_v = 0., worst_g = 0., worst_h = 0.;
+    int n = 0;
+    for (const auto& [name, ring] : rings) {
+        for (const auto& [scale, shift] : std::vector<std::pair<double, double>>{
+                 {1e-3, 0.},
+                 {1., 0.},
+                 {1e3, 0.},
+                 {1e-3, 10.},
+                 {1., 10.},
+                 {1e3, 10.}}) {
+            const Vector2d T = shift * scale * Vector2d(1., 0.37);
+            std::vector<std::array<double, 6>> cells;
+            for (auto o : ring) {
+                for (Vector2d& q : o) q = T + scale * q;
+                if (!wmtk::utils::orient2d(T, o[0], o[1])) std::swap(o[0], o[1]);
+                cells.push_back({{T.x(), T.y(), o[0].x(), o[0].y(), o[1].x(), o[1].y()}});
+            }
+            CubedAMIPSEnergy2D energy(cells, w);
+            // the moving vertex near the origin, well inside every face's half-plane
+            const double hmin_base = std::string(name) == "three faces" ? 0.1 : 1e-3;
+            const double off = std::string(name) == "nearly flat face" ? 2e-7 : 0.2 * hmin_base;
+            for (const Vector2d& dir :
+                 {Vector2d(0.3, -0.4), Vector2d(-0.5, 0.1), Vector2d(0., 0.)}) {
+                const Vector2d x = T + scale * off * dir;
+                VectorXd xv = x;
+                // `cond`: the largest |X|^2 / (2 area) over the faces, X their absolute corners.
+                // area AMIPS^3 = (sqrt3/4) T AMIPS^2 exactly; the two differ in floating point by
+                // AMIPS2D's determinant, which it takes in absolute coordinates, so by about
+                // eps |X|^2 / (2 area) relative, against the area from the edge vectors here.
+                double want = 0., hmin = std::numeric_limits<double>::infinity(), cond = 0.;
+                for (auto c : cells) {
+                    c[0] = x[0];
+                    c[1] = x[1];
+                    const Vector2d p0(c[0], c[1]), p1(c[2], c[3]), p2(c[4], c[5]);
+                    const Vector2d u = p1 - p0, v = p2 - p0;
+                    const double area = std::abs(u.x() * v.y() - u.y() * v.x()) / 2.;
+                    const double a = wmtk::AMIPS2D_energy(c);
+                    want += area * a * a * a;
+                    hmin = std::min(hmin, 2. * area / (p2 - p1).norm());
+                    const double X2 =
+                        std::max({p0.squaredNorm(), p1.squaredNorm(), p2.squaredNorm()});
+                    cond = std::max(cond, X2 / (2. * area));
+                }
+                INFO(name << ", scale " << scale << ", shift " << shift << ", x " << x.transpose());
+                REQUIRE(energy.is_step_valid(xv, xv));
+                const double ev = std::abs(energy.value(xv) - w * want) / (w * want);
+                INFO("value error " << ev << ", condition " << cond);
+                CHECK(ev <= 1e-12 + 10. * 2.2e-16 * cond);
+                worst_v = std::max(worst_v, ev);
+                VectorXd g;
+                energy.gradient(xv, g);
+                MatrixXd H;
+                energy.hessian(xv, H);
+                const double h = std::cbrt(1e-16 * scale * (1. + shift) * hmin * hmin);
+                Eigen::Vector2d fdg;
+                Eigen::Matrix2d fdH;
+                for (int k = 0; k < 2; ++k) {
+                    VectorXd xp = xv, xm = xv;
+                    xp[k] += h;
+                    xm[k] -= h;
+                    fdg[k] = (energy.value(xp) - energy.value(xm)) / (2. * h);
+                    VectorXd gp, gm;
+                    energy.gradient(xp, gp);
+                    energy.gradient(xm, gm);
+                    fdH.col(k) = (gp - gm) / (2. * h);
+                }
+                const double eg = (fdg - Eigen::Vector2d(g)).norm() / g.norm();
+                const double eh = (fdH - Eigen::Matrix2d(H)).norm() / H.norm();
+                INFO("gradient error " << eg << ", Hessian error " << eh);
+                CHECK(eg <= 1e-5);
+                CHECK(eh <= 1e-4);
+                worst_g = std::max(worst_g, eg);
+                worst_h = std::max(worst_h, eh);
+                ++n;
+            }
+        }
+    }
+    std::printf(
+        "cubed-amips-energy-2d-area-weighted: %d points, max relative error: value %.1e "
+        "gradient %.1e Hessian %.1e\n",
+        n,
+        worst_v,
+        worst_g,
+        worst_h);
+}
+
+TEST_CASE("cubed-amips-energy-2d-area-weighted-flattening", "[offset][potential][2d]")
+{
+    // The 2D twin of cubed-amips-energy-3d-volume-weighted-flattening: a face flattening at fixed
+    // edge lengths: area AMIPS^3 grows like 1/height^2 (AMIPS like 1/height, the area like
+    // height), never collapses to 0 the way a floating-point determinant of a nearly flat face can.
+    const Vector2d q1(1., 0.), q2(0.4, 0.); // the edge opposite x, on y = 0
+    double prev = 0.;
+    for (const double hgt : {1e-2, 1e-4, 1e-6, 1e-8, 1e-10}) {
+        Vector2d a = q1, b = q2;
+        if (!wmtk::utils::orient2d(Vector2d(0.6, hgt), a, b)) std::swap(a, b);
+        CubedAMIPSEnergy2D e({{{0., 0., a.x(), a.y(), b.x(), b.y()}}}, 1.);
+        const double v = e.value(VectorXd(Vector2d(0.6, hgt)));
+        INFO("height " << hgt << " value " << v);
+        CHECK(std::isfinite(v));
+        if (prev > 0.) CHECK(v > 5e3 * prev); // 1/height^2: x1e4 per step, allow slack
+        prev = v;
     }
 }
 

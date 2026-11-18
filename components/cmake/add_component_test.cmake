@@ -13,6 +13,10 @@
 # endfunction()
 
 function(add_component_test COMPONENT_NAME)
+    # PER_CASE: one ctest entry per test case instead of one for the whole executable (see the
+    # registration below).
+    cmake_parse_arguments(ARG "PER_CASE" "" "" ${ARGN})
+
     # Unit tests
     if(NOT BUILD_TESTING)
         return()
@@ -48,20 +52,32 @@ function(add_component_test COMPONENT_NAME)
     # (tetwild's surface-swap case and three shortest_edge_collapse cases), each failing
     # against behaviour that had changed underneath it while nothing was watching.
     #
-    # One entry per component rather than catch_discover_tests: that helper lives in Catch2's
-    # `extras` and needs the module path set up, which is done in tests/ and is not visible in
-    # this directory scope. The whole set runs in a few seconds, so per-case granularity is
-    # not worth the extra plumbing here.
+    # By default one entry per component rather than catch_discover_tests: most components'
+    # whole sets run in seconds or a few minutes, so per-case granularity is not worth it there.
+    # PER_CASE below is for one that does not.
     # --allow-running-no-tests because c1_simplification's two cases are currently commented
     # out, so its executable holds nothing and Catch2 exits non-zero on an empty run. Without
     # the flag that component alone would fail the moment these are registered.
     # --durations yes prints each case's time, which one entry per component would otherwise
     # hide: it is how a case too slow for the Debug jobs (Windows Debug above all) is found, and
     # tagged release_only in its file.
-    add_test(NAME ${COMPONENT_TEST_NAME} COMMAND ${COMPONENT_TEST_NAME} --allow-running-no-tests --durations yes)
-    # COST: a whole component's cases in one entry, the longest a few minutes (tetwild,
-    # topological_offset), so a parallel ctest starts these before the single-case entries.
-    set_tests_properties(${COMPONENT_TEST_NAME} PROPERTIES COST 100)
+    #
+    # PER_CASE registers every case as its own entry (catch_discover_tests, as tests/ registers
+    # wmtk_tests), named "<component>/<case>", so a parallel ctest runs a component's cases side
+    # by side and each has ctest's default timeout to itself. For a component whose cases add up
+    # to more than that timeout: topological_offset's ran 742 s on Linux Release and 1077 s on
+    # Windows Release on main (CI, 2026-11-17), and past the 1500 s timeout on both Windows jobs
+    # with PR #1180's cases. The module path is set here from Catch2's own source directory.
+    if(ARG_PER_CASE)
+        list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
+        include(Catch)
+        catch_discover_tests(${COMPONENT_TEST_NAME} TEST_PREFIX "${COMPONENT_NAME}/")
+    else()
+        add_test(NAME ${COMPONENT_TEST_NAME} COMMAND ${COMPONENT_TEST_NAME} --allow-running-no-tests --durations yes)
+        # COST: a whole component's cases in one entry, the longest a few minutes (tetwild),
+        # so a parallel ctest starts these before the single-case entries.
+        set_tests_properties(${COMPONENT_TEST_NAME} PROPERTIES COST 100)
+    endif()
     wmtk_copy_dll(${COMPONENT_TEST_NAME})
 
 endfunction()

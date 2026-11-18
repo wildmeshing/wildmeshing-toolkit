@@ -195,6 +195,9 @@ public:
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
     void set_sizing_field(const nlohmann::json& sizing_field_json);
+    /// The sizing mesh with the regions of set_sizing_field(), which must run first: as
+    /// SimWildMesh::apply_sizing_mesh(), with triangles.
+    void apply_sizing_mesh(bool overwrite) override;
 
     void set_quality_field(const nlohmann::json& quality_field_json);
 
@@ -342,10 +345,12 @@ public:
      * and fills the gaps found with the colors `fill_selections` define.
      *
      * J is the closing of R by the disk B of diameter `distance`, minus R: the part of the rest
-     * that B cannot reach. First R is made simplicially embedded (no face outside R has all its
-     * vertices on R; wmtk/utils/SimplicialEmbedding.hpp): each face outside R whose three edges
-     * lie on R is split at its centroid, then each edge outside R joining two vertices of R at its
-     * midpoint. Then J is found in three steps.
+     * that B cannot reach. R, S and J are the tight seal v2 note's I, D and J
+     * (https://hackmd.io/@Spenbert02/HkX3vAvaGg); the log says I and D. First R is made
+     * simplicially embedded (no face or edge outside R has all its vertices on R;
+     * wmtk/utils/SimplicialEmbedding.hpp): each face outside R whose three edges lie on R is split
+     * at its centroid, then each edge outside R joining two vertices of R at its midpoint. Then J
+     * is found in three steps.
      *  1. The dilation surface S, d(x, R) = distance/2, found on the edges that cross it (sphere
      *     traced, then bisected to the level).
      *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
@@ -392,9 +397,11 @@ public:
     void tag_priority(const std::vector<int64_t>& tags_order);
 
 private:
-    // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
-    // Negative = stays on v1 side, positive = stays on v2 side.
-    // Set before split_edge(), cleared immediately after.
+    // When set, split_adjust_position moves the new vertex to this function's zero on the edge,
+    // by 20 bisection steps between the ends (which must have opposite signs); if that inverts a
+    // child, the vertex goes back to the edge's midpoint. Set before split_edge(), cleared after,
+    // by seal_connected_components (tight_seal_topo, resolve_overlaps) and tight_seal_geom's
+    // march. m_edge_split_at takes precedence.
     std::function<double(const Vector2d&)> m_voronoi_split_fn = nullptr;
     // The vertex the calling thread's last split made, per thread as 3D's
     // SplitTagCache::v_new: every thread of the parallel split pass writes it, and the serial
@@ -414,7 +421,7 @@ private:
     };
     std::optional<EdgeSplitAt> m_edge_split_at;
     // split_face_before() to split_face_after(): the face's corners, attributes and edges. Face
-    // splits are serial (only tight_seal_geom makes them).
+    // splits are serial (only tight_seal_geom's simplicial embedding makes them).
     struct FaceSplitCache
     {
         std::array<size_t, 3> v;
@@ -444,12 +451,12 @@ private:
         std::vector<char>& filled,
         std::vector<std::pair<size_t, size_t>>* children_of = nullptr);
     /// The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary,
-    /// as a BVH of segments. On each edge of a face outside R (region < 0) between a vertex with
-    /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is where dist_R = radius:
-    /// sphere traced from the near end, each step at least tol, then bisected
-    /// (tight_seal::level_crossing). The crossings of each face are joined into its cut segment.
-    /// Returns false if S is empty; n_traced: edges traced, n_failed: those with no crossing found
-    /// (the far end is taken).
+    /// as a BVH of segments. `region`: 0 on R's faces, -1 elsewhere. On each edge of a face
+    /// outside R between a vertex with dist_R_at < radius and one with dist_R_at >= radius, the
+    /// crossing is where dist_R = radius: sphere traced from the near end, each step at least tol,
+    /// then bisected (tight_seal::level_crossing). The crossings of each face are joined into its
+    /// cut segment. Returns false if S is empty; n_traced: edges traced, n_failed: those with no
+    /// crossing found (the far end is taken).
     bool tight_seal_dilation_surface_bvh(
         const std::vector<size_t>& fids,
         const std::vector<int>& region,
@@ -460,7 +467,7 @@ private:
         SimpleBVH::BVH& bvh,
         size_t& n_traced,
         size_t& n_failed) const;
-    /// How many of `fids` have a vertex on the mesh's boundary, a edge with no face beyond it.
+    /// How many of `fids` have a vertex on the mesh's boundary, an edge with no face beyond it.
     size_t tight_seal_cells_on_boundary(const std::vector<size_t>& fids) const;
     /// tight_seal_geom's fill of `components`, in 2D: as SimWildMesh::tight_seal_fill, with
     /// faces for tets.
@@ -495,8 +502,9 @@ protected:
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
     void split_after_vertex(size_t v_new) override { m_last_split_vertex.local() = v_new; }
     /// A face split puts the new vertex at the face's centroid, in doubles, so every corner must
-    /// be rounded. The three children take the face's attributes,
-    /// the face's edges keep theirs, and the split is refused if a child is inverted.
+    /// be rounded. The three children take the face's attributes, the face's edges keep theirs,
+    /// and the split is refused if a child is inverted. Only tight_seal_geom splits faces (its
+    /// simplicial embedding of R).
     bool split_face_before(const Tuple& t) override;
     bool split_face_after(const Tuple& t) override;
 };

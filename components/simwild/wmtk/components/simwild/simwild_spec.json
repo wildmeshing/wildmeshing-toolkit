@@ -32,6 +32,8 @@
       "length",
       "length_rel",
       "sizing_field",
+      "sizing_mesh",
+      "limit_collapse_length",
       "quality_field",
       "stop_energy",
       "stop_at_float",
@@ -315,7 +317,7 @@
     "pointer": "/sizing_field",
     "type": "list",
     "default": [],
-    "doc": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescribed length will be used for each vertex. Example: [{\"tags\": \"tag_0 & tag_1\", \"length\": 0.1}, {\"tags\": \"tag_2\", \"length_rel\": 0.05}]"
+    "doc": "Prescribe a length for a specific region defined by tags. The length can be absolute (length) or relative (length_rel). The smallest prescribed length will be used for each vertex. With sizing_mesh, the smaller of the two lengths where both apply (see there). Example: [{\"tags\": \"tag_0 & tag_1\", \"length\": 0.1}, {\"tags\": \"tag_2\", \"length_rel\": 0.05}]"
   },
   {
     "pointer": "/sizing_field/*",
@@ -341,6 +343,18 @@
     "type": "float",
     "default": 0.05,
     "doc": "Target edge length relative to the bounding box for the region."
+  },
+  {
+    "pointer": "/sizing_mesh",
+    "type": "string",
+    "default": "",
+    "doc": "A target edge length that varies over space: a tet mesh in 3D, a triangle mesh in 2D (read in the xy plane), whose vertices carry the absolute target length as the field 'target_length' (one value per vertex), interpolated linearly inside its cells. On the memory route the name of a mesh of the call, on the file route the path of a mesh file with a node field 'target_length', relative to input_dir. It sets the sizing of the vertices it covers, the scalar that scales the target length and that stuck-element refinement lowers, as sizing_field does for its regions: at the start, and after every pass as a ceiling, so the vertices a pass makes follow it and refinement is kept. Outside its cells the global length (length, else length_rel) applies. With sizing_field, a vertex of a region it covers takes the smaller of the region's length and its own; a vertex of no region it covers takes its length, also where it is longer than the global one, which it replaces there; a vertex it does not cover keeps the regions' sizing. The bounded coarsening pass (coarsen_pass with coarsen_unbounded off) stops at 0.8 of its length instead of the global one. Remeshing only: a tag operation does not read it. Empty: none, and the run is the same as without the option. The field is a largest edge length: with it, limit_collapse_length is on unless set to false, and the optimization goes on past stop_energy while more than 1% of the edges are longer than 4/3 of their target and that share still drops."
+  },
+  {
+    "pointer": "/limit_collapse_length",
+    "type": "bool",
+    "default": "skip",
+    "doc": "Default: on with a sizing_mesh (the field is then a bound the collapses keep), off without. Refuse a collapse that leaves an edge longer than the split length: 4/3 of the target edge length, scaled by the sizing at its ends, the length above which an edge is split. As isotropic_remeshing's limit_collapse_length (Botsch and Kobbelt). Without it a collapse is judged by the edge it removes alone, so two collinear edges of an interface merge into one up to 0.8 + 4/3 of the target; and since the optimization ends on collapses (the last iteration's, then the bare pass after the loop), nothing cuts them again. With it the edges stay about 4/3 of the target at most (smoothing can still stretch them a little), so a target of 3/4 of a bound keeps them near or under that bound, for a denser mesh. It holds every collapse of a remeshing, the simplification after the insertion (preserve_topology) included. In the coarsening pass the target is the one asked for (sizing_mesh, else the global length), not the optimizer's refinement of it. The tag operations make no collapse."
   },
   {
     "pointer": "/quality_field",
@@ -400,8 +414,8 @@
     "pointer": "/smoothing_mode",
     "type": "string",
     "default": "projected",
-    "options": ["projected", "exact"],
-    "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along 3D edges and curve segments. Rests a w_amips-proportional distance off the input."
+    "options": ["projected", "penalty"],
+    "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'penalty': no projection; minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2, a quadratic penalty on the distance d, with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along 3D edges and curve segments. Rests a w_amips-proportional distance off the input."
   },
   {
     "pointer": "/w_amips",
@@ -624,7 +638,7 @@
     "pointer": "/tight_seal_geom_fill_selections",
     "type": "list",
     "default": [],
-    "doc": "For tight_seal_geom: the colors of the fill, two or more Boolean expressions on tags, as in resolve_overlaps_tags; a cell outside the parts to fill that satisfies expression k has color k, whether it is in the closed region or not (a cell of a part has no color, whatever its tags). A part borders a color if one of its cells shares a facet (an edge in 2D, a face in 3D) with a cell of that color, and is filled if it borders tight_seal_geom_min_regions colors or more, with those it borders. The operation throws if a cell sharing a facet with any part, filled or not, satisfies more than one expression. A part is filled thus (tight seal v2 note, section 4.2). Its functions are the distances to the colors it borders, taken at its vertices and linear in each of its cells. In each cell, a function another is strictly smaller than at all its corners is left out; for each pair of the others in turn, every edge of the cell's pieces whose ends lie on opposite sides of the level set where the two are equal is split there, exactly, the new vertex's values interpolated along the edge and the pair counted as equal at it (as is every pair equal at both ends of its edge). A cell is labelled once the label sets of its corners (the functions smallest at each, a pair counted as equal tying) share a color, the first if several; by linearity that color is the nearest on the whole cell. A cell still without one at the end (a refused split, or rounding) takes the color nearest its centroid, with a warning. It gets that color's tags (tight_seal_geom_fill_tags) added to its own. No topology is checked."
+    "doc": "For tight_seal_geom: the colors of the fill, two or more Boolean expressions on tags, as in resolve_overlaps_tags; a cell outside the parts to fill that satisfies expression k has color k, whether it is in the closed region or not (a cell of a part has no color, whatever its tags). A part borders a color if one of its cells shares a facet (an edge in 2D, a face in 3D) with a cell of that color, and is filled if it borders tight_seal_geom_min_regions colors or more, with those it borders. The operation throws if a cell sharing a facet with any part, filled or not, satisfies more than one expression. A part is filled thus (tight seal v2 note, section 4.2). Its functions are the distances to the colors it borders, taken at its vertices and linear in each of its cells. In each cell, a function another is strictly smaller than at all its corners is left out; for each pair of the others in turn, every edge of the cell's pieces whose ends lie on opposite sides of the level set where the two are equal is split there, exactly, the new vertex's values interpolated along the edge and the pair counted as equal at it (as is every pair equal at both ends of its edge). A cell is labelled once the label sets of its corners (the functions smallest at each, a pair counted as equal tying) share a color, the first if several; by linearity that color is the nearest on the whole cell. A cell still without one at the end (possible only after a refused split) takes the color nearest its centroid, with a warning. It gets that color's tags (tight_seal_geom_fill_tags) added to its own. No topology is checked."
   },
   {
     "pointer": "/tight_seal_geom_fill_selections/*",
@@ -786,7 +800,7 @@
     "pointer": "/coarsen_unbounded",
     "type": "bool",
     "default": true,
-    "doc": "Coarsen as far as the quality guarantee allows, instead of stopping at the target edge length. The pass answers 'how few elements can hold this max energy', and that is a more aggressive question than it sounds -- the answer ignores how big the elements become. Measured on the registered tetwild models it takes them from 348k to 60k cells (-82.7%) at max energy raised on none of them, against -43.2% with this off, because a converged mesh is sized by length_rel and the adaptive sizing field rather than by what the quality target strictly requires. On by default: the element count is the thing worth having. Turned off, the pass leaves alone any edge already at or past the collapse threshold (0.8 * the target length, the same one the ordinary collapse uses), since collapsing it only makes its neighbours longer still. The sizing FIELD is deliberately not applied either way: that is the optimizer's own refinement scratch work, and honouring it here would leave the pass unable to undo refinement that turned out to be unnecessary."
+    "doc": "Coarsen as far as the quality guarantee allows, instead of stopping at the target edge length. The pass answers 'how few elements can hold this max energy', and that is a more aggressive question than it sounds -- the answer ignores how big the elements become. Measured on the registered tetwild models it takes them from 348k to 60k cells (-82.7%) at max energy raised on none of them, against -43.2% with this off, because a converged mesh is sized by length_rel and the adaptive sizing field rather than by what the quality target strictly requires. On by default: the element count is the thing worth having. Turned off, the pass leaves alone any edge already at or past the collapse threshold (0.8 * the target length, the same one the ordinary collapse uses), since collapsing it only makes its neighbours longer still. The sizing FIELD is deliberately not applied either way: that is the optimizer's own refinement scratch work, and honouring it here would leave the pass unable to undo refinement that turned out to be unnecessary. With a sizing_mesh, the bound follows the field: 0.8 of its length, the one asked for, not the refinement. Either way, limit_collapse_length, when on (the default with a sizing_mesh), keeps the pass from leaving an edge longer than 4/3 of the length asked for."
   },
   {
     "pointer": "/envelope",

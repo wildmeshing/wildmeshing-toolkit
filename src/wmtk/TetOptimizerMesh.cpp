@@ -6,6 +6,7 @@
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
+#include <wmtk/threading/dynamic_parallel_for.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/EmbedTriangles.hpp>
 #include <wmtk/utils/FeatureInputs.hpp>
@@ -26,9 +27,11 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <limits>
 #include <mutex>
 #include <queue>
 #include <tuple>
+#include <utility>
 
 namespace wmtk {
 
@@ -56,6 +59,8 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
     logger().info("max energy {:.6} | stop {:.6}", pre_max_metric, optimization_stop_metric());
     int refine_cooldown = m_params.stuck_refine_cooldown;
 
+    // The first check of the sizing mesh's stop rule never stops on its progress test.
+    m_prev_long_edge_fraction = std::numeric_limits<double>::infinity();
     for (int it = 0; it < max_its; ++it) {
         m_iterations_used = it + 1;
         logger().info("\n========it {}========", it);
@@ -95,11 +100,14 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
         }
 
         if (max_metric < optimization_stop_metric()) {
-            if (cnt_round == cnt_verts) break;
-            logger().info(
-                "energy target reached, but {} of {} vertices are still un-rounded; continuing",
-                cnt_verts - cnt_round,
-                cnt_verts);
+            if (cnt_round < cnt_verts) {
+                logger().info(
+                    "energy target reached, but {} of {} vertices are still un-rounded; continuing",
+                    cnt_verts - cnt_round,
+                    cnt_verts);
+            } else if (sizing_mesh_allows_stop()) {
+                break;
+            }
         }
 
         consolidate_mesh();
@@ -368,8 +376,8 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
     // both the tangential gradient and Hessian scale with w_amips, so Newton cancels the
     // weight and vertices slide identically at any fitting strength.
     opts.two_stage = false;
-    opts.smoothing_mode = m_params.smoothing_mode == "exact"
-                              ? optimization::SmoothVertexOptions::SmoothingMode::Exact
+    opts.smoothing_mode = m_params.smoothing_mode == "penalty"
+                              ? optimization::SmoothVertexOptions::SmoothingMode::Penalty
                               : optimization::SmoothVertexOptions::SmoothingMode::Projected;
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
@@ -537,22 +545,42 @@ std::tuple<double, double> TetOptimizerMesh::get_max_avg_energy()
     // });
     // std::ofstream large_tet("large_energy_tet.obj");
 
-    for (int i = 0; i < tet_capacity(); i++) {
-        auto tup = tuple_from_tet(i);
-        if (!tup.is_valid(*this)) continue;
-        // auto vs = oriented_tet_vertices(tup);
-
-        auto q = cell_quality(tup.tid(*this));
-        max_energy = std::max(max_energy, q);
-        // if (q > 1e6) {
-        //     for (auto v : vs) {
-        //         large_tet << "v " << m_vertex_attribute[v.vid(*this)].m_posf[0] << " "
-        //                   << m_vertex_attribute[v.vid(*this)].m_posf[1] << " "
-        //                   << m_vertex_attribute[v.vid(*this)].m_posf[2] << std::endl;
-        //     }
-        // }
-        avg_energy += std::cbrt(q);
-        cnt++;
+    if (NUM_THREADS <= 1) {
+        for (int i = 0; i < tet_capacity(); i++) {
+            auto tup = tuple_from_tet(i);
+            if (!tup.is_valid(*this)) continue;
+            auto q = cell_quality(tup.tid(*this));
+            max_energy = std::max(max_energy, q);
+            avg_energy += std::cbrt(q);
+            cnt++;
+        }
+    } else {
+        // Threaded runs: once per iteration over every tet, it was a serial step of the loop.
+        // Per-chunk maxima and sums, combined in chunk order, so the result does not depend on
+        // the thread count -- though the sum is grouped differently from the serial loop's.
+        constexpr size_t chunk = 16384;
+        const size_t n = size_t(tet_capacity());
+        struct Part
+        {
+            double max = -1., sum = 0.;
+            int cnt = 0;
+        };
+        std::vector<Part> parts((n + chunk - 1) / chunk);
+        threading::dynamic_parallel_for(n, NUM_THREADS, chunk, [&](size_t b, size_t e) {
+            Part& p = parts[b / chunk];
+            for (size_t i = b; i < e; ++i) {
+                if (!tuple_from_tet(i).is_valid(*this)) continue;
+                const double q = cell_quality(i);
+                p.max = std::max(p.max, q);
+                p.sum += std::cbrt(q);
+                p.cnt++;
+            }
+        });
+        for (const Part& p : parts) {
+            max_energy = std::max(max_energy, p.max);
+            avg_energy += p.sum;
+            cnt += p.cnt;
+        }
     }
 
     avg_energy /= cnt;
@@ -1115,6 +1143,7 @@ std::optional<history::CurveHistory> TetOptimizerMesh::finish_curve_history(
 void TetOptimizerMesh::update_attributes_and_history()
 {
     update_attributes();
+    apply_sizing_mesh(false);
     if (const size_t changed = resync_surface_history()) {
         logger().warn(
             "surface history: update_attributes changed {} tracked faces outside the operations",
@@ -1263,13 +1292,8 @@ bool TetOptimizerMesh::vertex_has_feature_edge(const size_t vid) const
 
 bool TetOptimizerMesh::vertex_has_tagged_edge(const size_t vid) const
 {
-    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-        const Tuple e = tuple_from_edge({{vid, u}});
-        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].is_tagged()) {
-            return true;
-        }
-    }
-    return false;
+    const auto& FE = m_feature_edge_attribute;
+    return for_each_incident_edge_eid(vid, [&](size_t eid) { return FE[eid].is_tagged(); });
 }
 
 bool TetOptimizerMesh::vertex_has_edge_of_kind(
@@ -1277,13 +1301,8 @@ bool TetOptimizerMesh::vertex_has_edge_of_kind(
     const FeatureEdgeAttributes::Kind k) const
 {
     if (!m_track_feature_edges) return false;
-    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-        const Tuple e = tuple_from_edge({{vid, u}});
-        if (e.is_valid(*this) && m_feature_edge_attribute[e.eid(*this)].has(k)) {
-            return true;
-        }
-    }
-    return false;
+    const auto& FE = m_feature_edge_attribute;
+    return for_each_incident_edge_eid(vid, [&](size_t eid) { return FE[eid].has(k); });
 }
 
 std::shared_ptr<Envelope> TetOptimizerMesh::smoothing_energy_envelope(const size_t vid) const
@@ -1311,10 +1330,11 @@ std::shared_ptr<Envelope> TetOptimizerMesh::tagged_edge_pull_envelope(const size
     if (!m_track_feature_edges) return nullptr;
     // One walk of the one-ring for both kinds: this runs for every vertex every smoothing pass.
     FeatureEdgeAttributes around; // the kinds and input sets of the vertex's edges, merged
-    for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-        const Tuple e = tuple_from_edge({{vid, u}});
-        if (e.is_valid(*this)) around.merge(m_feature_edge_attribute[e.eid(*this)]);
-    }
+    const auto& FE = m_feature_edge_attribute;
+    for_each_incident_edge_eid(vid, [&](size_t eid) {
+        around.merge(FE[eid]);
+        return false;
+    });
     // Toward the inputs of the vertex's own edges of the kind, one real tube at a time -- the
     // member of their union the vertex is farthest from, as a surface vertex is pulled toward
     // its faces' inputs; the union tube without per-input tubes or without a set.
@@ -2581,11 +2601,10 @@ void TetOptimizerMesh::feature_edges_cache(
             if (pair[0] > pair[1]) {
                 std::swap(pair[0], pair[1]);
             }
-            if (cache.count(pair) != 0) {
-                continue;
+            const auto [it, inserted] = cache.try_emplace(pair);
+            if (inserted) {
+                it->second = m_feature_edge_attribute[tuple_from_edge(tid, local_eid).eid(*this)];
             }
-            const size_t eid = tuple_from_edge(tid, local_eid).eid(*this);
-            cache.emplace(pair, m_feature_edge_attribute[eid]);
         }
     }
 }
@@ -2835,6 +2854,90 @@ void TetOptimizerMesh::op_accounting_reset()
     for (auto& row : m_swap_reject_by_kind)
         for (auto& c : row) c.store(0, std::memory_order_relaxed);
     for (auto& c : m_collapse_reject) c.store(0, std::memory_order_relaxed);
+}
+
+double TetOptimizerMesh::long_edge_fraction() const
+{
+    const auto& VA = m_vertex_attribute;
+    size_t total = 0, long_edges = 0;
+    for (const Tuple& e : get_edges()) {
+        const size_t v1 = e.vid(*this), v2 = e.switch_vertex(*this).vid(*this);
+        const double s = 0.5 * (VA[v1].m_sizing_scalar + VA[v2].m_sizing_scalar);
+        ++total;
+        if ((VA[v1].m_posf - VA[v2].m_posf).squaredNorm() > m_params.splitting_l2 * s * s) {
+            ++long_edges;
+        }
+    }
+    return total > 0 ? double(long_edges) / total : 0;
+}
+
+bool TetOptimizerMesh::sizing_mesh_allows_stop()
+{
+    if (!m_sizing_mesh) return true;
+    const double fraction = long_edge_fraction();
+    const double prev = std::exchange(m_prev_long_edge_fraction, fraction);
+    if (fraction <= m_params.sizing_mesh_long_edge_tolerance || fraction > 0.9 * prev) {
+        return true;
+    }
+    logger().info(
+        "energy target reached, but {:.1f}% of the edges are longer than 4/3 of their target "
+        "(sizing mesh); continuing",
+        100 * fraction);
+    return false;
+}
+
+void TetOptimizerMesh::set_sizing_mesh(std::shared_ptr<const SizingMesh> sizing)
+{
+    m_sizing_mesh = std::move(sizing);
+    apply_sizing_mesh(true);
+}
+
+void TetOptimizerMesh::apply_sizing_mesh(bool overwrite)
+{
+    if (!m_sizing_mesh) return;
+    const auto apply = [&](size_t v) {
+        if (!tuple_from_vertex(v).is_valid(*this)) return;
+        auto& va = m_vertex_attribute[v];
+        const double length = (*m_sizing_mesh)(va.m_posf);
+        if (!(length > 0)) return; // not covered: the global length
+        const double s = length / m_params.l;
+        va.m_sizing_scalar = overwrite ? s : std::min(va.m_sizing_scalar, s);
+    };
+    if (NUM_THREADS == 0) {
+        for (size_t v = 0; v < vert_capacity(); ++v) apply(v);
+    } else {
+        threading::parallel_for(
+            threading::range(0, vert_capacity()),
+            [&](const threading::range& r) {
+                for (size_t v = r.begin(); v < r.end(); ++v) apply(v);
+            },
+            NUM_THREADS);
+    }
+}
+
+double TetOptimizerMesh::coarsen_target_length(size_t v) const
+{
+    const double t = sizing_mesh_length(m_vertex_attribute[v].m_posf);
+    return t > 0 ? t : m_params.l;
+}
+
+bool TetOptimizerMesh::collapse_leaves_long_edge(size_t v1_id, size_t v2_id) const
+{
+    const auto& VA = m_vertex_attribute;
+    // The target length at a vertex: in the coarsening pass the one asked for, elsewhere the
+    // sizing the split pass works to.
+    const auto target = [&](size_t v) {
+        return m_coarsen_mode ? coarsen_target_length(v) : m_params.l * VA[v].m_sizing_scalar;
+    };
+    // v1 goes; v2 stays where it is, with the smaller sizing of the two (collapse_edge_after).
+    const double t2 = m_coarsen_mode ? target(v2_id) : std::min(target(v1_id), target(v2_id));
+    const Vector3d& p2 = VA[v2_id].m_posf;
+    for (const size_t u : get_one_ring_vids_for_vertex(v1_id)) {
+        if (u == v1_id || u == v2_id) continue;
+        const double t = 4. / 3. * 0.5 * (t2 + target(u));
+        if ((VA[u].m_posf - p2).squaredNorm() > t * t) return true;
+    }
+    return false;
 }
 
 } // namespace wmtk

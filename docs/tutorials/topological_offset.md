@@ -195,6 +195,15 @@ target, and the optimization has to grow it. On this mesh, with the other option
 defaults (and four threads), that optimization had not converged after 22 turns, when the run was
 stopped.
 
+The envelope that holds the input complex and the other surfaces in place,
+[`envelope_size_rel`](../reference/topological_offset.md#envelope_size_rel) (default 1e-3 of the
+diagonal), may not be wider than the bar,
+[`front_conv_rel`](../reference/topological_offset.md#front_conv_rel) times the target (default
+0.1): a wider one lets them move farther than the front is measured to, and the run stops at
+startup with the largest value allowed. At the default target the two are equal; at the target
+0.4 used here the bar is 0.04 and the default envelope 0.084, so the examples set
+`envelope_size_rel` to 4e-4.
+
 A target below the maximum marchable distance is traced exactly, as in the first run. That
 distance is the one from the complex to the nearest far end of an edge that leaves it, so it is
 set by the cells around the selection, and the construction does not change them beforehand: the

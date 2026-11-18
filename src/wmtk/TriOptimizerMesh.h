@@ -12,6 +12,7 @@
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/utils/SizingMesh.hpp>
 
 #include <spdlog/fmt/bundled/format.h>
 #include <polysolve/nonlinear/Problem.hpp>
@@ -541,6 +542,53 @@ public:
      */
     virtual void update_attributes() {}
 
+    /**
+     * @brief A target edge length that varies over the plane (a component's sizing_mesh), or
+     * none. Set it with set_sizing_mesh(). Without one, nothing below runs.
+     */
+    std::shared_ptr<const SizingMesh> m_sizing_mesh;
+    /// The sizing mesh's length at `p`: positive where it covers `p`, -1 where it does not or
+    /// without one.
+    double sizing_mesh_length(const Vector2d& p) const
+    {
+        return m_sizing_mesh ? (*m_sizing_mesh)(p) : -1;
+    }
+    /**
+     * @brief Takes `sizing` (a Planar SizingMesh) and sets the sizing scalar of the vertices it
+     * covers from it: apply_sizing_mesh(true). Before mesh_improvement().
+     */
+    void set_sizing_mesh(std::shared_ptr<const SizingMesh> sizing);
+    /**
+     * @brief The sizing scalar of each vertex the sizing mesh covers, length / l: `overwrite`
+     * replaces it (set_sizing_mesh()); otherwise it may only lower it, which local_operations()
+     * does after every pass, so the vertices a pass made (a split's midpoint takes the mean of its
+     * ends') follow the field and a stuck refinement is kept. Vertices it does not cover keep
+     * theirs. Virtual, so an application can combine the field with sizing of its own (simwild's
+     * regions).
+     */
+    virtual void apply_sizing_mesh(bool overwrite);
+    /// The length the coarsening pass holds at vertex `v` when bounded (coarsen_unbounded off):
+    /// the sizing mesh's there, else `l`. Not the sizing scalar, the refinement the pass undoes.
+    double coarsen_target_length(size_t v) const;
+    /**
+     * @brief OptimizerParameters::limit_collapse_length: whether collapsing v1 into v2 leaves an
+     * edge longer than 4/3 of its target, the mean of its ends' (the sizing at v2 being the
+     * smaller of the two, as collapse_edge_after() sets it). In the coarsening pass the target
+     * is coarsen_target_length().
+     */
+    bool collapse_leaves_long_edge(size_t v1_id, size_t v2_id) const;
+    /// The share of the edges longer than 4/3 of their target: the split pass's test, l times
+    /// the mean sizing of the ends. 0 without edges.
+    double long_edge_fraction() const;
+    /**
+     * @brief Whether the sizing mesh lets mesh_improvement() stop: without one, always; with one,
+     * when the share of long edges (long_edge_fraction()) is within
+     * OptimizerParameters::sizing_mesh_long_edge_tolerance, or no longer drops by a tenth from
+     * the previous call. Called once per iteration that reached the energy target.
+     */
+    bool sizing_mesh_allows_stop();
+    double m_prev_long_edge_fraction = std::numeric_limits<double>::infinity();
+
     /// Shared TriWild/SimWild outer optimization schedule.
     int m_iterations_used = 0;
     void mesh_improvement(int max_its = 80);
@@ -638,7 +686,6 @@ public:
      * same path as TriWild.
      */
     size_t swap_all_edges();
-    double swap_weight(const Tuple& t) const;
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
 
@@ -744,14 +791,42 @@ public:
 
     /**
      * @brief The number the shared smoother compares for one face, given the face's quality at
-     * the position being tested: the projected step's candidate test and the quality veto take
-     * the max of this over the ring. The quality itself by default, so TriWild and SimWild
-     * compare exactly what they compared before. The 3D twin is
+     * the position being tested: the quality veto takes the max of this over the ring, and the
+     * default smoothing_ring_energy() is the same max. The quality itself by default, so TriWild
+     * and SimWild compare exactly what they compared before. The 3D twin is
      * TetOptimizerMesh::smoothing_cell_energy.
      */
     virtual double smoothing_cell_energy(const size_t /*fid*/, const double quality) const
     {
         return quality;
+    }
+
+    /**
+     * @brief The number the shared smoother's projected step compares for a whole one-ring: a
+     * vertex held on a curve takes the first projected candidate whose value is strictly below
+     * the value before the move.
+     *
+     * `stored` true: the ring before the move, read from the stored face qualities; it is asked
+     * before the solve moves the vertex, so the mesh as it is is that ring too. `stored` false: the
+     * ring at the candidate position, every face of it already tested for inversion.
+     *
+     * By default the max over the ring of smoothing_cell_energy() -- what the projected step
+     * compared before this hook existed -- so TriWild and SimWild are unchanged. An application
+     * whose rules compare a sum of a per-face energy over the faces a move changes overrides it
+     * with that sum, so that the projected step picks its candidate by the same rule. The 3D twin
+     * is TetOptimizerMesh::smoothing_ring_energy (since 2026-10-12); 2D since 2026-11-12.
+     */
+    virtual double smoothing_ring_energy(const std::vector<size_t>& ring, const bool stored) const
+    {
+        double m = 0.;
+        for (const size_t fid : ring) {
+            m = std::max(
+                m,
+                smoothing_cell_energy(
+                    fid,
+                    stored ? m_face_attribute[fid].m_quality : get_quality(fid)));
+        }
+        return m;
     }
 
     double active_quality_threshold() const

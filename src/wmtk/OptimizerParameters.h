@@ -183,7 +183,7 @@ struct OptimizerParameters
      * light quality preference.
      */
     double w_amips = 1e-4;
-    /// "projected" or "exact"; see SmoothVertexOptions::SmoothingMode.
+    /// "projected" or "penalty"; see SmoothVertexOptions::SmoothingMode.
     std::string smoothing_mode = "projected";
     /// Bisections tried before the projected search gives up. See SmoothVertexOptions.
     int project_line_search_steps = 12;
@@ -273,6 +273,28 @@ struct OptimizerParameters
      * are larger than length_rel nominally asked for. Turn it off to hold the target size.
      */
     bool coarsen_unbounded = true;
+    /**
+     * Refuse a collapse that leaves an edge the split pass would cut: one longer than 4/3 of the
+     * target length, scaled by the sizing at its ends -- Botsch and Kobbelt's isotropic
+     * remeshing, and isotropic_remeshing's option of the same name. Not to be confused with
+     * collapse_all_edges()' `is_limit_length`, which decides which edges are offered for
+     * collapse (those under 0.8 of the target); this one judges the edges a collapse leaves.
+     *
+     * Without it a collapse is judged by the edge it removes alone, so two collinear edges of a
+     * curve merge into one up to 0.8 + 4/3 of the target; and since the optimization ends on
+     * collapses (the last iteration's, then the bare pass after the loop), nothing cuts them
+     * again. In coarsen_mesh() the target is the one asked for (the sizing mesh, else `l`), not
+     * the sizing scalar, which that pass exists to undo. Off by default.
+     */
+    bool limit_collapse_length = false;
+    /**
+     * With a sizing mesh, mesh_improvement() does not stop on reaching the energy target while
+     * more than this share of the edges is longer than 4/3 of its target (an edge the split pass
+     * would cut), as long as the share keeps dropping by a tenth from one iteration to the next:
+     * a weak enforcement of the field, which the energy target alone reaches after one iteration.
+     * Without a sizing mesh, nothing changes.
+     */
+    double sizing_mesh_long_edge_tolerance = 0.01;
     /**
      * Smoothing sweeps over the ring, inside each candidate collapse, before judging it.
      *

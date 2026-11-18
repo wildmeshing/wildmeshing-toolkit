@@ -20,6 +20,21 @@ else()
     if(${CMAKE_VERSION} VERSION_LESS ${REQUIRED_CMAKE_VERSION})
         message(FATAL_ERROR "CMake required version to build WildMeshingToolkit is ${REQUIRED_CMAKE_VERSION}")
     endif()
+    # The dependencies' old cmake_minimum_required (libigl's predicates, ...) need it with CMake 4,
+    # as above. In this directory's scope only, and only if the parent has not chosen one.
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0.0" AND NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM)
+        set(CMAKE_POLICY_VERSION_MINIMUM ${REQUIRED_CMAKE_VERSION})
+    endif()
+    # Default symbol visibility for the toolkit and its dependencies, whatever the parent's. Under
+    # -fvisibility=hidden, Apple clang emits the initializer of NFG's `inline static thread_local`
+    # memory pools as a strong hidden symbol in every object, and the link fails on duplicates.
+    set(CMAKE_CXX_VISIBILITY_PRESET default)
+    set(CMAKE_C_VISIBILITY_PRESET default)
+    set(CMAKE_VISIBILITY_INLINES_HIDDEN OFF)
+    # C++17 unless a target asks for more, as when the toolkit is built on its own, whatever the
+    # parent's default: a parent's C++20 reached the dependencies, where fmt then checks format
+    # strings at compile time and polysolve's runtime ones fail it.
+    set(CMAKE_CXX_STANDARD 17)
 endif()
 
 # Python builds (scikit-build-core): object files outside CMakeFiles/. scikit-build-core deletes the
@@ -87,8 +102,10 @@ option(WMTK_DEBUG_BRUTE_FORCE_OPS "Validate each TriMesh operation against a bru
 option(WMTK_PER_INPUT_ORIENTATION "One orientation count per input on each tracked face (32 bytes more per face record)" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
+# Prepended, so that as a subproject the toolkit's recipes win over a parent's of the same names
+# (eigen, libigl, ...): they pin the versions and options the toolkit is built and tested with.
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Generate position independent code by default
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -116,7 +133,9 @@ include(simple_bvh)
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-option(WMTK_PYBIND "Generate python bindings" ON)
+# Off by default as a subproject: a parent that builds the components (WMTK_BUILD_COMPONENTS) gets
+# no Python module, and needs no Python development files to configure.
+option(WMTK_PYBIND "Generate python bindings" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
 if(WMTK_PYBIND)
     include(pybind11)
     include(pybind11_json)
@@ -221,6 +240,13 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # The documentation's examples (docs/examples), built and run as tests
     if(WMTK_BUILD_DOC_EXAMPLES)
         add_subdirectory(docs/examples)
+    endif()
+else()
+    # A parent project that calls the components (wmtk::triwild, ...) turns this on: they are then
+    # built for it alone, without the app, the bindings, their tests or the test data.
+    option(WMTK_BUILD_COMPONENTS "Build the components when the toolkit is a subproject" OFF)
+    if(WMTK_BUILD_COMPONENTS)
+        add_subdirectory(components)
     endif()
 endif()
 

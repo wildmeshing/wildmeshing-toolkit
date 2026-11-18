@@ -168,8 +168,11 @@ public:
     bool m_collapse_check_quality = true;
 
 
-    // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
-    // Negative = stays on v1 side, positive = stays on v2 side.
+    // When set, split_adjust_position moves the new vertex to this function's zero on the edge,
+    // by 20 bisection steps between the ends (which must have opposite signs); if that inverts a
+    // child, the vertex goes back to the edge's midpoint. Set before split_edge(), cleared after,
+    // by seal_connected_components (tight_seal_topo, resolve_overlaps) and tight_seal_geom's
+    // march. m_edge_split_at takes precedence.
     std::function<double(const Vector3d&)> m_voronoi_split_fn = nullptr;
 
     SimWildMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
@@ -240,6 +243,14 @@ public:
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
     void set_sizing_field(const nlohmann::json& sizing_field_json);
+    /**
+     * @brief The sizing mesh with the regions of set_sizing_field(), which must run first. At the
+     * start (`overwrite`) a vertex the sizing mesh covers takes the smaller of its length and the
+     * regions' of its tets: set_sizing_field() capped a vertex of a tet in no region at the
+     * global length, and there the field's length takes that place, also when longer. A vertex
+     * it does not cover keeps what set_sizing_field() gave it. After every pass the base's cap.
+     */
+    void apply_sizing_mesh(bool overwrite) override;
 
     void set_quality_field(const nlohmann::json& quality_field_json);
 
@@ -316,15 +327,16 @@ protected:
         override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
     /// A face split puts the new vertex at the face's centroid, in doubles, so every corner must
-    /// be rounded. The children of each tet on the face take its
-    /// attributes; the face's three pieces take the face's, and the tets' other faces keep
-    /// theirs, and every old edge keeps its feature tags. Refused if a child is inverted.
+    /// be rounded. The children of each tet on the face take its attributes; the face's three
+    /// pieces take the face's, the tets' other faces keep theirs, and every old edge keeps its
+    /// feature tags. Refused if a child is inverted. Only tight_seal_geom splits faces (its
+    /// simplicial embedding of R).
     bool split_face_before(const Tuple& t) override;
     bool split_face_after(const Tuple& t) override;
     /// A tet split puts the new vertex at the tet's centroid, in doubles, so every corner must be
     /// rounded. The four children take the tet's attributes and its four faces and six edges keep
     /// theirs; the six faces inside it are new. Refused if a child is inverted. Only
-    /// tight_seal_geom splits tets (its simplicial embedding of the regions).
+    /// tight_seal_geom splits tets (its simplicial embedding of R).
     bool split_tet_before(const Tuple& t) override;
     bool split_tet_after(const Tuple& t) override;
 
@@ -356,12 +368,12 @@ private:
         std::vector<char>& filled,
         std::vector<std::pair<size_t, size_t>>* children_of = nullptr);
     /// The dilation surface S of tight_seal_geom: the level set d(x, R) = radius, R + B's boundary,
-    /// as a BVH of triangles. On each edge of a tet outside R (region < 0) between a vertex with
-    /// dist_R_at < radius and one with dist_R_at >= radius, the crossing is where dist_R = radius:
-    /// sphere traced from the near end, each step at least tol, then bisected
-    /// (tight_seal::level_crossing). The crossings of each tet are joined into its cut polygon (a triangle or a quad, in two triangles).
-    /// Returns false if S is empty; n_traced: edges traced, n_failed: those with no crossing found
-    /// (the far end is taken).
+    /// as a BVH of triangles. `region`: 0 on R's tets, -1 elsewhere. On each edge of a tet outside
+    /// R between a vertex with dist_R_at < radius and one with dist_R_at >= radius, the crossing
+    /// is where dist_R = radius: sphere traced from the near end, each step at least tol, then
+    /// bisected (tight_seal::level_crossing). The crossings of each tet are joined into its cut
+    /// polygon (a triangle, or a quad in two triangles). Returns false if S is empty; n_traced:
+    /// edges traced, n_failed: those with no crossing found (the far end is taken).
     bool tight_seal_dilation_surface_bvh(
         const std::vector<size_t>& tids,
         const std::vector<int>& region,
@@ -421,8 +433,8 @@ private:
         Rational fraction;
     };
     std::optional<EdgeSplitAt> m_edge_split_at;
-    // split_face_before() to split_face_after(). Face splits are serial (only tight_seal_geom
-    // makes them).
+    // split_face_before() to split_face_after(). Face splits are serial (only tight_seal_geom's
+    // simplicial embedding makes them).
     struct FaceSplitCache
     {
         std::array<size_t, 3> v; // the face
@@ -436,8 +448,8 @@ private:
         std::vector<int> on_bbox_faces;
     };
     FaceSplitCache m_face_split_cache;
-    // split_tet_before() to split_tet_after(). Tet splits are serial (only tight_seal_geom makes
-    // them).
+    // split_tet_before() to split_tet_after(). Tet splits are serial (only tight_seal_geom's
+    // simplicial embedding makes them).
     struct TetSplitCache
     {
         std::array<size_t, 4> v; // the tet
@@ -626,10 +638,12 @@ public:
      * SimWildMeshTri::tight_seal_geom.
      *
      * J is the closing of R by the ball B of diameter `distance`, minus R: the part of the rest
-     * that B cannot reach. First R is made simplicially embedded (no tet outside R has all its
-     * vertices on R; wmtk/utils/SimplicialEmbedding.hpp): each tet outside R whose four faces lie
-     * on R is split at its centroid, then each face outside R whose three edges do, then each edge
-     * outside R joining two vertices of R at its midpoint. Then J is found in three steps.
+     * that B cannot reach. R, S and J are the tight seal v2 note's I, D and J
+     * (https://hackmd.io/@Spenbert02/HkX3vAvaGg); the log says I and D. First R is made
+     * simplicially embedded (no tet, face or edge outside R has all its vertices on R;
+     * wmtk/utils/SimplicialEmbedding.hpp): each tet outside R whose four faces lie on R is split
+     * at its centroid, then each face outside R whose three edges do, then each edge outside R
+     * joining two vertices of R at its midpoint. Then J is found in three steps.
      *  1. The dilation surface S, d(x, R) = distance/2, found on the edges that cross it (sphere
      *     traced, then bisected to the level).
      *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.

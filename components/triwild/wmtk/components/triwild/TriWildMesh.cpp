@@ -31,7 +31,9 @@
 // clang-format on
 
 //#include <paraviewo/HDF5VTUWriter.hpp>
+#include <algorithm>
 #include <bitset>
+#include <cstdint>
 #include <limits>
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/utils/partition_utils.hpp>
@@ -482,13 +484,6 @@ void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
             "compute_tracked_winding_number: the tracked curves carry no orientation");
     }
     const auto& faces = get_faces();
-    MatrixXd C = MatrixXd::Zero(faces.size(), 2);
-    for (size_t i = 0; i < faces.size(); i++) {
-        for (size_t v : oriented_tri_vids(faces[i])) {
-            C.row(i) += m_vertex_attribute[v].m_posf;
-        }
-        C.row(i) /= 3;
-    }
     MatrixXd V = MatrixXd::Zero(vert_capacity(), 2);
     for (const Tuple& v : get_vertices()) {
         V.row(v.vid(*this)) = m_vertex_attribute[v.vid(*this)].m_posf;
@@ -538,8 +533,77 @@ void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
         E(i, 1) = int(oriented[i][1]);
     }
 
-    Eigen::VectorXd W;
-    utils::winding_number_2d(V, E, C, W, NUM_THREADS);
+    // When the curves E are closed (every vertex as often an edge's start as an end), their
+    // winding number is constant on every connected set of faces that no edge of E separates, so
+    // it is evaluated once per such region -- at the centroid of its first face in get_faces()
+    // order -- and given to all its faces, instead of once per face: each evaluation sums an
+    // atan2 over every edge of E, and per face that was a fifth of a TriWild run on small inputs.
+    // Only the inside test (winding_number_inside) reads the value, and it is the same: across a
+    // region the per-face values differed by round-off alone. Open curves have a winding number
+    // that varies continuously off them, so they are still evaluated face by face.
+    bool closed = true;
+    {
+        std::vector<int> balance(vert_capacity(), 0);
+        for (const auto& ab : oriented) {
+            ++balance[ab[0]];
+            --balance[ab[1]];
+        }
+        closed = std::all_of(balance.begin(), balance.end(), [](int d) { return d == 0; });
+    }
+    std::vector<uint64_t> curve_keys(oriented.size());
+    const auto edge_key = [](size_t a, size_t b) {
+        if (a > b) std::swap(a, b);
+        return (uint64_t(a) << 32) | uint64_t(b);
+    };
+    for (size_t i = 0; i < oriented.size(); ++i) {
+        curve_keys[i] = edge_key(oriented[i][0], oriented[i][1]);
+    }
+    std::sort(curve_keys.begin(), curve_keys.end());
+    curve_keys.erase(std::unique(curve_keys.begin(), curve_keys.end()), curve_keys.end());
+    const auto on_curve = [&](const Tuple& e) {
+        const uint64_t key = edge_key(e.vid(*this), e.switch_vertex(*this).vid(*this));
+        return std::binary_search(curve_keys.begin(), curve_keys.end(), key);
+    };
+    std::vector<int> region(tri_capacity(), -1);
+    std::vector<size_t> first_face; // per region, its first face's index in `faces`
+    std::vector<Tuple> stack;
+    for (size_t i = 0; i < faces.size(); ++i) {
+        if (region[faces[i].fid(*this)] >= 0) continue;
+        if (!closed) { // every face a region of its own
+            region[faces[i].fid(*this)] = int(first_face.size());
+            first_face.push_back(i);
+            continue;
+        }
+        const int r = int(first_face.size());
+        first_face.push_back(i);
+        region[faces[i].fid(*this)] = r;
+        stack.assign(1, faces[i]);
+        while (!stack.empty()) {
+            const Tuple f = stack.back();
+            stack.pop_back();
+            for (const Tuple& e :
+                 {f, f.switch_edge(*this), f.switch_vertex(*this).switch_edge(*this)}) {
+                if (on_curve(e)) continue;
+                const auto g = e.switch_face(*this);
+                if (g && region[g->fid(*this)] < 0) {
+                    region[g->fid(*this)] = r;
+                    stack.push_back(*g);
+                }
+            }
+        }
+    }
+    MatrixXd C = MatrixXd::Zero(first_face.size(), 2);
+    for (size_t r = 0; r < first_face.size(); ++r) {
+        for (size_t v : oriented_tri_vids(faces[first_face[r]])) {
+            C.row(r) += m_vertex_attribute[v].m_posf;
+        }
+        C.row(r) /= 3;
+    }
+    Eigen::VectorXd W_region;
+    utils::winding_number_2d(V, E, C, W_region, NUM_THREADS);
+    Eigen::VectorXd W(faces.size());
+    for (size_t i = 0; i < faces.size(); ++i) W(i) = W_region(region[faces[i].fid(*this)]);
+
     if (utils::orient_winding_number(W)) {
         logger().info("Correcting tracked winding number");
     }

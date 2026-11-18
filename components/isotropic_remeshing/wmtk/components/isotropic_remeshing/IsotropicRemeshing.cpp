@@ -102,6 +102,41 @@ void IsotropicRemeshing::create_mesh(
     if (m_has_features) set_regions();
 }
 
+void IsotropicRemeshing::set_sizing_mesh(std::shared_ptr<const SizingMesh> sizing)
+{
+    if (sizing && sizing->kind() == SizingMesh::Kind::Planar) {
+        log_and_throw_error("set_sizing_mesh: a Planar sizing mesh holds no surface in 3D");
+    }
+    // Into the vertex group the first time, so that the operations roll the targets back and the
+    // consolidation moves them; without a sizing mesh they are not there at all.
+    if (sizing && !m_sizing_mesh) {
+        target_attrs.resize(vertex_attrs.size());
+        m_vertex_group.add(&target_attrs);
+    }
+    m_sizing_mesh = std::move(sizing);
+    if (!m_sizing_mesh) return;
+    const auto apply = [&](size_t v) {
+        if (!tuple_from_vertex(v).is_valid(*this)) return;
+        target_attrs.m_attributes[v] = sizing_at(vertex_attrs.at(v).pos);
+    };
+    if (NUM_THREADS == 0) {
+        for (size_t v = 0; v < vert_capacity(); ++v) apply(v);
+    } else {
+        threading::parallel_for(
+            threading::range(0, vert_capacity()),
+            [&](const threading::range& r) {
+                for (size_t v = r.begin(); v < r.end(); ++v) apply(v);
+            },
+            NUM_THREADS);
+    }
+}
+
+double IsotropicRemeshing::edge_target(const size_t a, const size_t b, const double L) const
+{
+    const double ta = target_attrs.at(a), tb = target_attrs.at(b);
+    return 0.5 * ((ta > 0 ? ta : L) + (tb > 0 ? tb : L));
+}
+
 void IsotropicRemeshing::cache_edge_positions(const Tuple& t)
 {
     auto& cache = position_cache.local();
@@ -1031,12 +1066,16 @@ bool IsotropicRemeshing::collapse_edge_after(const TriMesh::Tuple& t)
     vertex_attrs[vid].pos = p;
     vertex_attrs[vid].partition_id = cache.partition_id;
     vertex_attrs[vid].input_boundary = cache.v1_input_boundary || cache.v2_input_boundary;
+    if (m_sizing_mesh) target_attrs[vid] = sizing_at(p);
 
     // The repairs' collapses keep the limit whether it is on or not: see cleanup_triangles().
+    // With a sizing mesh, each edge to its own target.
     const auto too_long = [&]() {
         if (!(m_limit_collapse_length || m_cleaning) || m_collapse_target <= 0) return false;
         for (const Tuple& e : get_one_ring_edges_for_vertex(t)) {
-            if ((vertex_attrs[e.vid(*this)].pos - p).norm() > 4. / 3. * m_collapse_target) {
+            const double target = m_sizing_mesh ? edge_target(vid, e.vid(*this), m_collapse_target)
+                                                : m_collapse_target;
+            if ((vertex_attrs[e.vid(*this)].pos - p).norm() > 4. / 3. * target) {
                 return true;
             }
         }
@@ -1087,6 +1126,7 @@ bool IsotropicRemeshing::split_edge_after(const TriMesh::Tuple& t)
     va.pos = p;
     va.partition_id = cache.partition_id;
     va.input_boundary = cache.split_input_boundary;
+    if (m_sizing_mesh) target_attrs[vid] = sizing_at(p);
     if (m_has_features || m_has_fixed) {
         // Always written: the slot may hold a vertex that lived there before.
         auto& f = feature_attrs[vid];
@@ -1148,10 +1188,12 @@ bool IsotropicRemeshing::smooth_after(const TriMesh::Tuple& t)
         const size_t input_folds_before = before.folded() ? input_folds(one_ring_tris) : 0;
         const double floor = min_angle(one_ring_tris);
         vertex_attrs[t.vid(*this)].pos = after_smooth;
+        if (m_sizing_mesh) target_attrs[t.vid(*this)] = sizing_at(after_smooth);
         return cleanup_allows(one_ring_tris, before, input_folds_before, floor);
     }
     const ReplacedSurface before = m_check_inversions ? replaced(one_ring_tris) : ReplacedSurface();
     vertex_attrs[t.vid(*this)].pos = after_smooth;
+    if (m_sizing_mesh) target_attrs[t.vid(*this)] = sizing_at(after_smooth);
     if (m_check_inversions && folds(one_ring_tris, before)) return false;
     return true;
 }
@@ -1244,6 +1286,8 @@ double IsotropicRemeshing::compute_edge_cost_collapse(const TriMesh::Tuple& t, d
     double l =
         (vertex_attrs[t.vid(*this)].pos - vertex_attrs[t.switch_vertex(*this).vid(*this)].pos)
             .norm();
+    // With a sizing mesh, the edge's own target: see set_sizing_mesh.
+    if (m_sizing_mesh) L = edge_target(t.vid(*this), t.switch_vertex(*this).vid(*this), L);
     if (l < (4. / 5.) * L) return ((4. / 5.) * L - l);
     return -1;
 }
@@ -1252,6 +1296,7 @@ double IsotropicRemeshing::compute_edge_cost_split(const TriMesh::Tuple& t, doub
     double l =
         (vertex_attrs[t.vid(*this)].pos - vertex_attrs[t.switch_vertex(*this).vid(*this)].pos)
             .norm();
+    if (m_sizing_mesh) L = edge_target(t.vid(*this), t.switch_vertex(*this).vid(*this), L);
     if (l > (4. / 3.) * L) return (l - (4. / 3.) * L);
     return -1;
 }

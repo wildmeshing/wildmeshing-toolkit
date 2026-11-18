@@ -1,6 +1,6 @@
 [
   {
-    "doc": "Remeshes a triangle mesh towards a uniform target edge length with splits, collapses, swaps and tangential smoothing (Botsch and Kobbelt 2004). With a positive eps_rel, the surface stays inside an envelope around the input; features and feature_fields name curves and vertices the remeshing keeps.",
+    "doc": "Remeshes a triangle mesh towards a target edge length, uniform or, with sizing_mesh, varying over the surface, with splits, collapses, swaps and tangential smoothing (Botsch and Kobbelt 2004). With a positive eps_rel, the surface stays inside an envelope around the input; features and feature_fields name curves and vertices the remeshing keeps.",
     "pointer": "/",
     "type": "object",
     "required": ["application", "input"],
@@ -11,9 +11,12 @@
       "num_threads",
       "max_iterations",
       "eps_rel",
+      "eps",
       "boundary_eps_rel",
       "length_rel",
+      "length",
       "length_abs",
+      "sizing_mesh",
       "freeze_boundary",
       "log_file",
       "report",
@@ -77,6 +80,12 @@
     "doc": "Envelope thickness relative to the bounding box diagonal. Negative (the default): no envelope."
   },
   {
+    "pointer": "/eps",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute envelope thickness. If this value is negative, the relative envelope thickness (eps_rel) is used to compute the absolute one; no envelope if that is negative too. As triwild's and simwild's eps."
+  },
+  {
     "pointer": "/boundary_eps_rel",
     "type": "float",
     "default": -1,
@@ -89,10 +98,22 @@
     "doc": "Target edge length relative to the bounding box. Only used when absolute length is set negative."
   },
   {
+    "pointer": "/length",
+    "type": "float",
+    "default": -1,
+    "doc": "Absolute target edge length. If negative, length_abs, its older name, is read; if that is negative too, relative length is used to compute the absolute. If this is negative as well, the average edge length of the input is used as target. Given with length_abs, the two have to agree. As triwild's and simwild's length."
+  },
+  {
     "pointer": "/length_abs",
     "type": "float",
     "default": -1,
-    "doc": "Absolute target edge length. If negative, relative length is used to compute the absolute. If this is negative as well, the average edge length of the input is used as target."
+    "doc": "The older name of length, which wins when positive; the two have to agree when both are. Absolute target edge length. If negative, relative length is used to compute the absolute. If this is negative as well, the average edge length of the input is used as target."
+  },
+  {
+    "pointer": "/sizing_mesh",
+    "type": "string",
+    "default": "",
+    "doc": "A target edge length that varies over the surface: a triangle mesh in 3D whose vertices carry the absolute target length as the field 'target_length' (one positive value per vertex), interpolated linearly inside its triangles and read at the point of it closest to the vertex -- the input itself, with such a field, say. On the memory route the name of a mesh of the call, on the file route the path of a mesh file with a node field 'target_length', relative to input_dir. Each vertex takes the length where it is, again wherever a split, collapse or smoothing puts it, and an edge's target is the mean of its ends': the split cuts an edge longer than 4/3 of it, the collapse removes one shorter than 4/5 of it, and limit_collapse_length and the collapses of cleanup_triangles hold the edges a collapse leaves under 4/3 of theirs. It replaces the global target (length, else length_rel, else the input's average edge length) everywhere, which the report still gives as target_length. Feature curves, fixed vertices and the envelopes are kept as without it. Empty: none, and the run is the same as without the option. With it, limit_collapse_length is on unless set to false."
   },
   {
     "pointer": "/freeze_boundary",
@@ -156,14 +177,14 @@
   {
     "pointer": "/limit_collapse_length",
     "type": "bool",
-    "default": false,
-    "doc": "Refuse a collapse that leaves an edge longer than 4/3 of the target length, the length above which an edge is split, as Botsch and Kobbelt's isotropic remeshing does. Without it a collapse is judged by the edge it removes alone, and those of the last iteration leave long edges that no split comes after to cut."
+    "default": "skip",
+    "doc": "Default: on with a sizing_mesh (the field is then a bound the collapses keep), off without. Refuse a collapse that leaves an edge longer than 4/3 of the target length (of the edge's own, with a sizing_mesh), the length above which an edge is split, as Botsch and Kobbelt's isotropic remeshing does. Without it a collapse is judged by the edge it removes alone, and those of the last iteration leave long edges that no split comes after to cut."
   },
   {
     "pointer": "/cleanup_angle",
     "type": "float",
     "default": 0,
-    "doc": "Repair, at the end of every iteration, the triangles whose smallest angle is under this many degrees; 0 repairs none. Worst first, each gets the first of these that is allowed: a collapse of its shortest edge, either way; a swap of one of its edges, longest first; a move of one of its vertices, or else of one of the triangles around it -- off the curves, within the tangent plane; inside a curve, along it -- to where the smallest angle around it is largest. Allowed means that every other rule holds (curves, fixed vertices, envelopes), that it folds nothing by the rule of check_inversions (on or off: the repairs keep it), that a collapse leaves no edge longer than 4/3 of the target length (with limit_collapse_length or without: the repairs are not to coarsen the mesh, and those after the last iteration have no split after them), and that the smallest angle of the triangles it leaves beats that around the triangle repaired. Where what it replaces folds already -- a fold the input brings, which confuses that rule -- one that leaves fewer triangles facing against the input triangles next to them, of the same feature_fields values, than there were is allowed too, even where no angle improves; only there, since next to a wall thinner than a triangle the input's two sides cancel and its orientation says nothing. Up to 10 rounds, serially. Meant for what the passes leave: thin triangles next to curves, where no vertex may leave its curve and no swap or collapse may put two curve edges in one triangle, and the folds of the input that the splits copy."
+    "doc": "Repair, at the end of every iteration, the triangles whose smallest angle is under this many degrees; 0 repairs none. Worst first, each gets the first of these that is allowed: a collapse of its shortest edge, either way; a swap of one of its edges, longest first; a move of one of its vertices, or else of one of the triangles around it -- off the curves, within the tangent plane; inside a curve, along it -- to where the smallest angle around it is largest. Allowed means that every other rule holds (curves, fixed vertices, envelopes), that it folds nothing by the rule of check_inversions (on or off: the repairs keep it), that a collapse leaves no edge longer than 4/3 of the target length (the edge's own, with a sizing_mesh; with limit_collapse_length or without: the repairs are not to coarsen the mesh, and those after the last iteration have no split after them), and that the smallest angle of the triangles it leaves beats that around the triangle repaired. Where what it replaces folds already -- a fold the input brings, which confuses that rule -- one that leaves fewer triangles facing against the input triangles next to them, of the same feature_fields values, than there were is allowed too, even where no angle improves; only there, since next to a wall thinner than a triangle the input's two sides cancel and its orientation says nothing. Up to 10 rounds, serially. Meant for what the passes leave: thin triangles next to curves, where no vertex may leave its curve and no swap or collapse may put two curve edges in one triangle, and the folds of the input that the splits copy."
   },
   {
     "pointer": "/remove_duplicate_eps",
