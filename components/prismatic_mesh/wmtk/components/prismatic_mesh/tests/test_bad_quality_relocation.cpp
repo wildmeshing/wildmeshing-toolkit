@@ -2,6 +2,7 @@
 #include <Eigen/Geometry>
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <cmath>
 #include <wmtk/components/prismatic_mesh/bad_quality_relocation.hpp>
 #include <wmtk/components/prismatic_mesh/junction_protection.hpp>
@@ -304,7 +305,8 @@ TEST_CASE(
         if (step["accepted"].get<size_t>() > 0) CHECK(energy < previous);
         previous = energy;
     }
-    CHECK(new_energy / 3 == previous);
+    // Independently evaluated AMIPS can differ by roundoff across platforms.
+    CHECK_THAT(new_energy / 3, Catch::Matchers::WithinRel(previous, 1e-12));
     validate_prism_dominant_mesh(m, h, 0);
 }
 
