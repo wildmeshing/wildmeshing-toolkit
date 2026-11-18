@@ -401,9 +401,11 @@ bool TopoOffsetTetMesh::face_is_tag_boundary(const Tuple& f) const
 
 void TopoOffsetTetMesh::untrack_covered_boundaries()
 {
-    // See the declaration. m_is_on_surface is a superset by design (vertex_is_held() walks the
-    // faces) and is not recomputed. m_is_on_region is, for the corners of the faces untracked: a
-    // vertex is on a region boundary iff a face of it is still tracked. Every corner of a band
+    // See the declaration. m_is_on_region and the base's m_is_on_surface are recomputed for the
+    // corners of the faces untracked: a vertex is on a region boundary iff a face of it is still
+    // tracked, and the front is not tracked yet (label_offset_boundary() runs later), so the two
+    // agree here. m_is_on_surface must be exact: the engine's collapse keeps a flagged vertex on
+    // the surface. Until 2026-11-17 it was left a superset. Every corner of a band
     // cell is a complex vertex or a split point of the march; a split point on a face this
     // untracks also lies on the part of that surface the band did not cover (the piece through
     // the marched edge's outer half, whose cells are not band), and so does a vertex of a
@@ -416,6 +418,7 @@ void TopoOffsetTetMesh::untrack_covered_boundaries()
     // optimize_offset()).
     size_t n = 0;
     std::vector<size_t> corners;
+    std::vector<std::array<size_t, 2>> edges;
     for (const Tuple& f : get_faces()) {
         const size_t fid = f.fid(*this);
         FaceAttributes& attr = m_face_attribute[fid];
@@ -424,9 +427,33 @@ void TopoOffsetTetMesh::untrack_covered_boundaries()
         }
         attr.reset();
         ++n;
-        for (const size_t v : get_face_vids(f)) corners.push_back(v);
+        const auto fv = get_face_vids(f);
+        for (const size_t v : fv) corners.push_back(v);
+        for (int i = 0; i < 3; ++i) {
+            std::array<size_t, 2> e{{fv[size_t(i)], fv[size_t((i + 1) % 3)]}};
+            std::sort(e.begin(), e.end());
+            edges.push_back(e);
+        }
     }
     wmtk::vector_unique(corners);
+    wmtk::vector_unique(edges);
+    // An order-2 tag on an edge of a face untracked here is stale once the edge no longer has an
+    // order-2 count of tracked faces: drop it now, as the construction's own change, rather than
+    // at the first collapse next to it (drop_stale_order2_tags()), which made the held curves'
+    // topology change in the loop. MEASURED (the rod where three blocks meet, DEBUG_held_topology,
+    // 2026-11-10): 8 stale tags after the construction, dropped by the collapses of the
+    // construction pass and of turn 1.
+    size_t n_order2 = 0;
+    if (m_track_feature_edges) {
+        for (const std::array<size_t, 2>& e : edges) {
+            FeatureEdgeAttributes& tags = m_feature_edge_attribute[tuple_from_edge(e).eid(*this)];
+            if (tags.has(FeatureEdgeAttributes::order2) &&
+                !holds_order2_edge(get_num_surface_faces_for_edge(e))) {
+                tags.remove(FeatureEdgeAttributes::order2);
+                ++n_order2;
+            }
+        }
+    }
     size_t n_off = 0;
     for (const size_t v : corners) {
         bool on = false;
@@ -441,12 +468,15 @@ void TopoOffsetTetMesh::untrack_covered_boundaries()
         }
         if (!on && m_vertex_extra[v].m_is_on_region) ++n_off;
         m_vertex_extra[v].m_is_on_region = on;
+        m_vertex_attribute[v].m_is_on_surface = on;
     }
     logger().info(
         "\t[tracked faces] {} faces the band covered no longer bound regions (one tag set on both "
-        "sides after its retagging): untracked; {} of their corners on no region boundary now",
+        "sides after its retagging): untracked; {} of their corners on no region boundary now; {} "
+        "order-2 tags of their edges dropped",
         n,
-        n_off);
+        n_off,
+        n_order2);
 }
 
 bool TopoOffsetTetMesh::face_is_held(const Tuple& f) const
@@ -459,8 +489,8 @@ bool TopoOffsetTetMesh::face_is_held(const Tuple& f) const
 
 bool TopoOffsetTetMesh::vertex_is_held(const size_t vid) const
 {
-    // Most vertices are on no tracked face at all; the flag is a superset (it is never cleared),
-    // so it only short-cuts the walk.
+    // Most vertices are on no tracked face at all; the flag says whether one is (exactly:
+    // vertex_has_tracked_face()), so it short-cuts the walk.
     if (!m_vertex_attribute[vid].m_is_on_surface) return false;
     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
         for (int j = 0; j < 4; ++j) {

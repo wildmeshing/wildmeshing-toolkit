@@ -24,6 +24,7 @@ int main()
               {{{"selection", "127891"},
                 {"output_tags", nlohmann::json::array({"offset"})},
                 {"target_distance", 0.4}}})},
+         {"envelope_size_rel", 4e-4},
          {"optimize_offset", false}},
         meshes);
     std::cout << report["before #t"] << " -> " << report["after #t"] << " tets\n";
