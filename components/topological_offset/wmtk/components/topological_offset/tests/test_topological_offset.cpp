@@ -1945,7 +1945,7 @@ std::unique_ptr<TopoOffsetTriMesh> energy_mesh_2d(
     for (size_t v = 0; v < size_t(V.rows()); ++v) {
         mesh->m_vertex_attribute[v].m_is_on_surface = false;
         mesh->m_vertex_extra[v].m_is_on_region = false;
-        mesh->m_vertex_extra[v].m_boundary_mask = 0;
+        mesh->m_vertex_extra[v].m_boundary_labels.clear();
     }
     for (size_t i = 0; i < F.size(); ++i) {
         std::array<size_t, 3> want{
@@ -11261,9 +11261,10 @@ struct MeshState2d
     std::vector<Vector2d> posf;
     std::vector<Vector2r> pos;
     std::vector<double> sizing;
-    std::vector<std::array<int64_t, 10>> vertex_flags;
+    std::vector<std::array<int64_t, 9>> vertex_flags;
     std::vector<std::array<int64_t, 6>> edge_flags;
     std::vector<LabelIds> point_inputs; ///< per vertex
+    std::vector<LabelIds> boundary_labels; ///< per vertex
     std::vector<LabelIds> edge_labels; ///< per edge slot, as edge_flags
     bool operator==(const MeshState2d& o) const
     {
@@ -11277,6 +11278,7 @@ struct MeshState2d
                    vertex_flags,
                    edge_flags,
                    point_inputs,
+                   boundary_labels,
                    edge_labels) ==
                std::tie(
                    o.faces,
@@ -11288,6 +11290,7 @@ struct MeshState2d
                    o.vertex_flags,
                    o.edge_flags,
                    o.point_inputs,
+                   o.boundary_labels,
                    o.edge_labels);
     }
 };
@@ -11303,6 +11306,7 @@ MeshState2d mesh_state_2d(const TopoOffsetTriMesh& m)
         s.pos.push_back(a.pos());
         s.sizing.push_back(a.m_sizing_scalar);
         s.point_inputs.push_back(x.point_inputs);
+        s.boundary_labels.push_back(x.m_boundary_labels);
         s.vertex_flags.push_back(
             {{a.m_is_rounded,
               a.m_is_on_surface,
@@ -11311,7 +11315,6 @@ MeshState2d mesh_state_2d(const TopoOffsetTriMesh& m)
               x.m_is_on_input,
               x.m_is_on_offset,
               x.m_is_on_region,
-              int64_t(x.m_boundary_mask),
               x.m_corr_input_vid,
               x.m_corr_carried}});
     }
