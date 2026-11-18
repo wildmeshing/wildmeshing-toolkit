@@ -5,11 +5,13 @@ var searchData=
   ['backgroundpyramidplans_2',['BackgroundPyramidPlans',['../structwmtk_1_1components_1_1prismatic__mesh_1_1detail_1_1_background_pyramid_plans.html',1,'wmtk::components::prismatic_mesh::detail']]],
   ['backgroundquad_3',['BackgroundQuad',['../structwmtk_1_1components_1_1prismatic__mesh_1_1detail_1_1_background_quad.html',1,'wmtk::components::prismatic_mesh::detail']]],
   ['backgroundremeshingoptions_4',['BackgroundRemeshingOptions',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_background_remeshing_options.html',1,'wmtk::components::prismatic_mesh']]],
-  ['ballcandidate_5',['BallCandidate',['../structwmtk_1_1components_1_1topological__offset_1_1_ball_candidate.html',1,'wmtk::components::topological_offset']]],
-  ['bandvolumeenergy2d_6',['BandVolumeEnergy2D',['../classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy2_d.html',1,'wmtk::components::topological_offset']]],
-  ['bandvolumeenergy3d_7',['BandVolumeEnergy3D',['../classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html',1,'wmtk::components::topological_offset']]],
-  ['basicrecorder_8',['BasicRecorder',['../classwmtk_1_1history_1_1_basic_recorder.html',1,'wmtk::history']]],
-  ['basicreplay_9',['BasicReplay',['../classwmtk_1_1history_1_1_basic_replay.html',1,'wmtk::history']]],
-  ['boundaryenvelope_10',['BoundaryEnvelope',['../classwmtk_1_1_boundary_envelope.html',1,'wmtk']]],
-  ['boxtree_11',['BoxTree',['../classwmtk_1_1components_1_1shortest__edge__collapse_1_1_box_tree.html',1,'wmtk::components::shortest_edge_collapse']]]
+  ['badqualityregions_5',['BadQualityRegions',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_bad_quality_regions.html',1,'wmtk::components::prismatic_mesh']]],
+  ['badqualityrelocationoptions_6',['BadQualityRelocationOptions',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_bad_quality_relocation_options.html',1,'wmtk::components::prismatic_mesh']]],
+  ['ballcandidate_7',['BallCandidate',['../structwmtk_1_1components_1_1topological__offset_1_1_ball_candidate.html',1,'wmtk::components::topological_offset']]],
+  ['bandvolumeenergy2d_8',['BandVolumeEnergy2D',['../classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy2_d.html',1,'wmtk::components::topological_offset']]],
+  ['bandvolumeenergy3d_9',['BandVolumeEnergy3D',['../classwmtk_1_1components_1_1topological__offset_1_1_band_volume_energy3_d.html',1,'wmtk::components::topological_offset']]],
+  ['basicrecorder_10',['BasicRecorder',['../classwmtk_1_1history_1_1_basic_recorder.html',1,'wmtk::history']]],
+  ['basicreplay_11',['BasicReplay',['../classwmtk_1_1history_1_1_basic_replay.html',1,'wmtk::history']]],
+  ['boundaryenvelope_12',['BoundaryEnvelope',['../classwmtk_1_1_boundary_envelope.html',1,'wmtk']]],
+  ['boxtree_13',['BoxTree',['../classwmtk_1_1components_1_1shortest__edge__collapse_1_1_box_tree.html',1,'wmtk::components::shortest_edge_collapse']]]
 ];
