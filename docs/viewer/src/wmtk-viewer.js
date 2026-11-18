@@ -12,7 +12,7 @@
 // the input is always on the left and the output on the right, with one camera; with one of them
 // (or src), a single view. A triangle mesh is drawn with its edges; a tet mesh with a cut: the
 // tets whose centroid is on the near side of a plane are hidden, and the faces the cut exposes
-// are colored by element quality or by region. The viewer starts when it scrolls into view and
+// are colored by element quality, by region, or by their size against a sizing field. The viewer starts when it scrolls into view and
 // stops (releasing its WebGL context) when it leaves.
 //
 // Built into docs/assets/viewer/wmtk-viewer.min.js by `npm run build` in docs/viewer.
@@ -21,6 +21,7 @@ import {
     BufferAttribute,
     BufferGeometry,
     Color,
+    LinearSRGBColorSpace,
     LineBasicMaterial,
     LineSegments,
     Mesh,
@@ -87,6 +88,12 @@ const BOUNDARY = new Color("#d8d8d8");
 const WIRE = new Color("#30363d");
 // Element quality, good to bad: pale yellow to dark red, so that the bad elements stand out.
 const QUALITY_RAMP = ["#ffffcc", "#fed976", "#fd8d3c", "#e31a1c", "#800026"].map((c) => new Color(c));
+// A cell's longest edge over the sizing field, on a log scale from 1/2 to 2: blue shorter, white
+// as long, pale up to 4/3, the length a split cuts, and red past it. The material writes colors
+// out unconverted, so these are taken as displayed, as the legend's gradient shows them.
+const SIZING_RAMP = [[-1, "#2166ac"], [Math.log2(3 / 4), "#d1e5f0"], [0, "#f7f7f7"],
+    [Math.log2(4 / 3), "#fddbc7"], [Math.log2(4 / 3), "#d6604d"], [1, "#67001f"]]
+    .map(([t, c]) => [t, new Color().setStyle(c, LinearSRGBColorSpace)]);
 const REGIONS = ["#4e79a7", "#f28e2b", "#59a14f", "#e15759", "#76b7b2", "#edc948", "#b07aa1", "#9c755f"]
     .map((c) => new Color(c));
 
@@ -106,6 +113,22 @@ function qualityColors(asset) {
     const c = new Color();
     for (let i = 0; i < q.length; ++i) {
         ramp((Math.log(q[i]) - lmin) / span, c);
+        colors.set([c.r, c.g, c.b], 3 * i);
+    }
+    return colors;
+}
+
+function sizingColors(asset) {
+    const r = asset.arrays.cell_sizing;
+    if (!r) return null;
+    const colors = new Float32Array(r.length * 3);
+    const c = new Color();
+    for (let i = 0; i < r.length; ++i) {
+        const t = Math.min(1, Math.max(-1, Math.log2(r[i])));
+        let k = 0;
+        while (k < SIZING_RAMP.length - 2 && t > SIZING_RAMP[k + 1][0]) ++k;
+        const [t0, c0] = SIZING_RAMP[k], [t1, c1] = SIZING_RAMP[k + 1];
+        c.copy(c0).lerp(c1, t1 > t0 ? (t - t0) / (t1 - t0) : 1);
         colors.set([c.r, c.g, c.b], 3 * i);
     }
     return colors;
@@ -239,12 +262,13 @@ class Panel {
         return `${n.toLocaleString("en-US")} ${what}`;
     }
 
-    // color: "quality", "region" or "plain"; cut: null or { axis, t } with t in [0, 1].
+    // color: "quality", "region", "sizing" or "plain"; cut: null or { axis, t } with t in [0, 1].
     update(color, cut, palette) {
         const a = this.asset.arrays, P = this.asset.positions;
         if (!a.tets && !a.triangles) return; // curves only: the lines are all there is
         const cellColors = color === "quality" ? qualityColors(this.asset)
-            : color === "region" ? regionColors(this.asset, palette) : null;
+            : color === "region" ? regionColors(this.asset, palette)
+            : color === "sizing" ? sizingColors(this.asset) : null;
         let tris, faceColors;
         if (this.isTet) {
             const T = a.tets, N = a.tet_neighbors, m = T.length / 4;
@@ -309,6 +333,8 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 .legend .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-left: 6px; }
 .legend .bar { width: 90px; height: 10px; border-radius: 2px;
                background: linear-gradient(to right, #ffffcc, #fed976, #fd8d3c, #e31a1c, #800026); }
+.legend .bar.sizing { background: linear-gradient(to right, #2166ac, #d1e5f0 29.2%, #f7f7f7 50%,
+                                                  #fddbc7 70.8%, #d6604d 70.8%, #67001f); }
 .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 `;
 
@@ -450,12 +476,14 @@ class WmtkViewer extends HTMLElement {
         const hasTet = this.panels.some((p) => p.isTet);
         const hasQuality = this.panels.some((p) => p.asset.arrays.cell_quality);
         const hasRegions = this.panels.some((p) => p.asset.arrays.cell_region);
+        const hasSizing = this.panels.some((p) => p.asset.arrays.cell_sizing);
         const ui = document.createElement("div");
         ui.className = "controls";
         const option = (v, l) => `<option value="${v}" ${this.state.color === v ? "selected" : ""}>${l}</option>`;
         ui.innerHTML = `
             <label><input type="checkbox" name="wire" checked> Edges</label>
-            ${hasQuality || hasRegions ? `<label>Color <select name="color">
+            ${hasQuality || hasRegions || hasSizing ? `<label>Color <select name="color">
+                ${hasSizing ? option("sizing", "Size vs. field") : ""}
                 ${hasQuality ? option("quality", "Quality") : ""}${hasRegions ? option("region", "Regions") : ""}
                 ${option("plain", "Plain")}</select></label>` : ""}
             ${hasTet ? `<label>Cut <select name="cut">${["off", "x", "y", "z"].map((a) =>
@@ -463,12 +491,15 @@ class WmtkViewer extends HTMLElement {
                 <input type="range" name="t" min="0" max="1" step="0.005" value="${this.state.t}">` : ""}
             ${hasQuality ? `<span class="legend quality" title="Element quality (AMIPS energy, log scale)">good
                 <span class="bar"></span> bad</span>` : ""}
+            ${hasSizing ? `<span class="legend sizing" title="Each cell's longest edge over the sizing field at its midpoint, log scale: white as long as the field, red past 4/3 of it">½×
+                <span class="bar sizing"></span> 2× the field</span>` : ""}
             ${hasRegions ? `<span class="legend regions">${this.palette.map((name, i) =>
                 `<span class="swatch" style="background:#${REGIONS[i % REGIONS.length].getHexString()}"></span>${name}`)
                 .join(" ")}</span>` : ""}`;
         const legends = () => {
             ui.querySelector(".legend.quality")?.toggleAttribute("hidden", this.state.color !== "quality");
             ui.querySelector(".legend.regions")?.toggleAttribute("hidden", this.state.color !== "region");
+            ui.querySelector(".legend.sizing")?.toggleAttribute("hidden", this.state.color !== "sizing");
         };
         ui.addEventListener("input", (e) => {
             const { name, value, checked } = e.target;

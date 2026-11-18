@@ -30,6 +30,8 @@ count), all gzipped:
     cell_quality   float32, per tet or triangle: its AMIPS energy, when the mesh has it
     cell_region    uint8, per cell: the index of its regions (header "regions": "a", "a & b",
                    ...), 255 for none
+    cell_sizing    float32, per cell: its size against a sizing field, when the mesh has the cell
+                   field sizing_ratio (a scene's: docs/gallery/scenes.py)
     lines          uint32, 2 per segment
 """
 
@@ -176,6 +178,8 @@ def write_wmv(path, mesh, title):
                     arrays["cell_quality"] = q
                     header["quality"] = {"field": name, "min": float(q.min()), "max": float(q.max())}
                     break
+        if "sizing_ratio" in attributes:
+            arrays["cell_sizing"] = np.asarray(attributes["sizing_ratio"]["values"], dtype=np.float32)[:, 0]
         region, names = regions(attributes)
         if region is not None:
             arrays["cell_region"] = region
@@ -241,6 +245,19 @@ def run_component(example):
     return list(meshes.values()), example["options"].get("input_transform"), meshes, outputs, report
 
 
+_scenes = None
+
+
+def scenes():
+    """docs/gallery/scenes.py, loaded once, so that several examples can share one run."""
+    global _scenes
+    if _scenes is None:
+        spec = importlib.util.spec_from_file_location("scenes", SCENES)
+        _scenes = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(_scenes)
+    return _scenes
+
+
 def build(example):
     if "json" in example or "component" in example:
         run = run_json(example["json"]) if "json" in example else run_component(example)
@@ -255,10 +272,7 @@ def build(example):
                 mesh = outputs[name]
             views[view] = (mesh, spec)
     else:
-        spec = importlib.util.spec_from_file_location("scenes", SCENES)
-        scenes = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(scenes)
-        shown, report = getattr(scenes, example["scene"])(DATA)
+        shown, report = getattr(scenes(), example["scene"])(DATA)
         views = {v: (m, example.get("views", {}).get(v, {})) for v, m in shown.items()}
 
     out_dir = ASSETS / example["id"]
@@ -340,10 +354,11 @@ def check(examples):
 
 
 def cache_key():
-    """What the assets depend on: the examples, the scenes, this script, the JSON examples, the
-    viewer and the code (git tree hashes)."""
+    """What the assets depend on: the examples, the scenes, this script, the JSON and Python
+    examples (the scenes run those), the viewer and the code (git tree hashes)."""
     h = hashlib.sha256(EXAMPLES.read_bytes() + SCENES.read_bytes() + Path(__file__).read_bytes())
-    for path in ["src", "components", "python", "cmake", "docs/examples/json", "docs/viewer"]:
+    for path in ["src", "components", "python", "cmake", "docs/examples/json", "docs/examples/python",
+                 "docs/viewer"]:
         tree = subprocess.run(["git", "rev-parse", f"HEAD:{path}"], cwd=ROOT, capture_output=True,
                               text=True, check=True).stdout
         h.update(tree.encode())
