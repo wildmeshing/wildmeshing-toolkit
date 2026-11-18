@@ -3536,7 +3536,6 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path, MeshMap* output, cons
 
 TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::string& path)
 {
-    logger().info("Write {}.vtu (tag for offset is included)", path);
     VtuFrame fr;
     fr.path = path;
 
@@ -3835,7 +3834,6 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
     }
 
     // surface
-    logger().info("Write {}", path + "_surf.vtu");
 
     // offset faces
     {
@@ -4045,7 +4043,6 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                 path,
                 n_outside_threw.load());
         }
-        logger().info("Write {}", path + "_off.vtu");
     }
 
     // stencil points (ported 2026-10-28 from spenbert/offsets-surface-error b185ec9ca5, Spencer:
@@ -4114,7 +4111,6 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
                     }
                 }
             });
-        if (n > 0) logger().info("Write {}", path + "_stencil.vtu");
     }
 
     // The band-region map back exactly as the run left it (see the frame diagnostics above).
@@ -4123,7 +4119,6 @@ TopoOffsetTetMesh::VtuFrame TopoOffsetTetMesh::gather_vtu_frame(const std::strin
         m_vertex_region.swap(saved_vertex_region);
     }
     // edges
-    logger().info("Write {}", path + "_edge.vtu");
     return fr;
 }
 
@@ -4165,7 +4160,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output, con
         writer.add_field("distance_over_target", fr.dist_ratio);
         writer.add_field("front_error_bars", fr.front_err);
         writer.add_field("front_last_change", fr.front_change);
-        writer.write_mesh(path + ".vtu", fr.V, fr.T, paraviewo::CellType::Tetrahedron);
+        writer.write_mesh_and_log(path + ".vtu", fr.V, fr.T, paraviewo::CellType::Tetrahedron);
     }
 
     // surface
@@ -4174,7 +4169,8 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output, con
         surf_writer.add_field("order", fr.order);
         surf_writer.add_field("vid", fr.vid);
         surf_writer.add_field("sizing_scalar", fr.sizing);
-        surf_writer.write_mesh(path + "_surf.vtu", fr.V, fr.F_in, paraviewo::CellType::Triangle);
+        surf_writer
+            .write_mesh_and_log(path + "_surf.vtu", fr.V, fr.F_in, paraviewo::CellType::Triangle);
     }
 
     // offset faces
@@ -4195,7 +4191,8 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output, con
         off_writer.add_field("front_error_bars", fr.front_err);
         off_writer.add_field("front_ring_ratio", fr.ring);
         off_writer.add_field("front_last_change", fr.front_change);
-        off_writer.write_mesh(path + "_off.vtu", fr.V, fr.F_off, paraviewo::CellType::Triangle);
+        off_writer
+            .write_mesh_and_log(path + "_off.vtu", fr.V, fr.F_off, paraviewo::CellType::Triangle);
     }
 
     // edges
@@ -4204,7 +4201,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output, con
         edge_writer.add_field("order", fr.order);
         edge_writer.add_field("vid", fr.vid);
         edge_writer.add_field("sizing_scalar", fr.sizing);
-        edge_writer.write_mesh(path + "_edge.vtu", fr.V, fr.E, paraviewo::CellType::Line);
+        edge_writer.write_mesh_and_log(path + "_edge.vtu", fr.V, fr.E, paraviewo::CellType::Line);
     }
 
     // stencil points: a debug frame's only (see above)
@@ -4217,8 +4214,11 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output, con
         stencil_writer.add_field("sq_error", fr.s_sq);
         stencil_writer.add_field("face", fr.s_face);
         stencil_writer.add_field("point", fr.s_point);
-        stencil_writer
-            .write_mesh(path + "_stencil.vtu", fr.S, fr.S_cells, paraviewo::CellType::Vertex);
+        stencil_writer.write_mesh_and_log(
+            path + "_stencil.vtu",
+            fr.S,
+            fr.S_cells,
+            paraviewo::CellType::Vertex);
     }
 }
 

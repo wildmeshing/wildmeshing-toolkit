@@ -3697,12 +3697,12 @@ public:
         MatrixXi S_cells;
         VectorXd s_err, s_over, s_signed, s_dist_ratio, s_sq, s_face, s_point;
     };
-    /// The mesh's part of write_vtu(): every array of the four files. Logs each file's "Write"
-    /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.
-    /// Does not change the mesh (the band-region map it re-derives is put back).
+    /// The mesh's part of write_vtu(): every array of the four files. Does not change the mesh
+    /// (the band-region map it re-derives is put back).
     VtuFrame gather_vtu_frame(const std::string& path);
     /// The files' part: paraviewo encodes and writes `frame`, nothing else is read. A debug
     /// frame carries every field; a `result` only the tags, the data fields and two annotations.
+    /// Logs each file once written (for a debug frame, on the writer thread); none into `output`.
     static void
     write_vtu_frame(const VtuFrame& frame, MeshMap* output = nullptr, bool result = false);
     //// output stuff
