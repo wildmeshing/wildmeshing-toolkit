@@ -86,6 +86,7 @@
       "tight_seal_geom_trace_rel_tol",
       "tight_seal_geom_min_regions",
       "tight_seal_geom_sanity",
+      "tight_seal_geom_EXPERIMENTAL_simplicial_embedding",
       "keep_lcc_tags",
       "keep_lcc_num",
       "resolve_overlaps_tags",
@@ -686,6 +687,12 @@
     "type": "bool",
     "default": false,
     "doc": "For tight_seal_geom: check the output and throw if a cell is inverted, a filled cell holds none of the tight_seal_geom_fill_tags sets, or a part of the filled cells (connected through edges in 2D, faces in 3D) borders fewer than two colors, which would be a concave feature of one body, filled. For tests; the integration tests set it."
+  },
+  {
+    "pointer": "/tight_seal_geom_EXPERIMENTAL_simplicial_embedding",
+    "type": "bool",
+    "default": true,
+    "doc": "EXPERIMENTAL. For tight_seal_geom: true (the default) makes the input region simplicially embedded first (step 0: tets, faces and edges outside it with every vertex on it are split, edges at a third from their lower-id end). false skips that step, so the labels of the region's own vertices alone decide whether a gap one cell wide between them is in the join region."
   },
   {
     "pointer": "/keep_lcc_tags",

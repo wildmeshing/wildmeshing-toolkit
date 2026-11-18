@@ -158,7 +158,8 @@ void apply_operation(
             json_params["tight_seal_geom_distance"],
             json_params["tight_seal_geom_trace_rel_tol"],
             json_params["tight_seal_geom_min_regions"],
-            json_params["tight_seal_geom_sanity"]);
+            json_params["tight_seal_geom_sanity"],
+            json_params["tight_seal_geom_EXPERIMENTAL_simplicial_embedding"]);
     } else if (operation == "keep_lcc") {
         const std::vector<std::string> lcc_tags_names = json_params["keep_lcc_tags"];
         std::vector<CellTag> lcc_tags;

@@ -394,7 +394,8 @@ public:
         double distance,
         double trace_rel_tol = 0.001,
         int64_t min_regions = 2,
-        bool sanity = false);
+        bool sanity = false,
+        bool simplicial_embedding = true);
 
     void resolve_overlaps(const std::vector<std::array<ExprPtr, 2>>& intersecting_tags);
 

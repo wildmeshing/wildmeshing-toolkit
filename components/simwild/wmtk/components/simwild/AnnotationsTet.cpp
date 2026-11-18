@@ -582,7 +582,8 @@ void SimWildMesh::tight_seal_geom(
     const double distance,
     const double trace_rel_tol,
     const int64_t min_regions,
-    const bool sanity)
+    const bool sanity,
+    const bool simplicial_embedding)
 {
     if (!input_selection) {
         log_and_throw_error("tight_seal_geom needs an input selection");
@@ -656,11 +657,12 @@ void SimWildMesh::tight_seal_geom(
 
     // 0. R is made simplicially embedded (wmtk/utils/SimplicialEmbedding.hpp): each tet outside R
     // whose four faces lie on R is split at its centroid, then each face outside R whose three
-    // edges do, then each edge outside R joining two vertices of R at its midpoint. Then no tet,
+    // edges do, then each edge outside R joining two vertices of R at a third of it. Then no tet,
     // face or edge outside R has all its vertices on R: a gap one cell wide between R's vertices
     // gets a vertex inside it, whose label (step 2) decides whether the gap is in J. Without it,
     // the labels of R's own vertices alone would decide.
-    if (can_seal) {
+    // EXPERIMENTAL: skipped when tight_seal_geom_EXPERIMENTAL_simplicial_embedding is false.
+    if (can_seal && simplicial_embedding) {
         const wmtk::utils::TetComplex R_complex{
             [&](const size_t vid) {
                 for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
