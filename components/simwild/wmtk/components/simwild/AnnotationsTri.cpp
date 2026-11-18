@@ -629,9 +629,10 @@ void SimWildMeshTri::tight_seal_geom(
         return m_vertex_attribute[vid].m_posf;
     };
 
-    // R, the region closed to find the join region: the faces the input selection holds for.
-    // A face's color for the fill: the one fill selection it satisfies, -1 if none, -2 if
-    // several. Both by tag, so they hold for the faces the splits below make.
+    // R, the region closed to find the join region J (the note's input region I, as the log
+    // calls it): the faces the input selection holds for. A face's color for the fill: the one
+    // fill selection it satisfies, -1 if none, -2 if several. Both by tag, so they hold for the
+    // faces the splits below make.
     const auto in_R = [&](const size_t fid) {
         return input_selection->eval(m_face_attribute[fid].tags);
     };
@@ -656,12 +657,11 @@ void SimWildMeshTri::tight_seal_geom(
         }
     }
 
-    // 0. R, the union of the regions, is made simplicially embedded
-    // (wmtk/utils/SimplicialEmbedding.hpp): each face outside R whose three edges lie on R is
-    // split at its centroid, then each edge outside R joining two vertices of R at its midpoint.
-    // Then no face outside R has all its corners on R: a gap one face wide gets a vertex off R,
-    // whose distances decide whether the gap is in J. (Every vertex of R counts as inside J, so
-    // without the embedding such a face would be in J at any distance.)
+    // 0. R is made simplicially embedded (wmtk/utils/SimplicialEmbedding.hpp): each face outside R
+    // whose three edges lie on R is split at its centroid, then each edge outside R joining two
+    // vertices of R at its midpoint. Then no face or edge outside R has all its vertices on R: a
+    // gap one cell wide between R's vertices gets a vertex inside it, whose label (step 2) decides
+    // whether the gap is in J. Without it, the labels of R's own vertices alone would decide.
     if (can_seal) {
         const wmtk::utils::TriComplex R_complex{
             [&](const size_t vid) {
@@ -706,9 +706,9 @@ void SimWildMeshTri::tight_seal_geom(
     tight_seal::ClearOnExit<std::function<double(const Vector2d&)>> clear_voronoi_split{
         m_voronoi_split_fn};
 
-    // filled[fid]: the fill set the face's region. A split's children inherit it from
-    // their parent, so it stays right whichever component's split cuts the face. For the sanity
-    // check.
+    // filled[fid]: the fill labelled the face (added a color's fill tags to it). A split's
+    // children inherit it from their parent, so it stays right whichever component's split cuts
+    // the face. For the topology and sanity checks.
     std::vector<char> filled(tri_capacity(), 0);
 
     std::vector<SimpleBVH::BVH> color_bvhs(n);
@@ -724,8 +724,8 @@ void SimWildMeshTri::tight_seal_geom(
             "tight_seal_geom: no face satisfies the input selection {}, nothing to seal",
             input_selection->to_string());
     } else {
-        // The distance to R, the union of the R_i: from outside R, the distance to its boundary.
-        // dR at every vertex, 0 on R's own faces.
+        // The distance to R: from outside R, the distance to its boundary. dR at every vertex, 0
+        // at R's own.
         SimpleBVH::BVH bvh_R;
         tight_seal_boundary_bvh(fids, [&](const size_t fid) { return region[fid] >= 0; }, bvh_R);
         const std::function<double(const Vector2d&)> dist_R = [&](const Vector2d& p) {
@@ -745,9 +745,9 @@ void SimWildMeshTri::tight_seal_geom(
             dR[vid] = on_R[vid] ? 0. : dist_R(pos(vid));
         }
 
-        // The tolerance of both sphere traces and of the vertices' labels below: trace_rel_tol x
-        // the mesh's bounding box diagonal, independent of the distance (tight seal v2 note,
-        // section 2).
+        // The tolerance of both sphere traces and of the vertices' labels below (whose level the
+        // march's splits also take): trace_rel_tol x the mesh's bounding box diagonal,
+        // independent of the distance (tight seal v2 note, section 2).
         Vector2d box_lo = Vector2d::Constant(std::numeric_limits<double>::infinity());
         Vector2d box_hi = -box_lo;
         for (const Tuple& t : get_vertices()) {
@@ -762,10 +762,10 @@ void SimWildMeshTri::tight_seal_geom(
             trace_rel_tol,
             diagonal);
 
-        // 1. The dilation surface S, the level set d(x, R) = d/2 (the boundary of R + B),
-        // traced on the edges that cross it and joined in each face. The closing is the part
-        // of R + B at least d/2 from S, so J ends where d(x, S) falls to d/2 (to d/2 + tol, with
-        // the tolerance of step 2).
+        // 1. The dilation surface S (the note's D), the level set d(x, R) = d/2 (the boundary of
+        // R + B), traced on the edges of the faces outside R that cross it and joined in each of
+        // those faces. The closing is the part of R + B at least d/2 from S, so J ends where
+        // d(x, S) falls to d/2 (to d/2 + tol, with the tolerance of step 2).
         SimpleBVH::BVH bvh_S;
         size_t n_S_traced = 0;
         size_t n_S_failed = 0;
@@ -789,14 +789,14 @@ void SimWildMeshTri::tight_seal_geom(
                          : std::numeric_limits<double>::infinity();
         };
 
-        // 2. The vertices' labels and the marching of J (tight seal v2 note, section 2; R and S
-        // here are the note's input region I and dilated surface D). Every vertex within d/2 of
-        // R, R's own included, is IN if d(v, S) >= d/2 + tol, else OUT; the vertices beyond S are
-        // OUT. The faces whose vertices are all IN are marked, R's included. Each edge from an IN
-        // vertex to an OUT one is split where d(x, S) falls to d/2 + tol, the labels' level
-        // (sphere traced from the IN end, then bisected; tight_seal::level_crossing), and of the
-        // faces it makes, those touching its IN end are marked and the others not; the new vertex
-        // takes no label. R's faces may thus be split. J is then the marked faces outside R.
+        // 2. The vertices' labels and the marching of J (tight seal v2 note, section 2). Every
+        // vertex within d/2 of R, R's own included, is IN if d(v, S) >= d/2 + tol, else OUT; the
+        // vertices beyond S are OUT. The faces whose vertices are all IN are marked, R's included.
+        // Each edge from an IN vertex to an OUT one is split where d(x, S) falls to d/2 + tol, the
+        // labels' level (sphere traced from the IN end, then bisected; tight_seal::level_crossing),
+        // and of the faces it makes, those touching its IN end are marked and the others not; the
+        // new vertex takes no label. R's faces may thus be split. J is then the marked faces
+        // outside R.
         std::vector<char> inside(vert_capacity(), 0);
         size_t n_in = 0;
         // DEBUG_output: each vertex's label, 0 OUT, 1 IN (-1 for a vertex a split makes, which
@@ -835,7 +835,9 @@ void SimWildMeshTri::tight_seal_geom(
 
         Vector2d trace_point;
         Vector2d trace_dir;
-        // linear along the edge, zero at the traced point, so the split lands on it
+        // linear along the edge, zero at the traced point, so the split lands there, to within
+        // 2^-20 of the edge's length (split_adjust_position bisects to the zero; it takes the
+        // edge's midpoint instead if that point inverts a face)
         m_voronoi_split_fn = [&](const Vector2d& p) -> double {
             return (p - trace_point).dot(trace_dir);
         };
@@ -913,10 +915,10 @@ void SimWildMeshTri::tight_seal_geom(
 
 
         // 3. Connected components of J (through edges). A component borders a color if one of
-        // its faces shares an edge with a face outside J of that color (a face of J
-        // is no color, whatever its tags); it is filled, with the colors it borders, if it borders
-        // min_regions of them or more. A face beside J satisfying several fill selections is an
-        // error, reported below.
+        // its faces shares an edge with a face outside J of that color (a face of J is no color,
+        // whatever its tags); it is filled, with the colors it borders, if it borders min_regions
+        // of them or more. A face beside J satisfying several fill selections is an error,
+        // reported below.
         std::vector<int> comp_id(tri_capacity(), -1);
         size_t n_components = 0;
         for (const size_t fid : J_faces) {
@@ -1079,7 +1081,7 @@ void SimWildMeshTri::tight_seal_geom(
 
     // Topology check of every tag the fill changed, before the fill and after it: warns if a tag
     // gained or lost non-manifold vertices, or the fill made an island of it or merged two of
-    // its components.
+    // its components, and separately if it split or removed one.
     tight_seal_topology_check(filled, tags_before_fill);
 
     // Sanity checks, on the output alone rather than on the components above: no face is

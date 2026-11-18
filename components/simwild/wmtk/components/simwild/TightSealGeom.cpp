@@ -289,9 +289,11 @@ bool SimWildMeshTri::tight_seal_dilation_surface_bvh(
     const auto pos = [&](const size_t vid) -> const Vector2d& {
         return m_vertex_attribute[vid].m_posf;
     };
+    // U: the vertices at least d/2 from R, on S or beyond it
     const auto in_U = [&](const size_t v) { return dist_R_at[v] >= radius; };
-    // the point of edge (v_out, v_in) where d(x, R) is d/2, v_in being in U (sphere traced from
-    // v_out, then bisected; tight_seal::level_crossing); v_in itself if no crossing is found
+    // the point of edge (v_out, v_in), v_out within d/2 of R and v_in in U, where d(x, R) is d/2
+    // (sphere traced from v_out, then bisected; tight_seal::level_crossing); v_in itself if no
+    // crossing is found
     std::map<simplex::Edge, Vector2d> traced;
     const auto crossing = [&](const size_t v_out, const size_t v_in) -> Vector2d {
         const simplex::Edge e(v_out, v_in);
@@ -384,7 +386,7 @@ size_t SimWildMeshTri::tight_seal_split_tracked(
             children_of->emplace_back(parent, fid);
         }
         if (!in_set) {
-            continue; // outside the set, keeps its tags
+            continue; // its parent was not in the set
         }
         faces.insert(fid);
     }
@@ -672,9 +674,11 @@ bool SimWildMesh::tight_seal_dilation_surface_bvh(
     const auto pos = [&](const size_t vid) -> const Vector3d& {
         return m_vertex_attribute[vid].m_posf;
     };
+    // U: the vertices at least d/2 from R, on S or beyond it
     const auto in_U = [&](const size_t v) { return dist_R_at[v] >= radius; };
-    // the point of edge (v_out, v_in) where d(x, R) is d/2, v_in being in U (sphere traced from
-    // v_out, then bisected; tight_seal::level_crossing); v_in itself if no crossing is found
+    // the point of edge (v_out, v_in), v_out within d/2 of R and v_in in U, where d(x, R) is d/2
+    // (sphere traced from v_out, then bisected; tight_seal::level_crossing); v_in itself if no
+    // crossing is found
     std::map<simplex::Edge, Vector3d> traced;
     const auto crossing = [&](const size_t v_out, const size_t v_in) -> Vector3d {
         const simplex::Edge e(v_out, v_in);
@@ -695,8 +699,8 @@ bool SimWildMesh::tight_seal_dilation_surface_bvh(
             continue;
         }
         const auto vs = oriented_tet_vids(tid);
-        // The cut edges, in order around the cut: with four, the one sharing no vertex with the
-        // first is opposite it.
+        // The cut edges, put in order around the cut: with four, the one sharing no vertex with
+        // the first is moved to third place, opposite it.
         std::vector<std::array<size_t, 2>> cut;
         for (const auto& [a, b] : tight_seal::tet_edges) {
             if (in_U(vs[a]) != in_U(vs[b])) {
@@ -783,7 +787,7 @@ size_t SimWildMesh::tight_seal_split_tracked(
             children_of->emplace_back(parent, tid);
         }
         if (!in_set) {
-            continue; // outside the set, keeps its tags
+            continue; // its parent was not in the set
         }
         cells.insert(tid);
     }
