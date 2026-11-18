@@ -685,7 +685,6 @@ void SimWildMesh::write_vtu(
     if (!m_params.output_enabled && !output) return;
     // consolidate_mesh();
     const std::string out_path = path + ".vtu";
-    logger().info("Write {}", out_path);
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
     const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
@@ -809,7 +808,7 @@ void SimWildMesh::write_vtu(
         }
         writer.add_field(name, field);
     }
-    writer.write_mesh(out_path, V, T, paraviewo::CellType::Tetrahedron);
+    writer.write_mesh_and_log(out_path, V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
     const std::string surf_out_path = path + "_surf.vtu";
@@ -820,8 +819,7 @@ void SimWildMesh::write_vtu(
         surf_writer.add_field("vid", v_id);
         surf_writer.add_field("is_false_surface", v_is_false_surface);
 
-        logger().info("Write {}", surf_out_path);
-        surf_writer.write_mesh(surf_out_path, V, F, paraviewo::CellType::Triangle);
+        surf_writer.write_mesh_and_log(surf_out_path, V, F, paraviewo::CellType::Triangle);
     }
     // edges
     const std::string edge_out_path = path + "_edge.vtu";
@@ -832,8 +830,7 @@ void SimWildMesh::write_vtu(
         edge_writer.add_field("vid", v_id);
 
 
-        logger().info("Write {}", edge_out_path);
-        edge_writer.write_mesh(edge_out_path, V, E, paraviewo::CellType::Line);
+        edge_writer.write_mesh_and_log(edge_out_path, V, E, paraviewo::CellType::Line);
     }
 
     // VTM

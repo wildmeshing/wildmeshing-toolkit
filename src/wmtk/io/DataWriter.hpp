@@ -4,6 +4,7 @@
 #include <set>
 #include <stdexcept>
 #include <wmtk/MeshData.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::io {
 // An output observer shared by the legacy exporters and their in-memory adapters.
@@ -78,7 +79,7 @@ public:
         const Eigen::MatrixXi& C,
         paraviewo::CellType type)
     {
-        if (!output) return file.write_mesh(path, V, C, type);
+        if (!output) return file_written(path, file.write_mesh(path, V, C, type));
         std::vector<paraviewo::CellElement> cells(C.rows());
         for (Eigen::Index i = 0; i < C.rows(); ++i) {
             cells[i].ctype = type;
@@ -91,7 +92,7 @@ public:
         const Eigen::MatrixXd& V,
         const std::vector<paraviewo::CellElement>& cells)
     {
-        if (!output) return file.write_mesh(path, V, cells);
+        if (!output) return file_written(path, file.write_mesh(path, V, cells));
         MeshData data;
         data.V = DataMatrix<double>::Zero(V.rows(), 3);
         data.V.leftCols(V.cols()) = V;
@@ -127,6 +128,26 @@ public:
         points.clear();
         fields.clear();
         return true;
+    }
+    // write_mesh(), and a "Write <path>" line for the file it wrote: none from a writer into
+    // memory, which writes no file, nor for a file that could not be written (a warning).
+    bool write_mesh_and_log(
+        const std::string& path,
+        const Eigen::MatrixXd& V,
+        const Eigen::MatrixXi& C,
+        paraviewo::CellType type)
+    {
+        const bool written = write_mesh(path, V, C, type);
+        if (written && !output) logger().info("Write {}", path);
+        return written;
+    }
+
+private:
+    // paraviewo reports a file it could not open only by returning false.
+    static bool file_written(const std::string& path, const bool written)
+    {
+        if (!written) logger().warn("Could not write {}", path);
+        return written;
     }
 };
 // Export arrays are sometimes indexed by reserved slots. Remove dead slots without
