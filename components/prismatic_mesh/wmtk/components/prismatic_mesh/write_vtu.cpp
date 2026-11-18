@@ -207,6 +207,21 @@ void write_prismatic_mesh(
         cell_fields.emplace("tet_decomposition", std::move(reference_tets));
         cell_fields.emplace("retriangulated", std::move(retriangulated));
         cell_fields.emplace("background_transition", std::move(background_transition));
+        if (hybrid->report.contains("bad_quality_relocation")) {
+            const auto& repair = hybrid->report["bad_quality_relocation"];
+            std::vector<int> classes(input.tetrahedra.rows(), 0);
+            for (size_t tid : repair["collapse_edge_tet_ids"].get<std::vector<size_t>>())
+                classes.at(tid) = 1;
+            for (size_t tid : repair["prism_tet_ids"].get<std::vector<size_t>>())
+                classes.at(tid) = 2;
+            for (size_t tid : repair["other_bad_tet_ids"].get<std::vector<size_t>>())
+                classes.at(tid) = 3;
+            VectorXd field = VectorXd::Zero(nc);
+            for (size_t i = 0; i < nc; ++i)
+                if (hybrid->cells[cell_rows[i]].type == HybridCellType::Tetrahedron)
+                    field[i] = classes.at(hybrid->cells[cell_rows[i]].source_tets.at(0));
+            cell_fields.emplace("bad_quality_region", std::move(field));
+        }
     }
     add_targets(point_fields, input, vertex_rows);
     if (hybrid && hybrid->report.contains("marked_offset_source_vids")) {

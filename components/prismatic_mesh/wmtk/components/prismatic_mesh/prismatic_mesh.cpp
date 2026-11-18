@@ -1,12 +1,14 @@
 #include "prismatic_mesh.hpp"
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
+#include "bad_quality_relocation.hpp"
 #include "junction_protection.hpp"
 #include "rod_mesh.hpp"
 #include "thickness_smoothing.hpp"
 
 #include <jse/jse.h>
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <prismatic_mesh_spec.hpp>
@@ -19,6 +21,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
     component_io.prepare(json_params, "prismatic_mesh");
     if (component_io.memory()) json_params["output"] = "mesh.vtu";
+    const bool explicit_domain_relocation =
+        json_params.contains("collapse_edge_relocation_iterations");
+    const bool explicit_tet_face_relocation =
+        json_params.contains("tet_face_relocation_iterations");
     const auto spec = jse::embed::wmtk_prismatic_mesh_spec::prismatic_mesh_spec::spec();
     jse::JSE spec_engine;
     if (!spec_engine.verify_json(json_params, spec)) {
@@ -26,6 +32,17 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
 
     json_params = spec_engine.inject_defaults(json_params, spec);
+    const int expansion_rounds = json_params["bad_tet_transition_expansion_rounds"].get<int>();
+    if (expansion_rounds < 0 || expansion_rounds > 5)
+        log_and_throw_error("bad_tet_transition_expansion_rounds must be in [0,5].");
+    if (expansion_rounds > 0 && !json_params["prism_dominant"].get<bool>())
+        log_and_throw_error("Transition expansion requires prism_dominant.");
+    // The 20 + 20 default pipeline belongs to hybrid output. Pure-tet callers
+    // retain their pipeline; explicitly requested hybrid-only stages still fail below.
+    if (!json_params["prism_dominant"].get<bool>()) {
+        if (!explicit_domain_relocation) json_params["collapse_edge_relocation_iterations"] = 0;
+        if (!explicit_tet_face_relocation) json_params["tet_face_relocation_iterations"] = 0;
+    }
     const auto path = std::filesystem::path(component_io.path(
         json_params["input_dir"].get<std::string>(),
         json_params["input"].get<std::string>()));
@@ -128,6 +145,46 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             *hybrid,
             optimization.min_tet_volume,
             thickness_iterations);
+    }
+    BadQualityRelocationOptions relocation;
+    relocation.collapse_edge_iterations =
+        json_params["collapse_edge_relocation_iterations"].get<int>();
+    relocation.prism_tet_iterations = json_params["prism_tet_relocation_iterations"].get<int>();
+    relocation.tet_face_iterations = json_params["tet_face_relocation_iterations"].get<int>();
+    relocation.tet_face_allow_mixed_cells =
+        json_params["tet_face_relocation_allow_mixed_cells"].get<bool>();
+    relocation.amips_threshold = json_params["relocation_amips_threshold"].get<double>();
+    relocation.thickness_weight = json_params["relocation_thickness_weight"].get<double>();
+    relocation.thickness_tolerance = json_params["relocation_thickness_tolerance"].get<double>();
+    relocation.max_displacement_ratio =
+        json_params["relocation_max_displacement_ratio"].get<double>();
+    relocation.max_backtracks = optimization.smoothing_max_backtracks;
+    const bool skip_default_thickness =
+        hybrid && !explicit_tet_face_relocation && relocation.tet_face_iterations > 0 &&
+        (!(input.target_thickness > 0) || !std::isfinite(input.target_thickness));
+    const int configured_tet_face_iterations = relocation.tet_face_iterations;
+    if (skip_default_thickness) relocation.tet_face_iterations = 0;
+    if (hybrid) {
+        relocate_bad_quality_regions(input, *hybrid, optimization.min_tet_volume, relocation);
+        expand_bad_tet_transition_regions(
+            input,
+            *hybrid,
+            optimization.min_tet_volume,
+            relocation,
+            expansion_rounds);
+        if (skip_default_thickness) {
+            auto& skipped = hybrid->report["bad_quality_relocation"]["tet_face_relocation"];
+            skipped["requested_iterations"] = configured_tet_face_iterations;
+            skipped["actual_iterations"] = 0;
+            skipped["accepted_moves"] = 0;
+            skipped["history"] = nlohmann::json::array();
+            skipped["skipped_reason"] = "no_positive_target_thickness";
+            logger().info("Default tet-face relocation skipped: no positive target thickness");
+        }
+    } else if (
+        relocation.collapse_edge_iterations != 0 || relocation.prism_tet_iterations != 0 ||
+        relocation.tet_face_iterations != 0) {
+        log_and_throw_error("Bad-quality relocation requires prism_dominant.");
     }
     if (hybrid) hybrid->report["ignore_background_mesh"] = ignore_background;
     if (component_io.memory()) {

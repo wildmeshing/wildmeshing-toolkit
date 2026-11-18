@@ -172,7 +172,12 @@ void smooth_prism_jacobians(
 // unused bad tet splits do not reject the prism. The interface solve admits positive splits,
 // requiring newly introduced tets to exceed the operation floor. Existing tets need only positive
 // volume. Pyramids still require both base-diagonal decompositions to exceed the volume floor.
-PrismDominantMesh build_prism_dominant_mesh(PrismaticMeshInput& input, double min_tet_volume);
+// Extra marks are offset vertex rows. They participate in the same transition
+// shape/interface solve as the automatically discovered marks; labels stay intact.
+PrismDominantMesh build_prism_dominant_mesh(
+    PrismaticMeshInput& input,
+    double min_tet_volume,
+    const std::set<size_t>& extra_transition_marks = {});
 // Throws on invalid geometry, incomplete/overlapping source ownership or nonconforming faces.
 void validate_prism_dominant_mesh(
     const PrismaticMeshInput& input,
