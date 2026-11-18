@@ -24,6 +24,7 @@ wm.topological_offset({
     "input": str(DATA / "127891.msh"),
     "output": "127891_offset",
     "offsets": [{"selection": "127891", "output_tags": ["offset"], "target_distance": 0.4}],
+    "envelope_size_rel": 4e-4,
     "optimize_offset": False,
 })
 # --8<-- [end:file]
@@ -33,7 +34,7 @@ bar = wm.read_mesh(str(DATA / "127891.msh"))
 outputs, report = wm.topological_offset(
     {"input": "bar",
      "offsets": [{"selection": "127891", "output_tags": ["offset"], "target_distance": 0.4}],
-     "optimize_offset": False},
+     "envelope_size_rel": 4e-4, "optimize_offset": False},
     {"bar": bar},
 )
 offset = outputs["mesh"]
@@ -47,7 +48,7 @@ for direction in ["out", "in", "both"]:
         {"input": "bar",
          "offsets": [{"selection": "127891", "direction": direction,
                       "output_tags": ["offset"], "target_distance": 0.4}],
-         "optimize_offset": False},
+         "envelope_size_rel": 4e-4, "optimize_offset": False},
         {"bar": bar})
     print(direction, count(out["mesh"], "offset"), "band tets")
 # --8<-- [end:sides]
@@ -82,7 +83,7 @@ for protected in ["", "tag_1"]:
 outputs, report = wm.topological_offset(
     {"input": "bar",
      "offsets": [{"selection": "127891", "output_tags": ["offset"], "target_distance": 0.4}],
-     "front_conv_rel": 0.2, "max_rounds": 5, "num_threads": 4},
+     "envelope_size_rel": 4e-4, "front_conv_rel": 0.2, "max_rounds": 5, "num_threads": 4},
     {"bar": bar},
 )
 metrics = report["optimization_metrics"]

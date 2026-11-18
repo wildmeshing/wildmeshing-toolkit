@@ -147,6 +147,48 @@ the size of the triangles; along them, the curves' own detail and the envelope d
 | 0.02 | 1,549 | 7.18 |
 | 0.01 | 6,185 | 5.00 |
 
+[`length`](../reference/triwild.md#length) and [`eps`](../reference/triwild.md#eps) give the edge
+length and \(\varepsilon\) in the input's units instead, as simwild's do; a positive value wins over
+the relative one.
+
+### Edge length that varies: `sizing_mesh`
+
+Every vertex carries a sizing, the factor of the target length that the
+[stuck refinement](../reference/triwild.md#stuck_refine_factor) lowers where the quality is stuck.
+[`sizing_mesh`](../reference/triwild.md#sizing_mesh) sets it from a target length that varies over
+the plane: a triangle mesh whose vertices carry the length in a field named `target_length`,
+interpolated linearly inside its triangles. On the memory route it names a mesh of the call; on the
+file route it is a mesh file. It sets the sizing at the start and caps it after every pass, so the
+vertices a pass makes follow it and the refinement is kept; outside its triangles the global length
+applies.
+A unit square whose field grows from 0.02 on its left side to 0.12 on its right, with `length`
+0.12, ends with tracked edges of 0.026 on average on the left side and 0.100 on the right.
+
+The field is a largest edge length: with it, `limit_collapse_length` is on unless set to
+false, and the optimization goes on past `stop_energy` while more than 1% of the edges are
+longer than 4/3 of their target. The [sizing mesh workflow](workflows/sizing-mesh.md) builds
+one in Python and on files, and shows it in TriWild, TetWild and isotropic remeshing.
+
+### A bound on the edge length: `limit_collapse_length`
+
+A collapse is judged by the edge it removes, shorter than 4/5 of the target, and not by those it
+leaves: along a curve a short edge merges into its neighbour, up to 0.8 + 4/3 of the target, and
+the optimization ends on collapses, so no split cuts it again.
+[`limit_collapse_length`](../reference/triwild.md#limit_collapse_length) refuses a collapse that
+leaves an edge longer than 4/3 of the target, the length above which the split cuts one. On a unit
+square sampled with 200 points a side, `length` 0.06 and `stop_energy` 3.6:
+
+| `limit_collapse_length` | triangles | longest tracked edge | smallest angle |
+|---|---|---|---|
+| off (default) | 465 | 2.16 \(l\) | 21.0° |
+| on | 809 | 1.35 \(l\) | 30.6° |
+
+Smoothing can still stretch an edge a little past 4/3, so to keep the edges under a bound, ask for
+about 3/4 of it, for a denser mesh. With a `sizing_mesh`, the bounded
+[coarsening pass](../reference/triwild.md#coarsen_pass)
+([`coarsen_unbounded`](../reference/triwild.md#coarsen_unbounded) off) stops at 0.8 of the field's
+length rather than of the global one.
+
 ### The quality target: `stop_energy`
 
 The shape of a triangle is measured by its AMIPS energy: 2 for an equilateral triangle, growing

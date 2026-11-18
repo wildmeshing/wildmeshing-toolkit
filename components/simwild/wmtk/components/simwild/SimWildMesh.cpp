@@ -117,6 +117,37 @@ void SimWildMesh::set_sizing_field(const nlohmann::json& sizing_field_json)
     }
 }
 
+void SimWildMesh::apply_sizing_mesh(bool overwrite)
+{
+    if (!m_sizing_mesh || !overwrite) {
+        TetOptimizerMesh::apply_sizing_mesh(overwrite);
+        return;
+    }
+    // The regions' sizing at each vertex, without the cap at the global length: a tet takes the
+    // last entry it matches, as in set_sizing_field(), and a vertex the smallest of its tets'.
+    std::vector<double> region(vert_capacity(), std::numeric_limits<double>::infinity());
+    for (const Tuple& t : get_tets()) {
+        const auto tid = t.tid(*this);
+        double sizing = -1;
+        for (const auto& [expr, length] : m_sizing_field) {
+            if (expr->eval(m_tet_attribute[tid].tags)) {
+                sizing = length / m_params.l;
+            }
+        }
+        if (sizing < 0) continue;
+        for (const size_t vid : oriented_tet_vids(tid)) {
+            region[vid] = std::min(region[vid], sizing);
+        }
+    }
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        auto& va = m_vertex_attribute[vid];
+        const double length = sizing_mesh_length(va.m_posf);
+        if (!(length > 0)) continue; // not covered: set_sizing_field()'s
+        va.m_sizing_scalar = std::min(region[vid], length / m_params.l);
+    }
+}
+
 void SimWildMesh::set_quality_field(const nlohmann::json& quality_field_json)
 {
     if (!quality_field_json.is_array()) {

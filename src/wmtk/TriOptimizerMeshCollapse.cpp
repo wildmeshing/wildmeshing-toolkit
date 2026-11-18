@@ -133,9 +133,16 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     // an edge that is already at target only makes its neighbours longer, so this is where
     // "as few elements as hold the max energy" has to be traded against "elements the size
     // the user asked for". Deliberately NOT scaled by the sizing field: see
-    // OptimizerParameters::coarsen_unbounded. Cheap, so it goes before any ring work.
+    // OptimizerParameters::coarsen_unbounded. Cheap, so it goes before any ring work. With a
+    // sizing mesh the target is the length it asks for at the edge's ends.
     if (m_coarsen_mode && !m_params.coarsen_unbounded) {
-        if (cache.edge_length * cache.edge_length > m_params.collapsing_l2) {
+        if (m_sizing_mesh) {
+            const double t =
+                0.8 * 0.5 * (coarsen_target_length(v1_id) + coarsen_target_length(v2_id));
+            if (cache.edge_length > t) {
+                return false;
+            }
+        } else if (cache.edge_length * cache.edge_length > m_params.collapsing_l2) {
             return false;
         }
     }
@@ -149,6 +156,10 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
 
     ///check if on bbox/surface/boundary
     if (!collapse_before_vertex(v1_id, v2_id)) {
+        return false;
+    }
+
+    if (m_params.limit_collapse_length && collapse_leaves_long_edge(v1_id, v2_id)) {
         return false;
     }
 

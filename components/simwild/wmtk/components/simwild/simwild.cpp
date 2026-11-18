@@ -17,6 +17,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/Types.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SizingMesh.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
 #include <wmtk/utils/EnvelopeBudget.hpp>
@@ -30,8 +31,12 @@
 
 namespace wmtk::components::simwild {
 
+/// `sizing_mesh`: the `sizing_mesh` option, or none; remeshing alone reads it.
 template <typename MeshT>
-void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
+void apply_operation(
+    MeshT& mesh,
+    const nlohmann::json& json_params,
+    const std::shared_ptr<const SizingMesh>& sizing_mesh)
 {
     using ExprPtr = expression_parser::ExpressionPtr;
 
@@ -48,6 +53,10 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
     const std::string operation = json_params["operation"];
     if (operation == "remeshing") {
         mesh.set_sizing_field(json_params["sizing_field"]);
+        // After the regions, which cap every vertex of a cell in no region at the global length:
+        // where the sizing mesh covers one, its length replaces that cap, also when longer
+        // (SimWildMesh::apply_sizing_mesh()). It caps the sizing after every pass from here on.
+        if (sizing_mesh) mesh.set_sizing_mesh(sizing_mesh);
         mesh.set_quality_field(json_params["quality_field"]);
         mesh.mesh_improvement(json_params["max_iterations"]); // <-- tetwild
         if constexpr (std::is_same_v<MeshT, SimWildMesh>) {
@@ -402,7 +411,11 @@ InputLists split_inputs(
 
 } // namespace
 
-void run_3D(const nlohmann::json& json_params, InputData& input_data, io::ComponentIO& component_io)
+void run_3D(
+    const nlohmann::json& json_params,
+    InputData& input_data,
+    io::ComponentIO& component_io,
+    const std::shared_ptr<const SizingMesh>& sizing_mesh)
 {
     Parameters params(json_params);
     params.output_enabled = !component_io.memory();
@@ -582,7 +595,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
     }
 
     // /////////apply operation
-    apply_operation(mesh, json_params);
+    apply_operation(mesh, json_params, sizing_mesh);
 
     mesh.consolidate_mesh();
     // A tag operation hands on an envelope around its result (set_envelope_around_tags()).
@@ -628,6 +641,7 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
         report["max_energy"] = max_energy;
         report["avg_energy"] = avg_energy;
         report["eps"] = params.eps;
+        report["sizing_mesh"] = sizing_mesh != nullptr;
         report["threads"] = params.NUM_THREADS;
         report["time"] = time;
         report["all_rounded"] = all_rounded;
@@ -686,7 +700,8 @@ void run_3D(const nlohmann::json& json_params, InputData& input_data, io::Compon
 void run_2D(
     const nlohmann::json& json_params,
     const InputData& input_data,
-    io::ComponentIO& component_io)
+    io::ComponentIO& component_io,
+    const std::shared_ptr<const SizingMesh>& sizing_mesh)
 {
     // A 2D mesh's interfaces are curves, which a surface history does not describe.
     if (!std::string(json_params["history_output"]).empty()) {
@@ -786,7 +801,7 @@ void run_2D(
     }
 
     // /////////apply operation
-    apply_operation(mesh, json_params);
+    apply_operation(mesh, json_params, sizing_mesh);
 
     mesh.consolidate_mesh();
     // As in 3D: a tag operation hands on an envelope around its result.
@@ -818,6 +833,7 @@ void run_2D(
         report["max_energy"] = max_energy;
         report["avg_energy"] = avg_energy;
         report["eps"] = params.eps;
+        report["sizing_mesh"] = sizing_mesh != nullptr;
         report["threads"] = params.NUM_THREADS;
         report["time"] = time;
         report["all_rounded"] = all_rounded;
@@ -873,6 +889,18 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     component_io.prepare(json_params, "simwild");
     const auto envelope_selector = json_params.value("envelope", nlohmann::json());
     if (component_io.memory()) json_params.erase("envelope");
+    // `sizing_mesh` names a mesh of the call on the memory route too (read below), as triwild's.
+    if (json_params.contains("sizing_mesh") && json_params["sizing_mesh"].is_null()) {
+        json_params.erase("sizing_mesh"); // null, as Python's None: none
+    }
+    const std::string sizing_selector = json_params.value("sizing_mesh", std::string());
+    if (component_io.memory()) json_params.erase("sizing_mesh");
+    // limit_collapse_length has no fixed default (spec: "skip"): unless set, it is on with a sizing
+    // mesh, whose field is then a bound -- without the limit a collapse leaves edges past it that
+    // nothing splits again (docs/tutorials/workflows/sizing-mesh.md) -- and off without.
+    if (!json_params.contains("limit_collapse_length")) {
+        json_params["limit_collapse_length"] = !sizing_selector.empty();
+    }
     using wmtk::utils::resolve_path;
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
@@ -942,6 +970,33 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                                : !envelope_selector.is_null() && !tag_operation
                                    ? &component_io.mesh(envelope_selector)
                                    : nullptr;
+    // The `sizing_mesh` input, as `envelope`: a mesh of the call on the memory route, a mesh file
+    // on the file route (relative to input_dir). Only remeshing optimizes, so a tag operation does
+    // not read it either. A tet mesh in 3D, a triangle mesh in 2D: it is built once the dimension
+    // is known, before the insertion of surfaces or curves, after the reading of a tagged mesh
+    // (whose content gives it), so that a bad one fails before any work.
+    if (tag_operation && !sizing_selector.empty()) {
+        logger().info(
+            "operation {}: the `sizing_mesh` given is not read; only remeshing optimizes",
+            json_params["operation"].get<std::string>());
+    }
+    std::optional<MeshData> sizing_file;
+    const MeshData* sizing_data = nullptr;
+    if (!sizing_selector.empty() && !tag_operation) {
+        if (component_io.memory()) {
+            sizing_data = &component_io.mesh(sizing_selector);
+        } else {
+            sizing_file = io::read_mesh(resolve_path(root, sizing_selector));
+            sizing_data = &*sizing_file;
+        }
+    }
+    std::shared_ptr<const SizingMesh> sizing_mesh;
+    const auto build_sizing_mesh = [&](const int dim) {
+        if (!sizing_data || sizing_mesh) return;
+        sizing_mesh = std::make_shared<SizingMesh>(
+            *sizing_data,
+            dim == 3 ? SizingMesh::Kind::Volume : SizingMesh::Kind::Planar);
+    };
     // A curve history starts at the curve inputs as read, which only a 3D surface run has: the
     // other routes refuse it rather than record nothing.
     const auto no_curve_history = [&](const char* route) {
@@ -976,6 +1031,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         no_curve_history("a .msh input");
         input_data = read_image_msh(input_paths[0], envelope);
     } else if (dimension == 2) {
+        build_sizing_mesh(2);
         const InputLists lists = split_inputs(component_io, input_paths, json_params, 2);
         // Read by the code the 3D route reads them with; only their x and y are used.
         const utils::FeatureInputs features = utils::read_feature_inputs(
@@ -994,6 +1050,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         input_data.input_point_labels = features.point_input;
         input_data.point_names = features.point_names;
     } else {
+        build_sizing_mesh(3);
         const InputLists lists = split_inputs(component_io, input_paths, json_params, 3);
         // Read by the code tetwild reads them with, and recorded from the inputs as tetwild
         // records them: inserted as read, welded by exact position, so the history goes from the
@@ -1023,10 +1080,12 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
     }
 
-    if (input_data.T_input.cols() == 4) {
-        run_3D(json_params, input_data, component_io);
+    const bool volume = input_data.T_input.cols() == 4;
+    build_sizing_mesh(volume ? 3 : 2); // a tagged mesh's
+    if (volume) {
+        run_3D(json_params, input_data, component_io, sizing_mesh);
     } else {
-        run_2D(json_params, input_data, component_io);
+        run_2D(json_params, input_data, component_io, sizing_mesh);
     }
     double time = timer.getElapsedTime();
     logger().info("total runtime {}s", time);

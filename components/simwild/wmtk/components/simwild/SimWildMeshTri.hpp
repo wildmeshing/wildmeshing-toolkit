@@ -195,6 +195,9 @@ public:
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
     void set_sizing_field(const nlohmann::json& sizing_field_json);
+    /// The sizing mesh with the regions of set_sizing_field(), which must run first: as
+    /// SimWildMesh::apply_sizing_mesh(), with triangles.
+    void apply_sizing_mesh(bool overwrite) override;
 
     void set_quality_field(const nlohmann::json& quality_field_json);
 

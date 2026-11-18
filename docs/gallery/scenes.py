@@ -6,6 +6,8 @@ Each function runs a documentation example and returns the meshes to show, {"inp
 the page does. Called by docs/tools/build_gallery.py, from a scratch working directory.
 """
 
+import functools
+import itertools
 import os
 import runpy
 import tempfile
@@ -107,3 +109,87 @@ def workflow_tetwild_features(data):
     tets = {"V": v["mesh"]["V"], "cells": {"tetrahedron": v["mesh"]["cells"]["tetrahedron"]}}
     shown_output = merge(tets, {"V": v["mesh"]["V"], "cells": {"edge": v["mesh"]["cells"]["edge"]}})
     return {"input": shown_input, "output": shown_output}, v["report"]
+
+
+@functools.cache
+def sizing_mesh_runs(data):
+    """The sizing mesh workflow, run once for its four examples: its variables, and every call it
+    makes to triwild, tetwild and isotropic_remeshing, in order, as (component, options,
+    outputs)."""
+    import wildmeshing as wm
+
+    components = ["triwild", "tetwild", "isotropic_remeshing"]
+    calls, saved = [], {c: getattr(wm, c) for c in components}
+
+    def recording(component, run):
+        def call(options, *args, **kwargs):
+            result = run(options, *args, **kwargs)
+            calls.append((component, options, result))
+            return result
+        return call
+
+    for c in components:
+        setattr(wm, c, recording(c, saved[c]))
+    try:
+        return run_example("workflow_sizing_mesh", data), calls
+    finally:
+        for c in components:
+            setattr(wm, c, saved[c])
+
+
+def sized(mesh, block, field):
+    """The mesh's cells of `block`, each carrying its longest edge over the field at the edge's
+    midpoint, as the cell field sizing_ratio the viewer colors by (the example's own measure)."""
+    V = np.asarray(mesh["V"], dtype=np.float64)
+    cells = mesh["cells"][block]
+    C = np.asarray(cells["connectivity"])
+    ratio = np.zeros(len(C))
+    for i, j in itertools.combinations(range(C.shape[1]), 2):
+        a, b = V[C[:, i]], V[C[:, j]]
+        ratio = np.maximum(ratio, np.linalg.norm(a - b, axis=1) / field(0.5 * (a + b)))
+    attributes = {**cells.get("attributes", {}), "sizing_ratio": {"values": ratio[:, None]}}
+    return {"V": V, "cells": {block: {"connectivity": C, "attributes": attributes}}}
+
+
+def sizing_mesh_pair(data, component, block, field, left, right):
+    """Two in-memory runs of the sizing mesh workflow, the first whose options satisfy `left` and
+    the first that satisfy `right`, against the field the example measures them by."""
+    v, calls = sizing_mesh_runs(data)
+    runs = [(options, result) for c, options, result in calls
+            if c == component and "output" not in options]
+    (_, (a, _)), (_, (b, report)) = (next(r for r in runs if test(r[0])) for test in (left, right))
+    return {"input": sized(a["mesh"], block, v[field]), "output": sized(b["mesh"], block, v[field])}, report
+
+
+def sizing_mesh_triwild(data):
+    """TriWild on the circle: at length_rel 0.05, and with the sizing mesh."""
+    return sizing_mesh_pair(data, "triwild", "triangle", "field", lambda o: "sizing_mesh" not in o,
+                            lambda o: "sizing_mesh" in o and "limit_collapse_length" not in o)
+
+
+def sizing_mesh_limit(data):
+    """TriWild with the sizing mesh, limit_collapse_length on and off."""
+    return sizing_mesh_pair(data, "triwild", "triangle", "field",
+                            lambda o: o.get("limit_collapse_length") is True,
+                            lambda o: o.get("limit_collapse_length") is False)
+
+
+def sizing_mesh_tetwild(data):
+    """TetWild on the sphere: at the default length_rel, and with the box's sizing mesh."""
+    return sizing_mesh_pair(data, "tetwild", "tetrahedron", "box_field",
+                            lambda o: "sizing_mesh" not in o,
+                            lambda o: "sizing_mesh" in o and "coarsen_pass" not in o)
+
+
+def sizing_mesh_coarsen(data):
+    """TetWild with the box's sizing mesh and the coarsening pass, limit_collapse_length on (its
+    default with a sizing mesh) and off."""
+    return sizing_mesh_pair(data, "tetwild", "tetrahedron", "box_field",
+                            lambda o: o.get("coarsen_pass") and "limit_collapse_length" not in o,
+                            lambda o: o.get("coarsen_pass") and o.get("limit_collapse_length") is False)
+
+
+def sizing_mesh_isotropic(data):
+    """Isotropic remeshing of the bunny: at length_rel 0.025, and with the field on the bunny."""
+    return sizing_mesh_pair(data, "isotropic_remeshing", "triangle", "bunny_field",
+                            lambda o: "sizing_mesh" not in o, lambda o: "sizing_mesh" in o)
