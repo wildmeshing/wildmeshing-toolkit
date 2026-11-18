@@ -78,6 +78,8 @@ struct Parameters : public wmtk::OptimizerParameters
         eps = json_params["eps"];
         lr = json_params["length_rel"];
         l = json_params["length"];
+        // Set by the component (spec default "skip": on with a sizing mesh); off when absent.
+        limit_collapse_length = json_params.value("limit_collapse_length", false);
         stop_energy = json_params["stop_energy"];
         stop_at_float = json_params["stop_at_float"];
         preserve_topology = json_params["preserve_topology"];
@@ -99,8 +101,7 @@ struct Parameters : public wmtk::OptimizerParameters
         colored_smoothing = json_params["colored_smoothing"];
         check_surface_folds = json_params["check_surface_folds"];
 
-        // Coarsening pass. Implemented on the shared 2D optimizer, so it applies to simwild's
-        // 2D mesh and is inert on its 3D one.
+        // Coarsening pass, on the shared optimizers: simwild's 2D and 3D meshes.
         coarsen_pass = json_params["coarsen_pass"];
         coarsen_unbounded = json_params["coarsen_unbounded"];
         coarsen_local_smoothing_passes = json_params["coarsen_local_smoothing_passes"];

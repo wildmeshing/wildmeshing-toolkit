@@ -63,7 +63,10 @@ RIGHT = 520  # the right column's width at start: "pipeline" and "view"
 
 def _default(rule):
     """A new value for an option: its spec default, else its type's zero."""
-    return copy.deepcopy(rule["default"] if "default" in rule else ZERO.get(rule.get("type"), ""))
+    # "skip": no fixed default, the component sets the option itself.
+    if "default" in rule and rule["default"] != "skip":
+        return copy.deepcopy(rule["default"])
+    return ZERO.get(rule.get("type"), "")
 
 
 def _parses(text):
@@ -663,7 +666,12 @@ class Gui:
                 psim.TextUnformatted(key)
                 self._tooltip(rule)
                 psim.SameLine()
-                default = json.dumps(rule["default"]) if "default" in rule else "no default"
+                if rule.get("default") == "skip":
+                    default = "set by the component"
+                elif "default" in rule:
+                    default = json.dumps(rule["default"])
+                else:
+                    default = "no default"
                 psim.TextDisabled(default if len(default) <= 40 else default[:37] + "...")
             if group:
                 psim.TreePop()

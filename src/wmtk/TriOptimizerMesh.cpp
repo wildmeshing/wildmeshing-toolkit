@@ -6,6 +6,7 @@
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/history/History.hpp>
 #include <wmtk/history/TrackedRecorder.hpp>
+#include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -23,8 +24,10 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include <limits>
 #include <queue>
 #include <tuple>
+#include <utility>
 
 namespace wmtk {
 
@@ -57,6 +60,8 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
     logger().info("max energy {:.6} | stop {:.6}", pre_max_metric, optimization_stop_metric());
     int refine_cooldown = m_params.stuck_refine_cooldown;
 
+    // The first check of the sizing mesh's stop rule never stops on its progress test.
+    m_prev_long_edge_fraction = std::numeric_limits<double>::infinity();
     for (int it = 0; it < max_its; ++it) {
         m_iterations_used = it + 1;
         logger().info("\n========it {}========", it);
@@ -95,11 +100,14 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
         }
 
         if (max_metric < optimization_stop_metric()) {
-            if (cnt_round == cnt_verts) break;
-            logger().info(
-                "energy target reached, but {} of {} vertices are still un-rounded; continuing",
-                cnt_verts - cnt_round,
-                cnt_verts);
+            if (cnt_round < cnt_verts) {
+                logger().info(
+                    "energy target reached, but {} of {} vertices are still un-rounded; continuing",
+                    cnt_verts - cnt_round,
+                    cnt_verts);
+            } else if (sizing_mesh_allows_stop()) {
+                break;
+            }
         }
 
         consolidate_mesh();
@@ -171,6 +179,7 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
 
     sanity_checks();
     update_attributes();
+    apply_sizing_mesh(false);
     size_t retry_count = 0;
     for (int i = 0; i < ops.size(); ++i) {
         if (retry_count > 0) {
@@ -224,6 +233,7 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
             logger().info("{} max energy = {:.6} avg = {:.6}", names[i], max_metric, avg_metric);
             sanity_checks();
             update_attributes();
+            apply_sizing_mesh(false);
         }
 
         // A pass that ran out of preallocated slots abandoned operations for want of storage.
@@ -1296,5 +1306,89 @@ void TriOptimizerMesh::check_reference_containment() const
         counts);
 }
 
+
+double TriOptimizerMesh::long_edge_fraction() const
+{
+    const auto& VA = m_vertex_attribute;
+    size_t total = 0, long_edges = 0;
+    for (const Tuple& e : get_edges()) {
+        const size_t v1 = e.vid(*this), v2 = e.switch_vertex(*this).vid(*this);
+        const double s = 0.5 * (VA[v1].m_sizing_scalar + VA[v2].m_sizing_scalar);
+        ++total;
+        if ((VA[v1].m_posf - VA[v2].m_posf).squaredNorm() > m_params.splitting_l2 * s * s) {
+            ++long_edges;
+        }
+    }
+    return total > 0 ? double(long_edges) / total : 0;
+}
+
+bool TriOptimizerMesh::sizing_mesh_allows_stop()
+{
+    if (!m_sizing_mesh) return true;
+    const double fraction = long_edge_fraction();
+    const double prev = std::exchange(m_prev_long_edge_fraction, fraction);
+    if (fraction <= m_params.sizing_mesh_long_edge_tolerance || fraction > 0.9 * prev) {
+        return true;
+    }
+    logger().info(
+        "energy target reached, but {:.1f}% of the edges are longer than 4/3 of their target "
+        "(sizing mesh); continuing",
+        100 * fraction);
+    return false;
+}
+
+void TriOptimizerMesh::set_sizing_mesh(std::shared_ptr<const SizingMesh> sizing)
+{
+    m_sizing_mesh = std::move(sizing);
+    apply_sizing_mesh(true);
+}
+
+void TriOptimizerMesh::apply_sizing_mesh(bool overwrite)
+{
+    if (!m_sizing_mesh) return;
+    const auto apply = [&](size_t v) {
+        if (!tuple_from_vertex(v).is_valid(*this)) return;
+        auto& va = m_vertex_attribute[v];
+        const double length = (*m_sizing_mesh)(va.m_posf);
+        if (!(length > 0)) return; // not covered: the global length
+        const double s = length / m_params.l;
+        va.m_sizing_scalar = overwrite ? s : std::min(va.m_sizing_scalar, s);
+    };
+    if (NUM_THREADS == 0) {
+        for (size_t v = 0; v < vert_capacity(); ++v) apply(v);
+    } else {
+        threading::parallel_for(
+            threading::range(0, vert_capacity()),
+            [&](const threading::range& r) {
+                for (size_t v = r.begin(); v < r.end(); ++v) apply(v);
+            },
+            NUM_THREADS);
+    }
+}
+
+double TriOptimizerMesh::coarsen_target_length(size_t v) const
+{
+    const double t = sizing_mesh_length(m_vertex_attribute[v].m_posf);
+    return t > 0 ? t : m_params.l;
+}
+
+bool TriOptimizerMesh::collapse_leaves_long_edge(size_t v1_id, size_t v2_id) const
+{
+    const auto& VA = m_vertex_attribute;
+    // The target length at a vertex: in the coarsening pass the one asked for, elsewhere the
+    // sizing the split pass works to.
+    const auto target = [&](size_t v) {
+        return m_coarsen_mode ? coarsen_target_length(v) : m_params.l * VA[v].m_sizing_scalar;
+    };
+    // v1 goes; v2 stays where it is, with the smaller sizing of the two (collapse_edge_after).
+    const double t2 = m_coarsen_mode ? target(v2_id) : std::min(target(v1_id), target(v2_id));
+    const Vector2d& p2 = VA[v2_id].m_posf;
+    for (const size_t u : get_one_ring_vids_for_vertex_duplicate(v1_id)) {
+        if (u == v1_id || u == v2_id) continue;
+        const double t = 4. / 3. * 0.5 * (t2 + target(u));
+        if ((VA[u].m_posf - p2).squaredNorm() > t * t) return true;
+    }
+    return false;
+}
 
 } // namespace wmtk

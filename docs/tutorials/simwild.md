@@ -243,6 +243,53 @@ cells. Most of the first run's tets are background; a coarser background, then a
 The cells next to the overlap are refined too, since a vertex takes the smallest length of its
 cells: `a` and `b` alone grow from about 1,500 tets each to 3,600 to 4,000.
 
+### Edge length that varies: `sizing_mesh`
+
+Every vertex carries a sizing, the factor of the target length that the
+[stuck refinement](../reference/simwild.md#stuck_refine_factor) lowers where the quality is stuck.
+[`sizing_mesh`](../reference/simwild.md#sizing_mesh) sets it from a target length that varies over
+space: a tet mesh in 3D, a triangle mesh in 2D, whose vertices carry the length in a field named
+`target_length`, interpolated linearly inside its cells. On the memory route it names a mesh of the
+call; on the file route it is a mesh file. It sets the sizing at the start and caps it after every
+pass, so the vertices a pass makes follow it and the refinement is kept; outside its cells the
+global length applies. A tagged tet mesh of the unit cube, in a box whose length grows from 0.05 to
+0.25 along x, with `length` 0.25, ends with tets whose mean edge is 0.069 in the cube's left
+quarter and 0.204 in its right one; without it, 0.205 in both.
+
+With `sizing_field`, a vertex both cover takes the smaller length. Where the sizing mesh covers a
+vertex of no region, its length replaces the global one, also when it is longer; a vertex it does
+not cover keeps what the regions give it. On a square curve whose region asks for 0.08, against a
+global 0.16, a sizing mesh over the right half alone makes the curve's edges there 0.021 at 0.02,
+and 0.083 at 0.4, where the region's length wins; those on the left side stay at 0.077.
+
+Only `remeshing` reads it: the region edits do not optimize, and ignore it, as they ignore the
+other options of the optimization.
+
+The field is a largest edge length: with it, `limit_collapse_length` is on unless set to
+false, and the optimization goes on past `stop_energy` while more than 1% of the edges are
+longer than 4/3 of their target. The [sizing mesh workflow](workflows/sizing-mesh.md) builds
+one in Python and on files, and shows it in TriWild, TetWild and isotropic remeshing.
+
+### A bound on the edge length: `limit_collapse_length`
+
+A collapse is judged by the edge it removes, shorter than 4/5 of the target, and not by those it
+leaves: a short edge merges into its neighbour, up to 0.8 + 4/3 of the target, and the
+optimization ends on collapses, so no split cuts it again.
+[`limit_collapse_length`](../reference/simwild.md#limit_collapse_length) refuses a collapse that
+leaves an edge longer than 4/3 of the target, the length above which the split cuts one, the
+simplification after the insertion included. The longest edge, in units of the target \(l\):
+
+| `limit_collapse_length` | 2D: a square sampled 200 times a side, `length` 0.06 | 3D: the unit cube, `length` 0.2 |
+|---|---|---|
+| off (default) | 2.02 \(l\) | 1.74 \(l\) |
+| on | 1.21 \(l\) | 1.30 \(l\) |
+
+In 2D the longest edge of the curve, in 3D of any tet. Smoothing can still stretch an edge a
+little past 4/3, so to keep the edges under a bound, ask for about 3/4 of it, for a denser mesh.
+With a `sizing_mesh`, the bounded [coarsening pass](../reference/simwild.md#coarsen_pass)
+([`coarsen_unbounded`](../reference/simwild.md#coarsen_unbounded) off) stops at 0.8 of the field's
+length rather than of the global one.
+
 ### The quality target: `stop_energy`, `quality_field`
 
 The optimization stops when every cell's energy (AMIPS, 3 for the regular tet, 2 for the

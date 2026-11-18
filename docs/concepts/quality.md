@@ -66,7 +66,8 @@ Each iteration runs the four kinds of operation over the whole mesh:
 
 1. **Split** every edge longer than \(\tfrac43\,l\,s\), where \(l\) is the target edge length
    ([`length_rel`](../reference/tetwild.md#length_rel) times the bounding box diagonal) and \(s\)
-   the sizing scalar of the edge (the mean of its endpoints', 1 unless refined).
+   the sizing scalar of the edge (the mean of its endpoints', 1 unless refined, or set by a
+   [sizing mesh](../tutorials/workflows/sizing-mesh.md)).
 2. **Collapse** edges shorter than \(\tfrac45\,l\,s\). A collapse is refused if it inverts an
    element or raises the worst energy around the edge.
 3. **Swap** edges and faces: 3-2, 4-4, 5-6 and 2-3 in 3D, edge swaps in 2D. A swap is taken when

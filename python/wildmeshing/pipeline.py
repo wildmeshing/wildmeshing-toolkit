@@ -236,7 +236,7 @@ class Pipeline:
                 return options[ref["option"]]
             rule = next((r for r in wildmeshing.spec(source["component"])
                          if r["pointer"] == "/" + ref["option"]), {})
-            if "default" not in rule:
+            if "default" not in rule or rule["default"] == "skip":  # "skip": set at run time
                 raise ValueError(f"stage {stage['name']}: {ref['from']} sets no {ref['option']}"
                                  " and it has no default")
             return copy.deepcopy(rule["default"])
