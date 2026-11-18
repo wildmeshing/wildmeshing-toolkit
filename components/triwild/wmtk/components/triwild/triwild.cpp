@@ -276,6 +276,18 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     // The `envelope` input names a mesh of the call on the memory route, as simwild's does.
     const auto envelope_selector = json_params.value("envelope", nlohmann::json());
     if (component_io.memory()) json_params.erase("envelope");
+    // So does `sizing_mesh`.
+    if (json_params.contains("sizing_mesh") && json_params["sizing_mesh"].is_null()) {
+        json_params.erase("sizing_mesh"); // null, as Python's None: none
+    }
+    const std::string sizing_selector = json_params.value("sizing_mesh", std::string());
+    if (component_io.memory()) json_params.erase("sizing_mesh");
+    // limit_collapse_length has no fixed default (spec: "skip"): unless set, it is on with a sizing
+    // mesh, whose field is then a bound -- without the limit a collapse leaves edges past it that
+    // nothing splits again (docs/tutorials/workflows/sizing-mesh.md) -- and off without.
+    if (!json_params.contains("limit_collapse_length")) {
+        json_params["limit_collapse_length"] = !sizing_selector.empty();
+    }
     using wmtk::utils::resolve_path;
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
@@ -381,6 +393,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 "`envelope`: a reference is held to and checked against exactly, not with "
                 "use_sample_envelope");
         }
+    }
+    // The `sizing_mesh` input: a mesh of the call on the memory route, a mesh file on the file
+    // route (relative to input_dir), read here so that a bad one fails before any work.
+    std::shared_ptr<const SizingMesh> sizing_mesh;
+    if (!sizing_selector.empty()) {
+        sizing_mesh = std::make_shared<SizingMesh>(
+            component_io.memory() ? component_io.mesh(sizing_selector)
+                                  : io::read_mesh(resolve_path(root, sizing_selector)),
+            SizingMesh::Kind::Planar);
     }
     // The labels of the output's edge tags, the same on both routes: an input curve's (above), or
     // a tagged mesh's own.
@@ -1012,6 +1033,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         mesh.write_vtu(output_path + "_initial");
     }
 
+    // The sizing mesh sets the vertices' sizing before the improvement, and caps it after every
+    // pass (TriOptimizerMesh::apply_sizing_mesh).
+    if (sizing_mesh) mesh.set_sizing_mesh(sizing_mesh);
+
     /////////mesh improvement
     mesh.mesh_improvement(max_its);
     mesh.consolidate_mesh();
@@ -1240,6 +1265,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         report["max_energy"] = max_energy;
         report["avg_energy"] = avg_energy;
         report["eps"] = params.eps;
+        report["length"] = params.l;
+        report["sizing_mesh"] = !sizing_selector.empty();
         report["threads"] = NUM_THREADS;
         report["#iterations"] = mesh.m_iterations_used;
         // What the final coarsening pass bought. All zero when coarsen_pass is off, which is

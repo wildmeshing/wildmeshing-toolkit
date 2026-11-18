@@ -130,11 +130,26 @@ next split pass (`stuck_refine_force_split`), multiplies the sizing scalar of th
 and grades the result into its surroundings (`stuck_refine_gradation`). After a refinement, the
 next `stuck_refine_cooldown` iterations do not refine.
 
+**A sizing mesh.** With a [sizing mesh](../tutorials/workflows/sizing-mesh.md) (the components'
+`sizing_mesh`, a `SizingMesh` in
+[`SizingMesh.hpp`](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/src/wmtk/utils/SizingMesh.hpp)),
+`set_sizing_mesh()` sets the sizing scalar of every vertex it covers to the field's length over
+\(l\), before the loop. `local_operations()` then calls `apply_sizing_mesh(false)` after every
+pass, right after `update_attributes()`: it may only lower a sizing, so the vertices a pass made
+(a split's midpoint takes the mean of its ends') follow the field, and stuck refinement is kept.
+Without a sizing mesh `apply_sizing_mesh()` returns at once. With one, the loop does not stop on
+the energy target alone: `sizing_mesh_allows_stop()` keeps it going while more than
+`sizing_mesh_long_edge_tolerance` (1%) of the edges are longer than 4/3 of their target and that
+share still drops by a tenth from one iteration to the next.
+
 **Coarsening.** `coarsen_mesh()` returns at once unless
 [`coarsen_pass`](../reference/tetwild.md#coarsen_pass) is set; it is not gated by the bare passes.
 Then, for at most `coarsen_max_rounds` rounds, it runs a collapse pass in coarsening mode, where a
 collapse is kept only if the worst cell in the region it touched is no worse than before, then
 `coarsen_global_smoothing_passes` smoothing passes; it stops after a round that collapses nothing.
+With [`coarsen_unbounded`](../reference/tetwild.md#coarsen_unbounded) off, the pass leaves an edge
+at or past 4/5 of the target: \(l\), or with a sizing mesh the field's length at the edge's ends
+(`coarsen_target_length()`), never the sizing scalar, which is the refinement the pass undoes.
 
 ## A group: `local_operations()`
 
@@ -175,8 +190,15 @@ if one of its vertices was in the region a successful operation renewed during t
 | smoothing | every vertex; with `skip_good_regions`, only the vertices of cells whose energy is at least `skip_good_regions_margin` times the stop energy, and every tracked-surface vertex | | | vertex one-ring, or none (colored) |
 
 The target length is [`length_rel`](../reference/tetwild.md#length_rel) times the bounding box
-diagonal (`OptimizerParameters::init_lengths_from_diagonal`); the sizing is the mean of the two
-endpoints' sizing scalars, which stuck refinement lowers.
+diagonal, or [`length`](../reference/tetwild.md#length) when given
+(`OptimizerParameters::init_lengths_from_diagonal`); the sizing is the mean of the two endpoints'
+sizing scalars, which stuck refinement lowers and a sizing mesh sets.
+
+A collapse is judged by the edge it removes. With
+[`limit_collapse_length`](../reference/tetwild.md#limit_collapse_length)
+(`OptimizerParameters::limit_collapse_length`), `collapse_edge_before()` also refuses one that
+leaves an edge longer than 4/3 of its target, the length above which the split pass would cut it
+again (`collapse_leaves_long_edge()`, after the application's `collapse_before_vertex`).
 
 Three details matter when changing a pass:
 
