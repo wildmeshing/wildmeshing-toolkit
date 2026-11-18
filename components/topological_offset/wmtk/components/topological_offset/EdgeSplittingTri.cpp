@@ -78,6 +78,25 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
             c.parent_q_max = std::max(c.parent_q_max, get_quality(fid));
             c.parent_flatness = std::min(c.parent_flatness, face_flatness(fid));
         }
+        // An In entry's complex has no face to carry it: read it here, on the parents. As 3D's
+        // close_labels(), which labels such a face 1 after the operation.
+        c.on_in_complex = false;
+        {
+            const std::array<size_t, 2> vids{{c.v1_id, c.v2_id}};
+            const auto band = std::find_if(parents.begin(), parents.end(), [&](const size_t f) {
+                return face_is_offset_band(f);
+            });
+            if (band != parents.end() && parents.size() <= 2) {
+                size_t other = size_t(-1);
+                for (const size_t f : parents) {
+                    if (f != *band) other = f;
+                }
+                if (other == size_t(-1) ||
+                    (!face_is_offset_band(other) && !face_is_input_complex(other))) {
+                    c.on_in_complex = band_edge_on_in_complex(*band, other, vids);
+                }
+            }
+        }
         // EXPERIMENTAL_split_energy_gate: the parents' sum of tri_energy(), which
         // split_edge_after() compares the children's against. "exact_swept": the AMIPS terms
         // alone, a split leaving B and its band term unchanged (EXACT SWEPT CHANGE). As in 3D.
@@ -114,8 +133,11 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
         const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
         bool on_level = false;
         size_t steps = 0;
-        // The entry of offsets the inner end is on: its distance, its target, its mode. As in 3D.
-        const size_t k = offset_of(in1 ? cache.v1_id : cache.v2_id);
+        // The edge's entry of offsets (edge_entry(): the inner end's, or, at a vertex two In
+        // entries share, the one whose selection the outer end is in): its distance, its target,
+        // its mode. As in 3D.
+        const size_t k =
+            in1 ? edge_entry(cache.v1_id, cache.v2_id) : edge_entry(cache.v2_id, cache.v1_id);
         if (in1 != in2 && k < m_construction_traced.size() && m_construction_traced[k]) {
             on_level = in1 ? edge_split_sphere_trace(k, p1, p2, p_new, steps)
                            : edge_split_sphere_trace(k, p2, p1, p_new, steps);

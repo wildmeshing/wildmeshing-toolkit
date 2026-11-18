@@ -31,6 +31,10 @@ struct Parameters : public wmtk::OptimizerParameters
         /// the mesh's tags (topological_offset.cpp), which exist only once the mesh is read.
         std::string selection;
         ExpressionPtr expression;
+        /// The side of the selection's boundary the band grows on (the spec's `direction`): away
+        /// from its cells, into them, or both.
+        enum class Direction { Out, In, Both };
+        Direction direction = Direction::Out;
         /// The tags its band's cells take; none: ambient.
         std::set<std::string> output_tags;
         /// Absolute; if <= 0, init() derives it from target_distance_rel, relative to the bounding
@@ -77,11 +81,12 @@ struct Parameters : public wmtk::OptimizerParameters
             if (named.count(t)) kept.insert(t);
         return kept;
     }
-    // The spec's defaults, as envelope_size below: init_input_complex_bvh() refuses offset_in on a
-    // curve or a point, and a unit test that builds Parameters without init() and offsets a point
-    // (dist_to_tetmesh) read an uninitialized offset_in as true on the Linux and Windows Debug CI.
-    bool offset_in = false;
-    bool offset_out = true;
+    /// Entry k's direction; Out with no entry, as a Parameters built by hand (the unit tests) is.
+    /// Until 2026-11 the run-wide offset_in and offset_out, read for a single tet tag only.
+    Offset::Direction direction(const size_t k) const
+    {
+        return k < offsets.size() ? offsets[k].direction : Offset::Direction::Out;
+    }
     /// The smallest entry's target_distance, resolved by init(): the run-wide reader's (front_conv
     /// from front_conv_rel, min_edge_length, logs); each place of the optimization reads its own
     /// piece's (TopoOffsetTetMesh::place_piece()).
@@ -442,11 +447,22 @@ struct Parameters : public wmtk::OptimizerParameters
             }
             entry.target_distance = o["target_distance"];
             entry.target_distance_rel = o["target_distance_rel"];
+            const std::string direction = o["direction"];
+            if (direction == "out") {
+                entry.direction = Offset::Direction::Out;
+            } else if (direction == "in") {
+                entry.direction = Offset::Direction::In;
+            } else if (direction == "both") {
+                entry.direction = Offset::Direction::Both;
+            } else {
+                log_and_throw_error(
+                    "offsets[{}].direction: '{}' is none of out, in, both",
+                    offsets.size() - 1,
+                    direction);
+            }
         }
         if (offsets.empty()) log_and_throw_error("offsets: at least one offset is needed");
         protected_tags = json_params["protected_tags"];
-        offset_in = json_params["offset_in"];
-        offset_out = json_params["offset_out"];
         throw_on_nonconvergence = json_params["throw_on_nonconvergence"];
         throw_on_unreachable_level_set = json_params["throw_on_unreachable_level_set"];
         optimize_offset = json_params["optimize_offset"];

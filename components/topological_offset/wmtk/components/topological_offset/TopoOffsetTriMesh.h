@@ -183,17 +183,148 @@ public:
      * its job -- the per-tag region envelopes (m_tag_envelopes) hold the complex in place.
      */
     std::shared_ptr<SimplicialComplexBVH> m_input_complex_bvh;
-    /// The distance from p to entry k of Parameters::offsets alone, as m_input_complex_bvh's
-    /// dist() for the whole complex: 0 inside the entry's faces, the distance to its primitives
-    /// elsewhere (infinite for an entry that selects nothing). The march traces each entry's edges
-    /// on it. One entry: m_input_complex_bvh itself. As TopoOffsetTetMesh::offset_distance().
+    /// The distance from p to entry k of Parameters::offsets alone, as input_complex_distance()
+    /// for the whole complex: one-sided by the entry's direction -- 0 inside its selection's faces
+    /// for Out (the BVH's faces), 0 outside them for In, 0 nowhere for Both -- and the distance
+    /// to its primitives elsewhere (infinite for an entry that selects nothing). The march traces
+    /// each entry's edges on it. One entry: input_complex_distance() itself. As
+    /// TopoOffsetTetMesh::offset_distance().
     double offset_distance(size_t k, const Vector2d& p) const;
+    /// offset_distance() off its one side: +infinity where an In entry is 0 (outside its
+    /// selection), so that the union of entries (input_complex_distance()) is not 0 there. As in
+    /// 3D.
+    double side_distance(size_t k, const Vector2d& p) const;
+    /// The distance from p to the input complex as loaded, one-sided by the offset's direction: 0
+    /// inside its faces for Out (m_input_complex_bvh's faces), 0 outside the selection for In (its
+    /// complex is the selection's boundary, segments the BVH measures on both sides), unsigned for
+    /// Both. Several entries: the nearest entry's side_distance(), 0 off every entry's side. The
+    /// 2D twin of TopoOffsetTetMesh::input_complex_distance(); every distance diagnostic reads it.
+    double input_complex_distance(const Vector2d& p) const;
     /// offset_distance()'s engine for each entry, built by init_input_complex_bvh() only when
     /// there are several: a BVH over the entry's rows of m_phi_* (its faces, segments and points);
     /// null for an entry that selects nothing. 3D's OffsetQuery holds an envelope and a winding
-    /// number hierarchy for the inside test; 2D's BVH answers both (0 inside a face of the
-    /// complex), as m_input_complex_bvh does for the whole complex.
+    /// number hierarchy for the inside test; 2D's BVH answers the inside of an Out entry's faces
+    /// (0 inside a face of the complex), as m_input_complex_bvh does for the whole complex, and an
+    /// In entry's inside is m_selection_winding_E's.
     std::vector<std::shared_ptr<SimplicialComplexBVH>> m_offset_queries;
+    /// Per entry of Parameters::offsets with direction In: its complex's segments (rows of
+    /// m_phi_V, its own rows where entries touch), each turned so that its selection is on its
+    /// left -- the selection's boundary oriented counter-clockwise, whose winding number is 1
+    /// inside the selection and 0 outside. Empty for other entries. init_input_complex_bvh().
+    /// 3D's OffsetQuery::winding.
+    std::vector<MatrixXi> m_selection_winding_E;
+    /// Whether p is inside entry k's selection, by the winding number of m_selection_winding_E[k]
+    /// (wmtk::utils::winding_number_inside()); false for an entry that has none.
+    bool inside_selection(size_t k, const Vector2d& p) const;
+    /// Whether face fid is in entry k's selection: its tags satisfy the entry's expression (a face
+    /// carries no tag of a lower simplex, and no larger simplex adds any). As
+    /// TopoOffsetTetMesh::cell_in_selection().
+    bool face_in_selection(const size_t k, const size_t fid) const
+    {
+        const ExpressionPtr& expr = m_offset_params.offsets[k].expression;
+        return expr && expr->eval(m_face_attribute[fid].tags);
+    }
+    /// Whether vertex v, off entry k's boundary, is inside its selection: its faces are all in it
+    /// (off the boundary, they are all in it or all out of it). As in 3D.
+    bool vertex_in_selection(const size_t k, const size_t v) const
+    {
+        for (const size_t f : get_one_ring_fids_for_vertex(v)) {
+            if (!face_in_selection(k, f)) return false;
+        }
+        return true;
+    }
+    /// The entry of the edge from a complex vertex v_in (label != 0) to v_out (label 0): v_in's,
+    /// or, where v_in is on the boundaries of several In entries that touch
+    /// (m_shared_vertex_entries), the one whose selection v_out is in (the first if none is). As
+    /// in 3D.
+    size_t edge_entry(const size_t v_in, const size_t v_out) const
+    {
+        const auto it = m_shared_vertex_entries.find(v_in);
+        if (it == m_shared_vertex_entries.end()) return offset_of(v_in);
+        for (const size_t k : it->second) {
+            if (vertex_in_selection(k, v_out)) return k;
+        }
+        return it->second.front();
+    }
+    /// Whether the edge from a complex vertex v_in (label != 0) to v_out (label 0) leads to the
+    /// side of its entry's direction (edge_entry()): always but for In, where v_out must be inside
+    /// the selection's faces. As in 3D.
+    bool on_offset_side(const size_t v_in, const size_t v_out) const
+    {
+        const size_t k = edge_entry(v_in, v_out);
+        if (m_offset_params.direction(k) != Parameters::Offset::Direction::In) return true;
+        return vertex_in_selection(k, v_out);
+    }
+    /// Per complex vertex on the boundaries of several entries (In entries that touch: their
+    /// selections share it), those entries, ascending; VertexExtra2d::offset holds the first.
+    /// label_input_complex(). As in 3D.
+    std::map<size_t, std::vector<size_t>> m_shared_vertex_entries;
+    /// Per In entry, its complex (the selection's boundary) by vertex ids, as
+    /// label_input_complex() labels it: what init_input_complex_bvh() extracts for that entry
+    /// alone when entries touch, an edge they share once for each. Empty for other entries. 3D's
+    /// EntryComplex, one dimension down: the boundary of a 2D selection has no face.
+    struct EntryComplex
+    {
+        std::set<std::array<size_t, 2>> edges;
+        std::set<size_t> vertices;
+    };
+    std::vector<EntryComplex> m_entry_complex;
+    /// The entry of a band face (label 2): its complex vertex's (VertexExtra2d::offset), or, at a
+    /// vertex several In entries share, the one whose selection holds the face -- by its tags
+    /// before set_offset_tri_tags() overwrites them; after it, by the output tags it wrote
+    /// (m_band_tags_entry), else by the winding number of the selection as captured
+    /// (m_selection_winding_E). 0 with one entry. TopoOffsetTetMesh::band_cell_entry().
+    size_t band_face_entry(size_t fid) const;
+    /// After set_offset_tri_tags(): each band face's tag set as it wrote it (its entry's output
+    /// tags), to that entry, for the tag sets exactly one entry writes. The operations carry the
+    /// tags, so band_face_entry() reads the entry exactly. As in 3D (MEASURED there, scan_1 frame
+    /// 0, 48 touching In entries: the winding number of the selection as captured left band
+    /// cells outside every selection after a collapse pass).
+    std::map<CellTag, size_t> m_band_tags_entry;
+    /// Per entry of Parameters::offsets: its selection has faces (label_input_complex()). An In
+    /// entry without is dropped; the repulsion passes need one with. As in 3D.
+    std::vector<bool> m_offset_has_faces;
+    /// Per entry of Parameters::offsets: dropped by label_input_complex() (In, no faces).
+    std::vector<bool> m_offset_dropped;
+    /// Whether both corners of an edge are on the input complex (VertexExtra2d::m_is_on_input):
+    /// after the simplicial embedding, an edge of the complex. The band's inner interface for an
+    /// In entry, whose complex is its selection's boundary and has no face. As
+    /// TopoOffsetTetMesh::face_on_input_complex().
+    bool edge_on_input_complex(const std::array<size_t, 2>& vids) const
+    {
+        return m_vertex_extra[vids[0]].m_is_on_input && m_vertex_extra[vids[1]].m_is_on_input;
+    }
+    /// Whether the edge `vids` between band face `band` and non-band face `other` (size_t(-1):
+    /// the outside of the mesh) is on an In entry's complex, the boundary of its selection: the
+    /// band face's entry (band_face_entry()) is In and `other` is outside its selection. Two
+    /// corners on the complex are necessary, not sufficient: where In entries touch, or after an
+    /// operation, a front edge can have both corners on the complex. Out: the complex is faces,
+    /// read off their label; Both: the band covers both sides of the complex. The 2D twin of
+    /// TopoOffsetTetMesh::band_face_on_in_complex(): every test of the front from the face labels
+    /// (edge_is_offset_surface_live(), vertex_has_live_offset_edge(), split_adjust_position())
+    /// excludes these edges, which 3D's close_labels() labels 1.
+    bool band_edge_on_in_complex(
+        const size_t band,
+        const size_t other,
+        const std::array<size_t, 2>& vids) const;
+    /// Whether face fid, off the band, lies off the side its piece's entry grows on: outside the
+    /// selection of an In entry (`piece` as place_piece() gives it; the entry of a piece is
+    /// m_region_offset's, entry 0 with one). The label clean-up's side test reads an unsigned
+    /// bound of the distance to the complex, the selection's boundary for In, so such a face
+    /// within the target of it would read as inside the level set: flipped into the band, or,
+    /// held out by the complex, the level set out of reach. As
+    /// TopoOffsetTetMesh::cell_off_offset_side().
+    bool face_off_offset_side(const size_t fid, const int piece) const
+    {
+        if (m_offset_params.offsets.empty()) return false;
+        size_t k = 0;
+        if (m_offset_params.offsets.size() > 1) {
+            if (piece < 0 || size_t(piece) >= m_region_offset.size()) return false;
+            k = size_t(m_region_offset[size_t(piece)]);
+        }
+        return m_offset_params.direction(k) == Parameters::Offset::Direction::In &&
+               !face_in_selection(k, fid);
+    }
     /// Per entry of Parameters::offsets: its complex has no faces (one entry: the whole complex).
     /// init_input_complex_bvh(). As in 3D, where it means no triangles.
     std::vector<bool> m_offset_curves;
@@ -320,8 +451,10 @@ public:
      * piece of the input complex a place reads its distance, its bar and its exact integral from.
      * The 2D twin of TopoOffsetTetMesh::place_piece(). A place is given by its vertices (a vertex,
      * an edge, a face). The piece of the band they are in (m_vertex_region); where two pieces
-     * meet -- vertices of two, or a vertex on band faces of two (-2) -- the one of them with the
-     * smaller distance; off every band, or on vertices not assigned yet (an operation's new
+     * meet -- vertices of two pieces, the one of them with the smaller distance; only when no
+     * vertex has one piece, a vertex on band faces of two (-2) offers those faces' pieces (at a
+     * vertex two In entries share, a place of one entry's band stays that entry's); off every
+     * band, or on vertices not assigned yet (an operation's new
      * vertex, until assign_band_regions() runs again), the nearest piece (nearest_piece()). -1
      * with one entry, or before the per-piece fields exist: the whole complex's field and
      * integral and the run's distance.
@@ -1473,6 +1606,11 @@ public:
         /// Same question in the scale-invariant measure, which keeps resolving after AMIPS has
         /// saturated at MAX_ENERGY. Min over the parents: the flattest thing the split inherited.
         double parent_flatness = 1.;
+        /// The split edge is on an In entry's complex, the boundary of its selection
+        /// (band_edge_on_in_complex(), read on the parents): its midpoint is on the input and not
+        /// on the front, which the parents' labels (a band face and one that is neither band nor
+        /// input complex) would say. 3D labels such a face 1 (close_labels()).
+        bool on_in_complex = false;
     };
     wmtk::threading::enumerable_thread_specific<OptSplitCache2d> m_opt_split_cache;
 
@@ -1750,10 +1888,13 @@ public:
     /// pass.
     optimization::NewtonCounters m_newton_repulsion;
     std::atomic<size_t> m_repulsion_veto_asked{0}, m_repulsion_veto_fired{0};
-    /// The edges marching_tris() splits: exactly one end in the input complex (label != 0).
+    /// The edges marching_tris() splits: exactly one end in the input complex (label != 0), and
+    /// leading to its entry's side (on_offset_side()). As in 3D.
     bool is_marched_edge(const size_t a, const size_t b) const
     {
-        return (m_vertex_extra[a].label == 0) != (m_vertex_extra[b].label == 0);
+        const bool a_in = m_vertex_extra[a].label != 0, b_in = m_vertex_extra[b].label != 0;
+        if (a_in == b_in) return false;
+        return a_in ? on_offset_side(a, b) : on_offset_side(b, a);
     }
     /// While the repulsion runs: an outer end of a marched edge -- off the complex, with a
     /// neighbour on it -- that no envelope holds. Asked of the mesh every time, so it follows the
@@ -1765,7 +1906,7 @@ public:
             return false;
         }
         for (const size_t u : get_one_ring_vids_for_vertex_duplicate(vid)) {
-            if (m_vertex_extra[u].label != 0) return true;
+            if (is_marched_edge(u, vid)) return true;
         }
         return false;
     }
@@ -1831,10 +1972,10 @@ public:
     /// operations carry, instead of the edge labels, which they do not). A collapse or a swap
     /// that breaks it is refused. Defined in TopoOffsetTriMesh.cpp. As in 3D.
     bool repulsion_embedding_kept(const std::vector<size_t>& fids) const;
-    /// Whether the edge (a, b) is in the input complex, from the faces' labels: an edge of a face
-    /// of the complex, or, for offset_in, a domain-boundary edge of a body face. Single-body
-    /// offset_in or offset_out only, which repulsion_smoothing() checks. The 3D twin also takes a
-    /// face.
+    /// Whether the edge (a, b) is in the input complex, from the faces: for Out an edge of a face
+    /// of the complex (label), for In on the body's boundary (between a body face and another, or
+    /// a domain-boundary edge of a body face; the body by its tags). A single face tag offset
+    /// inward or outward only, which repulsion_smoothing() checks. The 3D twin also takes a face.
     bool simplex_in_input_complex(size_t a, size_t b) const;
     std::atomic<size_t> m_repulsion_embed_refused{0};
     /// Diagnostic: where the front solves stop. Per pass, histograms of the final gradient norm
@@ -3203,13 +3344,26 @@ public:
     bool ambient_assert();
 
     /// Label the input complex: the union of the complexes of Parameters::offsets, each entry's
-    /// vertices carrying its index (VertexExtra2d::offset). Refuses a vertex two entries select.
-    /// As in 3D.
+    /// vertices carrying its index (VertexExtra2d::offset). An entry's complex is its selection S
+    /// (label_offset()) for Out, and S's boundary (boundary_of_labels()) for In and Both. Drops an
+    /// In entry whose S has no faces, with a warning; then refuses two selections that share a
+    /// face, or share a vertex unless both are In (m_shared_vertex_entries, m_entry_complex). As
+    /// in 3D.
     void label_input_complex();
-    /// Label entry k's complex alone (label 1) as per its boolean expression (or single body
-    /// mode), as label_input_complex() calls it on cleared labels; sets m_singlebody and
+    /// Label entry k's selection alone (label 1) on cleared labels: the closure of the simplices
+    /// its expression holds for, each simplex read with its own tags and those of the simplices
+    /// containing it (a single face tag: its faces, whatever the direction). Sets m_singlebody and
     /// m_single_tag for that entry. As in 3D.
     void label_offset(size_t k);
+    /// The boundary of the labelled complex K (label != 0), by current ids: K's edges between a
+    /// face of K and one outside it or the outside of the mesh, K's edges and vertices in no
+    /// larger simplex of K, and the vertices of those edges. Sized to the capacities. The 2D twin
+    /// of TopoOffsetTetMesh::boundary_of_labels(), one dimension down.
+    struct BoundaryFlags
+    {
+        std::vector<char> edge, vertex;
+    };
+    BoundaryFlags boundary_of_labels() const;
 
     /**
      * @brief check if the input complex is empty. Only valid after calling init_from_image(...).
@@ -3242,10 +3396,11 @@ public:
     MatrixXi m_phi_E;
     MatrixXi m_phi_F; ///< the complex faces, in the same vertex index space (for per-region BVHs)
     std::vector<int> m_phi_P;
-    /// Per row (a, b) of m_phi_E: the sign of orient2d(a, b, x) for x in the label-1 region it
-    /// bounds (+1: the row's normal, b - a turned clockwise, points out of the region), 0 for an
-    /// isolated segment of the complex. The 2D twin of TopoOffsetTetMesh::m_phi_F_inner; the
-    /// exact integral's offset side reads it.
+    /// Per row (a, b) of m_phi_E: the sign of orient2d(a, b, x) for x in the region it bounds
+    /// (+1: the row's normal, b - a turned clockwise, points out of the region): the label-1 faces
+    /// for an Out entry, the selection's faces for an In entry, whose complex is their boundary;
+    /// 0 for a segment that bounds no region (a curve, a Both entry). The 2D twin of
+    /// TopoOffsetTetMesh::m_phi_F_inner; the exact integral's offset side reads it.
     std::vector<int8_t> m_phi_E_inner;
 
     /**

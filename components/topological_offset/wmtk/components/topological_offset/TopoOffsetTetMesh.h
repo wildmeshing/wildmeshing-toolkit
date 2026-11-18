@@ -239,9 +239,10 @@ public:
      */
     void classify_sheet_faces();
     /**
-     * @brief The distance from p to the input complex as loaded: 0 inside its solid (its label-1
-     * cells as init_input_complex_bvh() captured them), the distance to m_input_complex_envelope
-     * everywhere else.
+     * @brief The distance from p to the input complex as loaded, one-sided by the offset's
+     * direction: 0 inside its solid for Out (its label-1 cells as init_input_complex_bvh()
+     * captured them) and 0 outside it for In (the solid is then the selection, whose boundary is
+     * the complex); the distance to m_input_complex_envelope everywhere else. Both: no solid.
      *
      * Inside means a winding number above 1/2 (wmtk::utils::winding_number_inside()) with respect
      * to the solid's boundary faces, oriented out of it (m_input_solid_winding); a point on that
@@ -254,10 +255,85 @@ public:
      */
     double input_complex_distance(const Vector3d& p) const;
     /// The distance from p to entry k of Parameters::offsets alone, as input_complex_distance()
-    /// for the whole complex: 0 inside the entry's solid, the distance to its primitives
+    /// for the whole complex: one-sided by the entry's direction -- 0 inside its selection's cells
+    /// for Out, 0 outside them for In, 0 nowhere for Both -- and the distance to its primitives
     /// elsewhere (infinite for an entry that selects nothing). The march traces each entry's
     /// edges on it. One entry: input_complex_distance() itself.
     double offset_distance(size_t k, const Vector3d& p) const;
+    /// Whether cell tid is in entry k's selection: its tags satisfy the entry's expression (a cell
+    /// carries no tag of a lower simplex, and no larger simplex adds any).
+    bool cell_in_selection(const size_t k, const size_t tid) const
+    {
+        const ExpressionPtr& expr = m_offset_params.offsets[k].expression;
+        return expr && expr->eval(m_tet_attribute[tid].tag);
+    }
+    /// Whether vertex v, off entry k's boundary, is inside its selection: its cells are all in it
+    /// (off the boundary, they are all in it or all out of it).
+    bool vertex_in_selection(const size_t k, const size_t v) const
+    {
+        for (const size_t t : get_one_ring_tids_for_vertex(v)) {
+            if (!cell_in_selection(k, t)) return false;
+        }
+        return true;
+    }
+    /// The entry of the edge from a complex vertex v_in (label != 0) to v_out (label 0): v_in's,
+    /// or, where v_in is on the boundaries of several In entries that touch
+    /// (m_shared_vertex_entries), the one whose selection v_out is in (the first if none is).
+    size_t edge_entry(const size_t v_in, const size_t v_out) const
+    {
+        const auto it = m_shared_vertex_entries.find(v_in);
+        if (it == m_shared_vertex_entries.end()) return offset_of(v_in);
+        for (const size_t k : it->second) {
+            if (vertex_in_selection(k, v_out)) return k;
+        }
+        return it->second.front();
+    }
+    /// Whether the edge from a complex vertex v_in (label != 0) to v_out (label 0) leads to the side
+    /// of its entry's direction (edge_entry()): always but for In, where v_out must be inside the
+    /// selection's cells.
+    bool on_offset_side(const size_t v_in, const size_t v_out) const
+    {
+        const size_t k = edge_entry(v_in, v_out);
+        if (m_offset_params.direction(k) != Parameters::Offset::Direction::In) return true;
+        return vertex_in_selection(k, v_out);
+    }
+    /// Per complex vertex on the boundaries of several entries (In entries that touch: their
+    /// selections share it), those entries, ascending; VertexExtra::offset holds the first.
+    /// label_input_complex().
+    std::map<size_t, std::vector<size_t>> m_shared_vertex_entries;
+    /// Per In entry, its complex (the selection's boundary) by vertex ids, as label_input_complex()
+    /// labels it: what init_input_complex_bvh() extracts for that entry alone when entries touch,
+    /// a face they share once for each. Empty for other entries.
+    struct EntryComplex
+    {
+        std::set<std::array<size_t, 3>> faces;
+        std::set<std::array<size_t, 2>> edges;
+        std::set<size_t> vertices;
+    };
+    std::vector<EntryComplex> m_entry_complex;
+    /// The entry of a band cell (label 2): its complex vertex's (VertexExtra::offset), or, at a
+    /// vertex several In entries share, the one whose selection holds the cell -- by its tags
+    /// before set_offset_tet_tags() overwrites them; after it, by the output tags it wrote
+    /// (m_band_tags_entry), else by the winding number of the selection as captured
+    /// (m_offset_queries). 0 with one entry.
+    size_t band_cell_entry(size_t tid) const;
+    /// After set_offset_tet_tags(): each band cell's tag set as it wrote it (its entry's output
+    /// tags), to that entry, for the tag sets exactly one entry writes. The operations carry the
+    /// tags, so band_cell_entry() reads the entry exactly. MEASURED before (the winding number of
+    /// the selection as captured; scan_1 frame 0, 48 touching In entries at 0.1 in an envelope of
+    /// 0.124, 2026-11-17): after one collapse pass of the TetWild pass, band cells of cell_38
+    /// whose centroids no winding put inside any selection took a neighbour's entry,
+    /// close_labels() then labelled front faces as the complex, and the first swap pass threw
+    /// "a tracked simplex has an empty input set".
+    std::map<CellTag, size_t> m_band_tags_entry;
+    /// offset_distance() off its one side: +infinity where an In entry is 0 (outside its
+    /// selection), so that the union of entries (input_complex_distance()) is not 0 there.
+    double side_distance(size_t k, const Vector3d& p) const;
+    /// Per entry of Parameters::offsets: its selection has cells (label_input_complex()). An In
+    /// entry without is dropped; the repulsion passes need one with.
+    std::vector<bool> m_offset_has_cells;
+    /// Per entry of Parameters::offsets: dropped by label_input_complex() (In, no cells).
+    std::vector<bool> m_offset_dropped;
     /// offset_distance()'s engine for each entry, built by init_input_complex_bvh() only when
     /// there are several: the entry's primitives of m_phi_* (query engine, eps 0) and the
     /// winding-number hierarchy of its solid's boundary.
@@ -390,8 +466,10 @@ public:
      * @brief Several entries of Parameters::offsets, each piece its entry's target distance: the
      * piece of the input complex a place reads its distance and its field from. A place is given
      * by its vertices (a vertex, an edge, a face, a cell). The piece of the band they are in
-     * (m_vertex_region); where two pieces meet -- vertices of two, or a vertex on band cells of
-     * two (-2) -- the one of them with the smaller distance; off every band, or on vertices not
+     * (m_vertex_region); where two pieces meet -- vertices of two pieces, the one of them with the
+     * smaller distance; only when no vertex has one piece, a vertex on band cells of two (-2)
+     * offers those cells' pieces (at a vertex two In entries share, a place of one entry's band
+     * stays that entry's); off every band, or on vertices not
      * assigned yet (an operation's new vertex, until assign_band_regions() runs again), the
      * nearest piece (nearest_piece()). -1 with one entry, or before the per-piece fields exist:
      * the whole complex's field (m_offset_potential) and the run's distance, as before 2026-11.
@@ -1656,6 +1734,45 @@ public:
     }
     /// Whether tet `tid` is part of the INPUT complex the band wraps.
     bool cell_is_input_complex(const size_t tid) const { return m_tet_attribute[tid].label == 1; }
+    /// Whether all three corners of a face are on the input complex (VertexExtra::m_is_on_input):
+    /// after the simplicial embedding, a face of the complex. The band's inner interface for an
+    /// In entry, whose complex is its selection's boundary and has no cell.
+    bool face_on_input_complex(const std::array<size_t, 3>& vids) const
+    {
+        return m_vertex_extra[vids[0]].m_is_on_input && m_vertex_extra[vids[1]].m_is_on_input &&
+               m_vertex_extra[vids[2]].m_is_on_input;
+    }
+    /// Whether the face `vids` between band cell `band` and non-band cell `other` (size_t(-1):
+    /// the outside of the mesh) is on an In entry's complex, the boundary of its selection: the
+    /// band cell's entry (band_cell_entry()) is In and `other` is outside its selection. Three
+    /// corners on the complex are necessary (labels are closed downward), not sufficient: where
+    /// In entries touch, or after an operation, a front face can have all three corners on the
+    /// complex. Out: the complex is cells, read off their label; Both: the band covers both
+    /// sides of the complex. MEASURED before (corners alone, scan_1 frame 0, 48 touching In
+    /// entries, 2026-11-17): front faces read as held, and the first swap pass threw "a tracked
+    /// simplex has an empty input set" (a front face has no labels).
+    bool band_face_on_in_complex(
+        const size_t band,
+        const size_t other,
+        const std::array<size_t, 3>& vids) const;
+    /// Whether cell tid, off the band, lies off the side its piece's entry grows on: outside the
+    /// selection of an In entry (`piece` as place_piece() gives it; the entry of a piece is
+    /// m_region_offset's, entry 0 with one). The label clean-up's side test reads an unsigned
+    /// bound of the distance to the complex, the selection's boundary for In, so such a cell
+    /// within the target of it would read as inside the level set: flipped into the band, or,
+    /// held out by the complex, the level set out of reach. Out: the cells inside its solid are
+    /// the complex (label 1), which the clean-up never flips; Both: either side.
+    bool cell_off_offset_side(const size_t tid, const int piece) const
+    {
+        if (m_offset_params.offsets.empty()) return false;
+        size_t k = 0;
+        if (m_offset_params.offsets.size() > 1) {
+            if (piece < 0 || size_t(piece) >= m_region_offset.size()) return false;
+            k = size_t(m_region_offset[size_t(piece)]);
+        }
+        return m_offset_params.direction(k) == Parameters::Offset::Direction::In &&
+               !cell_in_selection(k, tid);
+    }
     /// Whether tet `tid` is part of the offset BAND (as opposed to the input complex).
     bool cell_is_offset_band(const size_t tid) const { return m_tet_attribute[tid].label == 2; }
 
@@ -2309,10 +2426,13 @@ public:
     /// pass.
     optimization::NewtonCounters m_newton_repulsion;
     std::atomic<size_t> m_repulsion_veto_asked{0}, m_repulsion_veto_fired{0};
-    /// The edges marching_tets() splits: exactly one end in the input complex (label != 0).
+    /// The edges marching_tets() splits: exactly one end in the input complex (label != 0), and
+    /// leading to its entry's side (on_offset_side()).
     bool is_marched_edge(const size_t a, const size_t b) const
     {
-        return (m_vertex_extra[a].label == 0) != (m_vertex_extra[b].label == 0);
+        const bool a_in = m_vertex_extra[a].label != 0, b_in = m_vertex_extra[b].label != 0;
+        if (a_in == b_in) return false;
+        return a_in ? on_offset_side(a, b) : on_offset_side(b, a);
     }
     /// While the repulsion runs: an outer end of a marched edge -- off the complex, with a
     /// neighbour on it -- that no envelope holds. Asked of the mesh every time, so it follows the
@@ -2323,7 +2443,7 @@ public:
             return false;
         }
         for (const size_t u : get_one_ring_vids_for_vertex(vid)) {
-            if (m_vertex_extra[u].label != 0) return true;
+            if (is_marched_edge(u, vid)) return true;
         }
         return false;
     }
@@ -2390,8 +2510,9 @@ public:
     /// or a swap that breaks it is refused. Defined in TopoOffsetTetMesh.cpp.
     bool repulsion_embedding_kept(const std::vector<size_t>& tids) const;
     /// Whether the simplex on the vertices `c` (2 or 3 of them) is in the input complex, from the
-    /// cells' labels: in a cell of the complex, or, for offset_in, on a domain-boundary face of a
-    /// body cell. Single-body offset_in or offset_out only, which repulsion_smoothing() checks.
+    /// cells: for Out in a cell of the complex (label), for In on the body's boundary (between a
+    /// body cell and another, or on a domain-boundary face of a body cell; the body by its tags).
+    /// A single tet tag offset inward or outward only, which repulsion_smoothing() checks.
     bool simplex_in_input_complex(const std::vector<size_t>& c) const;
     std::atomic<size_t> m_repulsion_embed_refused{0};
     /// Diagnostic (2026-09-28, Uday): where the front solves stop. Per pass, histograms of the
@@ -3406,11 +3527,24 @@ public:
     bool ambient_assert();
 
     /// Label the input complex: the union of the complexes of Parameters::offsets, each entry's
-    /// vertices carrying its index (VertexExtra::offset). Refuses a vertex two entries select.
+    /// vertices carrying its index (VertexExtra::offset). An entry's complex is its selection S
+    /// (label_offset()) for Out, and S's boundary (boundary_of_labels()) for In and Both. Drops an
+    /// In entry whose S has no cells, with a warning; then refuses two selections that share a
+    /// cell, or share a vertex unless both are In (m_shared_vertex_entries, m_entry_complex).
     void label_input_complex();
-    /// Label entry k's complex alone (label 1), as label_input_complex() calls it on cleared
-    /// labels; sets m_singlebody and m_single_tag for that entry.
+    /// Label entry k's selection alone (label 1) on cleared labels: the closure of the simplices
+    /// its expression holds for, each simplex read with its own tags and those of the simplices
+    /// containing it. Sets m_singlebody and m_single_tag for that entry.
     void label_offset(size_t k);
+    /// The boundary of the labelled complex K (label != 0), by current ids: K's faces between a
+    /// cell of K and one outside it or the outside of the mesh, K's faces, edges and vertices in
+    /// no larger simplex of K, and the edges and vertices of those faces and edges. Sized to the
+    /// capacities.
+    struct BoundaryFlags
+    {
+        std::vector<char> face, edge, vertex;
+    };
+    BoundaryFlags boundary_of_labels() const;
 
     /// check if the input complex is empty. Only valid after calling init_from_image(...).
     bool empty_input_complex();
@@ -3440,8 +3574,10 @@ public:
     MatrixXi m_phi_E;
     MatrixXi m_phi_F;
     /// Per row of m_phi_F: the sign of orient3d(a, b, c, x) for x in the input solid it bounds (+1:
-    /// the row's normal (b - a) x (c - a) points out of the label-1 region), 0 for an isolated
-    /// triangle. The exact rule's offset side (ExactBandIntegral) reads it.
+    /// the row's normal (b - a) x (c - a) points out of the solid): the label-1 cells for an Out
+    /// entry, the selection's cells for an In entry, whose complex is their boundary; 0 for a
+    /// triangle that bounds no solid (a sheet, a Both entry). The exact rule's offset side
+    /// (ExactBandIntegral) and the inside test of the distance read it.
     std::vector<int8_t> m_phi_F_inner;
     std::vector<int> m_phi_P;
 

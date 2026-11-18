@@ -866,7 +866,8 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
             if (kv.second == 2) ++n_band;
             if (kv.second == 0) ++n_other;
         }
-        parents_front = n_band == 1 && n_other == 1;
+        // ... but not an In entry's complex, the band's inner interface (c.on_in_complex).
+        parents_front = n_band == 1 && n_other == 1 && !c.on_in_complex;
     }
     m_vertex_extra[v_id].m_is_on_offset =
         e.m_is_surface_fs && (e.m_surface_class == OFFSET_SURFACE_CLASS || parents_front);
@@ -880,7 +881,9 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
     // that the label clean-up then refused to flip around. Still over-claimed: a tracked region
     // boundary that is not in the complex, between two of its vertices (the ends' AND did too).
     // 3D reads the split edge's own label (close_labels()), which has neither case.
-    bool on_input_face = false;
+    // An In entry's complex, its selection's boundary, is an edge of no input face; on the mesh
+    // boundary it is no tracked region edge either (c.on_in_complex).
+    bool on_input_face = c.on_in_complex;
     for (const auto& kv : c.face_label) on_input_face = on_input_face || kv.second == 1;
     m_vertex_extra[v_id].m_is_on_input =
         m_vertex_extra[c.v1_id].m_is_on_input && m_vertex_extra[c.v2_id].m_is_on_input &&
@@ -907,6 +910,43 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
     }
     // The construction label, from the flags and face labels just set (carried_vertex_label()).
     m_vertex_extra[v_id].label = carried_vertex_label(v_id);
+    // Several entries: a complex vertex the split has just made carries no entry yet, and
+    // band_face_entry() and the boundary test read it. The split edge's ends say which entries it
+    // can be on: one, and it is that one's; several (it is beside the boundary two In entries
+    // share), and it is on each In entry whose selection, as captured, holds one of its faces
+    // (winding number at the face's centroid) -- shared (m_shared_vertex_entries) if two or more.
+    // As 3D's close_labels(). Assigned, not kept: v_id may be a recycled slot.
+    m_vertex_extra[v_id].offset = -1;
+    if (!m_shared_vertex_entries.empty()) m_shared_vertex_entries.erase(v_id);
+    if (m_offset_params.offsets.size() > 1 && m_vertex_extra[v_id].m_is_on_input) {
+        std::set<size_t> around;
+        for (const size_t u : {c.v1_id, c.v2_id}) {
+            const auto it = m_shared_vertex_entries.find(u);
+            if (it != m_shared_vertex_entries.end()) {
+                around.insert(it->second.begin(), it->second.end());
+            } else if (m_vertex_extra[u].offset >= 0) {
+                around.insert(size_t(m_vertex_extra[u].offset));
+            }
+        }
+        if (around.size() == 1) {
+            m_vertex_extra[v_id].offset = int(*around.begin());
+        } else if (around.size() > 1) {
+            std::set<size_t> on;
+            for (const size_t f : get_one_ring_fids_for_vertex(v_id)) {
+                Vector2d centroid = Vector2d::Zero();
+                for (const size_t u : oriented_tri_vids(f))
+                    centroid += m_vertex_attribute[u].m_posf / 3.;
+                for (const size_t k : around) {
+                    if (m_offset_params.direction(k) == Parameters::Offset::Direction::In &&
+                        inside_selection(k, centroid))
+                        on.insert(k);
+                }
+            }
+            if (on.empty()) on.insert(*around.begin());
+            m_vertex_extra[v_id].offset = int(*on.begin());
+            if (on.size() >= 2) m_shared_vertex_entries[v_id] = {on.begin(), on.end()};
+        }
+    }
     return true; // the position itself is the base's business, and it is happy with it
 }
 
@@ -1869,10 +1909,7 @@ void TopoOffsetTriMesh::log_refine_block_census(const std::string& when, const d
             cand.c += m_vertex_attribute[v].m_posf / 3.;
             cand.sizing = std::min(cand.sizing, m_vertex_attribute[v].m_sizing_scalar);
         }
-        if (m_input_complex_bvh) {
-            const Vector3d foot = m_input_complex_bvh->nearest_point(cand.c);
-            cand.dist = (cand.c - Vector2d(foot.x(), foot.y())).norm();
-        }
+        if (m_input_complex_bvh) cand.dist = input_complex_distance(cand.c);
         if (m_offset_potential && c_level > 0.) {
             // Several entries of offsets: the face's piece's field over its own level, each piece
             // at its own distance. As in 3D.
@@ -2510,7 +2547,8 @@ std::vector<bool> TopoOffsetTriMesh::band_vertex_mask() const
             // Skipping these let a clipped offset report a healthy error: exactly the clipped
             // vertices -- the frozen ones nothing can fix -- were the ones dropped from the
             // measurement, and a wholly clipped band left no measured edges at all.
-            if (face_is_offset_band(e.fid(*this))) {
+            if (face_is_offset_band(e.fid(*this)) &&
+                !band_edge_on_in_complex(e.fid(*this), size_t(-1), get_edge_vids(e))) {
                 on_band[e.vid(*this)] = true;
                 on_band[e.switch_vertex(*this).vid(*this)] = true;
             }
@@ -2519,8 +2557,10 @@ std::vector<bool> TopoOffsetTriMesh::band_vertex_mask() const
         const size_t fa = e.fid(*this), fb = opp->fid(*this);
         const bool a = face_is_offset_band(fa), b = face_is_offset_band(fb);
         if (a == b) continue; // both inside the band or both outside it
-        // the face across the interface must be the plain background mesh, not the complex
+        // the face across the interface must be the plain background mesh, not the complex (an
+        // Out entry's faces, or an In entry's selection beyond its boundary)
         if (face_is_input_complex(a ? fb : fa)) continue;
+        if (band_edge_on_in_complex(a ? fa : fb, a ? fb : fa, get_edge_vids(e))) continue;
         on_band[e.vid(*this)] = true;
         on_band[e.switch_vertex(*this).vid(*this)] = true;
     }
@@ -2536,7 +2576,7 @@ double TopoOffsetTriMesh::band_vertex_distance_error(const size_t vid) const
     // 3D's envelope_for(): 2D builds no per-piece envelope). As in 3D.
     const Vector2d p = m_vertex_attribute[vid].m_posf;
     if (m_offset_params.offsets.size() <= 1 || !m_band_exact)
-        return std::abs(m_input_complex_bvh->dist(VectorXd(p)) - m_offset_params.target_distance);
+        return std::abs(input_complex_distance(p) - m_offset_params.target_distance);
     const int r = place_piece(&vid, 1);
     return std::abs(band_exact_for(r)->distance(p) - region_delta(r));
 }
@@ -2590,7 +2630,7 @@ TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::residual_split() const
             // part. report_outside_support() turns this into the error.
             if (!potential_for(vid).within_support(p)) {
                 ++s.n_outside_support;
-                const double d = m_input_complex_bvh->dist(VectorXd(p));
+                const double d = input_complex_distance(p);
                 if (d > s.worst_outside_dist) {
                     s.worst_outside_dist = d;
                     s.worst_outside_vid = vid;
@@ -3307,14 +3347,15 @@ int TopoOffsetTriMesh::place_piece(const size_t* vids, const size_t n) const
             best = r;
         }
     };
+    // The place's vertices of one piece decide; only if it has none, a vertex on faces of two
+    // pieces offers theirs: at a vertex two In entries share, a place of one entry's band is
+    // that entry's, not the other's of smaller distance. As in 3D.
+    for (size_t i = 0; i < n; ++i) consider(vertex_region(vids[i]));
+    if (best >= 0) return best;
     for (size_t i = 0; i < n; ++i) {
-        const int r = vertex_region(vids[i]);
-        if (r == -2) {
-            for (const size_t f : get_one_ring_fids_for_vertex(vids[i]))
-                consider(f < m_face_region.size() ? m_face_region[f] : -1);
-        } else {
-            consider(r);
-        }
+        if (vertex_region(vids[i]) != -2) continue;
+        for (const size_t f : get_one_ring_fids_for_vertex(vids[i]))
+            consider(f < m_face_region.size() ? m_face_region[f] : -1);
     }
     if (best >= 0) return best;
     return nearest_piece(m_vertex_attribute[vids[0]].m_posf);
@@ -3323,9 +3364,13 @@ int TopoOffsetTriMesh::place_piece(const size_t* vids, const size_t n) const
 void TopoOffsetTriMesh::assign_band_regions(const bool log)
 {
     // See m_region_potentials. A flood fill over the band faces, seeded from every band face
-    // that shares an edge with an input-complex face, with that face's region. A band face
-    // reached with two different regions (the bands merged) and a vertex whose band faces
-    // disagree read -2 and fall back to the union field -- reported, never silent.
+    // that shares an edge with an input-complex face, with that face's region -- among the pieces
+    // of the face's entry (band_face_entry()): at a vertex two In entries share, both entries'
+    // pieces are at distance 0. The fill does not cross an edge on the complex (two complex
+    // vertices): the bands of two In entries that touch meet there, and a band on both sides of
+    // one complex is seeded on both. A band face reached with two different regions (the bands
+    // merged) and a vertex whose band faces disagree read -2 and fall back to the union field --
+    // reported, never silent. As in 3D.
     m_face_region.assign(tri_capacity(), -1);
     m_vertex_region.assign(vert_capacity(), -1);
     if (m_n_regions <= 1 || m_region_potentials.empty()) return;
@@ -3333,8 +3378,41 @@ void TopoOffsetTriMesh::assign_band_regions(const bool log)
     // edge lies on the input complex, so its midpoint is at distance 0 from its own piece and at
     // the pieces' separation from any other. Re-derived rather than carried, because nothing
     // propagates a region index through split and collapse -- the same reason
-    // classify_curve_edges() re-derives on_curve.
-    const auto region_at = [&](const Vector2d& p) { return nearest_piece(p); };
+    // classify_curve_edges() re-derives on_curve. The piece of entry k nearest to p: the nearest
+    // piece if it is k's (any piece's with one entry), else the nearest of k's pieces' segments
+    // and points (3D asks its per-piece envelopes, which 2D does not build).
+    const auto region_at = [&](const Vector2d& p, const size_t k) {
+        const int nearest = nearest_piece(p);
+        if (m_region_offset.size() != size_t(m_n_regions) || nearest < 0 ||
+            size_t(m_region_offset[size_t(nearest)]) == k)
+            return nearest;
+        const auto mine = [&](const int64_t r) {
+            return r >= 0 && size_t(r) < m_region_offset.size() &&
+                   size_t(m_region_offset[size_t(r)]) == k;
+        };
+        int best = -1;
+        double best_d = std::numeric_limits<double>::infinity();
+        const auto consider = [&](const int64_t r, const double d) {
+            if (d < best_d) {
+                best_d = d;
+                best = int(r);
+            }
+        };
+        for (int i = 0; i < m_phi_E.rows(); ++i) {
+            if (!mine(m_phi_seg_region[size_t(i)])) continue;
+            const Vector2d a = m_phi_V.row(m_phi_E(i, 0)).head<2>().transpose();
+            const Vector2d b = m_phi_V.row(m_phi_E(i, 1)).head<2>().transpose();
+            const double l2 = (b - a).squaredNorm();
+            const double s = l2 > 0. ? std::clamp((p - a).dot(b - a) / l2, 0., 1.) : 0.;
+            consider(m_phi_seg_region[size_t(i)], (p - (a + s * (b - a))).norm());
+        }
+        for (size_t i = 0; i < m_phi_P.size(); ++i) {
+            if (!mine(m_phi_point_region[i])) continue;
+            const Vector2d q = m_phi_V.row(m_phi_P[i]).head<2>().transpose();
+            consider(m_phi_point_region[i], (p - q).norm());
+        }
+        return best >= 0 ? best : nearest;
+    };
     std::vector<size_t> queue;
     // The seed is a complex VERTEX (label 1) on a band face, not a band face across an edge from
     // a complex FACE: the face rule seeds nothing on a curve or point complex, which has no
@@ -3342,16 +3420,16 @@ void TopoOffsetTriMesh::assign_band_regions(const bool log)
     // vertex rule seeds exactly the same faces, since a band face on a region's boundary edge is
     // incident to that edge's endpoints. The vertex sits ON the complex, so the query below is at
     // distance 0 from its own piece.
-    std::vector<int> piece_of_vertex(vert_capacity(), -3); // -3: not looked up yet
+    std::map<std::pair<size_t, size_t>, int> piece_of_vertex; // (vertex, entry) -> piece
     for (const Tuple& f : get_faces()) {
         const size_t fid = f.fid(*this);
         if (!face_is_offset_band(fid)) continue;
+        const size_t k = band_face_entry(fid);
         for (const size_t v : oriented_tri_vids(fid)) {
             if (m_vertex_extra[v].label != 1) continue;
-            if (piece_of_vertex[v] == -3) {
-                piece_of_vertex[v] = region_at(m_vertex_attribute[v].m_posf);
-            }
-            const int r = piece_of_vertex[v];
+            const auto [it, added] = piece_of_vertex.try_emplace({v, k}, -1);
+            if (added) it->second = region_at(m_vertex_attribute[v].m_posf, k);
+            const int r = it->second;
             if (r < 0) continue;
             if (m_face_region[fid] == -1) {
                 m_face_region[fid] = r;
@@ -3367,10 +3445,14 @@ void TopoOffsetTriMesh::assign_band_regions(const bool log)
         const int r = m_face_region[f];
         if (r < 0) continue;
         for (int j = 0; j < 3; ++j) {
-            const std::optional<Tuple> opp = tuple_from_edge(f, j).switch_face(*this);
+            const Tuple e = tuple_from_edge(f, j);
+            const std::optional<Tuple> opp = e.switch_face(*this);
             if (!opp) continue;
             const size_t g = opp->fid(*this);
             if (!face_is_offset_band(g)) continue;
+            if (m_vertex_extra[e.vid(*this)].label == 1 &&
+                m_vertex_extra[e.switch_vertex(*this).vid(*this)].label == 1)
+                continue; // an edge on the complex
             if (m_face_region[g] == -1) {
                 m_face_region[g] = r;
                 queue.push_back(g);
@@ -4235,8 +4317,7 @@ void TopoOffsetTriMesh::log_worst_dist_vertex() const
     if (vid == static_cast<size_t>(-1)) return;
 
     const Vector2d p = m_vertex_attribute[vid].m_posf;
-    const Vector3d near3 = m_input_complex_bvh->nearest_point(VectorXd(p));
-    const double d = (p - Vector2d(near3[0], near3[1])).norm();
+    const double d = input_complex_distance(p);
 
     // Every gate between this vertex and a corrective move, in the order smoothing hits them.
     const auto& ve = m_vertex_extra[vid];
@@ -4338,14 +4419,32 @@ bool TopoOffsetTriMesh::edge_is_offset_surface_live(const Tuple& e) const
         // Domain boundary. A band face here means the band was clipped by the bounding box, and
         // that edge is offset boundary -- its vertices can never reach the target distance, which
         // is precisely the thing that must be measured rather than hidden. As in 3D.
-        return face_is_offset_band(fa);
+        // An In entry's selection may end on the domain boundary, which is then its complex.
+        return face_is_offset_band(fa) &&
+               !band_edge_on_in_complex(fa, size_t(-1), get_edge_vids(e));
     }
     const size_t fb = opp->fid(*this);
     const bool a = face_is_offset_band(fa), b = face_is_offset_band(fb);
     if (a == b) return false; // both in the band, or neither: not the band's boundary
     // The band's inner interface, against the input complex it wraps, sits at distance 0 by
-    // construction and would drag the reported error to target_distance everywhere.
-    return !face_is_input_complex(a ? fb : fa);
+    // construction and would drag the reported error to target_distance everywhere: an edge of
+    // a complex face (Out), or an edge of an In entry's complex, its selection's boundary, with no
+    // face beyond it (band_edge_on_in_complex()). As in 3D.
+    return !face_is_input_complex(a ? fb : fa) &&
+           !band_edge_on_in_complex(a ? fa : fb, a ? fb : fa, get_edge_vids(e));
+}
+
+bool TopoOffsetTriMesh::band_edge_on_in_complex(
+    const size_t band,
+    const size_t other,
+    const std::array<size_t, 2>& vids) const
+{
+    // See the declaration. The corners first: they decide almost every edge, without the winding
+    // number band_face_entry() may read. As in 3D.
+    if (!edge_on_input_complex(vids)) return false;
+    const size_t k = band_face_entry(band);
+    if (m_offset_params.direction(k) != Parameters::Offset::Direction::In) return false;
+    return other == size_t(-1) || !face_in_selection(k, other);
 }
 
 std::vector<std::array<size_t, 2>> TopoOffsetTriMesh::offset_surface_edges() const
@@ -4387,12 +4486,17 @@ bool TopoOffsetTriMesh::vertex_has_live_offset_edge(const size_t vid) const
         size_t j = i + 1;
         while (j < sides.size() && sides[j].other == sides[i].other) ++j;
         const size_t fa = sides[i].fid;
+        const std::array<size_t, 2> edge{{vid, sides[i].other}};
         if (j - i == 1) {
-            if (face_is_offset_band(fa)) return true; // band edge on the domain boundary
+            // a band edge on the domain boundary
+            if (face_is_offset_band(fa) && !band_edge_on_in_complex(fa, size_t(-1), edge))
+                return true;
         } else {
             const size_t fb = sides[i + 1].fid;
             const bool a = face_is_offset_band(fa), b = face_is_offset_band(fb);
-            if (a != b && !face_is_input_complex(a ? fb : fa)) return true;
+            if (a != b && !face_is_input_complex(a ? fb : fa) &&
+                !band_edge_on_in_complex(a ? fa : fb, a ? fb : fa, edge))
+                return true;
         }
         i = j;
     }
@@ -4620,13 +4724,17 @@ void TopoOffsetTriMesh::turned_front_edges_at(
         size_t j = i + 1;
         while (j < sides.size() && sides[j].other == sides[i].other) ++j;
         const size_t fa = sides[i].fid;
+        const std::array<size_t, 2> edge{{vid, sides[i].other}};
         int64_t band = -1;
         if (j - i == 1) {
-            if (face_is_offset_band(fa)) band = int64_t(fa);
+            if (face_is_offset_band(fa) && !band_edge_on_in_complex(fa, size_t(-1), edge))
+                band = int64_t(fa);
         } else {
             const size_t fb = sides[i + 1].fid;
             const bool a = face_is_offset_band(fa), b = face_is_offset_band(fb);
-            if (a != b && !face_is_input_complex(a ? fb : fa)) band = int64_t(a ? fa : fb);
+            if (a != b && !face_is_input_complex(a ? fb : fa) &&
+                !band_edge_on_in_complex(a ? fa : fb, a ? fb : fa, edge))
+                band = int64_t(a ? fa : fb);
         }
         if (band >= 0 && front_edge_field_angle_in(vid, sides[i].other, size_t(band)) >
                              m_offset_params.foldover_angle) {
@@ -4670,7 +4778,7 @@ void TopoOffsetTriMesh::check_no_vertex_on_both_surfaces(const char* when) const
         // input-complex vertex within envelope_size of the complex and the offset asks it to reach
         // target_distance, and those two demands contradict each other only when the vertex really
         // is on the complex.
-        if (m_input_complex_bvh->dist(VectorXd(m_vertex_attribute[vid].m_posf)) >
+        if (input_complex_distance(m_vertex_attribute[vid].m_posf) >
             m_offset_params.envelope_size) {
             continue;
         }
@@ -4684,7 +4792,7 @@ void TopoOffsetTriMesh::check_no_vertex_on_both_surfaces(const char* when) const
     std::string detail;
     for (size_t i = 0; i < n_show; ++i) {
         const size_t vid = both[i];
-        const double d = m_input_complex_bvh->dist(VectorXd(m_vertex_attribute[vid].m_posf));
+        const double d = input_complex_distance(m_vertex_attribute[vid].m_posf);
         detail += fmt::format("{}{} (dist to input {:.6g})", i ? ", " : "", vid, d);
     }
     log_and_throw_error(
@@ -5361,6 +5469,9 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
         // The triangle's piece's target distance, its front_conv (front_conv_rel of it) and its
         // integral (one entry: the run's and the whole complex's).
         const int piece = place_piece(vs.data(), 3);
+        // Never across an In entry's complex: a non-band face outside its selection is off the
+        // side the band grows on (face_off_offset_side()). As in 3D.
+        if (!band && face_off_offset_side(fid, piece)) return false;
         const double delta = region_delta(piece);
         const double front_conv = front_conv_of(piece);
         const ExactBandIntegral2D& band_exact = *band_exact_for(piece);
@@ -5667,7 +5778,7 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
         const std::array<size_t, 3> vs = oriented_tri_vids(fid);
         const int piece = place_piece(vs.data(), 3);
         const std::shared_ptr<const ExactBandIntegral2D>& be = band_exact_for(piece);
-        if (!be) return false;
+        if (!be || face_off_offset_side(fid, piece)) return false;
         std::array<Vector2d, 3> p;
         for (int k = 0; k < 3; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
         return be->distance_bound(p) < region_delta(piece);

@@ -105,16 +105,17 @@ The input on the left, the result on the right: drag to rotate, scroll to zoom; 
 [`offsets`](../reference/topological_offset.md#offsets) is a list with one entry per offset,
 `{"selection": ..., "output_tags": [...], "target_distance": ...}`; only `selection` is
 required. The runs on this page have one entry. Several entries are independent offsets, each
-with its own band, output tags and distance, built in one march; entries that touch are
-refused. The other options are set once for the run.
+with its own band, output tags and distance, built in one march; two selections may share no
+cell, and touch only if both grow inward, each band into its own selection. The other options
+are set once for the run.
 
-### Which side: `selection`, `offset_in`, `offset_out`
+### Which side: `selection`, `direction`
 
-An entry's `selection` names what to offset. A single tag name, as in the first run, is single
-body mode: the body is that region, and
-[`offset_out`](../reference/topological_offset.md#offset_out) (default true) and
-[`offset_in`](../reference/topological_offset.md#offset_in) (default false) say on which side of
-its boundary the band grows. At least one must be true.
+An entry's `selection` names what to offset: a region, as in the first run, a sheet, a curve, or
+an expression of them (below). The band grows from its boundary, on the side the entry's
+[`direction`](../reference/topological_offset.md#offsets) says: `out` (the default)
+away from the region's cells, `in` into them, `both` on either side. Until 2026-11 the run-wide
+`offset_in` and `offset_out` said this, for a single tag only.
 
 ```python
 --8<-- "docs/examples/python/topological_offset.py:sides"
@@ -122,9 +123,9 @@ its boundary the band grows. At least one must be true.
 
 | side | band tets | the march traces to |
 |---|---|---|
-| `offset_out` | 2,094 | 0.4, the target |
-| `offset_in` | 2,876 | 0.0973, half of the inside's maximum marchable distance, 0.195 |
-| both | 4,970 | 0.0973 |
+| `out` | 2,094 | 0.4, the target |
+| `in` | 2,876 | 0.0973, half of the inside's maximum marchable distance, 0.195 |
+| `both` | 4,970 | 0.0973 |
 
 Inside the bar the maximum marchable distance is 0.195, below the target, so the inward band
 starts at a quarter of the target and the optimization has to carry it the rest of the way.
@@ -132,10 +133,13 @@ starts at a quarter of the target and the optimization has to carry it the rest 
 ### Expressions
 
 Any other `selection` is an expression over tag names, with `&`, `|`, `!` and parentheses, as in
-simwild (`ambient` is the background). The complex is every tet whose tags satisfy it, and every
-face, edge and vertex whose surrounding tets' tags, together, satisfy it. The band grows on every
-side of the complex; `offset_in` and `offset_out` are not read. On `double_sphere.msh`, two
-overlapping spheres `tag_0` and `tag_1`, with a target of 0.05:
+simwild (`ambient` is the background). Each face, edge and vertex carries the tags of the tets
+around it, and the selection is every tet, face, edge and vertex whose tags satisfy it, with all
+their faces: `!tag_0` takes the faces of the other tets on `tag_0` too. The band grows from the
+selection's boundary on the side `direction` says; an expression that selects no tet, like the
+circle below, has no inside, so `out` and `both` are the same for it and `in` drops the offset,
+with a warning. On `double_sphere.msh`, two overlapping spheres `tag_0` and `tag_1`, with a target
+of 0.05:
 
 ```python
 --8<-- "docs/examples/python/topological_offset.py:expressions"
@@ -163,7 +167,7 @@ Surface group 'EnvelopeSurface' (tag 3): 330 triangles; 310 of the mesh's faces 
 ```
 
 In `127891.msh` the group is the bar's own surface, so `"selection": "EnvelopeSurface"`
-gives the same 4,970 band tets as `offset_in` and `offset_out` together. A face tag (simwild's
+gives the same 4,970 band tets as `direction` `both`. A face tag (simwild's
 `input_type` `surface`) is selected by its name in the same way, with `optimize_offset` false
 only.
 
