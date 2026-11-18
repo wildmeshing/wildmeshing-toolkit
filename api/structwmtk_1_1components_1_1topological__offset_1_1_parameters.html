@@ -111,6 +111,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_protected</b> (con
 <tr class="separator:a3c2ee9734601eb29b29b950f7d2a9b33"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af757772738416ba003851aa09ebdfa8a" id="r_af757772738416ba003851aa09ebdfa8a"><td class="memItemLeft" align="right" valign="top">std::set&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af757772738416ba003851aa09ebdfa8a">protected_kept</a> (const std::set&lt; int64_t &gt; &amp;tags) const</td></tr>
 <tr class="separator:af757772738416ba003851aa09ebdfa8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a209b2624833c7d578a276a1143dd56d1" id="r_a209b2624833c7d578a276a1143dd56d1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters_1_1_offset.html#aca2c618d250b789dcdea98d41b29199b">Offset::Direction</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a209b2624833c7d578a276a1143dd56d1">direction</a> (const size_t k) const</td></tr>
+<tr class="separator:a209b2624833c7d578a276a1143dd56d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c2b4dd3736e27412fe2922c8873be27" id="r_a5c2b4dd3736e27412fe2922c8873be27"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a5c2b4dd3736e27412fe2922c8873be27">front_conv_frac</a> () const</td></tr>
 <tr class="separator:a5c2b4dd3736e27412fe2922c8873be27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4757df230aa1f1472eb8447844798332" id="r_a4757df230aa1f1472eb8447844798332"><td class="memItemLeft" align="right" valign="top"><a id="a4757df230aa1f1472eb8447844798332" name="a4757df230aa1f1472eb8447844798332"></a>
@@ -140,12 +142,6 @@ std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="memitem:af7b9b09bbe9e6e2788d59ec8fbdeb386" id="r_af7b9b09bbe9e6e2788d59ec8fbdeb386"><td class="memItemLeft" align="right" valign="top"><a id="af7b9b09bbe9e6e2788d59ec8fbdeb386" name="af7b9b09bbe9e6e2788d59ec8fbdeb386"></a>
 ExpressionPtr&#160;</td><td class="memItemRight" valign="bottom"><b>protected_expression</b></td></tr>
 <tr class="separator:af7b9b09bbe9e6e2788d59ec8fbdeb386"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab7a5173bf5383c7fb969b6114f8ab35c" id="r_ab7a5173bf5383c7fb969b6114f8ab35c"><td class="memItemLeft" align="right" valign="top"><a id="ab7a5173bf5383c7fb969b6114f8ab35c" name="ab7a5173bf5383c7fb969b6114f8ab35c"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_in</b> = false</td></tr>
-<tr class="separator:ab7a5173bf5383c7fb969b6114f8ab35c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9914df786a6c43976ed1a8f02727c63b" id="r_a9914df786a6c43976ed1a8f02727c63b"><td class="memItemLeft" align="right" valign="top"><a id="a9914df786a6c43976ed1a8f02727c63b" name="a9914df786a6c43976ed1a8f02727c63b"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_out</b> = true</td></tr>
-<tr class="separator:a9914df786a6c43976ed1a8f02727c63b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8aa491cd4ee6d61f8487f9ac0668742d" id="r_a8aa491cd4ee6d61f8487f9ac0668742d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a8aa491cd4ee6d61f8487f9ac0668742d">target_distance</a></td></tr>
 <tr class="separator:a8aa491cd4ee6d61f8487f9ac0668742d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b0afe456d2855e7de584d35a83baaca" id="r_a2b0afe456d2855e7de584d35a83baaca"><td class="memItemLeft" align="right" valign="top"><a id="a2b0afe456d2855e7de584d35a83baaca" name="a2b0afe456d2855e7de584d35a83baaca"></a>
@@ -443,6 +439,33 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 <p>The optimization phase reuses <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html" title="What triwild and simwild&#39;s 2D mesh share.">wmtk::TriOptimizerMesh</a> / <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">wmtk::TetOptimizerMesh</a>, so everything that phase reads &ndash; target edge length, the split/collapse thresholds derived from it, smoothing weights and pass count, the sizing knobs, the debug switch &ndash; comes from <a class="el" href="structwmtk_1_1_optimizer_parameters.html" title="The parameters tetwild, triwild and simwild all share.">wmtk::OptimizerParameters</a> and is not restated here. The bounding box stays here because its type and meaning differ per application.</p>
 <p>Every key below means the same thing in 2D and 3D; the two pipelines are the same algorithm one dimension apart, and a key that only one of them read would be a difference in the algorithm. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a209b2624833c7d578a276a1143dd56d1" name="a209b2624833c7d578a276a1143dd56d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a209b2624833c7d578a276a1143dd56d1">&#9670;&#160;</a></span>direction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters_1_1_offset.html#aca2c618d250b789dcdea98d41b29199b">Offset::Direction</a> wmtk::components::topological_offset::Parameters::direction </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>k</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Entry k's direction; Out with no entry, as a <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html" title="What the offset needs on top of the parameters every wmtk optimizer shares.">Parameters</a> built by hand (the unit tests) is. Until 2026-11 the run-wide offset_in and offset_out, read for a single tet tag only. </p>
+
+</div>
+</div>
 <a id="a5c2b4dd3736e27412fe2922c8873be27" name="a5c2b4dd3736e27412fe2922c8873be27"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5c2b4dd3736e27412fe2922c8873be27">&#9670;&#160;</a></span>front_conv_frac()</h2>
 

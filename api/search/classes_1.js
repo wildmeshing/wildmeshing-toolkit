@@ -13,5 +13,6 @@ var searchData=
   ['basicrecorder_10',['BasicRecorder',['../classwmtk_1_1history_1_1_basic_recorder.html',1,'wmtk::history']]],
   ['basicreplay_11',['BasicReplay',['../classwmtk_1_1history_1_1_basic_replay.html',1,'wmtk::history']]],
   ['boundaryenvelope_12',['BoundaryEnvelope',['../classwmtk_1_1_boundary_envelope.html',1,'wmtk']]],
-  ['boxtree_13',['BoxTree',['../classwmtk_1_1components_1_1shortest__edge__collapse_1_1_box_tree.html',1,'wmtk::components::shortest_edge_collapse']]]
+  ['boundaryflags_13',['boundaryflags',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_boundary_flags.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::BoundaryFlags'],['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_boundary_flags.html',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::BoundaryFlags']]],
+  ['boxtree_14',['BoxTree',['../classwmtk_1_1components_1_1shortest__edge__collapse_1_1_box_tree.html',1,'wmtk::components::shortest_edge_collapse']]]
 ];

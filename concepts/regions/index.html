@@ -3535,7 +3535,7 @@ of its own, named <code>ambient</code>, so there it is selected by that name.</p
 <tr>
 <td>topological_offset</td>
 <td><a href="../../reference/topological_offset/#offsets"><code>offsets</code></a></td>
-<td>a list of <code>{"selection": expression, ...}</code>, one offset per entry: the cells to offset; a single name selects single-body mode</td>
+<td>a list of <code>{"selection": expression, "direction": ...}</code>, one offset per entry: the region, sheet, curve or points to offset, and the side of its boundary the band grows on (<code>out</code>, <code>in</code> or <code>both</code>)</td>
 </tr>
 <tr>
 <td>manifold_extraction</td>

@@ -1490,10 +1490,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#which-side-selection-offset_in-offset_out" class="md-nav__link">
+  <a href="#which-side-selection-direction" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Which side: selection, offset_in, offset_out
+        Which side: selection, direction
       
     </span>
   </a>
@@ -3530,10 +3530,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#which-side-selection-offset_in-offset_out" class="md-nav__link">
+  <a href="#which-side-selection-direction" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Which side: selection, offset_in, offset_out
+        Which side: selection, direction
       
     </span>
   </a>
@@ -3800,23 +3800,24 @@ front onto the target and restoring the quality is the job of the
 <p><a href="../../reference/topological_offset/#offsets"><code>offsets</code></a> is a list with one entry per offset,
 <code>{"selection": ..., "output_tags": [...], "target_distance": ...}</code>; only <code>selection</code> is
 required. The runs on this page have one entry. Several entries are independent offsets, each
-with its own band, output tags and distance, built in one march; entries that touch are
-refused. The other options are set once for the run.</p>
-<h3 id="which-side-selection-offset_in-offset_out">Which side: <code>selection</code>, <code>offset_in</code>, <code>offset_out</code><a class="headerlink" href="#which-side-selection-offset_in-offset_out" title="Permanent link">&para;</a></h3>
-<p>An entry's <code>selection</code> names what to offset. A single tag name, as in the first run, is single
-body mode: the body is that region, and
-<a href="../../reference/topological_offset/#offset_out"><code>offset_out</code></a> (default true) and
-<a href="../../reference/topological_offset/#offset_in"><code>offset_in</code></a> (default false) say on which side of
-its boundary the band grows. At least one must be true.</p>
+with its own band, output tags and distance, built in one march; two selections may share no
+cell, and touch only if both grow inward, each band into its own selection. The other options
+are set once for the run.</p>
+<h3 id="which-side-selection-direction">Which side: <code>selection</code>, <code>direction</code><a class="headerlink" href="#which-side-selection-direction" title="Permanent link">&para;</a></h3>
+<p>An entry's <code>selection</code> names what to offset: a region, as in the first run, a sheet, a curve, or
+an expression of them (below). The band grows from its boundary, on the side the entry's
+<a href="../../reference/topological_offset/#offsets"><code>direction</code></a> says: <code>out</code> (the default)
+away from the region's cells, <code>in</code> into them, <code>both</code> on either side. Until 2026-11 the run-wide
+<code>offset_in</code> and <code>offset_out</code> said this, for a single tag only.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Outward (the default), inward, and both: the band is the cells tagged "offset".</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">for</span> <span class="n">side</span> <span class="ow">in</span> <span class="p">[{</span><span class="s2">"offset_out"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span> <span class="p">{</span><span class="s2">"offset_in"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"offset_out"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>             <span class="p">{</span><span class="s2">"offset_in"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"offset_out"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}]:</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">out</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">topological_offset</span><span class="p">(</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>        <span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="s2">"bar"</span><span class="p">,</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>         <span class="s2">"offsets"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"selection"</span><span class="p">:</span> <span class="s2">"127891"</span><span class="p">,</span> <span class="s2">"output_tags"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"offset"</span><span class="p">],</span> <span class="s2">"target_distance"</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">}],</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>         <span class="s2">"envelope_size_rel"</span><span class="p">:</span> <span class="mf">4e-4</span><span class="p">,</span> <span class="s2">"optimize_offset"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">side</span><span class="p">},</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">for</span> <span class="n">direction</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"out"</span><span class="p">,</span> <span class="s2">"in"</span><span class="p">,</span> <span class="s2">"both"</span><span class="p">]:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">out</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">topological_offset</span><span class="p">(</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        <span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="s2">"bar"</span><span class="p">,</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>         <span class="s2">"offsets"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"selection"</span><span class="p">:</span> <span class="s2">"127891"</span><span class="p">,</span> <span class="s2">"direction"</span><span class="p">:</span> <span class="n">direction</span><span class="p">,</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>                      <span class="s2">"output_tags"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"offset"</span><span class="p">],</span> <span class="s2">"target_distance"</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">}],</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>         <span class="s2">"envelope_size_rel"</span><span class="p">:</span> <span class="mf">4e-4</span><span class="p">,</span> <span class="s2">"optimize_offset"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
 <a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>        <span class="p">{</span><span class="s2">"bar"</span><span class="p">:</span> <span class="n">bar</span><span class="p">})</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">side</span><span class="p">,</span> <span class="n">count</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s2">"mesh"</span><span class="p">],</span> <span class="s2">"offset"</span><span class="p">),</span> <span class="s2">"band tets"</span><span class="p">)</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">direction</span><span class="p">,</span> <span class="n">count</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s2">"mesh"</span><span class="p">],</span> <span class="s2">"offset"</span><span class="p">),</span> <span class="s2">"band tets"</span><span class="p">)</span>
 </code></pre></div>
 <table>
 <thead>
@@ -3828,17 +3829,17 @@ its boundary the band grows. At least one must be true.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>offset_out</code></td>
+<td><code>out</code></td>
 <td>2,094</td>
 <td>0.4, the target</td>
 </tr>
 <tr>
-<td><code>offset_in</code></td>
+<td><code>in</code></td>
 <td>2,876</td>
 <td>0.0973, half of the inside's maximum marchable distance, 0.195</td>
 </tr>
 <tr>
-<td>both</td>
+<td><code>both</code></td>
 <td>4,970</td>
 <td>0.0973</td>
 </tr>
@@ -3848,10 +3849,13 @@ its boundary the band grows. At least one must be true.</p>
 starts at a quarter of the target and the optimization has to carry it the rest of the way.</p>
 <h3 id="expressions">Expressions<a class="headerlink" href="#expressions" title="Permanent link">&para;</a></h3>
 <p>Any other <code>selection</code> is an expression over tag names, with <code>&amp;</code>, <code>|</code>, <code>!</code> and parentheses, as in
-simwild (<code>ambient</code> is the background). The complex is every tet whose tags satisfy it, and every
-face, edge and vertex whose surrounding tets' tags, together, satisfy it. The band grows on every
-side of the complex; <code>offset_in</code> and <code>offset_out</code> are not read. On <code>double_sphere.msh</code>, two
-overlapping spheres <code>tag_0</code> and <code>tag_1</code>, with a target of 0.05:</p>
+simwild (<code>ambient</code> is the background). Each face, edge and vertex carries the tags of the tets
+around it, and the selection is every tet, face, edge and vertex whose tags satisfy it, with all
+their faces: <code>!tag_0</code> takes the faces of the other tets on <code>tag_0</code> too. The band grows from the
+selection's boundary on the side <code>direction</code> says; an expression that selects no tet, like the
+circle below, has no inside, so <code>out</code> and <code>both</code> are the same for it and <code>in</code> drops the offset,
+with a warning. On <code>double_sphere.msh</code>, two overlapping spheres <code>tag_0</code> and <code>tag_1</code>, with a target
+of 0.05:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Two overlapping spheres, tag_0 and tag_1. An expression selects the complex to offset.</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">spheres</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">read_mesh</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">DATA</span> <span class="o">/</span> <span class="s2">"double_sphere.msh"</span><span class="p">))</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">for</span> <span class="n">selection</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"tag_0 &amp; tag_1"</span><span class="p">,</span>             <span class="c1"># the overlap, a lens</span>
@@ -3896,7 +3900,7 @@ says how many faces carry it:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Surface group 'EnvelopeSurface' (tag 3): 330 triangles; 310 of the mesh's faces lie inside its envelope (eps 0.0836779) and carry the tag
 </code></pre></div>
 <p>In <code>127891.msh</code> the group is the bar's own surface, so <code>"selection": "EnvelopeSurface"</code>
-gives the same 4,970 band tets as <code>offset_in</code> and <code>offset_out</code> together. A face tag (simwild's
+gives the same 4,970 band tets as <code>direction</code> <code>both</code>. A face tag (simwild's
 <code>input_type</code> <code>surface</code>) is selected by its name in the same way, with <code>optimize_offset</code> false
 only.</p>
 <h3 id="tags-of-the-band-output_tags-protected_tags">Tags of the band: <code>output_tags</code>, <code>protected_tags</code><a class="headerlink" href="#tags-of-the-band-output_tags-protected_tags" title="Permanent link">&para;</a></h3>

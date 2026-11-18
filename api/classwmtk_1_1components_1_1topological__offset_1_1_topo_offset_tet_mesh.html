@@ -106,6 +106,8 @@ Inheritance diagram for wmtk::components::topological_offset::TopoOffsetTetMesh:
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_boundary_flags.html">BoundaryFlags</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_coarsen_collapse.html">CoarsenCollapse</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_collapse_volume.html">CollapseVolume</a></td></tr>
@@ -118,6 +120,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html">EnergyCriterion</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The "energy_gradient" criterion: the front's Newton-step ratios and the refinable faces. The 3D twin of <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html" title="The front&#39;s measures against the one bar and the refinable chords. The 2D twin of TopoOffsetTetMesh::...">TopoOffsetTriMesh::EnergyCriterion</a>.  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_entry_complex.html">EntryComplex</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_face_samples.html">FaceSamples</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -285,10 +289,22 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_sheet_tag</b> (int
 <tr class="memdesc:af97d751e6c2267f59dabceb9c0af97d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mark the mesh faces that lie on the input's envelope surface group (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_face_extra.html#a8836b69b09aa0fa9a19a71328f1f0a95">FaceExtra::on_sheet</a>).  <br /></td></tr>
 <tr class="separator:af97d751e6c2267f59dabceb9c0af97d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bd3085e6f49e487df90a99448731614" id="r_a3bd3085e6f49e487df90a99448731614"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614">input_complex_distance</a> (const Vector3d &amp;p) const</td></tr>
-<tr class="memdesc:a3bd3085e6f49e487df90a99448731614"><td class="mdescLeft">&#160;</td><td class="mdescRight">The distance from p to the input complex as loaded: 0 inside its solid (its label-1 cells as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a> captured them), the distance to m_input_complex_envelope everywhere else.  <br /></td></tr>
+<tr class="memdesc:a3bd3085e6f49e487df90a99448731614"><td class="mdescLeft">&#160;</td><td class="mdescRight">The distance from p to the input complex as loaded, one-sided by the offset's direction: 0 inside its solid for Out (its label-1 cells as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a> captured them) and 0 outside it for In (the solid is then the selection, whose boundary is the complex); the distance to m_input_complex_envelope everywhere else. Both: no solid.  <br /></td></tr>
 <tr class="separator:a3bd3085e6f49e487df90a99448731614"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acfc660753699c2eb763854c7e8100b64" id="r_acfc660753699c2eb763854c7e8100b64"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#acfc660753699c2eb763854c7e8100b64">offset_distance</a> (size_t k, const Vector3d &amp;p) const</td></tr>
 <tr class="separator:acfc660753699c2eb763854c7e8100b64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af301778f38814f26bb5b8a28ff70a1f9" id="r_af301778f38814f26bb5b8a28ff70a1f9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af301778f38814f26bb5b8a28ff70a1f9">cell_in_selection</a> (const size_t k, const size_t tid) const</td></tr>
+<tr class="separator:af301778f38814f26bb5b8a28ff70a1f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49e8f8d94eeb08f1c87888bab85288dd" id="r_a49e8f8d94eeb08f1c87888bab85288dd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a49e8f8d94eeb08f1c87888bab85288dd">vertex_in_selection</a> (const size_t k, const size_t v) const</td></tr>
+<tr class="separator:a49e8f8d94eeb08f1c87888bab85288dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7000e646cb4e370c0cd1b56203bb9ba" id="r_ae7000e646cb4e370c0cd1b56203bb9ba"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae7000e646cb4e370c0cd1b56203bb9ba">edge_entry</a> (const size_t v_in, const size_t v_out) const</td></tr>
+<tr class="separator:ae7000e646cb4e370c0cd1b56203bb9ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e25764dc8971c8669ee944307bfc056" id="r_a1e25764dc8971c8669ee944307bfc056"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a1e25764dc8971c8669ee944307bfc056">on_offset_side</a> (const size_t v_in, const size_t v_out) const</td></tr>
+<tr class="separator:a1e25764dc8971c8669ee944307bfc056"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bcaf4eee0ef1f53f137cb8041902850" id="r_a9bcaf4eee0ef1f53f137cb8041902850"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9bcaf4eee0ef1f53f137cb8041902850">band_cell_entry</a> (size_t tid) const</td></tr>
+<tr class="separator:a9bcaf4eee0ef1f53f137cb8041902850"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45678146a5a5541a5a000e1eff32d6f2" id="r_a45678146a5a5541a5a000e1eff32d6f2"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a45678146a5a5541a5a000e1eff32d6f2">side_distance</a> (size_t k, const Vector3d &amp;p) const</td></tr>
+<tr class="separator:a45678146a5a5541a5a000e1eff32d6f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a53da65d645395e1a46b66a3b12f6e0c6" id="r_a53da65d645395e1a46b66a3b12f6e0c6"><td class="memItemLeft" align="right" valign="top"><a id="a53da65d645395e1a46b66a3b12f6e0c6" name="a53da65d645395e1a46b66a3b12f6e0c6"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>offset_curves</b> (const size_t k) const</td></tr>
 <tr class="separator:a53da65d645395e1a46b66a3b12f6e0c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -330,7 +346,7 @@ const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_off
 <tr class="separator:a2292b69bae19b6241f18e144bc39590e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3230128aab587173fe772cbe41ccebaf" id="r_a3230128aab587173fe772cbe41ccebaf"><td class="memItemLeft" align="right" valign="top"><a id="a3230128aab587173fe772cbe41ccebaf" name="a3230128aab587173fe772cbe41ccebaf"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>place_piece</b> (const size_t *vids, size_t n) const</td></tr>
-<tr class="memdesc:a3230128aab587173fe772cbe41ccebaf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Several entries of Parameters::offsets, each piece its entry's target distance: the piece of the input complex a place reads its distance and its field from. A place is given by its vertices (a vertex, an edge, a face, a cell). The piece of the band they are in (m_vertex_region); where two pieces meet &ndash; vertices of two, or a vertex on band cells of two (-2) &ndash; the one of them with the smaller distance; off every band, or on vertices not assigned yet (an operation's new vertex, until <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa2416f142df0310803ffce690e1211ca">assign_band_regions()</a> runs again), the nearest piece (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8526b0275c14534acbf04fdfbb406a5a" title="The piece nearest to p, by the per-piece envelopes (m_region_envelopes); -1 without them.">nearest_piece()</a>). -1 with one entry, or before the per-piece fields exist: the whole complex's field (m_offset_potential) and the run's distance, as before 2026-11. <br /></td></tr>
+<tr class="memdesc:a3230128aab587173fe772cbe41ccebaf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Several entries of Parameters::offsets, each piece its entry's target distance: the piece of the input complex a place reads its distance and its field from. A place is given by its vertices (a vertex, an edge, a face, a cell). The piece of the band they are in (m_vertex_region); where two pieces meet &ndash; vertices of two pieces, the one of them with the smaller distance; only when no vertex has one piece, a vertex on band cells of two (-2) offers those cells' pieces (at a vertex two In entries share, a place of one entry's band stays that entry's); off every band, or on vertices not assigned yet (an operation's new vertex, until <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa2416f142df0310803ffce690e1211ca">assign_band_regions()</a> runs again), the nearest piece (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8526b0275c14534acbf04fdfbb406a5a" title="The piece nearest to p, by the per-piece envelopes (m_region_envelopes); -1 without them.">nearest_piece()</a>). -1 with one entry, or before the per-piece fields exist: the whole complex's field (m_offset_potential) and the run's distance, as before 2026-11. <br /></td></tr>
 <tr class="separator:a3230128aab587173fe772cbe41ccebaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8526b0275c14534acbf04fdfbb406a5a" id="r_a8526b0275c14534acbf04fdfbb406a5a"><td class="memItemLeft" align="right" valign="top"><a id="a8526b0275c14534acbf04fdfbb406a5a" name="a8526b0275c14534acbf04fdfbb406a5a"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>nearest_piece</b> (const Vector3d &amp;p) const</td></tr>
@@ -517,6 +533,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>restore_face</b> (con
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>cell_is_input_complex</b> (const size_t tid) const</td></tr>
 <tr class="memdesc:a5c6a7819e5780a4f9f78381543b2fe3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether tet <code>tid</code> is part of the INPUT complex the band wraps. <br /></td></tr>
 <tr class="separator:a5c6a7819e5780a4f9f78381543b2fe3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b3412707e3782f9d04cd694f979825a" id="r_a6b3412707e3782f9d04cd694f979825a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b3412707e3782f9d04cd694f979825a">face_on_input_complex</a> (const std::array&lt; size_t, 3 &gt; &amp;vids) const</td></tr>
+<tr class="separator:a6b3412707e3782f9d04cd694f979825a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ac3f5aa8b04be132d7c3ad7d2be6f51" id="r_a6ac3f5aa8b04be132d7c3ad7d2be6f51"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6ac3f5aa8b04be132d7c3ad7d2be6f51">band_face_on_in_complex</a> (const size_t band, const size_t other, const std::array&lt; size_t, 3 &gt; &amp;vids) const</td></tr>
+<tr class="separator:a6ac3f5aa8b04be132d7c3ad7d2be6f51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc0760a190cad9dcf42a8578d09771f8" id="r_acc0760a190cad9dcf42a8578d09771f8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#acc0760a190cad9dcf42a8578d09771f8">cell_off_offset_side</a> (const size_t tid, const int piece) const</td></tr>
+<tr class="separator:acc0760a190cad9dcf42a8578d09771f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a8bd7e0607f6292d01e81256920f218" id="r_a2a8bd7e0607f6292d01e81256920f218"><td class="memItemLeft" align="right" valign="top"><a id="a2a8bd7e0607f6292d01e81256920f218" name="a2a8bd7e0607f6292d01e81256920f218"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>cell_is_offset_band</b> (const size_t tid) const</td></tr>
 <tr class="memdesc:a2a8bd7e0607f6292d01e81256920f218"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether tet <code>tid</code> is part of the offset BAND (as opposed to the input complex). <br /></td></tr>
@@ -626,7 +648,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>marching_split_edge_b
 <tr class="separator:a619ba52206d059358b156fe2e33db0f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afcd489d249d2ff9d9bc4d0b34ae512d5" id="r_afcd489d249d2ff9d9bc4d0b34ae512d5"><td class="memItemLeft" align="right" valign="top"><a id="afcd489d249d2ff9d9bc4d0b34ae512d5" name="afcd489d249d2ff9d9bc4d0b34ae512d5"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_sphere_trace</b> (size_t k, const Vector3d &amp;p_in, const Vector3d &amp;p_out, Vector3d &amp;p_new, size_t &amp;steps) const</td></tr>
-<tr class="memdesc:afcd489d249d2ff9d9bc4d0b34ae512d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construction placement in the marching: sphere tracing along the edge from p_in (the endpoint in the input complex, label != 0) towards p_out (the background endpoint) for the point where d(x) = D, D = m_construction_distance and d(x) the distance to the input complex, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded: 0 inside its solid (its label-1 cells as init_inp...">input_complex_distance()</a>. From t = 0 the trace evaluates d at the current point and steps forward by D - d, the largest step that cannot cross the level set (d is 1-Lipschitz); it stops when |d - D| &lt;= sphere_trace_target_rel_tol x D and returns true with p_new there. It returns false, p_new untouched, as soon as the current point reaches or passes p_out (t &gt;= L: the level set is not on the edge) or would move behind p_in (d(p_in) already beyond the target); the caller then places the plain midpoint. Every step taken is longer than the tolerance, so the trace ends within L / (tol x D) steps; <code>steps</code> returns how many it took. No snapping away from the endpoints: a point found arbitrarily close to p_out is used as is. <br /></td></tr>
+<tr class="memdesc:afcd489d249d2ff9d9bc4d0b34ae512d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construction placement in the marching: sphere tracing along the edge from p_in (the endpoint in the input complex, label != 0) towards p_out (the background endpoint) for the point where d(x) = D, D = m_construction_distance and d(x) the distance to the input complex, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded, one-sided by the offset&#39;s direction: 0 inside its...">input_complex_distance()</a>. From t = 0 the trace evaluates d at the current point and steps forward by D - d, the largest step that cannot cross the level set (d is 1-Lipschitz); it stops when |d - D| &lt;= sphere_trace_target_rel_tol x D and returns true with p_new there. It returns false, p_new untouched, as soon as the current point reaches or passes p_out (t &gt;= L: the level set is not on the edge) or would move behind p_in (d(p_in) already beyond the target); the caller then places the plain midpoint. Every step taken is longer than the tolerance, so the trace ends within L / (tol x D) steps; <code>steps</code> returns how many it took. No snapping away from the endpoints: a point found arbitrarily close to p_out is used as is. <br /></td></tr>
 <tr class="separator:afcd489d249d2ff9d9bc4d0b34ae512d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48395070b59acd96aceca50e4c7bb0d5" id="r_a48395070b59acd96aceca50e4c7bb0d5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a48395070b59acd96aceca50e4c7bb0d5">collapse_edge_before</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
 <tr class="memdesc:a48395070b59acd96aceca50e4c7bb0d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reject any collapse that violates the substructure link condition, remember the survivor's sizing for sizing_collapse_min = false, and cache the energy rule's before-half.  <br /></td></tr>
@@ -690,9 +712,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_offset</b>
 <tr class="separator:a994f21ad79d779097cd6474d0923ff68"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b97a2d23bdfbd4c3cc290cf96fccb07" id="r_a6b97a2d23bdfbd4c3cc290cf96fccb07"><td class="memItemLeft" align="right" valign="top">polysolve::nonlinear::Solver &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6b97a2d23bdfbd4c3cc290cf96fccb07">smoothing_solver</a> ()</td></tr>
 <tr class="separator:a6b97a2d23bdfbd4c3cc290cf96fccb07"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ec0f7f7bbabcd6f57c38be73c7626a8" id="r_a9ec0f7f7bbabcd6f57c38be73c7626a8"><td class="memItemLeft" align="right" valign="top"><a id="a9ec0f7f7bbabcd6f57c38be73c7626a8" name="a9ec0f7f7bbabcd6f57c38be73c7626a8"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_marched_edge</b> (const size_t a, const size_t b) const</td></tr>
-<tr class="memdesc:a9ec0f7f7bbabcd6f57c38be73c7626a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">The edges <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4898de71f1b7b8f2159cea5d8b6a2458">marching_tets()</a> splits: exactly one end in the input complex (label != 0). <br /></td></tr>
+<tr class="memitem:a9ec0f7f7bbabcd6f57c38be73c7626a8" id="r_a9ec0f7f7bbabcd6f57c38be73c7626a8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9ec0f7f7bbabcd6f57c38be73c7626a8">is_marched_edge</a> (const size_t a, const size_t b) const</td></tr>
 <tr class="separator:a9ec0f7f7bbabcd6f57c38be73c7626a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acaf37e4c8992323d087a02545d750af6" id="r_acaf37e4c8992323d087a02545d750af6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#acaf37e4c8992323d087a02545d750af6">is_repulsion_vertex</a> (const size_t vid) const</td></tr>
 <tr class="separator:acaf37e4c8992323d087a02545d750af6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -972,6 +992,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>ambient_assert</b> ()
 <tr class="separator:aaed4f7af1b15e9fc3d7c0cfb9afaeb8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac174dd4973aeb2a08762e7a5df6c26f0" id="r_ac174dd4973aeb2a08762e7a5df6c26f0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac174dd4973aeb2a08762e7a5df6c26f0">label_offset</a> (size_t k)</td></tr>
 <tr class="separator:ac174dd4973aeb2a08762e7a5df6c26f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46011317d9f9578c7133720ecd85ae29" id="r_a46011317d9f9578c7133720ecd85ae29"><td class="memItemLeft" align="right" valign="top"><a id="a46011317d9f9578c7133720ecd85ae29" name="a46011317d9f9578c7133720ecd85ae29"></a>
+<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_boundary_flags.html">BoundaryFlags</a>&#160;</td><td class="memItemRight" valign="bottom"><b>boundary_of_labels</b> () const</td></tr>
+<tr class="separator:a46011317d9f9578c7133720ecd85ae29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add5223c9a76a03e587630b619585e27b" id="r_add5223c9a76a03e587630b619585e27b"><td class="memItemLeft" align="right" valign="top"><a id="add5223c9a76a03e587630b619585e27b" name="add5223c9a76a03e587630b619585e27b"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>empty_input_complex</b> ()</td></tr>
 <tr class="memdesc:add5223c9a76a03e587630b619585e27b"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if the input complex is empty. Only valid after calling init_from_image(...). <br /></td></tr>
@@ -1889,6 +1912,19 @@ MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><b>m_sheet_V</b></td
 <tr class="memitem:a115d3988f31d16ac3cc5b00e108cd4fb" id="r_a115d3988f31d16ac3cc5b00e108cd4fb"><td class="memItemLeft" align="right" valign="top"><a id="a115d3988f31d16ac3cc5b00e108cd4fb" name="a115d3988f31d16ac3cc5b00e108cd4fb"></a>
 MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_sheet_F</b></td></tr>
 <tr class="separator:a115d3988f31d16ac3cc5b00e108cd4fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5c5b7d1d721793a848c35b38df187f1" id="r_ac5c5b7d1d721793a848c35b38df187f1"><td class="memItemLeft" align="right" valign="top">std::map&lt; size_t, std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac5c5b7d1d721793a848c35b38df187f1">m_shared_vertex_entries</a></td></tr>
+<tr class="separator:ac5c5b7d1d721793a848c35b38df187f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51cf6668a47a648ee74254e596446928" id="r_a51cf6668a47a648ee74254e596446928"><td class="memItemLeft" align="right" valign="top"><a id="a51cf6668a47a648ee74254e596446928" name="a51cf6668a47a648ee74254e596446928"></a>
+std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_entry_complex.html">EntryComplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_entry_complex</b></td></tr>
+<tr class="separator:a51cf6668a47a648ee74254e596446928"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab10e0eaa3c62cd7113deb479694ccc79" id="r_ab10e0eaa3c62cd7113deb479694ccc79"><td class="memItemLeft" align="right" valign="top">std::map&lt; CellTag, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab10e0eaa3c62cd7113deb479694ccc79">m_band_tags_entry</a></td></tr>
+<tr class="separator:ab10e0eaa3c62cd7113deb479694ccc79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86e9d060f2103070a3b1f8d99e79aa2a" id="r_a86e9d060f2103070a3b1f8d99e79aa2a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a86e9d060f2103070a3b1f8d99e79aa2a">m_offset_has_cells</a></td></tr>
+<tr class="separator:a86e9d060f2103070a3b1f8d99e79aa2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5d0672564368666b22765305e0fc607" id="r_ad5d0672564368666b22765305e0fc607"><td class="memItemLeft" align="right" valign="top"><a id="ad5d0672564368666b22765305e0fc607" name="ad5d0672564368666b22765305e0fc607"></a>
+std::vector&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_offset_dropped</b></td></tr>
+<tr class="memdesc:ad5d0672564368666b22765305e0fc607"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per entry of Parameters::offsets: dropped by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aaed4f7af1b15e9fc3d7c0cfb9afaeb8c">label_input_complex()</a> (In, no cells). <br /></td></tr>
+<tr class="separator:ad5d0672564368666b22765305e0fc607"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ad7ee7d0a9fd851564edec5578e0cc4" id="r_a8ad7ee7d0a9fd851564edec5578e0cc4"><td class="memItemLeft" align="right" valign="top"><a id="a8ad7ee7d0a9fd851564edec5578e0cc4" name="a8ad7ee7d0a9fd851564edec5578e0cc4"></a>
 std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_offset_query.html">OffsetQuery</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_offset_queries</b></td></tr>
 <tr class="separator:a8ad7ee7d0a9fd851564edec5578e0cc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1902,7 +1938,7 @@ std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__off
 <tr class="memdesc:a4abc4baa13f8058d556ac3218d9c2044"><td class="mdescLeft">&#160;</td><td class="mdescRight">The smooth offset potential, and with it the definition of the offset itself.  <br /></td></tr>
 <tr class="separator:a4abc4baa13f8058d556ac3218d9c2044"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a075eb2093d76cb1962bd65e7b1a7d361" id="r_a075eb2093d76cb1962bd65e7b1a7d361"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a075eb2093d76cb1962bd65e7b1a7d361">m_input_complex_envelope</a></td></tr>
-<tr class="memdesc:a075eb2093d76cb1962bd65e7b1a7d361"><td class="mdescLeft">&#160;</td><td class="mdescRight">The input complex as loaded, as an envelope of its primitives (the rows of m_phi_F, or of m_phi_E and m_phi_P): built once, by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a>, never rebuilt. Every 3D distance to the input reads it: the euclidean field (m_offset_potential), the repulsion pass, the band term's searches (<a class="el" href="_offset_potential_8hpp_source.html">OffsetPotential.hpp</a>), the exact integral's box queries (m_band_exact), the march and the diagnostics (with <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded: 0 inside its solid (its label-1 cells as init_inp...">input_complex_distance()</a>'s inside test where a distance must be 0 inside the solid).  <br /></td></tr>
+<tr class="memdesc:a075eb2093d76cb1962bd65e7b1a7d361"><td class="mdescLeft">&#160;</td><td class="mdescRight">The input complex as loaded, as an envelope of its primitives (the rows of m_phi_F, or of m_phi_E and m_phi_P): built once, by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a>, never rebuilt. Every 3D distance to the input reads it: the euclidean field (m_offset_potential), the repulsion pass, the band term's searches (<a class="el" href="_offset_potential_8hpp_source.html">OffsetPotential.hpp</a>), the exact integral's box queries (m_band_exact), the march and the diagnostics (with <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded, one-sided by the offset&#39;s direction: 0 inside its...">input_complex_distance()</a>'s inside test where a distance must be 0 inside the solid).  <br /></td></tr>
 <tr class="separator:a075eb2093d76cb1962bd65e7b1a7d361"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7293946226bcef717f65724747706c5b" id="r_a7293946226bcef717f65724747706c5b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7293946226bcef717f65724747706c5b">m_input_complex_pad</a> = 0.</td></tr>
 <tr class="separator:a7293946226bcef717f65724747706c5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3278,6 +3314,25 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="a9bcaf4eee0ef1f53f137cb8041902850" name="a9bcaf4eee0ef1f53f137cb8041902850"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9bcaf4eee0ef1f53f137cb8041902850">&#9670;&#160;</a></span>band_cell_entry()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::topological_offset::TopoOffsetTetMesh::band_cell_entry </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>tid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The entry of a band cell (label 2): its complex vertex's (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#ab37230f34910f554db301fe1a9561bae">VertexExtra::offset</a>), or, at a vertex several In entries share, the one whose selection holds the cell &ndash; by its tags before <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4b23409ad659285c4687b18215074546">set_offset_tet_tags()</a> overwrites them; after it, by the output tags it wrote (m_band_tags_entry), else by the winding number of the selection as captured (m_offset_queries). 0 with one entry. </p>
+
+</div>
+</div>
 <a id="a0b6c496ce6e668591e5d145541d89fec" name="a0b6c496ce6e668591e5d145541d89fec"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0b6c496ce6e668591e5d145541d89fec">&#9670;&#160;</a></span>band_cell_pieces()</h2>
 
@@ -3432,6 +3487,42 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </table>
 </div><div class="memdoc">
 <p>The exact integral a place of piece r reads (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3230128aab587173fe772cbe41ccebaf" title="Several entries of Parameters::offsets, each piece its entry&#39;s target distance: the piece of the inpu...">place_piece()</a>): its piece's, with several entries; m_band_exact, the whole complex's, otherwise. </p>
+
+</div>
+</div>
+<a id="a6ac3f5aa8b04be132d7c3ad7d2be6f51" name="a6ac3f5aa8b04be132d7c3ad7d2be6f51"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ac3f5aa8b04be132d7c3ad7d2be6f51">&#9670;&#160;</a></span>band_face_on_in_complex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::band_face_on_in_complex </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>band</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>other</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::array&lt; size_t, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Whether the face <code>vids</code> between band cell <code>band</code> and non-band cell <code>other</code> (size_t(-1): the outside of the mesh) is on an In entry's complex, the boundary of its selection: the band cell's entry (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9bcaf4eee0ef1f53f137cb8041902850">band_cell_entry()</a>) is In and <code>other</code> is outside its selection. Three corners on the complex are necessary (labels are closed downward), not sufficient: where In entries touch, or after an operation, a front face can have all three corners on the complex. Out: the complex is cells, read off their label; Both: the band covers both sides of the complex. MEASURED before (corners alone, scan_1 frame 0, 48 touching In entries, 2026-11-17): front faces read as held, and the first swap pass threw "a tracked
+simplex has an empty input set" (a front face has no labels). </p>
 
 </div>
 </div>
@@ -3757,6 +3848,43 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="af301778f38814f26bb5b8a28ff70a1f9" name="af301778f38814f26bb5b8a28ff70a1f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af301778f38814f26bb5b8a28ff70a1f9">&#9670;&#160;</a></span>cell_in_selection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::cell_in_selection </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>k</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>tid</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether cell tid is in entry k's selection: its tags satisfy the entry's expression (a cell carries no tag of a lower simplex, and no larger simplex adds any). </p>
+
+</div>
+</div>
 <a id="aab250cdd87d97c17af9efd31d41545e7" name="aab250cdd87d97c17af9efd31d41545e7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aab250cdd87d97c17af9efd31d41545e7">&#9670;&#160;</a></span>cell_is_plastic()</h2>
 
@@ -3781,6 +3909,43 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </table>
 </div><div class="memdoc">
 <p>Every cell outside the offset band and the input complex (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a47a919bfc3023bd53cb9005dd11ca84c">cell_in_region()</a> false), while the plastic medium is active: its AMIPS term in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7cf44fe4ab8f1ac651b98ec63b8b961d" title="THE per-tet energy E(t), read from the mesh as it is – the cell&#39;s corners and its label,...">tet_energy()</a> and in the smoother is against its stamped rest shape (TetAttributes::rest_pos) instead of the regular tet. The band and the complex are elastic. </p>
+
+</div>
+</div>
+<a id="acc0760a190cad9dcf42a8578d09771f8" name="acc0760a190cad9dcf42a8578d09771f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc0760a190cad9dcf42a8578d09771f8">&#9670;&#160;</a></span>cell_off_offset_side()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::cell_off_offset_side </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>tid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const int&#160;</td>
+          <td class="paramname"><em>piece</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether cell tid, off the band, lies off the side its piece's entry grows on: outside the selection of an In entry (<code>piece</code> as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3230128aab587173fe772cbe41ccebaf" title="Several entries of Parameters::offsets, each piece its entry&#39;s target distance: the piece of the inpu...">place_piece()</a> gives it; the entry of a piece is m_region_offset's, entry 0 with one). The label clean-up's side test reads an unsigned bound of the distance to the complex, the selection's boundary for In, so such a cell within the target of it would read as inside the level set: flipped into the band, or, held out by the complex, the level set out of reach. Out: the cells inside its solid are the complex (label 1), which the clean-up never flips; Both: either side. </p>
 
 </div>
 </div>
@@ -4465,6 +4630,43 @@ template&lt;typename F &gt; </div>
 
 </div>
 </div>
+<a id="ae7000e646cb4e370c0cd1b56203bb9ba" name="ae7000e646cb4e370c0cd1b56203bb9ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7000e646cb4e370c0cd1b56203bb9ba">&#9670;&#160;</a></span>edge_entry()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::topological_offset::TopoOffsetTetMesh::edge_entry </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>v_in</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>v_out</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The entry of the edge from a complex vertex v_in (label != 0) to v_out (label 0): v_in's, or, where v_in is on the boundaries of several In entries that touch (m_shared_vertex_entries), the one whose selection v_out is in (the first if none is). </p>
+
+</div>
+</div>
 <a id="a1bf5b8c06b26e578cb0945b3c02ec854" name="a1bf5b8c06b26e578cb0945b3c02ec854"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1bf5b8c06b26e578cb0945b3c02ec854">&#9670;&#160;</a></span>edge_has_tag()</h2>
 
@@ -4760,6 +4962,33 @@ template&lt;typename F &gt; </div>
 <p>THE ONE FACE FUNCTION: the mean over the face's stencil of r^2, r = relative_residual(q) / front_conv_frac() &ndash; the squared face measure, in units of the tolerance, 1 at the bar. </p>
 <p>Every reader of the face measure goes through it: the logs print its root, energy_criterion()'s exit, refinement and ring measures, and the debug frames' front_err_ratio and front_ring_ratio. It is not part of the energy (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7cf44fe4ab8f1ac651b98ec63b8b961d" title="THE per-tet energy E(t), read from the mesh as it is – the cell&#39;s corners and its label,...">tet_energy()</a>). -1 when unmeasurable (a sample whose relative_residual() is not finite, which the euclidean field never has), +inf when the bar is not positive.</p>
 <p>The (a, b, c) form reads the field of the face's edge (a, b) (potential_for_edge()), as the face measure always has. </p>
+
+</div>
+</div>
+<a id="a6b3412707e3782f9d04cd694f979825a" name="a6b3412707e3782f9d04cd694f979825a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b3412707e3782f9d04cd694f979825a">&#9670;&#160;</a></span>face_on_input_complex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::face_on_input_complex </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether all three corners of a face are on the input complex (VertexExtra::m_is_on_input): after the simplicial embedding, a face of the complex. The band's inner interface for an In entry, whose complex is its selection's boundary and has no cell. </p>
 
 </div>
 </div>
@@ -5815,7 +6044,7 @@ template&lt;typename F &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p>The distance from p to the input complex as loaded: 0 inside its solid (its label-1 cells as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a> captured them), the distance to m_input_complex_envelope everywhere else. </p>
+<p>The distance from p to the input complex as loaded, one-sided by the offset's direction: 0 inside its solid for Out (its label-1 cells as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a> captured them) and 0 outside it for In (the solid is then the selection, whose boundary is the complex); the distance to m_input_complex_envelope everywhere else. Both: no solid. </p>
 <p>Inside means a winding number above 1/2 (wmtk::utils::winding_number_inside()) with respect to the solid's boundary faces, oriented out of it (m_input_solid_winding); a point on that boundary is not inside and is at distance 0 from the envelope's triangles anyway. A complex with no cells has no inside. This is the distance <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_simplicial_complex_b_v_h.html#a9d5d282d4f59a94cc60d25c9b28822f0" title="compute distance to complex">SimplicialComplexBVH::squared_dist()</a> answered (inside any of its tets, else the distance to the tets' faces, the isolated triangles, edges and points) until 2026-10-15, when the 3D offset's distance queries moved onto the envelope: outside the solid the nearest point of the tets' faces is on its boundary, which is what the envelope holds. </p>
 
 </div>
@@ -5864,6 +6093,43 @@ template&lt;typename F &gt; </div>
       </table>
 </div><div class="memdoc">
 <p>Whether edge <code>loc</code> lies on a region boundary / on the offset surface, by the cached face classes. </p>
+
+</div>
+</div>
+<a id="a9ec0f7f7bbabcd6f57c38be73c7626a8" name="a9ec0f7f7bbabcd6f57c38be73c7626a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ec0f7f7bbabcd6f57c38be73c7626a8">&#9670;&#160;</a></span>is_marched_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::is_marched_edge </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The edges <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4898de71f1b7b8f2159cea5d8b6a2458">marching_tets()</a> splits: exactly one end in the input complex (label != 0), and leading to its entry's side (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a1e25764dc8971c8669ee944307bfc056">on_offset_side()</a>). </p>
 
 </div>
 </div>
@@ -5977,7 +6243,7 @@ template&lt;typename F &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Label the input complex: the union of the complexes of Parameters::offsets, each entry's vertices carrying its index (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#ab37230f34910f554db301fe1a9561bae">VertexExtra::offset</a>). Refuses a vertex two entries select. </p>
+<p>Label the input complex: the union of the complexes of Parameters::offsets, each entry's vertices carrying its index (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#ab37230f34910f554db301fe1a9561bae">VertexExtra::offset</a>). An entry's complex is its selection S (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac174dd4973aeb2a08762e7a5df6c26f0">label_offset()</a>) for Out, and S's boundary (boundary_of_labels()) for In and Both. Drops an In entry whose S has no cells, with a warning; then refuses two selections that share a cell, or share a vertex unless both are In (m_shared_vertex_entries, m_entry_complex). </p>
 
 </div>
 </div>
@@ -6025,7 +6291,7 @@ template&lt;typename F &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Label entry k's complex alone (label 1), as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aaed4f7af1b15e9fc3d7c0cfb9afaeb8c">label_input_complex()</a> calls it on cleared labels; sets m_singlebody and m_single_tag for that entry. </p>
+<p>Label entry k's selection alone (label 1) on cleared labels: the closure of the simplices its expression holds for, each simplex read with its own tags and those of the simplices containing it. Sets m_singlebody and m_single_tag for that entry. </p>
 
 </div>
 </div>
@@ -6272,7 +6538,7 @@ template&lt;typename F &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The distance from p to entry k of Parameters::offsets alone, as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded: 0 inside its solid (its label-1 cells as init_inp...">input_complex_distance()</a> for the whole complex: 0 inside the entry's solid, the distance to its primitives elsewhere (infinite for an entry that selects nothing). The march traces each entry's edges on it. One entry: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded: 0 inside its solid (its label-1 cells as init_inp...">input_complex_distance()</a> itself. </p>
+<p>The distance from p to entry k of Parameters::offsets alone, as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded, one-sided by the offset&#39;s direction: 0 inside its...">input_complex_distance()</a> for the whole complex: one-sided by the entry's direction &ndash; 0 inside its selection's cells for Out, 0 outside them for In, 0 nowhere for Both &ndash; and the distance to its primitives elsewhere (infinite for an entry that selects nothing). The march traces each entry's edges on it. One entry: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded, one-sided by the offset&#39;s direction: 0 inside its...">input_complex_distance()</a> itself. </p>
 
 </div>
 </div>
@@ -6411,6 +6677,43 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 <p>1 / front_conv_frac()^2: the factor that turns a squared relative error into a squared error in units of the tolerance. The scale of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7e210293196d434ab4017518c7e8be71" title="THE ONE FACE FUNCTION: the mean over the face&#39;s stencil of r^2, r = relative_residual(q) / front_conv...">face_offset_term()</a> and of the repulsion term. </p>
+
+</div>
+</div>
+<a id="a1e25764dc8971c8669ee944307bfc056" name="a1e25764dc8971c8669ee944307bfc056"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e25764dc8971c8669ee944307bfc056">&#9670;&#160;</a></span>on_offset_side()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::on_offset_side </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>v_in</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>v_out</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether the edge from a complex vertex v_in (label != 0) to v_out (label 0) leads to the side of its entry's direction (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae7000e646cb4e370c0cd1b56203bb9ba">edge_entry()</a>): always but for In, where v_out must be inside the selection's cells. </p>
 
 </div>
 </div>
@@ -7212,6 +7515,35 @@ template&lt;typename F &gt; </div>
 
 </div>
 </div>
+<a id="a45678146a5a5541a5a000e1eff32d6f2" name="a45678146a5a5541a5a000e1eff32d6f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a45678146a5a5541a5a000e1eff32d6f2">&#9670;&#160;</a></span>side_distance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::side_distance </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>k</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>p</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#acfc660753699c2eb763854c7e8100b64">offset_distance()</a> off its one side: +infinity where an In entry is 0 (outside its selection), so that the union of entries (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded, one-sided by the offset&#39;s direction: 0 inside its...">input_complex_distance()</a>) is not 0 there. </p>
+
+</div>
+</div>
 <a id="a597c9f717ab3e70ae21824f939623c65" name="a597c9f717ab3e70ae21824f939623c65"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a597c9f717ab3e70ae21824f939623c65">&#9670;&#160;</a></span>simplex_in_input_complex()</h2>
 
@@ -7227,7 +7559,7 @@ template&lt;typename F &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Whether the simplex on the vertices <code>c</code> (2 or 3 of them) is in the input complex, from the cells' labels: in a cell of the complex, or, for offset_in, on a domain-boundary face of a body cell. Single-body offset_in or offset_out only, which <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abcf0c2ec47227d1405f268a641ceb9a3">repulsion_smoothing()</a> checks. </p>
+<p>Whether the simplex on the vertices <code>c</code> (2 or 3 of them) is in the input complex, from the cells: for Out in a cell of the complex (label), for In on the body's boundary (between a body cell and another, or on a domain-boundary face of a body cell; the body by its tags). A single tet tag offset inward or outward only, which <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abcf0c2ec47227d1405f268a641ceb9a3">repulsion_smoothing()</a> checks. </p>
 
 </div>
 </div>
@@ -8965,6 +9297,43 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 </div>
 </div>
+<a id="a49e8f8d94eeb08f1c87888bab85288dd" name="a49e8f8d94eeb08f1c87888bab85288dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49e8f8d94eeb08f1c87888bab85288dd">&#9670;&#160;</a></span>vertex_in_selection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::vertex_in_selection </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>k</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>v</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether vertex v, off entry k's boundary, is inside its selection: its cells are all in it (off the boundary, they are all in it or all out of it). </p>
+
+</div>
+</div>
 <a id="a4ff51ab72cc1d6dc9bc97d03db8fe887" name="a4ff51ab72cc1d6dc9bc97d03db8fe887"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4ff51ab72cc1d6dc9bc97d03db8fe887">&#9670;&#160;</a></span>vertex_is_held()</h2>
 
@@ -9575,6 +9944,21 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 </div>
 </div>
+<a id="ab10e0eaa3c62cd7113deb479694ccc79" name="ab10e0eaa3c62cd7113deb479694ccc79"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab10e0eaa3c62cd7113deb479694ccc79">&#9670;&#160;</a></span>m_band_tags_entry</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::map&lt;CellTag, size_t&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_band_tags_entry</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>After <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4b23409ad659285c4687b18215074546">set_offset_tet_tags()</a>: each band cell's tag set as it wrote it (its entry's output tags), to that entry, for the tag sets exactly one entry writes. The operations carry the tags, so <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9bcaf4eee0ef1f53f137cb8041902850">band_cell_entry()</a> reads the entry exactly. MEASURED before (the winding number of the selection as captured; scan_1 frame 0, 48 touching In entries at 0.1 in an envelope of 0.124, 2026-11-17): after one collapse pass of the TetWild pass, band cells of cell_38 whose centroids no winding put inside any selection took a neighbour's entry, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9aa83102392d98170a7c2440800af5e7">close_labels()</a> then labelled front faces as the complex, and the first swap pass threw "a tracked simplex has an empty input set". </p>
+
+</div>
+</div>
 <a id="a47b80f3263781b8e727540f9b01294e8" name="a47b80f3263781b8e727540f9b01294e8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a47b80f3263781b8e727540f9b01294e8">&#9670;&#160;</a></span>m_coarsen_reject_amips</h2>
 
@@ -9952,7 +10336,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
       </table>
 </div><div class="memdoc">
 
-<p>The input complex as loaded, as an envelope of its primitives (the rows of m_phi_F, or of m_phi_E and m_phi_P): built once, by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a>, never rebuilt. Every 3D distance to the input reads it: the euclidean field (m_offset_potential), the repulsion pass, the band term's searches (<a class="el" href="_offset_potential_8hpp_source.html">OffsetPotential.hpp</a>), the exact integral's box queries (m_band_exact), the march and the diagnostics (with <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded: 0 inside its solid (its label-1 cells as init_inp...">input_complex_distance()</a>'s inside test where a distance must be 0 inside the solid). </p>
+<p>The input complex as loaded, as an envelope of its primitives (the rows of m_phi_F, or of m_phi_E and m_phi_P): built once, by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a>, never rebuilt. Every 3D distance to the input reads it: the euclidean field (m_offset_potential), the repulsion pass, the band term's searches (<a class="el" href="_offset_potential_8hpp_source.html">OffsetPotential.hpp</a>), the exact integral's box queries (m_band_exact), the march and the diagnostics (with <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded, one-sided by the offset&#39;s direction: 0 inside its...">input_complex_distance()</a>'s inside test where a distance must be 0 inside the solid). </p>
 <p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a> has one call site, before <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#afed322b62cb7a70307e3e90ed31be0fc">construct_offset()</a> runs, so this holds the original geometry however the elements representing the complex are later remeshed. Rebuilding from the live mesh would redefine the offset distance in terms of a surface the optimizer had just moved. Containment is not its job &ndash; m_envelope holds the complex's boundary in place.</p>
 <p>A query engine, never asked a containment question: no operation tests against it. It answers nearest_point_feature() &ndash; the foot point plus the feature kind the exact distance derivatives case on &ndash; and the per-primitive queries, which read only the envelope's BVH and its copies of the input, filled by every <a class="el" href="classwmtk_1_1_tet_mesh.html#a52a44bea81d91f805cbb5d27acb7bec1">init()</a> (src/wmtk/envelope/Envelope.cpp). Under offset_field "euclidean" it is built exact at target_distance (euclidean_query_envelope()), and its exact structure is unused; under any other field (refused by the 3D app; unit tests build meshes with none) it is built with eps 0, the query engine alone, whose containment queries throw. </p>
 
@@ -9984,7 +10368,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
         </tr>
       </table>
 </div><div class="memdoc">
-<p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded: 0 inside its solid (its label-1 cells as init_inp...">input_complex_distance()</a>'s inside test: the winding-number hierarchy of the rows of m_phi_F that bound the solid (m_phi_F_inner != 0), each oriented out of the label-1 cell it bounds. Built once by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a>, only when the complex has cells; null otherwise. </p>
+<p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3bd3085e6f49e487df90a99448731614" title="The distance from p to the input complex as loaded, one-sided by the offset&#39;s direction: 0 inside its...">input_complex_distance()</a>'s inside test: the winding-number hierarchy of the rows of m_phi_F that bound the solid (m_phi_F_inner != 0), each oriented out of the label-1 cell it bounds. Built once by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa442804568f190cef942f2c4ebf2b04d" title="Build the input complex&#39;s BVH and keep the extraction the potential needs, and number the complex&#39;s c...">init_input_complex_bvh()</a>, only when the complex has cells; null otherwise. </p>
 
 </div>
 </div>
@@ -10130,6 +10514,21 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
 
 </div>
 </div>
+<a id="a86e9d060f2103070a3b1f8d99e79aa2a" name="a86e9d060f2103070a3b1f8d99e79aa2a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86e9d060f2103070a3b1f8d99e79aa2a">&#9670;&#160;</a></span>m_offset_has_cells</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;bool&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_offset_has_cells</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Per entry of Parameters::offsets: its selection has cells (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aaed4f7af1b15e9fc3d7c0cfb9afaeb8c">label_input_complex()</a>). An In entry without is dropped; the repulsion passes need one with. </p>
+
+</div>
+</div>
 <a id="a6c3d4b3cec2ef3eba7c0e2ecc8f16303" name="a6c3d4b3cec2ef3eba7c0e2ecc8f16303"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6c3d4b3cec2ef3eba7c0e2ecc8f16303">&#9670;&#160;</a></span>m_offset_levels</h2>
 
@@ -10173,7 +10572,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Per row of m_phi_F: the sign of orient3d(a, b, c, x) for x in the input solid it bounds (+1: the row's normal (b - a) x (c - a) points out of the label-1 region), 0 for an isolated triangle. The exact rule's offset side (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html" title="The band-volume integral of one cell, in closed form:">ExactBandIntegral</a>) reads it. </p>
+<p>Per row of m_phi_F: the sign of orient3d(a, b, c, x) for x in the input solid it bounds (+1: the row's normal (b - a) x (c - a) points out of the solid): the label-1 cells for an Out entry, the selection's cells for an In entry, whose complex is their boundary; 0 for a triangle that bounds no solid (a sheet, a Both entry). The exact rule's offset side (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral.html" title="The band-volume integral of one cell, in closed form:">ExactBandIntegral</a>) and the inside test of the distance read it. </p>
 
 </div>
 </div>
@@ -10407,6 +10806,21 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
       </table>
 </div><div class="memdoc">
 <p>EXPERIMENTAL_settle_mark "vertex_split": the front edges the last settled turn chose to split (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa2e0df7851739ebad24d59af60a980b8">settle_refinement_turn()</a>); <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6de332ab81aa04803b0e5b33e3cb3aeb" title="EXPERIMENTAL_front_pocket_split. Invariant: no cell is PINNED when a smoothing pass of the loop start...">front_pocket_split()</a> splits them and clears the list. </p>
+
+</div>
+</div>
+<a id="ac5c5b7d1d721793a848c35b38df187f1" name="ac5c5b7d1d721793a848c35b38df187f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac5c5b7d1d721793a848c35b38df187f1">&#9670;&#160;</a></span>m_shared_vertex_entries</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::map&lt;size_t, std::vector&lt;size_t&gt; &gt; wmtk::components::topological_offset::TopoOffsetTetMesh::m_shared_vertex_entries</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Per complex vertex on the boundaries of several entries (In entries that touch: their selections share it), those entries, ascending; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#ab37230f34910f554db301fe1a9561bae">VertexExtra::offset</a> holds the first. <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aaed4f7af1b15e9fc3d7c0cfb9afaeb8c">label_input_complex()</a>. </p>
 
 </div>
 </div>

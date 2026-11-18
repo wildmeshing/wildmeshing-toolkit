@@ -99,6 +99,8 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>v2_id</b> = 0</td><
 <tr class="separator:aecb3949f39443b71d2e41da82d917a03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa4672fb9d48165e19a7b0aa4ded2d21" id="r_aaa4672fb9d48165e19a7b0aa4ded2d21"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_opt_split_cache2d.html#aaa4672fb9d48165e19a7b0aa4ded2d21">parent_flatness</a> = 1.</td></tr>
 <tr class="separator:aaa4672fb9d48165e19a7b0aa4ded2d21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8bc42b7dbb3181453c7dd63c3c3b7601" id="r_a8bc42b7dbb3181453c7dd63c3c3b7601"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_opt_split_cache2d.html#a8bc42b7dbb3181453c7dd63c3c3b7601">on_in_complex</a> = false</td></tr>
+<tr class="separator:a8bc42b7dbb3181453c7dd63c3c3b7601"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Parent face labels for an optimization split, keyed by the apex vertex opposite the split edge &ndash; shared by both children of the same parent, so it names them afterwards. Keyed and consumed exactly as <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ac71a215935dfb32d9121f177512de655" title="User specified modifications and desideratas after an edge split.">TriOptimizerMesh::split_edge_after</a> does its own FaceAttributes cache, so the label lands wherever the tags do; the endpoints are what resolve each child's apex. </p>
@@ -115,6 +117,21 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>v2_id</b> = 0</td><
       </table>
 </div><div class="memdoc">
 <p>The endpoints' mask AND, captured before the split (3D's rule at both of its split sites). Consumed by split_after_vertex() behind the parent edge's own class gate, which keeps a chord's midpoint maskless so the AND cannot over-claim through one. Never derived from the incident faces' current tags: the band retag empties the live symmetric difference on every region edge it swallows. </p>
+
+</div>
+</div>
+<a id="a8bc42b7dbb3181453c7dd63c3c3b7601" name="a8bc42b7dbb3181453c7dd63c3c3b7601"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8bc42b7dbb3181453c7dd63c3c3b7601">&#9670;&#160;</a></span>on_in_complex</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::OptSplitCache2d::on_in_complex = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The split edge is on an In entry's complex, the boundary of its selection (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a125168256e0dcacbeb7c0a0c69d29060">band_edge_on_in_complex()</a>, read on the parents): its midpoint is on the input and not on the front, which the parents' labels (a band face and one that is neither band nor input complex) would say. 3D labels such a face 1 (close_labels()). </p>
 
 </div>
 </div>
