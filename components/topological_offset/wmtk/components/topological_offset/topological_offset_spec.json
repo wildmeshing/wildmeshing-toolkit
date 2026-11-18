@@ -805,9 +805,9 @@
     "default": "projected",
     "options": [
       "projected",
-      "exact"
+      "penalty"
     ],
-    "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along edges and curve segments. Rests a w_amips-proportional distance off the input."
+    "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'penalty': no projection; minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2, a quadratic penalty on the distance d, with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along edges and curve segments. Rests a w_amips-proportional distance off the input."
   },
   {
     "pointer": "/w_amips",
