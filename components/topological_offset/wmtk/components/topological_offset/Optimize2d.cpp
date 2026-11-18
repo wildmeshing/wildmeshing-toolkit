@@ -1086,6 +1086,28 @@ bool TopoOffsetTriMesh::smooth_vertex_under_energy(const Tuple& t, const bool fr
             {vid, int(solver.current_criteria().iterations), int(solver.status()) + 1});
     }
     if (!ok) {
+        // FRONT, HELD-SEGMENT SPLIT (m_held_split_edges): a front vertex on a held boundary whose
+        // move was refused, still at the refused position (the caller rolls it back): every held
+        // segment at it that is outside its tube there is listed for the next pocket split.
+        if (front && smoothing_containment_envelope(vid)) {
+            const Vector2d p = m_vertex_attribute[vid].m_posf;
+            if (p != x0) {
+                const auto& EA = std::as_const(m_edge_attribute);
+                const simplex::SimplexCollection es = get_surface_edges_for_vertex(vid);
+                for (const simplex::Edge& e : es.edges()) {
+                    const std::array<size_t, 2>& ev = e.vertices();
+                    const size_t eid = std::get<1>(tuple_from_edge(ev));
+                    const std::shared_ptr<Envelope> env =
+                        smoothing_containment_envelope(vid, ev, EA[eid]);
+                    if (!env) continue;
+                    const Vector2d q = m_vertex_attribute[ev[0] != vid ? ev[0] : ev[1]].m_posf;
+                    if (env->is_outside(std::array<Eigen::Vector2d, 2>{{p, q}})) {
+                        std::lock_guard<std::mutex> lock(m_held_split_mutex);
+                        m_held_split_edges.push_back({{x0, q}});
+                    }
+                }
+            }
+        }
         return false;
     }
     if (front) {
@@ -6161,6 +6183,40 @@ void TopoOffsetTriMesh::front_pocket_split(const std::string& where)
         std::vector<Tuple> new_tris;
         return split_edge(t, new_tris);
     };
+    // HELD-SEGMENT SPLIT (m_held_split_edges): the held segments that refused a front vertex's
+    // smoothing move since the last pocket split, found again by their ends' positions, split
+    // here so that the smoothing pass that follows can make the move.
+    if (!m_held_split_edges.empty()) {
+        std::set<std::array<double, 4>> listed;
+        for (const auto& pe : m_held_split_edges) {
+            listed.insert({{pe[0][0], pe[0][1], pe[1][0], pe[1][1]}});
+        }
+        m_held_split_edges.clear();
+        std::map<std::pair<double, double>, size_t> at;
+        for (const Tuple& v : get_vertices()) {
+            const Vector2d& x = m_vertex_attribute[v.vid(*this)].m_posf;
+            at.emplace(std::make_pair(x[0], x[1]), v.vid(*this));
+        }
+        size_t n_done = 0, n_gone = 0, n_no = 0;
+        for (const std::array<double, 4>& pe : listed) {
+            const auto a = at.find({pe[0], pe[1]});
+            const auto b = at.find({pe[2], pe[3]});
+            if (a == at.end() || b == at.end() ||
+                get_incident_fids_for_edge(a->second, b->second).empty()) {
+                ++n_gone;
+                continue;
+            }
+            split_one({{a->second, b->second}}) ? ++n_done : ++n_no;
+        }
+        logger().info(
+            "\t[held-segment split] {}: {} held segment(s) that refused a front vertex's smoothing "
+            "move, {} split, {} gone (an end moved or the segment went), {} refused by the split",
+            where,
+            listed.size(),
+            n_done,
+            n_gone,
+            n_no);
+    }
     // EXPERIMENTAL_settle_mark "vertex_split": the chords the last settled turn listed
     // (settle_refinement_turn()), split here, before the pinned cells, so that the smoothing pass
     // that follows moves the new front vertices in the same turn. Split at the end of the settled
