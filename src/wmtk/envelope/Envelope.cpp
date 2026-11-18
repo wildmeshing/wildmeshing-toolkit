@@ -46,58 +46,120 @@ struct ReleaseIfLarge
 // Samples a triangle so that every point of it is within sampling_dist / sqrt(3) of a sample --
 // the covering radius the sampled envelope's shrunk radius (eps2) is built on.
 //
-// The samples are a uniform barycentric grid of n divisions: its cells are the triangle scaled by
-// 1/n, so they are covered by their own vertices within c/n, c being the triangle's covering
-// radius by its vertices. That is its circumradius when it is acute (the circumcentre is the
-// farthest point from all three) and at most half its longest edge otherwise (the farthest points
-// lie on the longest edge, where the perpendicular bisector of a shorter edge meets it, no farther
-// than its midpoint). n = ceil(sqrt(3) c / sampling_dist) makes c/n at most sampling_dist /
-// sqrt(3); a triangle already covered by its vertices is just them.
+// The samples are an equilateral lattice of spacing sampling_dist in the triangle's plane, laid
+// along its longest edge, projected onto the triangle. The lattice's covering radius is
+// r = sampling_dist / sqrt(3): every point p of the triangle T has a lattice point q with
+// |p - q| <= r, and q is within r of T, so it is among the points kept (those within r of T).
+// Projecting q onto T, a convex set, moves it no farther from p, which T's projection leaves in
+// place: |proj(q) - p| <= |q - p| <= r. A triangle already covered by its vertices within r is
+// just them.
 //
-// It replaces TetWild's lattice sampler, whose covering radius was not what the shrink assumed:
-// it left gaps of up to 0.92 sampling_dist (in thin triangles, where it returned before sampling
-// the short edges) and 0.71 sampling_dist elsewhere, so a triangle passing every sample could
-// reach about 1.34 eps from the input. The grid takes more samples than that lattice (a grid in
-// the triangle's own shape is less dense than an equilateral lattice), most on thin triangles.
+// The count is about T's area over the lattice's cell area plus a band along its perimeter, so a
+// sliver takes a number of samples linear in its length, as TetWild's lattice sampler did. That
+// sampler did not have the covering radius the shrink assumed: it left gaps of up to 0.92
+// sampling_dist (in thin triangles, where it returned before sampling the short edges) and 0.71
+// sampling_dist elsewhere, so a triangle passing every sample could reach about 1.34 eps from the
+// input. A barycentric grid (the triangle scaled by 1/n) has the radius too, but takes a number
+// of samples quadratic in the longest edge, however thin the triangle.
 //
-// Row by row from vs[0], so consecutive samples are neighbours (is_outside's BVH walk is hinted
-// by the previous one).
+// The three vertices come first, exactly; then the lattice row by row, every other row reversed,
+// so consecutive samples are neighbours (is_outside's BVH walk is hinted by the previous one) and
+// the middle one, where is_outside and first_sample_outside start, lies in a middle row.
 void sampleTriangle(
     const std::array<Vector3d, 3>& vs,
     std::vector<Vector3d>& ps,
     const double sampling_dist)
 {
-    const double ab = (vs[1] - vs[0]).squaredNorm();
-    const double bc = (vs[2] - vs[1]).squaredNorm();
-    const double ca = (vs[0] - vs[2]).squaredNorm();
-    const double longest = std::max({ab, bc, ca});
-    // The squared covering radius by the vertices: (longest / 2)^2 unless acute, else R^2 =
-    // ab bc ca / (16 area^2) with 16 area^2 = 4 |(b - a) x (c - a)|^2.
-    const double c2 = 2 * longest >= ab + bc + ca
-                          ? longest / 4
-                          : ab * bc * ca / (4 * (vs[1] - vs[0]).cross(vs[2] - vs[0]).squaredNorm());
-    // n = ceil(sqrt(3) c / sampling_dist), at least 1 (a NaN gives 1: the vertices). The factor
-    // above 1 absorbs the rounding of c.
-    const double divisions = std::ceil(std::sqrt(3 * c2) * (1 + 1e-12) / sampling_dist);
-    const int n = divisions >= 1 ? int(divisions) : 1;
-    if (n == 1) {
-        for (int i = 0; i < 3; i++) ps.push_back(vs[i]);
-        return;
+    if (!(sampling_dist > 0)) {
+        log_and_throw_error(
+            "sampleTriangle: sampling_dist must be positive, got {}",
+            sampling_dist);
     }
-    const Vector3d e1 = vs[1] - vs[0];
-    const Vector3d e2 = vs[2] - vs[0];
-    ps.reserve(ps.size() + size_t(n + 1) * size_t(n + 2) / 2);
-    for (int j = 0; j <= n; ++j) {
-        for (int i = 0; i + j <= n; ++i) {
-            if (i + j == n) {
-                // The far edge (vs[1], vs[2]) and its ends exactly, not up to rounding.
-                ps.push_back(
-                    j == 0   ? vs[1]
-                    : j == n ? vs[2]
-                             : Vector3d(vs[1] + (double(j) / n) * (vs[2] - vs[1])));
-            } else {
-                ps.push_back(vs[0] + (double(i) / n) * e1 + (double(j) / n) * e2);
+    for (int i = 0; i < 3; i++) ps.push_back(vs[i]);
+
+    // The triangle in its plane: A = (0, 0), B = (L, 0), C = (cx, h), AB its longest edge, so C's
+    // foot lies on it (0 <= cx <= L) and the angles at A and B are not obtuse.
+    int k = 0;
+    double longest = -1;
+    for (int i = 0; i < 3; i++) {
+        const double l = (vs[(i + 1) % 3] - vs[i]).squaredNorm();
+        if (l > longest) {
+            longest = l;
+            k = i;
+        }
+    }
+    const Vector3d& A = vs[k];
+    const Vector3d& B = vs[(k + 1) % 3];
+    const Vector3d& C = vs[(k + 2) % 3];
+    const double L = std::sqrt(longest);
+    if (!(L > 0)) return; // a point (or NaN coordinates): its vertices
+    const Vector3d ex = (B - A) / L;
+    const double cx = std::clamp((C - A).dot(ex), 0.0, L);
+    const Vector3d wy = (C - A) - (C - A).dot(ex) * ex;
+    const double h = wy.norm();
+    const Vector3d ey = h > 0 ? Vector3d(wy / h) : Vector3d::Zero();
+
+    // The covering radius by the vertices: the circumradius if the angle at C is acute (its
+    // centre (L/2, yc) is then inside), else at most L/2 (the farthest points lie on AB).
+    const double r = sampling_dist / std::sqrt(3.0);
+    const double acute = cx * (cx - L) + h * h; // > 0 iff (A - C).(B - C) > 0
+    const double cover = acute > 0 ? std::hypot(L / 2, acute / (2 * h)) : L / 2;
+    if (cover * (1 + 1e-12) <= r) return;
+
+    // The lattice, a hair finer than sampling_dist to absorb the rounding of the projection and
+    // of the mapping back. Row j at y = j dy holds x = (j odd ? a/2 : 0) + i a.
+    const double a = sampling_dist * (1 - 1e-9);
+    const double dy = a * std::sqrt(3.0) / 2;
+    const double rr = r * r;
+    const int j0 = int(std::floor(-r / dy));
+    const int j1 = int(std::ceil((h + r) / dy));
+
+    // The point of T nearest to (x, y), on the segment from (px, py) to (qx, qy).
+    const auto nearest_on = [](double x, double y, double px, double py, double qx, double qy) {
+        const double ux = qx - px, uy = qy - py;
+        const double uu = ux * ux + uy * uy;
+        const double t = uu > 0 ? std::clamp(((x - px) * ux + (y - py) * uy) / uu, 0.0, 1.0) : 0;
+        return std::array<double, 2>{{px + t * ux, py + t * uy}};
+    };
+
+    for (int j = j0; j <= j1; ++j) {
+        const double y = j * dy;
+        // Where T's points within r of this row can be: its rows from y - r up, whose x-range
+        // only shrinks with height (cx in [0, L]).
+        const double y0 = std::clamp(y - r, 0.0, h);
+        const double lo = (h > 0 ? cx * y0 / h : 0) - r;
+        const double hi = (h > 0 ? L - (L - cx) * y0 / h : L) + r;
+        const double offset = (j & 1) ? a / 2 : 0;
+        const int i0 = int(std::ceil((lo - offset) / a));
+        const int i1 = int(std::floor((hi - offset) / a));
+        const bool reversed = ((j - j0) & 1) != 0;
+        for (int ii = i0; ii <= i1; ++ii) {
+            const int i = reversed ? i0 + i1 - ii : ii;
+            const double x = offset + i * a;
+            // Inside T (counterclockwise A, B, C when h > 0), or its nearest point on an edge.
+            double px = x, py = y;
+            const bool inside = h > 0 && y >= 0 && // left of A -> B,
+                                (cx - L) * y - h * (x - L) >= 0 && // of B -> C
+                                h * (x - cx) - cx * (y - h) >= 0; // and of C -> A
+            if (!inside) {
+                std::array<double, 2> best = nearest_on(x, y, 0, 0, L, 0);
+                double bd = (best[0] - x) * (best[0] - x) + (best[1] - y) * (best[1] - y);
+                if (h > 0) {
+                    for (const auto& cand :
+                         {nearest_on(x, y, L, 0, cx, h), nearest_on(x, y, cx, h, 0, 0)}) {
+                        const double d =
+                            (cand[0] - x) * (cand[0] - x) + (cand[1] - y) * (cand[1] - y);
+                        if (d < bd) {
+                            bd = d;
+                            best = cand;
+                        }
+                    }
+                }
+                if (bd > rr) continue; // farther than r from T: no point of T needs it
+                px = best[0];
+                py = best[1];
             }
+            ps.push_back(A + px * ex + py * ey);
         }
     }
 }
@@ -172,9 +234,9 @@ void Envelope::init(
     }
 
     // sampleTriangle places its samples so that every point of the triangle is within
-    // sampling_dist / sqrt(3) of one (their covering radius): every point of the triangle is within that
-    // distance of some sample. So for "every sample is inside" to imply "the whole triangle
-    // is inside the true eps-envelope", the per-sample test has to use the shrunk radius
+    // sampling_dist / sqrt(3) of one (their covering radius). So for "every sample is inside" to
+    // imply "the whole triangle is inside the true eps-envelope", the per-sample test has to use
+    // the shrunk radius
     //
     //     real_envelope = _eps - sampling_dist / sqrt(3)
     //

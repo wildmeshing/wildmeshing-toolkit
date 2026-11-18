@@ -18,10 +18,11 @@
 namespace wmtk {
 /**
  * @brief Appends samples of the triangle `vs` to `ps` such that every point of the triangle is
- * within sampling_dist / sqrt(3) of a sample: a uniform barycentric grid whose cells are covered by
- * their own vertices within that radius (the three vertices when the triangle already is). The
- * sampled triangle envelope's per-sample radius, eps2, is eps shrunk by exactly that covering
- * radius.
+ * within sampling_dist / sqrt(3) of a sample: its vertices, and an equilateral lattice of spacing
+ * sampling_dist along its longest edge projected onto it (just the vertices when they already
+ * cover it). About area / sampling_dist^2 + perimeter / sampling_dist samples. The sampled
+ * triangle envelope's per-sample radius, eps2, is eps shrunk by exactly that covering radius.
+ * Throws unless sampling_dist > 0.
  */
 void sampleTriangle(
     const std::array<Eigen::Vector3d, 3>& vs,
