@@ -135,8 +135,14 @@ ExternalProject_Add(
     # At 4474c89 (2026-11-15, data2 main, on 571a0a3) tight_seal_geom's explicit_3d seals the
     # overlapping spheres, double_sphere.msh, with each sphere's part outside the other as a
     # color (tag_0 & !tag_1, tag_1 & !tag_0) and the new tags newtag1 and newtag2 as fill tags.
+    # At c1d5b6b (data2 main) simwild_80_tags_3d: 80 tagged cubes, past the old 64-bit input set.
+    # At 662e200 (2026-11-19, data2 main, on 141f13d: the nine 2D cases back in the hidden
+    # topological_offset_models group) tight_seal_geom's detected_2d and detected_3d run on the
+    # explicit tests' models, tight_seal_geom_bars_2d.msh and double_sphere.msh: lego_separated
+    # and tight_seal_geom_bars_3d make vertices the rounding check refuses until positions can
+    # be kept rational. tight_seal_geom_bars_3d.msh is removed.
     #
-    GIT_TAG c1d5b6b708575497fc0be2bbfb30897e247de4d1
+    GIT_TAG 662e2003523420056b025feebaf0e7d60963cb09
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

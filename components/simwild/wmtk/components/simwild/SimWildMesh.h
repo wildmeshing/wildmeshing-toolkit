@@ -332,20 +332,6 @@ protected:
     bool split_after_cells(size_t v1, size_t v2, size_t v_new, const std::vector<Tuple>& children)
         override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
-    /// A face split puts the new vertex at the face's centroid, in doubles, so every corner must
-    /// be rounded. The children of each tet on the face take its attributes; the face's three
-    /// pieces take the face's, the tets' other faces keep theirs, and every old edge keeps its
-    /// feature tags. Refused if a child is inverted. Only tight_seal_geom splits faces (its
-    /// simplicial embedding of R).
-    bool split_face_before(const Tuple& t) override;
-    bool split_face_after(const Tuple& t) override;
-    /// A tet split puts the new vertex at the tet's centroid, in doubles, so every corner must be
-    /// rounded. The four children take the tet's attributes and its four faces and six edges keep
-    /// theirs; the six faces inside it are new. Refused if a child is inverted. Only
-    /// tight_seal_geom splits tets (its simplicial embedding of R).
-    bool split_tet_before(const Tuple& t) override;
-    bool split_tet_after(const Tuple& t) override;
-
     bool swap_before_interior(const std::vector<size_t>& tids) override;
     bool swap_before_surface(
         const std::vector<size_t>& tids,
@@ -439,35 +425,6 @@ private:
         Rational fraction;
     };
     std::optional<EdgeSplitAt> m_edge_split_at;
-    // split_face_before() to split_face_after(). Face splits are serial (only tight_seal_geom's
-    // simplicial embedding makes them).
-    struct FaceSplitCache
-    {
-        std::array<size_t, 3> v; // the face
-        FaceAttributes face;
-        std::vector<std::pair<size_t, TetAttributes>> tets; // by each tet's corner off the face
-        std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> faces; // the tets' others
-        std::map<std::array<size_t, 2>, FeatureEdgeAttributes> changed_edges;
-        Vector3d position;
-        double sizing_scalar = 1;
-        size_t partition_id = 0;
-        std::vector<int> on_bbox_faces;
-    };
-    FaceSplitCache m_face_split_cache;
-    // split_tet_before() to split_tet_after(). Tet splits are serial (only tight_seal_geom's
-    // simplicial embedding makes them).
-    struct TetSplitCache
-    {
-        std::array<size_t, 4> v; // the tet
-        TetAttributes tet;
-        std::vector<std::pair<std::array<size_t, 3>, FaceAttributes>> faces; // its four faces
-        std::map<std::array<size_t, 2>, FeatureEdgeAttributes> changed_edges;
-        Vector3d position;
-        double sizing_scalar = 1;
-        size_t partition_id = 0;
-        std::vector<int> on_bbox_faces;
-    };
-    TetSplitCache m_tet_split_cache;
 
     struct SplitTagCache
     {
@@ -645,11 +602,8 @@ public:
      *
      * J is the closing of R by the ball B of diameter `distance`, minus R: the part of the rest
      * that B cannot reach. R, S and J are the tight seal v2 note's I, D and J
-     * (https://hackmd.io/@Spenbert02/HkX3vAvaGg); the log says I and D. First R is made
-     * simplicially embedded (no tet, face or edge outside R has all its vertices on R;
-     * wmtk/utils/SimplicialEmbedding.hpp): each tet outside R whose four faces lie on R is split
-     * at its centroid, then each face outside R whose three edges do, then each edge outside R
-     * joining two vertices of R at its midpoint. Then J is found in three steps.
+     * (https://hackmd.io/@Spenbert02/HkX3vAvaGg); the log says I and D. J is found in three
+     * steps.
      *  1. The dilation surface S, d(x, R) = distance/2, found on the edges that cross it (sphere
      *     traced, then bisected to the level).
      *     The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.
