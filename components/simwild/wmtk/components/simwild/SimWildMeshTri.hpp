@@ -371,9 +371,10 @@ public:
      * that color (a face of J is no color, whatever its tags). A component borders a color if one
      * of its faces shares an edge with a face of that color, and is filled if it borders
      * `min_regions` colors or more (2 or more), with those it borders. The operation throws if a
-     * face sharing an edge with J satisfies several fill selections, in any component, or if a
-     * face of J has a vertex on the mesh's boundary, in any component, filled or not (R more than
-     * distance/2 from the boundary keeps J off it). Each component to fill (connected through
+     * face of the mesh satisfies several fill selections (checked first, on the input, so that
+     * each color's distance is defined over faces no other color shares), or if a face of J has a
+     * vertex on the mesh's boundary, in any component, filled or not (R more than distance/2 from
+     * the boundary keeps J off it). Each component to fill (connected through
      * edges, so two touching at a vertex are filled separately) is then cut along the level sets
      * where the distances to two of its colors, linear in each of its faces, are equal, until the
      * corners of each face share a nearest color; each face gets that color's tags,

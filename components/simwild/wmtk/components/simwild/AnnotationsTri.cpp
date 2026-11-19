@@ -649,6 +649,46 @@ void SimWildMeshTri::tight_seal_geom(
         }
         return found;
     };
+
+    // The fill selections may not overlap: no face of the mesh may satisfy two of them, so that
+    // each color's distance is defined over a region of the mesh no other color shares. Checked
+    // on the input, over every face; a split's children keep their parent's tags, so it holds for
+    // the faces the splits below make too.
+    std::vector<size_t> overlapping;
+    for (const Tuple& t : get_faces()) {
+        const size_t fid = t.fid(*this);
+        if (color_of(fid) == -2) {
+            overlapping.push_back(fid);
+        }
+    }
+    if (!overlapping.empty()) {
+        const size_t fid = overlapping.front();
+        const CellTag& tag = m_face_attribute[fid].tags;
+        std::vector<std::string> names;
+        for (const int64_t t : tag) {
+            const auto it = m_tag_id_to_name.find(t);
+            names.push_back(it != m_tag_id_to_name.end() ? it->second : std::to_string(t));
+        }
+        std::vector<std::string> satisfied;
+        for (size_t k = 0; k < n; ++k) {
+            if (fill_selections[k]->eval(tag)) {
+                satisfied.push_back(fill_selections[k]->to_string());
+            }
+        }
+        Vector2d centroid = Vector2d::Zero();
+        for (const size_t v : oriented_tri_vids(fid)) {
+            centroid += pos(v) / 3.;
+        }
+        log_and_throw_error(
+            "tight_seal_geom: the fill selections overlap: {} faces satisfy more than one of "
+            "them; one, with tags {} and its centroid at ({}, {}), satisfies {}",
+            overlapping.size(),
+            names,
+            centroid[0],
+            centroid[1],
+            satisfied);
+    }
+
     bool can_seal = false;
     for (const Tuple& t : get_faces()) {
         if (in_R(t.fid(*this))) {
@@ -680,8 +720,6 @@ void SimWildMeshTri::tight_seal_geom(
     std::vector<std::vector<size_t>> components_colors;
     // in_J[id]: the face is in the join region J (in any component, filled or not)
     std::vector<char> in_J;
-    // the faces beside J that satisfy several fill selections
-    std::vector<size_t> ambiguous;
     if (!can_seal) {
         logger().warn(
             "tight_seal_geom: no face satisfies the input selection {}, nothing to seal",
@@ -880,8 +918,7 @@ void SimWildMeshTri::tight_seal_geom(
         // 3. Connected components of J (through edges). A component borders a color if one of
         // its faces shares an edge with a face outside J of that color (a face of J is no color,
         // whatever its tags); it is filled, with the colors it borders, if it borders min_regions
-        // of them or more. A face beside J satisfying several fill selections is an error,
-        // reported below.
+        // of them or more.
         std::vector<int> comp_id(tri_capacity(), -1);
         size_t n_components = 0;
         for (const size_t fid : J_faces) {
@@ -906,8 +943,6 @@ void SimWildMeshTri::tight_seal_geom(
                         const int k = color_of(nbr);
                         if (k >= 0) {
                             borders[size_t(k)] = true;
-                        } else if (k == -2) {
-                            ambiguous.push_back(nbr);
                         }
                         continue;
                     }
@@ -965,30 +1000,6 @@ void SimWildMeshTri::tight_seal_geom(
                 nullptr,
                 {{"join_region", join}, {"join_component", component}, {"join_filled", to_fill}},
                 {{"join_label", std::vector<double>(label.begin(), label.end())}});
-        }
-
-        // The fill selections must not be ambiguous beside J, in any component.
-        if (!ambiguous.empty()) {
-            std::sort(ambiguous.begin(), ambiguous.end());
-            ambiguous.erase(std::unique(ambiguous.begin(), ambiguous.end()), ambiguous.end());
-            const CellTag& tag = m_face_attribute[ambiguous.front()].tags;
-            std::vector<std::string> names;
-            for (const int64_t t : tag) {
-                const auto it = m_tag_id_to_name.find(t);
-                names.push_back(it != m_tag_id_to_name.end() ? it->second : std::to_string(t));
-            }
-            std::vector<std::string> satisfied;
-            for (size_t k = 0; k < n; ++k) {
-                if (fill_selections[k]->eval(tag)) {
-                    satisfied.push_back(fill_selections[k]->to_string());
-                }
-            }
-            log_and_throw_error(
-                "tight_seal_geom: the fill selections are ambiguous: {} faces beside the "
-                "join region satisfy more than one of them; one with tags {} satisfies {}",
-                ambiguous.size(),
-                names,
-                satisfied);
         }
 
         // J may not touch the mesh's boundary at all, not even at a vertex, in any component: the

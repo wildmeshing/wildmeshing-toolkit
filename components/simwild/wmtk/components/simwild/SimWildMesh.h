@@ -614,11 +614,12 @@ public:
      * The colors: fill selection k (two or more) is color k; a tet outside J satisfying it has that
      * color (a tet of J is no color, whatever its tags). A component borders a color if one of its
      * tets shares a face with a tet of that color, and is filled if it borders `min_regions`
-     * colors or more (2 or more), with those it borders. The operation throws if a tet sharing a
-     * face with J satisfies several fill selections, in any component, or if a tet of J has a
-     * vertex on the mesh's boundary, in any component, filled or not (R more than distance/2 from
-     * the boundary keeps J off it). Each component to fill (connected through faces, so two
-     * touching at an edge or a vertex are filled separately) is then cut along the level sets
+     * colors or more (2 or more), with those it borders. The operation throws if a tet of the
+     * mesh satisfies several fill selections (checked first, on the input, so that each color's
+     * distance is defined over tets no other color shares), or if a tet of J has a vertex on the
+     * mesh's boundary, in any component, filled or not (R more than distance/2 from the boundary
+     * keeps J off it). Each component to fill (connected through faces, so two touching at an
+     * edge or a vertex are filled separately) is then cut along the level sets
      * where the distances to two of its colors, linear in each of its tets, are equal, until the
      * corners of each tet share a nearest color; each tet gets that color's tags, `fill_tags[k]`
      * (as many as there are fill selections), added to its own (tight_seal_fill; tight seal v2
