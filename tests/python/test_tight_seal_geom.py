@@ -5,8 +5,8 @@ borders enough colors (tight_seal_geom_fill_selections) is cut, by edge splits, 
 where the distances to two of its colors (linear in each of its cells) are equal, until the corners
 of each cell share a nearest color (tight seal v2 note, section 4.2). Each cell gets that color's
 tags (tight_seal_geom_fill_tags) added to its own, with no topology test. The operation throws if
-the join region touches the mesh boundary, even at a vertex, or if a cell beside it satisfies
-several fill selections.
+any cell of the mesh satisfies several fill selections, or if the join region touches the mesh
+boundary, even at a vertex.
 
 Needs the wildmeshing bindings; no external data."""
 import itertools
@@ -203,9 +203,9 @@ def test_fill_tags_cannot_hold_ambient():
               fill_tags=[["a"], ["ambient"]])
 
 
-def test_ambiguous_fill_selections_throw():
-    # the cells of b beside the hole satisfy both "a | b" and "b"
-    with pytest.raises(Exception, match="ambiguous"):
+def test_overlapping_fill_selections_throw():
+    # every cell of b satisfies both "a | b" and "b"
+    with pytest.raises(Exception, match="fill selections overlap"):
         _seal(_four_bodies(), input_selection="a | b | c | d",
               fill_selections=["a | b", "b", "c", "d"], fill_tags=[["a"], ["b"], ["c"], ["d"]])
 

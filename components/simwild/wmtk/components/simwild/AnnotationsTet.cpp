@@ -646,6 +646,47 @@ void SimWildMesh::tight_seal_geom(
         }
         return found;
     };
+
+    // The fill selections may not overlap: no tet of the mesh may satisfy two of them, so that
+    // each color's distance is defined over a region of the mesh no other color shares. Checked
+    // on the input, over every tet; a split's children keep their parent's tags, so it holds for
+    // the tets the splits below make too.
+    std::vector<size_t> overlapping;
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        if (color_of(tid) == -2) {
+            overlapping.push_back(tid);
+        }
+    }
+    if (!overlapping.empty()) {
+        const size_t tid = overlapping.front();
+        const CellTag& tag = m_tet_attribute[tid].tags;
+        std::vector<std::string> names;
+        for (const int64_t t : tag) {
+            const auto it = m_tag_id_to_name.find(t);
+            names.push_back(it != m_tag_id_to_name.end() ? it->second : std::to_string(t));
+        }
+        std::vector<std::string> satisfied;
+        for (size_t k = 0; k < n; ++k) {
+            if (fill_selections[k]->eval(tag)) {
+                satisfied.push_back(fill_selections[k]->to_string());
+            }
+        }
+        Vector3d centroid = Vector3d::Zero();
+        for (const size_t v : oriented_tet_vids(tid)) {
+            centroid += pos(v) / 4.;
+        }
+        log_and_throw_error(
+            "tight_seal_geom: the fill selections overlap: {} tets satisfy more than one of them; "
+            "one, with tags {} and its centroid at ({}, {}, {}), satisfies {}",
+            overlapping.size(),
+            names,
+            centroid[0],
+            centroid[1],
+            centroid[2],
+            satisfied);
+    }
+
     bool can_seal = false;
     for (const Tuple& t : get_tets()) {
         if (in_R(t.tid(*this))) {
@@ -677,8 +718,6 @@ void SimWildMesh::tight_seal_geom(
     std::vector<std::vector<size_t>> components_colors;
     // in_J[id]: the tet is in the join region J (in any component, filled or not)
     std::vector<char> in_J;
-    // the tets beside J that satisfy several fill selections
-    std::vector<size_t> ambiguous;
     if (!can_seal) {
         logger().warn(
             "tight_seal_geom: no tet satisfies the input selection {}, nothing to seal",
@@ -877,8 +916,7 @@ void SimWildMesh::tight_seal_geom(
         // 3. Connected components of J (through faces). A component borders a color if one of
         // its tets shares a face with a tet outside J of that color (a tet of J is no color,
         // whatever its tags); it is filled, with the colors it borders, if it borders min_regions
-        // of them or more. A tet beside J satisfying several fill selections is an error,
-        // reported below.
+        // of them or more.
         std::vector<int> comp_id(tet_capacity(), -1);
         size_t n_components = 0;
         for (const size_t tid : J_tets) {
@@ -903,8 +941,6 @@ void SimWildMesh::tight_seal_geom(
                         const int k = color_of(nbr);
                         if (k >= 0) {
                             borders[size_t(k)] = true;
-                        } else if (k == -2) {
-                            ambiguous.push_back(nbr);
                         }
                         continue;
                     }
@@ -962,30 +998,6 @@ void SimWildMesh::tight_seal_geom(
                 nullptr,
                 {{"join_region", join}, {"join_component", component}, {"join_filled", to_fill}},
                 {{"join_label", std::vector<double>(label.begin(), label.end())}});
-        }
-
-        // The fill selections must not be ambiguous beside J, in any component.
-        if (!ambiguous.empty()) {
-            std::sort(ambiguous.begin(), ambiguous.end());
-            ambiguous.erase(std::unique(ambiguous.begin(), ambiguous.end()), ambiguous.end());
-            const CellTag& tag = m_tet_attribute[ambiguous.front()].tags;
-            std::vector<std::string> names;
-            for (const int64_t t : tag) {
-                const auto it = m_tag_id_to_name.find(t);
-                names.push_back(it != m_tag_id_to_name.end() ? it->second : std::to_string(t));
-            }
-            std::vector<std::string> satisfied;
-            for (size_t k = 0; k < n; ++k) {
-                if (fill_selections[k]->eval(tag)) {
-                    satisfied.push_back(fill_selections[k]->to_string());
-                }
-            }
-            log_and_throw_error(
-                "tight_seal_geom: the fill selections are ambiguous: {} tets beside the "
-                "join region satisfy more than one of them; one with tags {} satisfies {}",
-                ambiguous.size(),
-                names,
-                satisfied);
         }
 
         // J may not touch the mesh's boundary at all, not even at a vertex, in any component: the
