@@ -1440,6 +1440,20 @@ public:
         m_vertex_attribute[vid].set_pos_to_posf();
         m_vertex_attribute[vid].m_is_rounded = true;
     }
+    /// As in 3D: an exact position an earlier run could not round, kept exact unless its double
+    /// is it.
+    void set_exact_vertex_position(const size_t vid, const Vector2r& p)
+    {
+        auto& va = m_vertex_attribute[vid];
+        va.m_posf = to_double(p);
+        va.m_is_rounded = to_rational(va.m_posf) == p;
+        if (va.m_is_rounded) {
+            va.set_pos_to_posf();
+        } else {
+            va.set_pos(p);
+            m_all_rounded.store(false, std::memory_order_relaxed);
+        }
+    }
 
     /// Whether edge `eid` is on the offset boundary / carries input geometry / bounds some other
     /// tag region.
@@ -3364,7 +3378,8 @@ public:
         const MatrixSi& E_tags = MatrixSi(),
         const std::vector<std::string>& edge_tag_names = {},
         const MatrixSi& E_orientation = MatrixSi(),
-        const std::vector<size_t>& point_vids = {});
+        const std::vector<size_t>& point_vids = {},
+        const MatrixXr& V_exact = MatrixXr());
 
     /**
      * @brief ensure ambient tag does not overlap any other tags in mesh.

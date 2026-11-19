@@ -99,20 +99,29 @@ void positive_orientation_3D(const MatrixXd& V, MatrixXi& T)
     }
 }
 
-void positive_orientation_2D(const MatrixXd& V, MatrixXi& F)
+/// `V_r`, when not empty: the exact positions (InputData::V_input_r), of which V is the rounding,
+/// which can make the first face degenerate or flip it.
+void positive_orientation_2D(const MatrixXd& V, MatrixXi& F, const MatrixXr& V_r = MatrixXr())
 {
     const Vector2d p0 = V.row(F(0, 0));
     const Vector2d p1 = V.row(F(0, 1));
     const Vector2d p2 = V.row(F(0, 2));
 
-    wmtk::utils::predicates::exactinit();
-    auto res = wmtk::utils::predicates::orient2d(p0, p1, p2);
-    int result;
-    if (res == wmtk::utils::predicates::Orientation::POSITIVE)
-        result = 1;
-    else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
-        result = -1;
-    else {
+    int result = 0;
+    if (V_r.size() != 0) {
+        const Vector2r r0 = V_r.row(F(0, 0));
+        const Vector2r e1 = Vector2r(V_r.row(F(0, 1))) - r0;
+        const Vector2r e2 = Vector2r(V_r.row(F(0, 2))) - r0;
+        result = (e1[0] * e2[1] - e1[1] * e2[0]).get_sign();
+    } else {
+        wmtk::utils::predicates::exactinit();
+        auto res = wmtk::utils::predicates::orient2d(p0, p1, p2);
+        if (res == wmtk::utils::predicates::Orientation::POSITIVE)
+            result = 1;
+        else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
+            result = -1;
+    }
+    if (result == 0) {
         log_and_throw_error("First face is degenerate! Vertices: \n{},\n{},\n{}", p0, p1, p2);
     }
 
@@ -765,6 +774,28 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         return remap;
     };
     const auto remap = referenced(block.connectivity, out.V_input, out.T_input);
+    // The vertices an earlier run could not round (V_exact, Python's V_rational): V_input holds
+    // their rounding, V_input_r every exact position, so the run starts from where they are
+    // (init_from_image(const MatrixXr&, ...)), not from a rounding whose cells can be degenerate
+    // or inverted.
+    if (!mesh.V_exact.empty()) {
+        out.V_input_r.resize(out.V_input.rows(), dim);
+        for (Eigen::Index i = 0; i < out.V_input.rows(); ++i)
+            for (int k = 0; k < dim; ++k) out.V_input_r(i, k) = Rational(out.V_input(i, k));
+        const size_t cols = size_t(mesh.V.cols());
+        size_t carried = 0;
+        for (size_t j = 0; j < mesh.V_exact.rows.size(); ++j) {
+            const auto row = remap[mesh.V_exact.rows[j]];
+            if (row < 0) continue; // not a vertex of the cells
+            for (int k = 0; k < dim; ++k) {
+                Rational& r = out.V_input_r(row, k);
+                mpq_set_str(r.value, mesh.V_exact.values[j * cols + k].c_str(), 10);
+                r.canonicalize();
+            }
+            ++carried;
+        }
+        logger().info("{} vertices with exact positions (V_exact) read", carried);
+    }
     // An earlier offset's correspondence names the `vid` of each offset vertex's input vertex (a
     // mesh row when there is no `vid`, as prismatic_mesh reads it); translated to V_input rows.
     if (const auto c = mesh.vertex_attributes.find("corr_input_vid");
@@ -791,7 +822,7 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
     }
     // A 2D input may come clockwise; it is turned around, as the .msh route always did for
     // images. A counter-clockwise input is unchanged.
-    if (dim == 2) positive_orientation_2D(out.V_input, out.T_input);
+    if (dim == 2) positive_orientation_2D(out.V_input, out.T_input, out.V_input_r);
     std::vector<int> columns;
     for (int j = 0; j < tags.cols(); ++j)
         if (a.labels[j] != "ambient" && a.labels[j] != "ImageVolume") {

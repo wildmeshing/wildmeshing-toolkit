@@ -75,6 +75,11 @@ void collect_memory_output(Mesh& mesh, io::ComponentIO& context)
     // vertex slots, which compact_slot_outputs() could not remap ("Export references an inactive
     // vertex": every run of the 2026-10-29 sonic sweep aborted there).
     mesh.write_vtu("mesh", &raw, /*result=*/true);
+    // The 2D export skips the dead slots itself (TopoOffsetTriMesh::write_vtu()).
+    io::collect_exact_positions(
+        mesh,
+        raw.at("mesh.vtu"),
+        /*packed=*/!std::is_base_of_v<TetMesh, Mesh>);
     if constexpr (std::is_base_of_v<TetMesh, Mesh>) io::compact_slot_outputs(mesh, raw);
     context.result.first = io::named_outputs(std::move(raw));
     auto& data = context.result.first.at("mesh");

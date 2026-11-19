@@ -113,10 +113,12 @@ void TopoOffsetTetMesh::init_from_image(
     const MatrixSi& F_orientation,
     const std::vector<std::string>& edge_tag_names,
     const utils::FeatureInputs* features,
-    const utils::EmbedFeaturesResult* features_placed)
+    const utils::EmbedFeaturesResult* features_placed,
+    const MatrixXr& V_exact)
 {
     // assert dimensions
     assert(V.cols() == 3);
+    assert(V_exact.size() == 0 || (V_exact.rows() == V.rows() && V_exact.cols() == 3));
     assert(T.cols() == 4);
     assert(T.rows() == T_tags.rows());
     assert((V_env.rows() == 0) || (V_env.cols() == 3));
@@ -298,11 +300,16 @@ void TopoOffsetTetMesh::init_from_image(
 
     assert(ambient_assert());
 
-    // set vertex positions
+    // set vertex positions: the exact ones when an earlier run handed them on (V_exact), so the
+    // vertices it could not round start where they are, not at a rounding that can invert tets
     const auto& verts = get_vertices();
     for (const Tuple& v : verts) {
         size_t v_id = v.vid(*this);
-        set_vertex_position(v_id, V.row(v_id));
+        if (V_exact.size() != 0) {
+            set_exact_vertex_position(v_id, Vector3r(V_exact.row(v_id)));
+        } else {
+            set_vertex_position(v_id, V.row(v_id));
+        }
     }
 
     // Once at load too: init_surfaces_and_boundaries() reads on_sheet to track the sheet group's

@@ -142,7 +142,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.F_tags,
             input_data.face_tag_names,
             input_data.F_orientation,
-            input_data.input_point_vids);
+            input_data.input_point_vids,
+            input_data.V_input_r);
 
         // record counts (mostly debugging, this is probably really slow)
         mesh.m_init_counts[0] = mesh.get_vertices().size();
@@ -187,6 +188,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // report
+        // Un-rounded output vertices: logged as an error, thrown with throw_on_fail (after the
+        // report), their exact positions returned on the memory route (V_rational).
+        const size_t unrounded = mesh.count_unrounded();
         const std::string report_file = json_params["report"];
         if (component_io.memory() || !report_file.empty()) {
             nlohmann::json report;
@@ -198,12 +202,19 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             report["after #f"] = mesh.get_faces().size();
             report["threads"] = NUM_THREADS;
             report["time"] = time;
+            report["all_rounded"] = unrounded == 0;
+            report["#unrounded"] = unrounded;
             component_io.result.second = report;
             if (!component_io.memory()) {
                 std::ofstream f_out(report_file);
                 f_out << std::setw(4) << report;
             }
         }
+        check_unrounded_output(
+            "manifold_extraction",
+            unrounded,
+            component_io.memory(),
+            json_params["throw_on_fail"]);
 
         // save output: the mesh, whose tags give the extracted curves
         topological_offset::collect_memory_output(mesh, component_io);
@@ -242,7 +253,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.F_orientation,
             input_data.feature_edge_names,
             &input_data.features,
-            &input_data.features_placed);
+            &input_data.features_placed,
+            input_data.V_input_r);
         // A reference, held to by the code the offset's 3D route holds one with (its start checks
         // in TopoOffsetTetMesh::build_envelopes(): every label of the held faces in it, and every
         // held face received inside its labels' envelopes, exactly, before anything is carved;
@@ -317,6 +329,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // report
+        // Un-rounded output vertices: logged as an error, thrown with throw_on_fail (after the
+        // report), their exact positions returned on the memory route (V_rational).
+        const size_t unrounded = mesh.count_unrounded();
         const std::string report_file = json_params["report"];
         if (component_io.memory() || !report_file.empty()) {
             nlohmann::json report;
@@ -330,12 +345,19 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             report["after #t"] = mesh.get_tets().size();
             report["threads"] = NUM_THREADS;
             report["time"] = time;
+            report["all_rounded"] = unrounded == 0;
+            report["#unrounded"] = unrounded;
             component_io.result.second = report;
             if (!component_io.memory()) {
                 std::ofstream f_out(report_file);
                 f_out << std::setw(4) << report;
             }
         }
+        check_unrounded_output(
+            "manifold_extraction",
+            unrounded,
+            component_io.memory(),
+            json_params["throw_on_fail"]);
 
         // save output: the mesh, whose tags give the extracted surface and the input complex
         topological_offset::collect_memory_output(mesh, component_io);

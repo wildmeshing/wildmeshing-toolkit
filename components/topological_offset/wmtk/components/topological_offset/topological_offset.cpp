@@ -181,7 +181,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.F_tags,
             input_data.face_tag_names,
             input_data.F_orientation,
-            input_data.input_point_vids);
+            input_data.input_point_vids,
+            input_data.V_input_r);
         // 3D refuses a mesh that does not fill its box here (require_box_boundary()), its wall
         // never tracked (114b283134). The 2D offset still tracks its wall and holds it in the
         // tube of its region's tag (init_surfaces_and_boundaries()), so every 2D boundary edge is
@@ -213,6 +214,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // check empty input
         if (mesh.empty_input_complex()) {
             logger().warn("Empty input complex. Output mesh is same as the input.");
+            check_unrounded_output(
+                "topological_offset",
+                mesh.count_unrounded(),
+                component_io.memory(),
+                json_params["throw_on_fail"]);
             topological_offset::collect_memory_output(mesh, component_io);
             if (!component_io.memory())
                 io::write_mesh(
@@ -365,6 +371,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // report
+        // Un-rounded output vertices: logged as an error, thrown with throw_on_fail (after the
+        // report), their exact positions returned on the memory route (V_rational).
+        const size_t unrounded = mesh.count_unrounded();
         const std::string report_file = json_params["report"];
         if (component_io.memory() || !report_file.empty()) {
             nlohmann::json report;
@@ -411,12 +420,19 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }
+            report["all_rounded"] = unrounded == 0;
+            report["#unrounded"] = unrounded;
             component_io.result.second = report;
             if (!component_io.memory()) {
                 std::ofstream f_out(report_file);
                 f_out << std::setw(4) << report;
             }
         }
+        check_unrounded_output(
+            "topological_offset",
+            unrounded,
+            component_io.memory(),
+            json_params["throw_on_fail"]);
 
         topological_offset::collect_memory_output(mesh, component_io);
         if (!component_io.memory())
@@ -461,7 +477,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.F_orientation,
             input_data.feature_edge_names,
             &input_data.features,
-            &input_data.features_placed);
+            &input_data.features_placed,
+            input_data.V_input_r);
         // The domain is the mesh's box, its wall held by the box rule as in tetwild and simwild
         // and never tracked: a mesh that does not fill its box -- a filtered tetwild output, its
         // boundary its tracked faces -- is refused (require_box_boundary()).
@@ -516,6 +533,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // check empty input
         if (mesh.empty_input_complex()) {
             logger().warn("Empty input complex. Output mesh is same as the input.");
+            check_unrounded_output(
+                "topological_offset",
+                mesh.count_unrounded(),
+                component_io.memory(),
+                json_params["throw_on_fail"]);
             topological_offset::collect_memory_output(mesh, component_io);
             if (!component_io.memory())
                 io::write_mesh(
@@ -673,6 +695,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // report
+        // Un-rounded output vertices: logged as an error, thrown with throw_on_fail (after the
+        // report), their exact positions returned on the memory route (V_rational).
+        const size_t unrounded = mesh.count_unrounded();
         const std::string report_file = json_params["report"];
         if (component_io.memory() || !report_file.empty()) {
             nlohmann::json report;
@@ -718,12 +743,19 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }
+            report["all_rounded"] = unrounded == 0;
+            report["#unrounded"] = unrounded;
             component_io.result.second = report;
             if (!component_io.memory()) {
                 std::ofstream f_out(report_file);
                 f_out << std::setw(4) << report;
             }
         }
+        check_unrounded_output(
+            "topological_offset",
+            unrounded,
+            component_io.memory(),
+            json_params["throw_on_fail"]);
 
         // mesh.write_msh(output_filename.string()); // write .msh
         topological_offset::collect_memory_output(mesh, component_io);

@@ -630,26 +630,6 @@ void SimWildMesh::set_envelope_around_tags()
     }
 }
 
-bool SimWildMesh::all_rounded() const
-{
-    size_t cnt_round = 0;
-    size_t cnt_verts = 0;
-    for (const Tuple& t : get_vertices()) {
-        if (m_vertex_attribute[t.vid(*this)].m_is_rounded) {
-            cnt_round++;
-        }
-        cnt_verts++;
-    }
-    if (cnt_round < cnt_verts) {
-        logger().info("rounded {}/{}", cnt_round, cnt_verts);
-        return false;
-    } else {
-        logger().info("All rounded!", cnt_round, cnt_verts);
-        return true;
-    }
-}
-
-
 // util functions for union find
 int find_uf(int v, std::vector<int>& parent)
 {

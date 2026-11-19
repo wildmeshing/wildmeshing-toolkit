@@ -43,10 +43,24 @@ struct CellData
     MeshAttributes attributes;
 };
 
+// The exact positions of the vertices that could not be rounded: their rows of V hold only the
+// rounding, in which cells can be degenerate or inverted. Python's mesh["V_rational"]. Empty when
+// every vertex is exactly its row of V.
+struct ExactVertices
+{
+    // Rows of V, unique.
+    std::vector<int64_t> rows;
+    // rows.size() x V.cols(), row-major: GMP rationals in base 10, "p/q" or "p".
+    std::vector<std::string> values;
+
+    bool empty() const { return rows.empty(); }
+};
+
 // An owning interchange value, independent of the mutable topology/attribute machinery.
 struct MeshData
 {
     DataMatrix<double> V{0, 3};
+    ExactVertices V_exact;
     MeshAttributes vertex_attributes;
     std::map<CellType, CellData> cells;
 

@@ -161,6 +161,10 @@ inline void compact_vertices(MeshData& data, const std::vector<size_t>& rows)
         remap[rows[i]] = i;
     }
     data.V = std::move(V);
+    for (auto& r : data.V_exact.rows) {
+        r = remap.at(r);
+        if (r < 0) throw std::runtime_error("Exact position of an inactive vertex");
+    }
     for (auto& [name, a] : data.vertex_attributes)
         a.values = std::visit(
             [&](const auto& values) -> AttributeValues {
@@ -177,6 +181,25 @@ inline void compact_vertices(MeshData& data, const std::vector<size_t>& rows)
             block.connectivity.data()[i] = v;
         }
     data.validate();
+}
+// The exact positions of the mesh's un-rounded vertices (MeshData::V_exact), in the rows of the
+// memory export `data`: by vertex slot, as most exports are before compact_slot_outputs()
+// renumbers V and V_exact together, or, `packed`, in get_vertices() order, as an export that
+// skips the dead slots itself is. V_exact has V's three columns; a 2D mesh's third is 0.
+template <typename Mesh>
+void collect_exact_positions(const Mesh& mesh, MeshData& data, const bool packed = false)
+{
+    data.V_exact = {};
+    const auto vs = mesh.get_vertices();
+    for (size_t k = 0; k < vs.size(); ++k) {
+        const size_t vid = vs[k].vid(mesh);
+        const auto& va = mesh.m_vertex_attribute[vid];
+        if (va.m_is_rounded) continue;
+        auto p = va.pos();
+        data.V_exact.rows.push_back(int64_t(packed ? k : vid));
+        for (Eigen::Index k = 0; k < p.size(); ++k) data.V_exact.values.push_back(p[k].get_str());
+        for (Eigen::Index k = p.size(); k < data.V.cols(); ++k) data.V_exact.values.push_back("0");
+    }
 }
 template <typename Mesh>
 void compact_slot_outputs(const Mesh& mesh, MeshMap& outputs)

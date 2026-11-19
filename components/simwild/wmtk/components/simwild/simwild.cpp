@@ -537,6 +537,7 @@ void run_3D(
     auto tagged_outputs = [&mesh]() {
         MeshMap raw;
         mesh.write_vtu("mesh", &raw);
+        io::collect_exact_positions(mesh, raw.at("mesh.vtu"));
         io::compact_slot_outputs(mesh, raw);
         MeshMap outputs = io::named_outputs(std::move(raw));
         io::collect_tags(
@@ -614,13 +615,12 @@ void run_3D(
         component_io.save_curve_history(*h, curve_history_output);
     }
 
-    // The output is what the caller consumes, and write_msh emits m_posf unconditionally --
-    // for an un-rounded vertex that double is not the vertex's real position, so the written
-    // mesh can contain inverted tets. Report it rather than letting it pass silently.
-    const bool all_rounded = mesh.all_rounded();
-    if (!all_rounded) {
-        logger().error("Not all vertices rounded!");
-    }
+    // The output is what the caller consumes, and V holds m_posf -- for an un-rounded vertex
+    // that double is not the vertex's real position, so the mesh written from it can contain
+    // inverted tets. Logged as an error, thrown with throw_on_fail (below, after the report);
+    // the memory route returns the exact positions (V_rational).
+    const size_t unrounded = mesh.count_unrounded();
+    const bool all_rounded = unrounded == 0;
 
     // A SimWild surface is exactly the interface between unlike tags, so every face between two
     // differently tagged tets must be marked as surface. Remeshing maintains this incrementally;
@@ -645,12 +645,18 @@ void run_3D(
         report["threads"] = params.NUM_THREADS;
         report["time"] = time;
         report["all_rounded"] = all_rounded;
+        report["#unrounded"] = unrounded;
         component_io.result.second = report;
         if (!component_io.memory()) {
             std::ofstream fout(report_file);
             fout << std::setw(4) << report;
         }
     }
+    check_unrounded_output(
+        "simwild",
+        unrounded,
+        component_io.memory(),
+        json_params["throw_on_fail"]);
 
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
     // One result for both routes: returned from memory calls, written as the .msh otherwise.
@@ -809,19 +815,10 @@ void run_2D(
     double time = timer.getElapsedTime();
     logger().info("total optimization time {}s", time);
 
-    // write_msh emits m_posf unconditionally -- for an un-rounded vertex that double is not
-    // the vertex's real position, so the written mesh can contain inverted faces. Report it
-    // rather than letting it pass silently. Same check run_3D makes.
-    bool all_rounded = true;
-    for (const auto& v : mesh.get_vertices()) {
-        if (!mesh.m_vertex_attribute[v.vid(mesh)].m_is_rounded) {
-            all_rounded = false;
-            break;
-        }
-    }
-    if (!all_rounded) {
-        logger().error("Not all vertices rounded!");
-    }
+    // As in 3D: un-rounded vertices are logged as an error, thrown with throw_on_fail (below,
+    // after the report); the memory route returns their exact positions (V_rational).
+    const size_t unrounded = mesh.count_unrounded();
+    const bool all_rounded = unrounded == 0;
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
@@ -837,17 +834,24 @@ void run_2D(
         report["threads"] = params.NUM_THREADS;
         report["time"] = time;
         report["all_rounded"] = all_rounded;
+        report["#unrounded"] = unrounded;
         component_io.result.second = report;
         if (!component_io.memory()) {
             std::ofstream fout(report_file);
             fout << std::setw(4) << report;
         }
     }
+    check_unrounded_output(
+        "simwild",
+        unrounded,
+        component_io.memory(),
+        json_params["throw_on_fail"]);
 
     // One result for both routes: returned from memory calls, written as the .msh otherwise.
     {
         MeshMap raw;
         mesh.write_vtu("mesh", &raw);
+        io::collect_exact_positions(mesh, raw.at("mesh.vtu"));
         io::compact_slot_outputs(mesh, raw);
         component_io.result.first = io::named_outputs(std::move(raw));
         io::collect_tags(

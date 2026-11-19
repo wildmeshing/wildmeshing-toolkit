@@ -309,12 +309,6 @@ public:
 public:
     void simplify();
 
-    /**
-     * @brief Check if all vertices of the mesh are rounded.
-     *
-     */
-    bool all_rounded() const;
-
     //
     //
     // debug use
