@@ -113,6 +113,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a8a66355e7ed81acdace2d133b2af432a" id="r_a8a66355e7ed81acdace2d133b2af432a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_rational_positions.html#a8a66355e7ed81acdace2d133b2af432a">round_and_check_all_rounded</a> ()</td></tr>
 <tr class="memdesc:a8a66355e7ed81acdace2d133b2af432a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the sweep, then report whether the mesh is now fully rounded.  <br /></td></tr>
 <tr class="separator:a8a66355e7ed81acdace2d133b2af432a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab248f12cf6995217d3790ef1691c384" id="r_aab248f12cf6995217d3790ef1691c384"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_rational_positions.html#aab248f12cf6995217d3790ef1691c384">count_unrounded</a> () const</td></tr>
+<tr class="separator:aab248f12cf6995217d3790ef1691c384"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -162,6 +164,24 @@ Protected Attributes</h2></td></tr>
 <p>Every live vertex, in the mesh's own iteration order. </p>
 
 <p>Implemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a246bc0dcc48d4f91d2cb4a140896fc00">wmtk::TetOptimizerMesh</a>, and <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a19d53d1dc9738efde4715fefda30a4b3">wmtk::TriOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="aab248f12cf6995217d3790ef1691c384" name="aab248f12cf6995217d3790ef1691c384"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab248f12cf6995217d3790ef1691c384">&#9670;&#160;</a></span>count_unrounded()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::RationalPositions::count_unrounded </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The live vertices whose exact position is not their double one: the rows of an output's V_rational (MeshData::V_exact). </p>
 
 </div>
 </div>

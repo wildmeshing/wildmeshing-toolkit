@@ -3286,6 +3286,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#throw_on_fail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        throw_on_fail
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5240,6 +5251,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#throw_on_fail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        throw_on_fail
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5544,6 +5566,9 @@
 <h3 id="report"><code>report</code><a class="headerlink" href="#report" title="Permanent link">&para;</a></h3>
 <p><strong>string</strong> · default <code>""</code></p>
 <p>A JSON file that stores information about the result and the method execution, e.g., runtime.</p>
+<h3 id="throw_on_fail"><code>throw_on_fail</code><a class="headerlink" href="#throw_on_fail" title="Permanent link">&para;</a></h3>
+<p><strong>bool</strong> · default <code>false</code></p>
+<p>Throw if the output has vertices that could not be rounded (their exact positions have no float64 representation). Without it, the run logs an error and returns: on the memory route the exact positions are in the mesh's V_rational; a written .msh holds their rounding only.</p>
 <h2 id="debug-options">Debug options<a class="headerlink" href="#debug-options" title="Permanent link">&para;</a></h2>
 <details class="note">
 <summary>Diagnostics: slow checks and extra output files. (5)</summary>

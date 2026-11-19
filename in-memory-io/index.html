@@ -3508,12 +3508,30 @@ component from <code>options["application"]</code>. Direct component calls do no
 <li><code>cells</code>: a dictionary keyed by <code>point</code>, <code>edge</code>, <code>triangle</code>, <code>quad</code>, <code>tetrahedron</code>, <code>prism</code>,
   or <code>pyramid</code>. Each block contains a two-dimensional integer <code>connectivity</code> array and an
   optional <code>attributes</code> dictionary. Returned connectivity uses Int64.</li>
-<li>Optional <code>vertex_attributes</code> and cell <code>attributes</code> map names to
+<li>
+<p>Optional <code>vertex_attributes</code> and cell <code>attributes</code> map names to
   <code>{"values": array, "labels": [column_names...]}</code>. Labels may be omitted; a bare array is also
   accepted as an unlabeled input attribute. Attribute dtypes are Float64, Int64, or UInt8.
   One-dimensional input attributes become column matrices. Returned fields always contain
-  <code>values</code> and <code>labels</code>.</li>
+  <code>values</code> and <code>labels</code>.</p>
+</li>
+<li>
+<p><code>V_rational</code>: present only when some vertices could not be rounded, i.e. their exact position
+  has no Float64 representation that keeps every cell valid. <code>rows</code> is an Int64 vector of those
+  rows of <code>V</code>, and <code>values</code> an <code>(k, 3)</code> object array of their exact coordinates as
+  <code>fractions.Fraction</code> (2D: third coordinate 0). Every other vertex is exactly its row of <code>V</code>.
+  Input values may also be integers, floats or <code>"p/q"</code> strings, anything <code>Fraction()</code> takes.</p>
+</li>
 </ul>
+<p>simwild's tag operations (tight_seal_geom among them) and manifold_extraction can end with such
+vertices: the run logs an error (<code>Not all vertices rounded!</code>), returns their exact positions in
+<code>V_rational</code> and raises <code>wildmeshing.UnroundedVerticesWarning</code>; with <code>throw_on_fail</code> it throws
+instead. <code>V</code> then holds their rounding only, in which cells can be degenerate or inverted, so the
+result is guaranteed valid only as the input of a following memory call, mesh and <code>V_rational</code>
+together: simwild (remeshing included), topological_offset and manifold_extraction start from the
+exact positions, and remeshing rounds them. Neither <code>V</code> alone nor a file written from it (<code>.msh</code>
+holds no rationals; <code>write_mesh</code>, and <code>save</code> through it, warn) is guaranteed valid. On the file
+route the components log the same error, and the Python file call warns too.</p>
 <p>For example, overlapping region memberships are represented as:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">mesh</span><span class="p">[</span><span class="s2">"cells"</span><span class="p">][</span><span class="s2">"tetrahedron"</span><span class="p">][</span><span class="s2">"attributes"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="s2">"tags"</span><span class="p">:</span> <span class="p">{</span>
@@ -3549,8 +3567,10 @@ and those of tracking -- histories and <code>wm.Tracking</code> / <code>wm.Curve
 </ul>
 <p>Only top-dimensional connectivity is needed to construct an algorithm's mesh. Explicit lower
 blocks identify the edges/faces carrying attributes; their row order is independent of internal
-mesh IDs. Do not use internal edge/face IDs as interchange indices. Exact positions, caches,
-rollback buffers, and mesh objects are not part of MeshData.</p>
+mesh IDs. Do not use internal edge/face IDs as interchange indices. Caches, rollback buffers, and mesh
+objects are not part of MeshData; exact positions are, only for the vertices that could not be
+rounded (<code>V_exact</code>: rows of <code>V</code> and their coordinates as GMP rationals in base 10, Python's
+<code>V_rational</code>).</p>
 <h2 id="input-contracts">Input contracts<a class="headerlink" href="#input-contracts" title="Permanent link">&para;</a></h2>
 <p>Selectors retain their component-specific JSON fields. A single selector is a dictionary key;
 ordered selector arrays preserve input order and existing <code>input_names</code> / transform semantics.

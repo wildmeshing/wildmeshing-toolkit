@@ -513,6 +513,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>tet_energy_sum</b> 
 <tr class="memitem:a8ac3036038466018afdac3aef864a50d" id="r_a8ac3036038466018afdac3aef864a50d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8ac3036038466018afdac3aef864a50d">set_vertex_position</a> (const size_t vid, const Vector3d &amp;p)</td></tr>
 <tr class="memdesc:a8ac3036038466018afdac3aef864a50d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Place a vertex, keeping its exact and rounded coordinates in step.  <br /></td></tr>
 <tr class="separator:a8ac3036038466018afdac3aef864a50d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47b39ec0eff9a66f415cb478d65e5cbf" id="r_a47b39ec0eff9a66f415cb478d65e5cbf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a47b39ec0eff9a66f415cb478d65e5cbf">set_exact_vertex_position</a> (const size_t vid, const Vector3r &amp;p)</td></tr>
+<tr class="separator:a47b39ec0eff9a66f415cb478d65e5cbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63157accd78467ebb0b3bb36373c6810" id="r_a63157accd78467ebb0b3bb36373c6810"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a63157accd78467ebb0b3bb36373c6810">face_is_offset</a> (const size_t fid) const</td></tr>
 <tr class="separator:a63157accd78467ebb0b3bb36373c6810"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad67eb605df9f8b0f97b890776376719" id="r_aad67eb605df9f8b0f97b890776376719"><td class="memItemLeft" align="right" valign="top"><a id="aad67eb605df9f8b0f97b890776376719" name="aad67eb605df9f8b0f97b890776376719"></a>
@@ -981,9 +983,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>append_frame_label</b
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_debug_frame</b> (const std::string &amp;label)</td></tr>
 <tr class="memdesc:a2ed9c2fef267afad56672bd1dbe9a9f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">One frame of the run's single debug timeline: &lt;output&gt;_NNNNN.vtu with the next sequence number, and one "NNNNN&lt;tab&gt;label" line in &lt;output&gt;_frames.txt. Every debug frame the run writes &ndash; the input as loaded, the construction stages, and the optimization's own frames through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a72183e1bc3b9260e22ea6e5ef15ef3cd" title="Put the optimization&#39;s frames on the run&#39;s single debug timeline (see write_debug_frame()),...">write_optimization_debug_output()</a> &ndash; goes through this sequence, so the numbers are consecutive and the .txt says what each one is. The only debug files outside it are the ones that are not this mesh: &lt;output&gt;_input_complex.vtu and the phi grid. <br /></td></tr>
 <tr class="separator:a2ed9c2fef267afad56672bd1dbe9a9f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4e897fe0ea43c0226d657c1139416ed" id="r_af4e897fe0ea43c0226d657c1139416ed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af4e897fe0ea43c0226d657c1139416ed">init_from_image</a> (const MatrixXd &amp;V, const MatrixXi &amp;T, const MatrixSi &amp;T_tags, const MatrixXd &amp;V_env, const MatrixXi F_env, const std::vector&lt; std::string &gt; &amp;tag_names, const std::string &amp;sheet_name=&quot;&quot;, const MatrixXi &amp;F_tagged=MatrixXi(), const MatrixSi &amp;F_tags=MatrixSi(), const std::vector&lt; std::string &gt; &amp;face_tag_names={}, const MatrixSi &amp;F_orientation=MatrixSi(), const std::vector&lt; std::string &gt; &amp;edge_tag_names={}, const <a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a> *features=nullptr, const <a class="el" href="structwmtk_1_1utils_1_1_embed_features_result.html">utils::EmbedFeaturesResult</a> *features_placed=nullptr)</td></tr>
-<tr class="memdesc:af4e897fe0ea43c0226d657c1139416ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> from vertex, tet, and tag data  <br /></td></tr>
-<tr class="separator:af4e897fe0ea43c0226d657c1139416ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50594051712273abea2de9774749acac" id="r_a50594051712273abea2de9774749acac"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a50594051712273abea2de9774749acac">init_from_image</a> (const MatrixXd &amp;V, const MatrixXi &amp;T, const MatrixSi &amp;T_tags, const MatrixXd &amp;V_env, const MatrixXi F_env, const std::vector&lt; std::string &gt; &amp;tag_names, const std::string &amp;sheet_name=&quot;&quot;, const MatrixXi &amp;F_tagged=MatrixXi(), const MatrixSi &amp;F_tags=MatrixSi(), const std::vector&lt; std::string &gt; &amp;face_tag_names={}, const MatrixSi &amp;F_orientation=MatrixSi(), const std::vector&lt; std::string &gt; &amp;edge_tag_names={}, const <a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a> *features=nullptr, const <a class="el" href="structwmtk_1_1utils_1_1_embed_features_result.html">utils::EmbedFeaturesResult</a> *features_placed=nullptr, const MatrixXr &amp;V_exact=MatrixXr())</td></tr>
+<tr class="memdesc:a50594051712273abea2de9774749acac"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> from vertex, tet, and tag data  <br /></td></tr>
+<tr class="separator:a50594051712273abea2de9774749acac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a51d702db14d25696845238ff4170d348" id="r_a51d702db14d25696845238ff4170d348"><td class="memItemLeft" align="right" valign="top"><a id="a51d702db14d25696845238ff4170d348" name="a51d702db14d25696845238ff4170d348"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>ambient_assert</b> ()</td></tr>
 <tr class="memdesc:a51d702db14d25696845238ff4170d348"><td class="mdescLeft">&#160;</td><td class="mdescRight">check that the ambient tag does not overlap with any other tags <br /></td></tr>
@@ -1848,6 +1850,8 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_storage_capaci
 <tr class="memitem:a8a66355e7ed81acdace2d133b2af432a inherit pub_methods_classwmtk_1_1_rational_positions" id="r_a8a66355e7ed81acdace2d133b2af432a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_rational_positions.html#a8a66355e7ed81acdace2d133b2af432a">round_and_check_all_rounded</a> ()</td></tr>
 <tr class="memdesc:a8a66355e7ed81acdace2d133b2af432a inherit pub_methods_classwmtk_1_1_rational_positions"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the sweep, then report whether the mesh is now fully rounded.  <br /></td></tr>
 <tr class="separator:a8a66355e7ed81acdace2d133b2af432a inherit pub_methods_classwmtk_1_1_rational_positions"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab248f12cf6995217d3790ef1691c384 inherit pub_methods_classwmtk_1_1_rational_positions" id="r_aab248f12cf6995217d3790ef1691c384"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_rational_positions.html#aab248f12cf6995217d3790ef1691c384">count_unrounded</a> () const</td></tr>
+<tr class="separator:aab248f12cf6995217d3790ef1691c384 inherit pub_methods_classwmtk_1_1_rational_positions"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -5916,8 +5920,8 @@ template&lt;typename F &gt; </div>
 
 </div>
 </div>
-<a id="af4e897fe0ea43c0226d657c1139416ed" name="af4e897fe0ea43c0226d657c1139416ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af4e897fe0ea43c0226d657c1139416ed">&#9670;&#160;</a></span>init_from_image()</h2>
+<a id="a50594051712273abea2de9774749acac" name="a50594051712273abea2de9774749acac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a50594051712273abea2de9774749acac">&#9670;&#160;</a></span>init_from_image()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -6004,7 +6008,13 @@ template&lt;typename F &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="structwmtk_1_1utils_1_1_embed_features_result.html">utils::EmbedFeaturesResult</a> *&#160;</td>
-          <td class="paramname"><em>features_placed</em> = <code>nullptr</code>&#160;</td>
+          <td class="paramname"><em>features_placed</em> = <code>nullptr</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const MatrixXr &amp;&#160;</td>
+          <td class="paramname"><em>V_exact</em> = <code>MatrixXr()</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -7394,6 +7404,43 @@ template&lt;typename F &gt; </div>
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html">wmtk::TetOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="a47b39ec0eff9a66f415cb478d65e5cbf" name="a47b39ec0eff9a66f415cb478d65e5cbf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47b39ec0eff9a66f415cb478d65e5cbf">&#9670;&#160;</a></span>set_exact_vertex_position()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::set_exact_vertex_position </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>vid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3r &amp;&#160;</td>
+          <td class="paramname"><em>p</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>An exact position an earlier run could not round (its V_rational, InputData::V_input_r): rounded at once when its double is it, else kept exact, m_posf its rounding. </p>
 
 </div>
 </div>
@@ -10655,7 +10702,7 @@ cell_energy(vids, A^3, band) = MAX_ENERGY                          if A^3 &gt;= 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Point labels, the input points' (a tagged mesh's point block): bit j is the base's m_point_names[j], each name a tag id a selection (offsets) can name (m_point_tag_bit: id -&gt; bit), an edge tag's id where the two share a name (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af4e897fe0ea43c0226d657c1139416ed" title="initialize TetMesh from vertex, tet, and tag data">init_from_image()</a>). </p>
+<p>Point labels, the input points' (a tagged mesh's point block): bit j is the base's m_point_names[j], each name a tag id a selection (offsets) can name (m_point_tag_bit: id -&gt; bit), an edge tag's id where the two share a name (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a50594051712273abea2de9774749acac" title="initialize TetMesh from vertex, tet, and tag data">init_from_image()</a>). </p>
 
 </div>
 </div>

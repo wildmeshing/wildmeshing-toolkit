@@ -107,8 +107,9 @@ var searchData=
   ['exactposition_104',['ExactPosition',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
   ['exactposition_3c_20vector2r_2c_20vector2d_20_3e_105',['ExactPosition&lt; Vector2r, Vector2d &gt;',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
   ['exactposition_3c_20vector3r_2c_20vector3d_20_3e_106',['ExactPosition&lt; Vector3r, Vector3d &gt;',['../classwmtk_1_1_exact_position.html',1,'wmtk']]],
-  ['executepass_107',['ExecutePass',['../structwmtk_1_1_execute_pass.html',1,'wmtk']]],
-  ['exit_108',['Exit',['../structwmtk_1_1components_1_1tracking_1_1volume_1_1_star_patch_1_1_exit.html',1,'wmtk::components::tracking::volume::StarPatch']]],
-  ['exportstruct_109',['ExportStruct',['../structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html',1,'wmtk::components::tetwild::TetWildMesh']]],
-  ['expression_110',['Expression',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_expression.html',1,'wmtk::components::simwild::expression_parser']]]
+  ['exactvertices_107',['ExactVertices',['../structwmtk_1_1_exact_vertices.html',1,'wmtk']]],
+  ['executepass_108',['ExecutePass',['../structwmtk_1_1_execute_pass.html',1,'wmtk']]],
+  ['exit_109',['Exit',['../structwmtk_1_1components_1_1tracking_1_1volume_1_1_star_patch_1_1_exit.html',1,'wmtk::components::tracking::volume::StarPatch']]],
+  ['exportstruct_110',['ExportStruct',['../structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html',1,'wmtk::components::tetwild::TetWildMesh']]],
+  ['expression_111',['Expression',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_expression.html',1,'wmtk::components::simwild::expression_parser']]]
 ];

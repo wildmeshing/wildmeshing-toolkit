@@ -340,6 +340,11 @@
       "description": "A JSON file that stores information about the result and the method execution, e.g., runtime.",
       "default": ""
     },
+    "throw_on_fail": {
+      "type": "boolean",
+      "description": "Throw if the output has vertices that could not be rounded (their exact positions have no float64 representation). Without it, the run logs an error and returns: on the memory route the exact positions are in the mesh's V_rational; a written .msh holds their rounding only.",
+      "default": false
+    },
     "history_output": {
       "type": "string",
       "description": "3D only: a 2D run refuses it. Record every change to the tracked surface -- the interfaces between unlike tags -- from the mesh the input initialises to the output, and save the history here (see wmtk/history): the tracking component rebuilds the map between the two from it. The mesh the history starts from is written next to the output as <output>_history_input.msh; on the memory route it is the output mesh history_input. On the memory route no file is written: any non-empty value records the history, and the bytes of the file it would be are returned in the report as history (bytes in Python; history::write_history or wm.write_history saves them). Empty: no recording.",

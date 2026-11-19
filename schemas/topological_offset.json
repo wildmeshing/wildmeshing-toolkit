@@ -353,6 +353,11 @@
       "description": "A JSON file that stores information about the result and the method execution, e.g., runtime.",
       "default": ""
     },
+    "throw_on_fail": {
+      "type": "boolean",
+      "description": "Throw if the output has vertices that could not be rounded (their exact positions have no float64 representation). Without it, the run logs an error and returns: on the memory route the exact positions are in the mesh's V_rational; a written .msh holds their rounding only.",
+      "default": false
+    },
     "num_threads": {
       "type": "integer",
       "description": "Number of threads used for parallel execution (smoothing, edge collapse). 0 means single-threaded.",
