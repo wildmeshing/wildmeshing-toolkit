@@ -280,98 +280,98 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>        <span class="keyword">const</span> std::vector&lt;std::vector&lt;CellTag&gt;&gt;&amp; tight_seal_tag_sets,</div>
 <div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>        <span class="keywordtype">double</span> threshold = std::numeric_limits&lt;double&gt;::infinity());</div>
 <div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span> </div>
-<div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a99ccb2036cfb77644ce3dbc53edb1902">tight_seal_geom</a>(</div>
-<div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span>        <span class="keyword">const</span> ExprPtr&amp; input_selection,</div>
-<div class="line"><a id="l00389" name="l00389"></a><span class="lineno">  389</span>        <span class="keyword">const</span> std::vector&lt;ExprPtr&gt;&amp; fill_selections,</div>
-<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span>        <span class="keyword">const</span> std::vector&lt;CellTag&gt;&amp; fill_tags,</div>
-<div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span>        <span class="keywordtype">double</span> distance,</div>
-<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span>        <span class="keywordtype">double</span> trace_rel_tol = 0.001,</div>
-<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span>        int64_t min_regions = 2,</div>
-<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>        <span class="keywordtype">bool</span> sanity = <span class="keyword">false</span>);</div>
-<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span> </div>
-<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>    <span class="keywordtype">void</span> resolve_overlaps(<span class="keyword">const</span> std::vector&lt;std::array&lt;ExprPtr, 2&gt;&gt;&amp; intersecting_tags);</div>
-<div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span> </div>
-<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>    <span class="keywordtype">void</span> replace_tags(<span class="keyword">const</span> std::vector&lt;CellTag&gt;&amp; tags_in, <span class="keyword">const</span> std::vector&lt;CellTag&gt;&amp; tags_out);</div>
-<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span> </div>
-<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>    <span class="keywordtype">void</span> tag_priority(<span class="keyword">const</span> std::vector&lt;int64_t&gt;&amp; tags_order);</div>
-<div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span> </div>
-<div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span>    <span class="comment">// When set, split_adjust_position moves the new vertex to this function&#39;s zero on the edge,</span></div>
-<div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span>    <span class="comment">// by 20 bisection steps between the ends (which must have opposite signs); if that inverts a</span></div>
-<div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span>    <span class="comment">// child, the vertex goes back to the edge&#39;s midpoint. Set before split_edge(), cleared after,</span></div>
-<div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span>    <span class="comment">// by seal_connected_components (tight_seal_topo, resolve_overlaps) and tight_seal_geom&#39;s</span></div>
-<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span>    <span class="comment">// march. m_edge_split_at takes precedence.</span></div>
-<div class="line"><a id="l00408" name="l00408"></a><span class="lineno">  408</span>    std::function&lt;double(<span class="keyword">const</span> Vector2d&amp;)&gt; m_voronoi_split_fn = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span>    <span class="comment">// The vertex the calling thread&#39;s last split made, per thread as 3D&#39;s</span></div>
-<div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span>    <span class="comment">// SplitTagCache::v_new: every thread of the parallel split pass writes it, and the serial</span></div>
-<div class="line"><a id="l00411" name="l00411"></a><span class="lineno">  411</span>    <span class="comment">// callers (AnnotationsTri.cpp, TightSealGeom.cpp) read their own split&#39;s. One shared size_t</span></div>
-<div class="line"><a id="l00412" name="l00412"></a><span class="lineno">  412</span>    <span class="comment">// was a write-write race, reported by ThreadSanitizer in 3 of 3 simwild 2D remeshing runs at</span></div>
-<div class="line"><a id="l00413" name="l00413"></a><span class="lineno">  413</span>    <span class="comment">// 8 threads (2026-11-05).</span></div>
-<div class="line"><a id="l00414" name="l00414"></a><span class="lineno">  414</span>    <a class="code hl_class" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific&lt;size_t&gt;</a> m_last_split_vertex;</div>
-<div class="line"><a id="l00415" name="l00415"></a><span class="lineno">  415</span> </div>
-<div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span>    <span class="comment">// Where split_edge() puts the new vertex, if set: at `fraction` of the way from the end</span></div>
-<div class="line"><a id="l00417" name="l00417"></a><span class="lineno">  417</span>    <span class="comment">// `from` to the other, exactly; rounded if that inverts no child, else kept exact and</span></div>
-<div class="line"><a id="l00418" name="l00418"></a><span class="lineno">  418</span>    <span class="comment">// unrounded. It takes precedence over m_voronoi_split_fn. Set before split_edge(), cleared</span></div>
-<div class="line"><a id="l00419" name="l00419"></a><span class="lineno">  419</span>    <span class="comment">// after; only tight_seal_geom&#39;s fill sets it.</span></div>
-<div class="foldopen" id="foldopen00420" data-start="{" data-end="};">
-<div class="line"><a id="l00420" name="l00420"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_edge_split_at.html">  420</a></span>    <span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_edge_split_at.html">EdgeSplitAt</a></div>
-<div class="line"><a id="l00421" name="l00421"></a><span class="lineno">  421</span>    {</div>
-<div class="line"><a id="l00422" name="l00422"></a><span class="lineno">  422</span>        <span class="keywordtype">size_t</span> from;</div>
-<div class="line"><a id="l00423" name="l00423"></a><span class="lineno">  423</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">Rational</a> fraction;</div>
-<div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span>    };</div>
+<div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a99ccb2036cfb77644ce3dbc53edb1902">tight_seal_geom</a>(</div>
+<div class="line"><a id="l00389" name="l00389"></a><span class="lineno">  389</span>        <span class="keyword">const</span> ExprPtr&amp; input_selection,</div>
+<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span>        <span class="keyword">const</span> std::vector&lt;ExprPtr&gt;&amp; fill_selections,</div>
+<div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span>        <span class="keyword">const</span> std::vector&lt;CellTag&gt;&amp; fill_tags,</div>
+<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span>        <span class="keywordtype">double</span> distance,</div>
+<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span>        <span class="keywordtype">double</span> trace_rel_tol = 0.001,</div>
+<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>        int64_t min_regions = 2,</div>
+<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span>        <span class="keywordtype">bool</span> sanity = <span class="keyword">false</span>);</div>
+<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span> </div>
+<div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span>    <span class="keywordtype">void</span> resolve_overlaps(<span class="keyword">const</span> std::vector&lt;std::array&lt;ExprPtr, 2&gt;&gt;&amp; intersecting_tags);</div>
+<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span> </div>
+<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>    <span class="keywordtype">void</span> replace_tags(<span class="keyword">const</span> std::vector&lt;CellTag&gt;&amp; tags_in, <span class="keyword">const</span> std::vector&lt;CellTag&gt;&amp; tags_out);</div>
+<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span> </div>
+<div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>    <span class="keywordtype">void</span> tag_priority(<span class="keyword">const</span> std::vector&lt;int64_t&gt;&amp; tags_order);</div>
+<div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span> </div>
+<div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span>    <span class="comment">// When set, split_adjust_position moves the new vertex to this function&#39;s zero on the edge,</span></div>
+<div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span>    <span class="comment">// by 20 bisection steps between the ends (which must have opposite signs); if that inverts a</span></div>
+<div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span>    <span class="comment">// child, the vertex goes back to the edge&#39;s midpoint. Set before split_edge(), cleared after,</span></div>
+<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span>    <span class="comment">// by seal_connected_components (tight_seal_topo, resolve_overlaps) and tight_seal_geom&#39;s</span></div>
+<div class="line"><a id="l00408" name="l00408"></a><span class="lineno">  408</span>    <span class="comment">// march. m_edge_split_at takes precedence.</span></div>
+<div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span>    std::function&lt;double(<span class="keyword">const</span> Vector2d&amp;)&gt; m_voronoi_split_fn = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span>    <span class="comment">// The vertex the calling thread&#39;s last split made, per thread as 3D&#39;s</span></div>
+<div class="line"><a id="l00411" name="l00411"></a><span class="lineno">  411</span>    <span class="comment">// SplitTagCache::v_new: every thread of the parallel split pass writes it, and the serial</span></div>
+<div class="line"><a id="l00412" name="l00412"></a><span class="lineno">  412</span>    <span class="comment">// callers (AnnotationsTri.cpp, TightSealGeom.cpp) read their own split&#39;s. One shared size_t</span></div>
+<div class="line"><a id="l00413" name="l00413"></a><span class="lineno">  413</span>    <span class="comment">// was a write-write race, reported by ThreadSanitizer in 3 of 3 simwild 2D remeshing runs at</span></div>
+<div class="line"><a id="l00414" name="l00414"></a><span class="lineno">  414</span>    <span class="comment">// 8 threads (2026-11-05).</span></div>
+<div class="line"><a id="l00415" name="l00415"></a><span class="lineno">  415</span>    <a class="code hl_class" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific&lt;size_t&gt;</a> m_last_split_vertex;</div>
+<div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span> </div>
+<div class="line"><a id="l00417" name="l00417"></a><span class="lineno">  417</span>    <span class="comment">// Where split_edge() puts the new vertex, if set: at `fraction` of the way from the end</span></div>
+<div class="line"><a id="l00418" name="l00418"></a><span class="lineno">  418</span>    <span class="comment">// `from` to the other, exactly; rounded if that inverts no child, else kept exact and</span></div>
+<div class="line"><a id="l00419" name="l00419"></a><span class="lineno">  419</span>    <span class="comment">// unrounded. It takes precedence over m_voronoi_split_fn. Set before split_edge(), cleared</span></div>
+<div class="line"><a id="l00420" name="l00420"></a><span class="lineno">  420</span>    <span class="comment">// after; only tight_seal_geom&#39;s fill sets it.</span></div>
+<div class="foldopen" id="foldopen00421" data-start="{" data-end="};">
+<div class="line"><a id="l00421" name="l00421"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_edge_split_at.html">  421</a></span>    <span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_edge_split_at.html">EdgeSplitAt</a></div>
+<div class="line"><a id="l00422" name="l00422"></a><span class="lineno">  422</span>    {</div>
+<div class="line"><a id="l00423" name="l00423"></a><span class="lineno">  423</span>        <span class="keywordtype">size_t</span> from;</div>
+<div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span>        <a class="code hl_class" href="classwmtk_1_1_rational.html">Rational</a> fraction;</div>
+<div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span>    };</div>
 </div>
-<div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span>    std::optional&lt;EdgeSplitAt&gt; m_edge_split_at;</div>
-<div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span> </div>
-<div class="line"><a id="l00427" name="l00427"></a><span class="lineno">  427</span>    <span class="comment">// tight_seal_geom&#39;s helpers that need the mesh, defined in TightSealGeom.cpp</span></div>
-<div class="line"><a id="l00431" name="l00431"></a><span class="lineno">  431</span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#ae0c47f9bb82af9c364f3165215122449">tight_seal_boundary_bvh</a>(</div>
-<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span>        <span class="keyword">const</span> std::vector&lt;size_t&gt;&amp; fids,</div>
-<div class="line"><a id="l00433" name="l00433"></a><span class="lineno">  433</span>        <span class="keyword">const</span> std::function&lt;<span class="keywordtype">bool</span>(<span class="keywordtype">size_t</span>)&gt;&amp; in_set,</div>
-<div class="line"><a id="l00434" name="l00434"></a><span class="lineno">  434</span>        SimpleBVH::BVH&amp; bvh) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00439" name="l00439"></a><span class="lineno">  439</span>    <span class="keywordtype">size_t</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a03d5b3b6e74c8d3545a8257f10f6cc9a">tight_seal_split_tracked</a>(</div>
-<div class="line"><a id="l00440" name="l00440"></a><span class="lineno">  440</span>        <span class="keyword">const</span> <a class="code hl_class" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a>&amp; e,</div>
-<div class="line"><a id="l00441" name="l00441"></a><span class="lineno">  441</span>        std::unordered_set&lt;size_t&gt;&amp; faces,</div>
-<div class="line"><a id="l00442" name="l00442"></a><span class="lineno">  442</span>        std::vector&lt;char&gt;&amp; filled,</div>
-<div class="line"><a id="l00443" name="l00443"></a><span class="lineno">  443</span>        std::vector&lt;std::pair&lt;size_t, size_t&gt;&gt;* children_of = <span class="keyword">nullptr</span>);</div>
-<div class="line"><a id="l00451" name="l00451"></a><span class="lineno">  451</span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#af84e265afe7f33afba749b5e5d6cfec9">tight_seal_dilation_surface_bvh</a>(</div>
-<div class="line"><a id="l00452" name="l00452"></a><span class="lineno">  452</span>        <span class="keyword">const</span> std::vector&lt;size_t&gt;&amp; fids,</div>
-<div class="line"><a id="l00453" name="l00453"></a><span class="lineno">  453</span>        <span class="keyword">const</span> std::vector&lt;int&gt;&amp; region,</div>
-<div class="line"><a id="l00454" name="l00454"></a><span class="lineno">  454</span>        <span class="keyword">const</span> std::vector&lt;double&gt;&amp; dist_R_at,</div>
-<div class="line"><a id="l00455" name="l00455"></a><span class="lineno">  455</span>        <span class="keyword">const</span> std::function&lt;<span class="keywordtype">double</span>(<span class="keyword">const</span> Vector2d&amp;)&gt;&amp; dist_R,</div>
-<div class="line"><a id="l00456" name="l00456"></a><span class="lineno">  456</span>        <span class="keywordtype">double</span> radius,</div>
-<div class="line"><a id="l00457" name="l00457"></a><span class="lineno">  457</span>        <span class="keywordtype">double</span> tol,</div>
-<div class="line"><a id="l00458" name="l00458"></a><span class="lineno">  458</span>        SimpleBVH::BVH&amp; bvh,</div>
-<div class="line"><a id="l00459" name="l00459"></a><span class="lineno">  459</span>        <span class="keywordtype">size_t</span>&amp; n_traced,</div>
-<div class="line"><a id="l00460" name="l00460"></a><span class="lineno">  460</span>        <span class="keywordtype">size_t</span>&amp; n_failed) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00462" name="l00462"></a><span class="lineno">  462</span>    <span class="keywordtype">size_t</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a0735af0d4236ae0eb4658fe4f733e8ca">tight_seal_cells_on_boundary</a>(<span class="keyword">const</span> std::vector&lt;size_t&gt;&amp; fids) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00465" name="l00465"></a><span class="lineno">  465</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a905447af467fb3d27f16fb712c080920">tight_seal_fill</a>(</div>
-<div class="line"><a id="l00466" name="l00466"></a><span class="lineno">  466</span>        <span class="keyword">const</span> std::vector&lt;ConnectedComponent&gt;&amp; components,</div>
-<div class="line"><a id="l00467" name="l00467"></a><span class="lineno">  467</span>        <span class="keyword">const</span> std::vector&lt;std::vector&lt;size_t&gt;&gt;&amp; components_colors,</div>
-<div class="line"><a id="l00468" name="l00468"></a><span class="lineno">  468</span>        <span class="keyword">const</span> std::vector&lt;CellTag&gt;&amp; fill_tags,</div>
-<div class="line"><a id="l00469" name="l00469"></a><span class="lineno">  469</span>        <span class="keyword">const</span> std::vector&lt;SimpleBVH::BVH&gt;&amp; color_bvhs,</div>
-<div class="line"><a id="l00470" name="l00470"></a><span class="lineno">  470</span>        std::vector&lt;char&gt;&amp; filled,</div>
-<div class="line"><a id="l00471" name="l00471"></a><span class="lineno">  471</span>        std::vector&lt;CellTag&gt;&amp; tags_before);</div>
-<div class="line"><a id="l00474" name="l00474"></a><span class="lineno">  474</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#adcc6b0e3b7d6aec00ca3d16b8ec34f4b">tight_seal_topology_check</a>(</div>
-<div class="line"><a id="l00475" name="l00475"></a><span class="lineno">  475</span>        <span class="keyword">const</span> std::vector&lt;char&gt;&amp; filled,</div>
-<div class="line"><a id="l00476" name="l00476"></a><span class="lineno">  476</span>        <span class="keyword">const</span> std::vector&lt;CellTag&gt;&amp; tags_before) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00480" name="l00480"></a><span class="lineno">  480</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a29c34b05fa233a06db5ff6b2a9e2de71">tight_seal_geom_sanity</a>(</div>
-<div class="line"><a id="l00481" name="l00481"></a><span class="lineno">  481</span>        <span class="keyword">const</span> std::vector&lt;CellTag&gt;&amp; fill_tags,</div>
-<div class="line"><a id="l00482" name="l00482"></a><span class="lineno">  482</span>        <span class="keyword">const</span> std::function&lt;<span class="keywordtype">int</span>(<span class="keywordtype">size_t</span>)&gt;&amp; color_of,</div>
-<div class="line"><a id="l00483" name="l00483"></a><span class="lineno">  483</span>        <span class="keyword">const</span> std::vector&lt;char&gt;&amp; filled) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00484" name="l00484"></a><span class="lineno">  484</span> </div>
-<div class="line"><a id="l00485" name="l00485"></a><span class="lineno">  485</span><span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00486" name="l00486"></a><span class="lineno">  486</span>    std::tuple&lt;double, double&gt; <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#ae68dae0d849d83d7e1592046fa2860a7">optimization_quality_stats</a>() <span class="keyword">override</span>;</div>
-<div class="line"><a id="l00487" name="l00487"></a><span class="lineno">  487</span>    <span class="keywordtype">double</span> optimization_stop_metric()<span class="keyword"> const override </span>{ <span class="keywordflow">return</span> 1.; }</div>
-<div class="line"><a id="l00488" name="l00488"></a><span class="lineno">  488</span>    <span class="keywordtype">bool</span> optimization_stop_at_float()<span class="keyword"> const override </span>{ <span class="keywordflow">return</span> <a class="code hl_variable" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a9b7cbb9716fc441cfaf3412f8f2c12ba">m_sim_params</a>.stop_at_float; }</div>
-<div class="line"><a id="l00489" name="l00489"></a><span class="lineno">  489</span> </div>
-<div class="line"><a id="l00490" name="l00490"></a><span class="lineno">  490</span>    <span class="keywordtype">void</span> write_smoothing_debug_output(<span class="keyword">const</span> std::string&amp; path)<span class="keyword"> const override </span>{ <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a3678db34a8cf6acd22d55139245de046">write_vtu</a>(path); }</div>
-<div class="line"><a id="l00491" name="l00491"></a><span class="lineno">  491</span> </div>
-<div class="line"><a id="l00492" name="l00492"></a><span class="lineno">  492</span>    <span class="keywordtype">bool</span> collapse_quality_allowed(<span class="keywordtype">size_t</span> v1, <span class="keywordtype">size_t</span> fid, <span class="keywordtype">double</span> q, <span class="keywordtype">double</span> ring_max) <span class="keyword">const override</span>;</div>
-<div class="line"><a id="l00493" name="l00493"></a><span class="lineno">  493</span>    <span class="keywordtype">bool</span> split_adjust_position(<span class="keywordtype">size_t</span> v_new, <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; children) <span class="keyword">override</span>;</div>
-<div class="line"><a id="l00494" name="l00494"></a><span class="lineno">  494</span>    <span class="keywordtype">void</span> split_after_vertex(<span class="keywordtype">size_t</span> v_new)<span class="keyword"> override </span>{ m_last_split_vertex.local() = v_new; }</div>
-<div class="line"><a id="l00495" name="l00495"></a><span class="lineno">  495</span>};</div>
+<div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span>    std::optional&lt;EdgeSplitAt&gt; m_edge_split_at;</div>
+<div class="line"><a id="l00427" name="l00427"></a><span class="lineno">  427</span> </div>
+<div class="line"><a id="l00428" name="l00428"></a><span class="lineno">  428</span>    <span class="comment">// tight_seal_geom&#39;s helpers that need the mesh, defined in TightSealGeom.cpp</span></div>
+<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#ae0c47f9bb82af9c364f3165215122449">tight_seal_boundary_bvh</a>(</div>
+<div class="line"><a id="l00433" name="l00433"></a><span class="lineno">  433</span>        <span class="keyword">const</span> std::vector&lt;size_t&gt;&amp; fids,</div>
+<div class="line"><a id="l00434" name="l00434"></a><span class="lineno">  434</span>        <span class="keyword">const</span> std::function&lt;<span class="keywordtype">bool</span>(<span class="keywordtype">size_t</span>)&gt;&amp; in_set,</div>
+<div class="line"><a id="l00435" name="l00435"></a><span class="lineno">  435</span>        SimpleBVH::BVH&amp; bvh) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00440" name="l00440"></a><span class="lineno">  440</span>    <span class="keywordtype">size_t</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a03d5b3b6e74c8d3545a8257f10f6cc9a">tight_seal_split_tracked</a>(</div>
+<div class="line"><a id="l00441" name="l00441"></a><span class="lineno">  441</span>        <span class="keyword">const</span> <a class="code hl_class" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a>&amp; e,</div>
+<div class="line"><a id="l00442" name="l00442"></a><span class="lineno">  442</span>        std::unordered_set&lt;size_t&gt;&amp; faces,</div>
+<div class="line"><a id="l00443" name="l00443"></a><span class="lineno">  443</span>        std::vector&lt;char&gt;&amp; filled,</div>
+<div class="line"><a id="l00444" name="l00444"></a><span class="lineno">  444</span>        std::vector&lt;std::pair&lt;size_t, size_t&gt;&gt;* children_of = <span class="keyword">nullptr</span>);</div>
+<div class="line"><a id="l00452" name="l00452"></a><span class="lineno">  452</span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#af84e265afe7f33afba749b5e5d6cfec9">tight_seal_dilation_surface_bvh</a>(</div>
+<div class="line"><a id="l00453" name="l00453"></a><span class="lineno">  453</span>        <span class="keyword">const</span> std::vector&lt;size_t&gt;&amp; fids,</div>
+<div class="line"><a id="l00454" name="l00454"></a><span class="lineno">  454</span>        <span class="keyword">const</span> std::vector&lt;int&gt;&amp; region,</div>
+<div class="line"><a id="l00455" name="l00455"></a><span class="lineno">  455</span>        <span class="keyword">const</span> std::vector&lt;double&gt;&amp; dist_R_at,</div>
+<div class="line"><a id="l00456" name="l00456"></a><span class="lineno">  456</span>        <span class="keyword">const</span> std::function&lt;<span class="keywordtype">double</span>(<span class="keyword">const</span> Vector2d&amp;)&gt;&amp; dist_R,</div>
+<div class="line"><a id="l00457" name="l00457"></a><span class="lineno">  457</span>        <span class="keywordtype">double</span> radius,</div>
+<div class="line"><a id="l00458" name="l00458"></a><span class="lineno">  458</span>        <span class="keywordtype">double</span> tol,</div>
+<div class="line"><a id="l00459" name="l00459"></a><span class="lineno">  459</span>        SimpleBVH::BVH&amp; bvh,</div>
+<div class="line"><a id="l00460" name="l00460"></a><span class="lineno">  460</span>        <span class="keywordtype">size_t</span>&amp; n_traced,</div>
+<div class="line"><a id="l00461" name="l00461"></a><span class="lineno">  461</span>        <span class="keywordtype">size_t</span>&amp; n_failed) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00463" name="l00463"></a><span class="lineno">  463</span>    <span class="keywordtype">size_t</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a0735af0d4236ae0eb4658fe4f733e8ca">tight_seal_cells_on_boundary</a>(<span class="keyword">const</span> std::vector&lt;size_t&gt;&amp; fids) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00466" name="l00466"></a><span class="lineno">  466</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a905447af467fb3d27f16fb712c080920">tight_seal_fill</a>(</div>
+<div class="line"><a id="l00467" name="l00467"></a><span class="lineno">  467</span>        <span class="keyword">const</span> std::vector&lt;ConnectedComponent&gt;&amp; components,</div>
+<div class="line"><a id="l00468" name="l00468"></a><span class="lineno">  468</span>        <span class="keyword">const</span> std::vector&lt;std::vector&lt;size_t&gt;&gt;&amp; components_colors,</div>
+<div class="line"><a id="l00469" name="l00469"></a><span class="lineno">  469</span>        <span class="keyword">const</span> std::vector&lt;CellTag&gt;&amp; fill_tags,</div>
+<div class="line"><a id="l00470" name="l00470"></a><span class="lineno">  470</span>        <span class="keyword">const</span> std::vector&lt;SimpleBVH::BVH&gt;&amp; color_bvhs,</div>
+<div class="line"><a id="l00471" name="l00471"></a><span class="lineno">  471</span>        std::vector&lt;char&gt;&amp; filled,</div>
+<div class="line"><a id="l00472" name="l00472"></a><span class="lineno">  472</span>        std::vector&lt;CellTag&gt;&amp; tags_before);</div>
+<div class="line"><a id="l00475" name="l00475"></a><span class="lineno">  475</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#adcc6b0e3b7d6aec00ca3d16b8ec34f4b">tight_seal_topology_check</a>(</div>
+<div class="line"><a id="l00476" name="l00476"></a><span class="lineno">  476</span>        <span class="keyword">const</span> std::vector&lt;char&gt;&amp; filled,</div>
+<div class="line"><a id="l00477" name="l00477"></a><span class="lineno">  477</span>        <span class="keyword">const</span> std::vector&lt;CellTag&gt;&amp; tags_before) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00481" name="l00481"></a><span class="lineno">  481</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a29c34b05fa233a06db5ff6b2a9e2de71">tight_seal_geom_sanity</a>(</div>
+<div class="line"><a id="l00482" name="l00482"></a><span class="lineno">  482</span>        <span class="keyword">const</span> std::vector&lt;CellTag&gt;&amp; fill_tags,</div>
+<div class="line"><a id="l00483" name="l00483"></a><span class="lineno">  483</span>        <span class="keyword">const</span> std::function&lt;<span class="keywordtype">int</span>(<span class="keywordtype">size_t</span>)&gt;&amp; color_of,</div>
+<div class="line"><a id="l00484" name="l00484"></a><span class="lineno">  484</span>        <span class="keyword">const</span> std::vector&lt;char&gt;&amp; filled) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00485" name="l00485"></a><span class="lineno">  485</span> </div>
+<div class="line"><a id="l00486" name="l00486"></a><span class="lineno">  486</span><span class="keyword">protected</span>:</div>
+<div class="line"><a id="l00487" name="l00487"></a><span class="lineno">  487</span>    std::tuple&lt;double, double&gt; <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#ae68dae0d849d83d7e1592046fa2860a7">optimization_quality_stats</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00488" name="l00488"></a><span class="lineno">  488</span>    <span class="keywordtype">double</span> optimization_stop_metric()<span class="keyword"> const override </span>{ <span class="keywordflow">return</span> 1.; }</div>
+<div class="line"><a id="l00489" name="l00489"></a><span class="lineno">  489</span>    <span class="keywordtype">bool</span> optimization_stop_at_float()<span class="keyword"> const override </span>{ <span class="keywordflow">return</span> <a class="code hl_variable" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a9b7cbb9716fc441cfaf3412f8f2c12ba">m_sim_params</a>.stop_at_float; }</div>
+<div class="line"><a id="l00490" name="l00490"></a><span class="lineno">  490</span> </div>
+<div class="line"><a id="l00491" name="l00491"></a><span class="lineno">  491</span>    <span class="keywordtype">void</span> write_smoothing_debug_output(<span class="keyword">const</span> std::string&amp; path)<span class="keyword"> const override </span>{ <a class="code hl_function" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a3678db34a8cf6acd22d55139245de046">write_vtu</a>(path); }</div>
+<div class="line"><a id="l00492" name="l00492"></a><span class="lineno">  492</span> </div>
+<div class="line"><a id="l00493" name="l00493"></a><span class="lineno">  493</span>    <span class="keywordtype">bool</span> collapse_quality_allowed(<span class="keywordtype">size_t</span> v1, <span class="keywordtype">size_t</span> fid, <span class="keywordtype">double</span> q, <span class="keywordtype">double</span> ring_max) <span class="keyword">const override</span>;</div>
+<div class="line"><a id="l00494" name="l00494"></a><span class="lineno">  494</span>    <span class="keywordtype">bool</span> split_adjust_position(<span class="keywordtype">size_t</span> v_new, <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; children) <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00495" name="l00495"></a><span class="lineno">  495</span>    <span class="keywordtype">void</span> split_after_vertex(<span class="keywordtype">size_t</span> v_new)<span class="keyword"> override </span>{ m_last_split_vertex.local() = v_new; }</div>
+<div class="line"><a id="l00496" name="l00496"></a><span class="lineno">  496</span>};</div>
 </div>
-<div class="line"><a id="l00496" name="l00496"></a><span class="lineno">  496</span> </div>
-<div class="line"><a id="l00497" name="l00497"></a><span class="lineno">  497</span>} <span class="comment">// namespace wmtk::components::simwild::tri</span></div>
+<div class="line"><a id="l00497" name="l00497"></a><span class="lineno">  497</span> </div>
+<div class="line"><a id="l00498" name="l00498"></a><span class="lineno">  498</span>} <span class="comment">// namespace wmtk::components::simwild::tri</span></div>
 <div class="ttc" id="aclasswmtk_1_1_label_ids_html"><div class="ttname"><a href="classwmtk_1_1_label_ids.html">wmtk::LabelIds</a></div><div class="ttdoc">The labels (inputs) a simplex lies on: sorted, distinct ids. What the surface records carry (SurfaceT...</div><div class="ttdef"><b>Definition</b> LabelIds.hpp:210</div></div>
 <div class="ttc" id="aclasswmtk_1_1_label_ids_html_adb8a554d9ef7b36ada486ab26b38dc90"><div class="ttname"><a href="classwmtk_1_1_label_ids.html#adb8a554d9ef7b36ada486ab26b38dc90">wmtk::LabelIds::lowest</a></div><div class="ttdeci">LabelId lowest() const</div><div class="ttdoc">The lowest id. Not on an empty set.</div><div class="ttdef"><b>Definition</b> LabelIds.hpp:224</div></div>
 <div class="ttc" id="aclasswmtk_1_1_rational_html"><div class="ttname"><a href="classwmtk_1_1_rational.html">wmtk::Rational</a></div><div class="ttdef"><b>Definition</b> Rational.hpp:10</div></div>
@@ -422,7 +422,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="ttc" id="astructwmtk_1_1_tri_optimizer_mesh_1_1_face_attributes_html"><div class="ttname"><a href="structwmtk_1_1_tri_optimizer_mesh_1_1_face_attributes.html">wmtk::TriOptimizerMesh::FaceAttributes</a></div><div class="ttdef"><b>Definition</b> TriOptimizerMesh.h:97</div></div>
 <div class="ttc" id="astructwmtk_1_1_tri_optimizer_mesh_1_1_vertex_attributes_html"><div class="ttname"><a href="structwmtk_1_1_tri_optimizer_mesh_1_1_vertex_attributes.html">wmtk::TriOptimizerMesh::VertexAttributes</a></div><div class="ttdef"><b>Definition</b> TriOptimizerMesh.h:47</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1simwild_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1simwild_1_1_parameters.html">wmtk::components::simwild::Parameters</a></div><div class="ttdoc">The fields shared with tetwild and triwild live in wmtk::OptimizerParameters.</div><div class="ttdef"><b>Definition</b> Parameters.h:10</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_edge_split_at_html"><div class="ttname"><a href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_edge_split_at.html">wmtk::components::simwild::tri::SimWildMeshTri::EdgeSplitAt</a></div><div class="ttdef"><b>Definition</b> SimWildMeshTri.hpp:421</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_edge_split_at_html"><div class="ttname"><a href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_edge_split_at.html">wmtk::components::simwild::tri::SimWildMeshTri::EdgeSplitAt</a></div><div class="ttdef"><b>Definition</b> SimWildMeshTri.hpp:422</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
