@@ -1052,11 +1052,12 @@ void SimWildMesh::tight_seal_geom(
         tight_seal_geom_sanity(fill_tags, color_of, filled);
     }
 
-    // The output is written in doubles (write_msh, the memory route): a vertex left exact is
-    // written at its double position, and a tet that is inverted or flat there makes the next
-    // operation refuse the mesh ("Tets with different orientations in the input!", scan_2 frame
-    // 0, 2026-11-17). Every vertex left exact is tried once more; then the op fails only if one
-    // of them degenerates a tet in doubles, and otherwise leaves it exact, with a warning.
+    // A vertex left exact is written at its double position, at which a tet can be inverted or
+    // flat: the mesh is valid only with the exact positions, which the memory route returns
+    // (V_rational) and the next memory call starts from; the end of the run logs such vertices as
+    // an error (check_unrounded_output()). Every vertex left exact is tried once more, and the
+    // tets each degenerates in doubles are counted for the warning below. Until 2026-11-18 the
+    // op threw when one did ("the output would not read back", scan_2 frame 28).
     size_t n_unrounded = 0;
     std::set<size_t> degenerate;
     Vector3d first_degenerate = Vector3d::Zero();
@@ -1078,15 +1079,14 @@ void SimWildMesh::tight_seal_geom(
         }
     }
     if (!degenerate.empty()) {
-        log_and_throw_error(
-            "tight_seal_geom: {} vertices cannot be rounded, and in doubles {} tets at them "
-            "are inverted or flat (the first at a vertex near ({})); the output would not read "
-            "back",
+        logger().warn(
+            "tight_seal_geom: {} vertices left exact, and in doubles {} tets at them are "
+            "inverted or flat (the first at a vertex near ({})): only their exact positions "
+            "(V_rational) make the mesh valid",
             n_unrounded,
             degenerate.size(),
             first_degenerate.transpose());
-    }
-    if (n_unrounded > 0) {
+    } else if (n_unrounded > 0) {
         logger().warn(
             "tight_seal_geom: {} vertices left exact; no tet is inverted or flat at their "
             "double positions",

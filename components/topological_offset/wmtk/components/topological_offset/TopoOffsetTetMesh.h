@@ -1679,6 +1679,20 @@ public:
         m_vertex_attribute[vid].set_pos_to_posf();
         m_vertex_attribute[vid].m_is_rounded = true;
     }
+    /// An exact position an earlier run could not round (its V_rational, InputData::V_input_r):
+    /// rounded at once when its double is it, else kept exact, m_posf its rounding.
+    void set_exact_vertex_position(const size_t vid, const Vector3r& p)
+    {
+        auto& va = m_vertex_attribute[vid];
+        va.m_posf = to_double(p);
+        va.m_is_rounded = to_rational(va.m_posf) == p;
+        if (va.m_is_rounded) {
+            va.set_pos_to_posf();
+        } else {
+            va.set_pos(p);
+            m_all_rounded.store(false, std::memory_order_relaxed);
+        }
+    }
 
     /// Whether face `fid` is on the offset surface / bounds a region -- any tracked face that is
     /// not the offset surface. The input complex is included, and deliberately: both are held by
@@ -3521,7 +3535,8 @@ public:
         const MatrixSi& F_orientation = MatrixSi(),
         const std::vector<std::string>& edge_tag_names = {},
         const utils::FeatureInputs* features = nullptr,
-        const utils::EmbedFeaturesResult* features_placed = nullptr);
+        const utils::EmbedFeaturesResult* features_placed = nullptr,
+        const MatrixXr& V_exact = MatrixXr());
 
     /// check that the ambient tag does not overlap with any other tags
     bool ambient_assert();

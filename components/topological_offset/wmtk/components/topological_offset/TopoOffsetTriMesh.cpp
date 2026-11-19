@@ -27,10 +27,12 @@ void TopoOffsetTriMesh::init_from_image(
     const MatrixSi& E_tags,
     const std::vector<std::string>& edge_tag_names,
     const MatrixSi& E_orientation,
-    const std::vector<size_t>& point_vids)
+    const std::vector<size_t>& point_vids,
+    const MatrixXr& V_exact)
 {
     // assert dimensions
     assert(V.cols() == 2);
+    assert(V_exact.size() == 0 || (V_exact.rows() == V.rows() && V_exact.cols() == 2));
     assert(F.cols() == 3);
     assert(F.rows() == F_tags.rows());
     assert((V_env.rows() == 0) || (V_env.cols() == 2));
@@ -154,10 +156,15 @@ void TopoOffsetTriMesh::init_from_image(
     // and m_is_rounded must be filled too, or is_inverted() takes the rational path against a
     // default (0,0), reports every face incident to an input vertex inverted, and smooth_before()
     // then silently refuses every original input vertex.
+    // The exact positions when an earlier run handed them on (V_exact), as in 3D.
     auto verts = get_vertices();
     for (const Tuple& v : verts) {
         size_t v_id = v.vid(*this);
-        set_vertex_position(v_id, Vector2d(V.row(v_id)));
+        if (V_exact.size() != 0) {
+            set_exact_vertex_position(v_id, Vector2r(V_exact.row(v_id)));
+        } else {
+            set_vertex_position(v_id, Vector2d(V.row(v_id)));
+        }
     }
 
     // Edge tags, the tagged curves of a triangle mesh's edge block, on the edges' input sets, as

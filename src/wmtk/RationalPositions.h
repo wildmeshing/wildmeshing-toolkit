@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <cstddef>
+#include <string>
 #include <vector>
 
 namespace wmtk {
@@ -53,6 +54,10 @@ public:
      */
     bool round_and_check_all_rounded();
 
+    /// The live vertices whose exact position is not their double one: the rows of an output's
+    /// V_rational (MeshData::V_exact).
+    size_t count_unrounded() const;
+
 protected:
     /// Every live vertex, in the mesh's own iteration order.
     virtual std::vector<size_t> all_vertex_ids() const = 0;
@@ -71,5 +76,27 @@ protected:
      */
     std::atomic<bool> m_all_rounded = false;
 };
+
+/**
+ * @brief The end-of-run check on a component's output, as tetwild makes it: `unrounded` vertices
+ * (count_unrounded()) are logged as an error, and thrown only with `throw_on_fail`. On the memory
+ * route their exact positions are returned (V_rational) and a later memory call starts from them;
+ * a written mesh holds their rounding only, in which cells can be degenerate or inverted.
+ */
+void check_unrounded_output(
+    const std::string& component,
+    size_t unrounded,
+    bool memory,
+    bool throw_on_fail);
+
+/// What the last check_unrounded_output() of this process found with un-rounded vertices: the
+/// component and their count, for the Python bindings to warn with (UnroundedVerticesWarning).
+/// take_unrounded_output() returns it and clears it; a count of 0 when there was none.
+struct UnroundedOutput
+{
+    std::string component;
+    size_t unrounded = 0;
+};
+UnroundedOutput take_unrounded_output();
 
 } // namespace wmtk

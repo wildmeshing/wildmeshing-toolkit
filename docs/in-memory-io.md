@@ -65,6 +65,22 @@ The dictionary mirrors the C++ data structure:
   One-dimensional input attributes become column matrices. Returned fields always contain
   `values` and `labels`.
 
+- `V_rational`: present only when some vertices could not be rounded, i.e. their exact position
+  has no Float64 representation that keeps every cell valid. `rows` is an Int64 vector of those
+  rows of `V`, and `values` an `(k, 3)` object array of their exact coordinates as
+  `fractions.Fraction` (2D: third coordinate 0). Every other vertex is exactly its row of `V`.
+  Input values may also be integers, floats or `"p/q"` strings, anything `Fraction()` takes.
+
+simwild's tag operations (tight_seal_geom among them) and manifold_extraction can end with such
+vertices: the run logs an error (`Not all vertices rounded!`), returns their exact positions in
+`V_rational` and raises `wildmeshing.UnroundedVerticesWarning`; with `throw_on_fail` it throws
+instead. `V` then holds their rounding only, in which cells can be degenerate or inverted, so the
+result is guaranteed valid only as the input of a following memory call, mesh and `V_rational`
+together: simwild (remeshing included), topological_offset and manifold_extraction start from the
+exact positions, and remeshing rounds them. Neither `V` alone nor a file written from it (`.msh`
+holds no rationals; `write_mesh`, and `save` through it, warn) is guaranteed valid. On the file
+route the components log the same error, and the Python file call warns too.
+
 For example, overlapping region memberships are represented as:
 
 ```python
@@ -105,8 +121,10 @@ and those of tracking -- histories and `wm.Tracking` / `wm.CurveTracking` -- wit
 
 Only top-dimensional connectivity is needed to construct an algorithm's mesh. Explicit lower
 blocks identify the edges/faces carrying attributes; their row order is independent of internal
-mesh IDs. Do not use internal edge/face IDs as interchange indices. Exact positions, caches,
-rollback buffers, and mesh objects are not part of MeshData.
+mesh IDs. Do not use internal edge/face IDs as interchange indices. Caches, rollback buffers, and mesh
+objects are not part of MeshData; exact positions are, only for the vertices that could not be
+rounded (`V_exact`: rows of `V` and their coordinates as GMP rationals in base 10, Python's
+`V_rational`).
 
 ## Input contracts
 

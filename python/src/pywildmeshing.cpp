@@ -72,7 +72,9 @@ void wmtk_wrapper(const py::dict& obj)
     warn_unknown_options(app_str, j);
 
     // execute
+    wmtk::python::clear_unrounded_output();
     components_map[app_str](j);
+    wmtk::python::warn_unrounded_output(/*memory=*/false);
 }
 
 PYBIND11_MODULE(_core, m, py::mod_gil_not_used())
@@ -99,7 +101,10 @@ PYBIND11_MODULE(_core, m, py::mod_gil_not_used())
             [name, component](const py::dict& options, const py::dict& meshes) {
                 const nlohmann::json params = wmtk::python::options(options);
                 warn_unknown_options(name, params);
-                return wmtk::python::call_component(component, params, meshes);
+                wmtk::python::clear_unrounded_output();
+                auto result = wmtk::python::call_component(component, params, meshes);
+                wmtk::python::warn_unrounded_output(/*memory=*/true);
+                return result;
             },
             "options"_a,
             "meshes"_a,
@@ -110,8 +115,12 @@ PYBIND11_MODULE(_core, m, py::mod_gil_not_used())
                 nlohmann::json params = wmtk::python::options(options);
                 if (!params.contains("application")) params["application"] = name;
                 warn_unknown_options(name, params);
-                py::gil_scoped_release release;
-                component(std::move(params));
+                wmtk::python::clear_unrounded_output();
+                {
+                    py::gil_scoped_release release;
+                    component(std::move(params));
+                }
+                wmtk::python::warn_unrounded_output(/*memory=*/false);
             },
             "options"_a,
             "Without meshes: run on files, as wmtk_app does with the same options.");
@@ -145,7 +154,10 @@ PYBIND11_MODULE(_core, m, py::mod_gil_not_used())
             if (it == memory_components.end())
                 throw std::runtime_error("Application " + name + " unknown");
             warn_unknown_options(name, params);
-            return wmtk::python::call_component(it->second, params, meshes);
+            wmtk::python::clear_unrounded_output();
+            auto result = wmtk::python::call_component(it->second, params, meshes);
+            wmtk::python::warn_unrounded_output(/*memory=*/true);
+            return result;
         },
         "options"_a,
         "meshes"_a,
