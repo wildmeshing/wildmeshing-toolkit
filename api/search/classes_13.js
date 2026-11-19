@@ -19,7 +19,7 @@ var searchData=
   ['tetoptimizermesh_16',['TetOptimizerMesh',['../classwmtk_1_1_tet_optimizer_mesh.html',1,'wmtk']]],
   ['tetpoint_17',['TetPoint',['../structwmtk_1_1components_1_1tracking_1_1_tet_point.html',1,'wmtk::components::tracking']]],
   ['tetrahedronconnectivity_18',['TetrahedronConnectivity',['../classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html',1,'wmtk::TetMesh']]],
-  ['tetsplitcache_19',['tetsplitcache',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_tet_split_cache.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::TetSplitCache'],['../structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_tet_split_cache.html',1,'wmtk::components::simwild::SimWildMesh::TetSplitCache']]],
+  ['tetsplitcache_19',['TetSplitCache',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_tet_split_cache.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
   ['tetvtuwriter_20',['TetVTUWriter',['../classwmtk_1_1io_1_1_tet_v_t_u_writer.html',1,'wmtk::io']]],
   ['tetwildmesh_21',['TetWildMesh',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html',1,'wmtk::components::tetwild']]],
   ['topooffsettetmesh_22',['TopoOffsetTetMesh',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html',1,'wmtk::components::topological_offset']]],

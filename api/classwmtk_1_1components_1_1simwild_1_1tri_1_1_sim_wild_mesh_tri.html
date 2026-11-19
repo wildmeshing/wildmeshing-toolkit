@@ -101,8 +101,6 @@ Inheritance diagram for wmtk::components::simwild::tri::SimWildMeshTri:</div>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_edge_split_at.html">EdgeSplitAt</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_face_split_cache.html">FaceSplitCache</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -587,6 +585,12 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots<
 <tr class="memitem:a3d8bb552e20bda83d8113874e62f54fe inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a3d8bb552e20bda83d8113874e62f54fe"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a3d8bb552e20bda83d8113874e62f54fe">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
 <tr class="memdesc:a3d8bb552e20bda83d8113874e62f54fe inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified invariants that can't be violated.  <br /></td></tr>
 <tr class="separator:a3d8bb552e20bda83d8113874e62f54fe inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9dfbe0e8d78e778b6bdd3135096180f inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_ab9dfbe0e8d78e778b6bdd3135096180f"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ab9dfbe0e8d78e778b6bdd3135096180f">split_face_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
+<tr class="memdesc:ab9dfbe0e8d78e778b6bdd3135096180f inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for a face split.  <br /></td></tr>
+<tr class="separator:ab9dfbe0e8d78e778b6bdd3135096180f inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56202a9964d52f60d527279e9f690ca2 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a56202a9964d52f60d527279e9f690ca2"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a56202a9964d52f60d527279e9f690ca2">split_face_after</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
+<tr class="memdesc:a56202a9964d52f60d527279e9f690ca2 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas after a face split.  <br /></td></tr>
+<tr class="separator:a56202a9964d52f60d527279e9f690ca2 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab64cc4ece77d894286c2e433e039dae2 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_ab64cc4ece77d894286c2e433e039dae2"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ab64cc4ece77d894286c2e433e039dae2">tri_capacity</a> () const</td></tr>
 <tr class="memdesc:ab64cc4ece77d894286c2e433e039dae2 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the current largest global fid  <br /></td></tr>
 <tr class="separator:ab64cc4ece77d894286c2e433e039dae2 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1042,11 +1046,6 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a9f9f3e2e9c30f059c9735bf14dd70dda"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe521e08d954ebbeab27c38aa181acab" id="r_abe521e08d954ebbeab27c38aa181acab"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#abe521e08d954ebbeab27c38aa181acab">split_after_vertex</a> (size_t v_new) override</td></tr>
 <tr class="separator:abe521e08d954ebbeab27c38aa181acab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5a87c1c63dd7896fd6d41bba75a1f3b5" id="r_a5a87c1c63dd7896fd6d41bba75a1f3b5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a5a87c1c63dd7896fd6d41bba75a1f3b5">split_face_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
-<tr class="separator:a5a87c1c63dd7896fd6d41bba75a1f3b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a01523336038acc3d1b4a241e99ba3b34" id="r_a01523336038acc3d1b4a241e99ba3b34"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a01523336038acc3d1b4a241e99ba3b34">split_face_after</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
-<tr class="memdesc:a01523336038acc3d1b4a241e99ba3b34"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas after a face split.  <br /></td></tr>
-<tr class="separator:a01523336038acc3d1b4a241e99ba3b34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
 <tr class="memitem:a0c652c3d2fdff9e8b0ecf0a88658065a inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a0c652c3d2fdff9e8b0ecf0a88658065a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a0c652c3d2fdff9e8b0ecf0a88658065a">on_slot_storage_grown</a> () override</td></tr>
 <tr class="separator:a0c652c3d2fdff9e8b0ecf0a88658065a inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1117,9 +1116,6 @@ std::function&lt; double(const Vector2d &amp;)&gt;&#160;</td><td class="memItemR
 <tr class="memitem:a129ce107e55f7454d29397b480c4615d" id="r_a129ce107e55f7454d29397b480c4615d"><td class="memItemLeft" align="right" valign="top"><a id="a129ce107e55f7454d29397b480c4615d" name="a129ce107e55f7454d29397b480c4615d"></a>
 std::optional&lt; <a class="el" href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_edge_split_at.html">EdgeSplitAt</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_edge_split_at</b></td></tr>
 <tr class="separator:a129ce107e55f7454d29397b480c4615d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a49ba73dec6a133ecff6a06f2798ae6e9" id="r_a49ba73dec6a133ecff6a06f2798ae6e9"><td class="memItemLeft" align="right" valign="top"><a id="a49ba73dec6a133ecff6a06f2798ae6e9" name="a49ba73dec6a133ecff6a06f2798ae6e9"></a>
-<a class="el" href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_face_split_cache.html">FaceSplitCache</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_face_split_cache</b></td></tr>
-<tr class="separator:a49ba73dec6a133ecff6a06f2798ae6e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -1954,72 +1950,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="a01523336038acc3d1b4a241e99ba3b34" name="a01523336038acc3d1b4a241e99ba3b34"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a01523336038acc3d1b4a241e99ba3b34">&#9670;&#160;</a></span>split_face_after()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::simwild::tri::SimWildMeshTri::split_face_after </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>User specified modifications and desideratas after a face split. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">the</td><td>face Tuple to be split </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the modifications succeed </dd></dl>
-
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#a56202a9964d52f60d527279e9f690ca2">wmtk::TriMesh</a>.</p>
-
-</div>
-</div>
-<a id="a5a87c1c63dd7896fd6d41bba75a1f3b5" name="a5a87c1c63dd7896fd6d41bba75a1f3b5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5a87c1c63dd7896fd6d41bba75a1f3b5">&#9670;&#160;</a></span>split_face_before()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::simwild::tri::SimWildMeshTri::split_face_before </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>A face split puts the new vertex at the face's centroid, in doubles, so every corner must be rounded. The three children take the face's attributes, the face's edges keep theirs, and the split is refused if a child is inverted. Only tight_seal_geom splits faces (its simplicial embedding of R). </p>
-
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#ab9dfbe0e8d78e778b6bdd3135096180f">wmtk::TriMesh</a>.</p>
-
-</div>
-</div>
 <a id="ae0c47f9bb82af9c364f3165215122449" name="ae0c47f9bb82af9c364f3165215122449"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae0c47f9bb82af9c364f3165215122449">&#9670;&#160;</a></span>tight_seal_boundary_bvh()</h2>
 
@@ -2260,7 +2190,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>Geometric tight seal: closes the region R, the faces <code>input_selection</code> holds for, and fills the gaps found with the colors <code>fill_selections</code> define. </p>
-<p>J is the closing of R by the disk B of diameter <code>distance</code>, minus R: the part of the rest that B cannot reach. R, S and J are the tight seal v2 note's I, D and J (<a href="https://hackmd.io/@Spenbert02/HkX3vAvaGg">https://hackmd.io/@Spenbert02/HkX3vAvaGg</a>); the log says I and D. First R is made simplicially embedded (no face or edge outside R has all its vertices on R; <a class="el" href="_simplicial_embedding_8hpp.html">wmtk/utils/SimplicialEmbedding.hpp</a>): each face outside R whose three edges lie on R is split at its centroid, then each edge outside R joining two vertices of R at its midpoint. Then J is found in three steps.</p><ol type="1">
+<p>J is the closing of R by the disk B of diameter <code>distance</code>, minus R: the part of the rest that B cannot reach. R, S and J are the tight seal v2 note's I, D and J (<a href="https://hackmd.io/@Spenbert02/HkX3vAvaGg">https://hackmd.io/@Spenbert02/HkX3vAvaGg</a>); the log says I and D. J is found in three steps.</p><ol type="1">
 <li>The dilation surface S, d(x, R) = distance/2, found on the edges that cross it (sphere traced, then bisected to the level). The mesh's boundary is no part of S, so where R + B reaches it, it acts as a wall.</li>
 <li>The vertices' labels and the marching (tight seal v2 note, section 2), with tol = trace_rel_tol x the mesh's bounding box diagonal (also the tolerance of both sphere traces). A vertex within distance/2 of R, R's own included, is IN if d(v, S) &gt;= distance/2 + tol, else OUT; the others are OUT. The faces whose vertices are all IN are marked, R's included. Each edge from an IN vertex to an OUT one is split at d(x, S) = distance/2 + tol, the labels' level (sphere traced from the IN end, then bisected), and of the faces it makes, those touching its IN end are marked and the others not; the new vertex takes no label. R's faces may thus be split. J is the marked faces outside R.</li>
 <li>The connected components of J, through edges. The colors: fill selection k (two or more) is color k; a face outside J satisfying it has that color (a face of J is no color, whatever its tags). A component borders a color if one of its faces shares an edge with a face of that color, and is filled if it borders <code>min_regions</code> colors or more (2 or more), with those it borders. The operation throws if a face sharing an edge with J satisfies several fill selections, in any component, or if a face of J has a vertex on the mesh's boundary, in any component, filled or not (R more than distance/2 from the boundary keeps J off it). Each component to fill (connected through edges, so two touching at a vertex are filled separately) is then cut along the level sets where the distances to two of its colors, linear in each of its faces, are equal, until the corners of each face share a nearest color; each face gets that color's tags, <code>fill_tags[k]</code> (as many as there are fill selections), added to its own (tight_seal_fill; tight seal v2 note, section 4.2). No topology is checked.</li>
