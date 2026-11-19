@@ -1003,8 +1003,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5, Me
     writer->add_field("order", v_order);
 
 
-    logger().info("Write {}", out_path);
-    writer->write_mesh(out_path, V, T, paraviewo::CellType::Tetrahedron);
+    writer->write_mesh_and_log(out_path, V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
     {
@@ -1017,8 +1016,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5, Me
         surf_writer->add_field("on_open_boundary", v_is_on_open_boundary);
         surf_writer->add_field("order", v_order);
 
-        logger().info("Write {}", surf_out_path);
-        surf_writer->write_mesh(surf_out_path, V, F, paraviewo::CellType::Triangle);
+        surf_writer->write_mesh_and_log(surf_out_path, V, F, paraviewo::CellType::Triangle);
     }
 }
 

@@ -66,7 +66,10 @@ the two instead, see [below](#splitting-the-overlap-instead).
 
 `topological_offset` with a single region name, `a`, as its offset's `selection` grows a band of
 cells outward from `a`'s boundary and gives them the tags in the offset's `output_tags`, in place
-of the ones they had: the band is cut out of `b` and of the background.
+of the ones they had: the band is cut out of `b` and of the background. `envelope_size_rel` is
+set because the offset refuses an envelope wider than its bar (see
+[the topological offset tutorial](../topological_offset.md#the-distance-target_distance_rel-target_distance)):
+the default, 1e-3 of the diagonal (3.2), would be 0.0032, over the bar of 0.001.
 
 ```python
 --8<-- "docs/examples/python/workflow_regions.py:offset"

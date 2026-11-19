@@ -819,8 +819,10 @@ public:
      * pinned cell and removes at least one. A pinned cell with all six edges on the offset surface
      * has instead the longest edge of one of its faces that is not an offset face split: its two
      * children are pinned, each with an edge off the offset surface, which the next round splits.
-     * A pinned cell with all four faces on the offset surface has no edge to split and is counted
-     * only. Rescanned until no pinned cell has an edge to split, at most kPocketMaxRounds rounds.
+     * A pinned cell with all four faces on the offset surface, a one-cell component of its label,
+     * has its longest edge split: both children have all six edges on the offset surface and the
+     * face between them off it, and the next rounds split them as above. Rescanned until nothing
+     * is left to split, at most kPocketMaxRounds rounds.
      * One [pocket split] line, `where` naming the pass. A no-op with the key off and in a TetWild
      * pass. The measurements: the spec doc.
      */
@@ -841,6 +843,54 @@ public:
      * after the operation passes; a no-op with the key "off".
      */
     void label_cleanup(const std::string& where);
+    /**
+     * @name The level set out of reach (2026-11-10)
+     * The last clean-up's non-band cells wholly inside the level set (the one-sided side test)
+     * that the held objects' test kept out of the band: the band would have to touch a held
+     * object it did not touch as constructed to reach the level set there. At a settled turn and
+     * at the loop's end, check_level_set_reachable() throws on them (warns under
+     * throw_on_unreachable_level_set false).
+     * @{
+     */
+    void check_level_set_reachable(const std::string& when);
+    size_t m_unreachable_cells = 0;
+    std::string m_unreachable_where;
+    /// The last settle test's verdict (settle_refinement_turn()).
+    bool m_turn_settled = false;
+    /** @} */
+    /**
+     * @name The held objects (2026-11-10)
+     * The input complex (label 1), the held curves (tagged edges) and points (anchors), the
+     * region boundaries and the box (the mesh boundary): the objects the optimization keeps the
+     * construction's topology on (label_cleanup()'s held objects' test). A held edge is tagged,
+     * of the input complex, or an edge of a held face; a held vertex is an anchor, of the input
+     * complex, or a corner of a held edge; so the held simplices are closed under taking faces.
+     * @{
+     */
+    bool held_object_face(const Tuple& f) const;
+    bool held_object_edge(size_t a, size_t b) const;
+    bool held_object_vertex(size_t v) const;
+    /// DEBUG_held_topology: per label, band then non-band, the number of connected components
+    /// and the Euler characteristic of the held simplices it touches, one copy per chamber (the
+    /// cells around a simplex joined across faces that are not held; see label_cleanup()).
+    /// With `vertex_touch`, also each held vertex's position and whether the band, the
+    /// non-band, touches it in some chamber: what a change is located by.
+    /// With `by_kind`, the same restricted to each kind of held object: the input complex, the
+    /// held curves and points, the region boundaries, the box (each with its faces).
+    std::array<int64_t, 4> held_topology_signature(
+        std::map<std::array<double, 3>, std::array<bool, 2>>* vertex_touch = nullptr,
+        std::array<std::array<int64_t, 4>, 4>* by_kind = nullptr) const;
+    /// DEBUG_held_topology: the signature against the last one; a change is logged, naming
+    /// `pass` and the turn. The first call (after the construction) is the baseline.
+    void held_topology_check(const std::string& pass);
+    std::optional<std::array<int64_t, 4>> m_held_topology;
+    std::map<std::array<double, 3>, std::array<bool, 2>> m_held_vertex_touch;
+    std::array<std::array<int64_t, 4>, 4> m_held_topology_by_kind{};
+    mutable std::vector<std::pair<size_t, Vector3d>> m_held_curve_band_components;
+    mutable std::array<size_t, 2> m_held_curve_counts{}, m_held_curve_counts_before{};
+    size_t m_held_stale_order2 = 0;
+    size_t m_held_topology_changes = 0;
+    /** @} */
     /// EXPERIMENTAL_band_volume_rule "surface": how much the face term changes if cell tid's
     /// label flips (band <-> background): + its faces shared with a cell of its own label (they
     /// become front faces), - its faces shared with a cell of the other label (they stop being
@@ -1094,7 +1144,7 @@ public:
      *     sum over the replaced cells (swap_before_interior() / swap_before_surface()); refused
      *     unless the sum over the new cells, labels written, is STRICTLY below it
      *     (swap_after_cells()). Strict, so a swap pass terminates.
-     *   - Smoothing (smooth_front_vertex(), smooth_nonfront_vertex(), smooth_repulsion_vertex()):
+     *   - Smoothing (smooth_vertex_under_energy(), smooth_repulsion_vertex()):
      *     the sum over the vertex's ring after the move may not exceed the sum before.
      *   - Split: no rule, unless EXPERIMENTAL_split_energy_gate (the children's sum strictly below
      *     the parents').
@@ -1142,7 +1192,7 @@ public:
      * then judged by the ring's sum of this energy: a vertex held on a surface through the engine's
      * projected step, which takes the first projected position where that sum drops
      * (smoothing_ring_energy()); every other vertex through the veto after its solve
-     * (smooth_front_vertex(), smooth_nonfront_vertex()).
+     * (smooth_vertex_under_energy()).
      *
      * The front's face measure (face_offset_term()) is not part of E: the exit, the refinement and
      * the frames read it.
@@ -1210,39 +1260,87 @@ public:
      * inward; on the screw piece 15 within 2.7e-15 on exact pieces, up to 2.1e-3 (front
      * smoothing) where a rule-(a) piece is involved. Under TetWild's rules (m_op_rules) every
      * operation keeps TetWild's own: no sum rule reads any of this.
+     *
+     * Several entries (Parameters::offsets): each band cell t integrates its own piece's
+     * integrand, r(t) = place_piece() of its corners (band_cell_term()), so E* / delta is the sum
+     * over the pieces r of E*_r / delta_r, E*_r = int_{B_r} (d_r - delta_r) dV, B_r the band
+     * cells of piece r, and the change is the sum of each B_r's:
+     *   - a vertex move: the boundary faces of B_r through v -- the cell across not a band cell
+     *     of piece r, so a face between band cells of two pieces bounds both -- each swept tet
+     *     integrated as its cell's piece (band_swept_faces(), one list per piece, the pieces read
+     *     where the move starts). A cell whose piece the operation changes (its corners' pieces,
+     *     a collapse replacing one; or, where no corner has one, nearest_piece() of its first
+     *     corner's position) adds b_{r1}(t) - b_{r0}(t) on the cell after the operation
+     *     (band_relabel_change()).
+     *   - a swap: band_chain_change() at the cells' piece where its band cells, old and new, are
+     *     all of one; otherwise the change of its cells' own terms, sum of b(t) over the new band
+     *     cells less the old (swap_swept_change()).
+     * With one entry every cell is piece -1, and every change is the one above, bit for bit.
+     * MEASURED (several-offsets-optimize-distances, its case b one cube at 0.3, a at 0.1, 0.5
+     * apart, 5 turns, 1 thread), each change against the change of its cells' band_cell_term():
+     * with the moving vertex's piece read for every face, a face between band cells of two
+     * pieces read as inside B, and a swap's cells read at one piece, 18 of 10028 smoothing moves
+     * (17 decided otherwise), 286 of 72596 collapses (150; 258 cells changing piece) and 9 of
+     * 2540 swaps (7; each with band cells of two pieces) were off, and b's front ended at 0.252
+     * against the check's 0.285, not converged ("exact" passes); now none is off (to 1e-9 of the
+     * terms), 49 cells changing piece in collapses, and b's front passes. The 2D twin
+     * (TopoOffsetTriMesh, EXACT SWEPT CHANGE) failed the same check at 0.278.
      */
     /// "exact_swept" (EXACT SWEPT CHANGE).
     bool swept_rule() const { return m_offset_params.band_volume_rule == "exact_swept"; }
     /// EXACT SWEPT CHANGE: dE* / delta for vid moving from x0 to x1, the boundary faces of B
-    /// through vid read from the mesh (labels, connectivity, the other corners' positions). `st`
+    /// through vid read from the mesh (labels, connectivity, the other corners' positions), each
+    /// piece's cells as theirs; the change of a cell's piece aside (band_relabel_change()). `st`
     /// collects value()'s statistics (rule-(a) pieces) when given.
     double band_swept_change(
         size_t vid,
         const Vector3d& x0,
         const Vector3d& x1,
         ExactBandIntegral::Stats* st = nullptr) const;
-    /// band_swept_change() in two halves: the boundary faces of B through vid as (a_f, b_f),
-    /// ordered out of B at x0 (no value() call), and the sum over them for a move x0 -> x1.
-    void band_swept_faces(
-        size_t vid,
-        const Vector3d& x0,
-        std::vector<std::array<Vector3d, 2>>& faces) const;
-    /// `piece`: the moving vertex's (place_piece()), whose distance and integral it reads.
+    /// EXACT SWEPT CHANGE, several entries: the boundary faces of B_r through a vertex as
+    /// (a_f, b_f), B_r the band cells of piece r (place_piece() of the cell; -1, the only one,
+    /// with one entry).
+    struct SweptFacesOfPiece
+    {
+        int piece = -1;
+        std::vector<std::array<Vector3d, 2>> faces;
+    };
+    /// band_swept_change() in two halves: the boundary faces of each B_r through vid, ordered out
+    /// of B_r at x0 (no value() call), one list per piece in the order the ring first meets it,
+    /// and the sum over them for a move x0 -> x1, each list at its piece's distance and
+    /// integral. A boundary face of B_r has one cell of B_r at it, the cell across it not one
+    /// (another piece's, no band cell, or none: the domain wall). The pieces are read on the mesh
+    /// as it is (place_piece()).
+    void band_swept_faces(size_t vid, const Vector3d& x0, std::vector<SweptFacesOfPiece>& pieces)
+        const;
     double band_swept_sum(
-        int piece,
         const Vector3d& x0,
         const Vector3d& x1,
-        const std::vector<std::array<Vector3d, 2>>& faces,
+        const std::vector<SweptFacesOfPiece>& pieces,
         ExactBandIntegral::Stats* st = nullptr) const;
+    /// EXACT SWEPT CHANGE: the band cells among tids with their pieces (place_piece()), sorted,
+    /// read before an operation for band_relabel_change().
+    std::vector<std::pair<size_t, int>> band_cell_pieces(const std::vector<size_t>& tids) const;
+    /// EXACT SWEPT CHANGE: the change of the band term where an operation changed a cell's piece:
+    /// the sum over the band cells t among tids whose piece r1 now is not the r0 `before` gives
+    /// them of b_{r1}(t) - b_{r0}(t), t as it now is; 0 with one entry.
+    double band_relabel_change(
+        const std::vector<size_t>& tids,
+        const std::vector<std::pair<size_t, int>>& before) const;
     /// EXACT SWEPT CHANGE: dE* / delta for the band cells `old_band` replaced by `new_band` over
-    /// the same region, at the current positions (a swap moves no vertex).
+    /// the same region, all of piece `piece` (-1: the whole complex's integral and the run's
+    /// distance, one entry's), at the current positions (a swap moves no vertex).
     double band_chain_change(
         const std::vector<std::array<size_t, 4>>& old_band,
         const std::vector<std::array<size_t, 4>>& new_band,
-        ExactBandIntegral::Stats* st = nullptr) const;
+        ExactBandIntegral::Stats* st = nullptr,
+        int piece = -1) const;
     /// "exact_swept": the swap in flight's dE* / delta, `new_band` the band cells among its new
-    /// cells (by candidate_label() in the case search, by the labels written in the rule): 0 for
-    /// an interior swap, band_chain_change() from SwapRecord::old_band for a flip.
+    /// cells (by candidate_label() in the case search, by the labels written in the rule), the
+    /// old ones SwapRecord::old_band. Where the band cells, old and new, are all of one piece
+    /// (place_piece(); the old ones' read before the swap): 0 for an interior swap,
+    /// band_chain_change() at that piece for a flip. Otherwise the sum of the new band cells'
+    /// band_cell_term() less the old's, each at its piece (EXACT SWEPT CHANGE, several entries).
     double swap_swept_change(const std::vector<std::array<size_t, 4>>& new_band, bool flip);
     /// "exact_swept": the smoother's acceptance after a solve moved vid from x0 to where it is.
     /// The move stands iff the ring's AMIPS change (tet_energy_sum(ring, false) - amips_before)
@@ -1252,7 +1350,8 @@ public:
     /// vid's ring has no inverted cell are an intersection of half-spaces, so they are valid
     /// too (tested anyway, exactly). Counts into c. At a position where the solve's search model
     /// took its last value, the model's value is the change (BandVolumeEnergy3D::swept_value_at(),
-    /// the same function of the same inputs). MEASURED (Thingi 70565 piece 16 inward at 0.5
+    /// the same function of the same inputs), each piece's model its piece's. The faces and the
+    /// cells' pieces are read with vid at x0, where the move starts. MEASURED (Thingi 70565 piece 16 inward at 0.5
     /// delta_1, 1 thread, turn 7, 2026-11-02): in 8977 of 8977 front solves the model's last value
     /// was at the solve's end, bit-equal to band_swept_change() there; the test's value() calls
     /// took 5.0 s of the turn's 260 s.
@@ -1269,17 +1368,26 @@ public:
         double amips_before,
         SweptCounters& c);
     mutable SweptCounters m_swept_front, m_swept_nonfront;
-    /// "exact_swept": the search model band_volume_energy_at() built last on this thread, for
-    /// swept_accept().
-    mutable wmtk::threading::enumerable_thread_specific<std::shared_ptr<const BandVolumeEnergy3D>>
+    /// "exact_swept": the search models band_volume_energy_at() built last on this thread, one per
+    /// piece in band_swept_faces()'s order, for swept_accept().
+    mutable wmtk::threading::enumerable_thread_specific<
+        std::vector<std::shared_ptr<const BandVolumeEnergy3D>>>
         m_swept_model;
     /// "exact_swept": the smoother's search model's derivative evaluations, and of them those
     /// taken from the ring's band cells (BandVolumeEnergy3D::set_swept()), per pass.
     mutable BandVolumeEnergy3D::SweptDerivCounts m_swept_derivs;
-    /// "exact_swept", the projected step: the vertex smooth_nonfront_vertex() smooths and its
-    /// position at the `stored` call of smoothing_ring_energy(), which every candidate's band
-    /// change is taken from.
-    mutable wmtk::threading::enumerable_thread_specific<std::pair<size_t, Vector3d>> m_swept_stored;
+    /// "exact_swept", the projected step: the vertex smooth_vertex_under_energy() smooths, and at the
+    /// `stored` call of smoothing_ring_energy() its position, its boundary faces of each B_r
+    /// (band_swept_faces()) and its band cells' pieces (band_cell_pieces()), which every
+    /// candidate's band change is taken from.
+    struct SweptStored
+    {
+        size_t vid = 0;
+        Vector3d x0 = Vector3d::Zero();
+        std::vector<SweptFacesOfPiece> pieces;
+        std::vector<std::pair<size_t, int>> cell_pieces;
+    };
+    mutable wmtk::threading::enumerable_thread_specific<SweptStored> m_swept_stored;
     /**
      * @brief What the shared smoother's projected step compares for a vertex held on a surface:
      * the sum of tet_energy() over the one-ring, the rule every other move answers to (under
@@ -1302,25 +1410,31 @@ public:
         if (swept_rule()) {
             // "exact_swept": the ring's AMIPS terms plus the band term's change from the position
             // at the `stored` call (EXACT SWEPT CHANGE); the vertex is the one
-            // smooth_nonfront_vertex() is smoothing, the same in both calls
+            // smooth_vertex_under_energy() is smoothing, the same in both calls
             for (const Tuple& loc : ring) s += tet_energy(loc.tid(*this), false);
             auto& st = m_swept_stored.local();
-            const size_t vid = st.first;
+            const size_t vid = st.vid;
             const auto vs = oriented_tet_vids(ring.front().tid(*this));
             if (std::find(vs.begin(), vs.end(), vid) == vs.end()) {
                 log_and_throw_error(
                     "exact_swept: the projected step's ring is not vertex {}'s",
                     vid);
             }
+            std::vector<size_t> tids;
+            for (const Tuple& loc : ring) tids.push_back(loc.tid(*this));
             if (stored) {
-                st.second = m_vertex_attribute[vid].m_posf;
+                // the faces and the cells' pieces where the move starts (swept_accept())
+                st.x0 = m_vertex_attribute[vid].m_posf;
+                band_swept_faces(vid, st.x0, st.pieces);
+                st.cell_pieces = band_cell_pieces(tids);
                 return s;
             }
-            return s + band_swept_change(vid, st.second, m_vertex_attribute[vid].m_posf);
+            return s + band_swept_sum(st.x0, m_vertex_attribute[vid].m_posf, st.pieces) +
+                   band_relabel_change(tids, st.cell_pieces);
         }
         for (const Tuple& loc : ring) s += tet_energy(loc.tid(*this));
         // EXPERIMENTAL_band_volume_rule "surface": the offset faces through the vertex move with
-        // it (smooth_nonfront_vertex() names it).
+        // it (smooth_vertex_under_energy() names it off the front).
         if (surface_energy()) {
             const size_t vid = m_smoothing_vid.local();
             if (vid != size_t(-1) && m_vertex_extra[vid].m_is_on_offset) s += surface_term_at(vid);
@@ -1391,20 +1505,25 @@ public:
             m_offset_params.band_volume_rule == "front_flux" || swept_rule()) {
             // EXPERIMENTAL_band_volume_rule "exact" (and "front_flux", whose per-cell quantity
             // it is, see above): J_t / delta, J_t = int_t (d - delta) dV in closed form
-            // (ExactBandIntegral), in place of the corner bound
-            const std::array<Vector3d, 4> p = {
-                {m_vertex_attribute[vids[0]].m_posf,
-                 m_vertex_attribute[vids[1]].m_posf,
-                 m_vertex_attribute[vids[2]].m_posf,
-                 m_vertex_attribute[vids[3]].m_posf}};
-            // The cell's own piece's distance and integral (place_piece(); the run's and the
-            // whole complex's with one entry).
-            const int r = place_piece(vids.data(), 4);
-            const double delta = region_delta(r);
-            return band_exact_for(r)->value(p, delta) / delta;
+            // (ExactBandIntegral), in place of the corner bound. The cell's own piece's distance
+            // and integral (place_piece(); the run's and the whole complex's with one entry).
+            return band_cell_term(vids, place_piece(vids.data(), 4));
         }
         int64_t best = -1;
         return band_cell_corner_bound(vids, best);
+    }
+    /// band_cell_term()'s J_t / delta ("exact" and the rules that take its term) at piece r's
+    /// distance and integral, whatever the cell's piece: EXACT SWEPT CHANGE's change of a cell's
+    /// piece.
+    double band_cell_term(const std::array<size_t, 4>& vids, const int r) const
+    {
+        const std::array<Vector3d, 4> p = {
+            {m_vertex_attribute[vids[0]].m_posf,
+             m_vertex_attribute[vids[1]].m_posf,
+             m_vertex_attribute[vids[2]].m_posf,
+             m_vertex_attribute[vids[3]].m_posf}};
+        const double delta = region_delta(r);
+        return band_exact_for(r)->value(p, delta) / delta;
     }
     /// band_cell_term()'s value, with its minimising triangle in `best`.
     double band_cell_corner_bound(const std::array<size_t, 4>& vids, int64_t& best) const
@@ -1536,7 +1655,7 @@ public:
     /// The live offset faces through vid, as sorted vertex triples (for_each_live_offset_face_at()).
     void live_offset_faces_at(size_t vid, std::vector<std::array<size_t, 3>>& out) const;
     /// The vertex the shared smoother is placing on this thread, for smoothing_ring_energy()
-    /// (which is handed the ring alone); size_t(-1) outside smooth_nonfront_vertex().
+    /// (which is handed the ring alone); size_t(-1) outside smooth_vertex_under_energy() and at a front vertex.
     mutable wmtk::threading::enumerable_thread_specific<size_t> m_smoothing_vid{size_t(-1)};
     /** @} */
     /// 1 / front_conv_frac()^2: the factor that turns a squared relative error into a squared
@@ -1636,6 +1755,24 @@ public:
         const size_t band,
         const size_t other,
         const std::array<size_t, 3>& vids) const;
+    /// Whether cell tid, off the band, lies off the side its piece's entry grows on: outside the
+    /// selection of an In entry (`piece` as place_piece() gives it; the entry of a piece is
+    /// m_region_offset's, entry 0 with one). The label clean-up's side test reads an unsigned
+    /// bound of the distance to the complex, the selection's boundary for In, so such a cell
+    /// within the target of it would read as inside the level set: flipped into the band, or,
+    /// held out by the complex, the level set out of reach. Out: the cells inside its solid are
+    /// the complex (label 1), which the clean-up never flips; Both: either side.
+    bool cell_off_offset_side(const size_t tid, const int piece) const
+    {
+        if (m_offset_params.offsets.empty()) return false;
+        size_t k = 0;
+        if (m_offset_params.offsets.size() > 1) {
+            if (piece < 0 || size_t(piece) >= m_region_offset.size()) return false;
+            k = size_t(m_region_offset[size_t(piece)]);
+        }
+        return m_offset_params.direction(k) == Parameters::Offset::Direction::In &&
+               !cell_in_selection(k, tid);
+    }
     /// Whether tet `tid` is part of the offset BAND (as opposed to the input complex).
     bool cell_is_offset_band(const size_t tid) const { return m_tet_attribute[tid].label == 2; }
 
@@ -1761,6 +1898,11 @@ public:
     /// offset_surface_faces_live_at() answers, without building the list: this one runs in the
     /// operation hooks, where the list would be allocated and thrown away.
     bool vertex_has_live_offset_face(size_t vid) const;
+    /// Whether ANY tracked face (m_is_surface_fs: a region boundary or the offset surface) is
+    /// incident to vid: what the base's m_is_on_surface says, exactly. The label clean-up and
+    /// untrack_covered_boundaries() re-derive the flag from it for the corners whose faces they
+    /// untrack, and check_offset_membership() compares the two.
+    bool vertex_has_tracked_face(size_t vid) const;
     /// Every live offset face through vid, from vid's own tet list alone (see
     /// vertex_has_live_offset_face()): fn(sorted vertex triple, its band cell) for each, until fn
     /// returns true; returns whether one did. A band face on the domain boundary counts.
@@ -2233,13 +2375,13 @@ public:
      * show per vertex what m_newton_front counts per pass (frame fields front_newton_iters and
      * front_newton_status, see write_vtu()).
      *
-     * Appended by smooth_front_vertex(), emptied by write_debug_frame() once the frame is
-     * written. The engine writes a frame after every pass and smooths a vertex at most once per
-     * pass, so a smoothing pass's frame shows each front vertex's solve of that pass and an
-     * operation pass's frame shows none. Not in m_vertex_extra: a refused move rolls the vertex
-     * attributes back (TetMesh::smooth_vertex()), and the refused solves are the ones to see.
-     * Added 2026-10-01 for Thingi10K 100026 at target_distance_rel 5e-3, where front solves end
-     * at the 10-iteration cap ever more often inside the model's two slots and the per-pass
+     * Appended by smooth_vertex_under_energy() at a front vertex, emptied by write_debug_frame()
+     * once the frame is written. The engine writes a frame after every pass and smooths a vertex at
+     * most once per pass, so a smoothing pass's frame shows each front vertex's solve of that pass
+     * and an operation pass's frame shows none. Not in m_vertex_extra: a refused move rolls the
+     * vertex attributes back (TetMesh::smooth_vertex()), and the refused solves are the ones to
+     * see. Added 2026-10-01 for Thingi10K 100026 at target_distance_rel 5e-3, where front solves
+     * end at the 10-iteration cap ever more often inside the model's two slots and the per-pass
      * counts cannot say where.
      */
     struct FrontSolveRecord
@@ -2268,7 +2410,7 @@ public:
     /// The thread's shared solver, created with the engine's parameters if needed, with
     /// kSmoothRelGradNormTol applied. Every smoothing path of this component takes it from here.
     polysolve::nonlinear::Solver& smoothing_solver();
-    /// The front veto (smooth_front_vertex(), solve_3d): moves whose Newton solve
+    /// The front veto (smooth_vertex_under_energy() at a front vertex): moves whose Newton solve
     /// succeeded and reached the veto, and how many it refused for raising the ring's sum of
     /// tet_energy(). Reported and reset per pass beside the Newton counters. Kept apart from
     /// m_smooth_rejects.quality, which the non-front veto also counts.
@@ -2521,13 +2663,15 @@ public:
         /// EXPERIMENTAL_band_volume_rule "surface": the offset faces through v1 or v2 before
         /// (surface_face_term()), against the survivor's after.
         double surface_before = 0.;
-        /// "exact_swept": v1's boundary faces of B (band_swept_faces()) and the two positions,
-        /// taken on the mesh before; the change is integrated in collapse_after_connectivity(),
+        /// "exact_swept": v1's boundary faces of each B_r (band_swept_faces()), the two
+        /// positions, and the pieces of v1's band cells (band_cell_pieces()), taken on the mesh
+        /// before; the change is integrated in collapse_after_connectivity(),
         /// for the collapses that pass the engine's tests -- MEASURED (on main, mac-mini, the
         /// screw piece 15, turn 1, 2026-10-22): integrated here, before the inversion test that
         /// refuses most attempts, the collapse pass took 35.0 s against "exact"'s 3.6 s.
-        std::vector<std::array<Vector3d, 2>> swept_faces;
+        std::vector<SweptFacesOfPiece> swept_faces;
         Vector3d swept_x1 = Vector3d::Zero(), swept_x2 = Vector3d::Zero();
+        std::vector<std::pair<size_t, int>> swept_pieces;
     };
     mutable wmtk::threading::enumerable_thread_specific<CollapseVolume> m_collapse_volume;
     /**
@@ -2686,11 +2830,6 @@ public:
     }
 
     /**
-     * @brief Placement of a front vertex: the shared smoother with the offset's options. See
-     * FrontSmooth3d.cpp.
-     */
-    bool smooth_front_vertex(const Tuple& t);
-    /**
      * @brief A repulsion vertex in the passes and rounds before the march (repulsion_smoothing()):
      * the shared smoother at the front's options, against the sum of the per-tet energy over its
      * ring -- the AMIPS term, and O(v) once for every ring cell that carries it
@@ -2699,13 +2838,13 @@ public:
      */
     bool smooth_repulsion_vertex(const Tuple& t);
     /**
-     * @brief Every vertex off the front: the shared smoother with
-     * TetWild's options (TetOptimizerMesh::smooth_after()), except that it minimises the vertex's
-     * part of the energy (smoothing_extra_energy(); the smoother adds no AMIPS term of its own) and
-     * the engine's AMIPS^3 veto is replaced by the energy's: the sum of tet_energy() over the ring
-     * may not rise. See Optimize3d.cpp.
+     * @brief Every vertex the loop smooths outside TetWild's rules, front or not (front): the
+     * shared smoother with TetWild's options (TetOptimizerMesh::smooth_after()), except that it
+     * minimises the vertex's part of the energy (smoothing_extra_energy(); the smoother adds no
+     * AMIPS term of its own) and the engine's AMIPS^3 veto is replaced by the energy's: the sum of
+     * tet_energy() over the ring may not rise. See Optimize3d.cpp.
      */
-    bool smooth_nonfront_vertex(const Tuple& t);
+    bool smooth_vertex_under_energy(const Tuple& t, bool front);
     /// EXPERIMENTAL_damping: the longest move one smoothing solve may make at vid,
     /// EXPERIMENTAL_damping_factor (default 0.5) times the shortest edge from vid to a vertex of its
     /// one-ring, at the positions before the solve; the three smoothers above pass it as
@@ -2726,7 +2865,7 @@ public:
     /// vol_amips3()), in the smoother's form (CubedAMIPSEnergy3D).
     std::shared_ptr<polysolve::nonlinear::Problem> amips3_energy(size_t vid) const;
     /// ||grad F|| at front vertex vid along its move direction, F the objective
-    /// smooth_front_vertex() minimises. +inf if unmeasurable.
+    /// smooth_vertex_under_energy() minimises at a front vertex. +inf if unmeasurable.
     double front_vertex_normal_gradient(size_t vid) const;
     /// The line a front vertex is placed along: the field normal, or that normal projected into
     /// the boundary surface (onto its crease) where an input envelope holds it.
@@ -2834,18 +2973,19 @@ public:
             // 2026-10-09, cube, serial, 3 turns: with the term these solves took 24.6 Newton
             // iterations and ~20 line-search trials per iteration (72% of the smoother's value
             // calls), without it 3.9 and 1; 19.3 s -> 11.3 s. E still guards the move:
-            // smooth_nonfront_vertex() vetoes on the ring's sum of tet_energy().
+            // smooth_vertex_under_energy() vetoes on the ring's sum of tet_energy().
             // Under "exact", not where it cancels (BAND TERM THAT CANCELS, tet_energy()): a ring
             // of band cells clear of the input's bisectors tiles the star of vid, so the term is a
             // constant, and its cells' exact integrals would add only work and their rounding to
-            // every Newton step. The veto's own test (cancels_before in smooth_nonfront_vertex()).
-            // Constant wherever the move can end, not only here: vid is smoothed, so not on the
-            // domain wall (smooth_before()), and its ring closes around it; the engine keeps no
-            // position that inverts a ring cell, so vid stays inside the convex hull of its link;
-            // and the test reads the points only through their box, their least side of each
-            // bisector polytope's planes, and min_P max d_P (d_P convex), none of which a point
-            // inside that hull changes. So the test here certifies every position the smoother
-            // can keep. "front_flux" and "exact_swept" leave the constant out by their own forms
+            // every Newton step. The veto's own test (cancels_before in
+            // smooth_vertex_under_energy()). Constant wherever the move can end, not only here: vid
+            // is smoothed, so not on the domain wall (smooth_before()), and its ring closes around
+            // it; the engine keeps no position that inverts a ring cell, so vid stays inside the
+            // convex hull of its link; and the test reads the points only through their box, their
+            // least side of each bisector polytope's planes, and min_P max d_P (d_P convex), none
+            // of which a point inside that hull changes. So the test here certifies every position
+            // the smoother can keep. "front_flux" and "exact_swept" leave the constant out by their
+            // own forms
             // (band_volume_energy_at()). MEASURED (cube 1e-2 / 1e-4, 15 rounds, serial, two runs
             // each): 659 of 46,594 non-front solves had such a ring; at every one's end the
             // veto's test found it clear again, and every one was accepted; smoothing 7.7-7.9 s ->
@@ -3557,12 +3697,12 @@ public:
         MatrixXi S_cells;
         VectorXd s_err, s_over, s_signed, s_dist_ratio, s_sq, s_face, s_point;
     };
-    /// The mesh's part of write_vtu(): every array of the four files. Logs each file's "Write"
-    /// line once its arrays are gathered -- for a debug frame, before the writer thread writes it.
-    /// Does not change the mesh (the band-region map it re-derives is put back).
+    /// The mesh's part of write_vtu(): every array of the four files. Does not change the mesh
+    /// (the band-region map it re-derives is put back).
     VtuFrame gather_vtu_frame(const std::string& path);
     /// The files' part: paraviewo encodes and writes `frame`, nothing else is read. A debug
     /// frame carries every field; a `result` only the tags, the data fields and two annotations.
+    /// Logs each file once written (for a debug frame, on the writer thread); none into `output`.
     static void
     write_vtu_frame(const VtuFrame& frame, MeshMap* output = nullptr, bool result = false);
     //// output stuff
@@ -3723,13 +3863,16 @@ private:
         /// The swap's band term cancels (band_term_cancels(), every swap kind): the before-sum,
         /// the candidates and the after-sum leave it out.
         bool band_cancels = false;
-        /// "exact_swept", a flip: the band cells it replaces (swap_swept_change()).
+        /// "exact_swept": the band cells the swap replaces and their pieces (place_piece()), read
+        /// before it (swap_swept_change()).
         std::vector<std::array<size_t, 4>> old_band;
+        std::vector<int> old_piece;
         void clear()
         {
             flip = false;
             band_cancels = false;
             old_band.clear();
+            old_piece.clear();
             scored = false;
             scored_energy = std::numeric_limits<double>::max();
         }

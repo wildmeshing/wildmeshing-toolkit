@@ -85,6 +85,11 @@ for limit in [True, False]:
           f"iteration(s), {against(outputs['mesh'], 'triangle', field)}")
 # --8<-- [end:limit]
 
+def box_field(points):
+    """The box's length at points: linear in z."""
+    return np.interp(points[:, 2], [box_lo[2], box_hi[2]], [0.03, 0.15])
+
+
 # --8<-- [start:tetwild]
 # TetWild: the sizing mesh is a tet mesh. A box around a sphere of radius 0.7, as five tets,
 # whose length grows from 0.03 at its bottom to 0.15 at its top: linear in z.
@@ -106,10 +111,25 @@ for name, extra in [("length_rel 0.05", {}), ("sizing mesh", {"sizing_mesh": "bo
         {"input": ["sphere"], "filter": "tracked", "num_threads": 0, **extra},
         {"sphere": sphere, "box": box})
     tets = len(outputs["mesh"]["cells"]["tetrahedron"]["connectivity"])
-    print(f"tetwild, {name}: {tets} tets, " + against(
-        outputs["mesh"], "tetrahedron", lambda p: np.interp(p[:, 2], [box_lo[2], box_hi[2]],
-                                                            [0.03, 0.15])))
+    print(f"tetwild, {name}: {tets} tets, {against(outputs['mesh'], 'tetrahedron', box_field)}")
 # --8<-- [end:tetwild]
+
+# --8<-- [start:coarsen]
+# The coarsening pass takes collapses the optimization refused on quality. With the sizing mesh,
+# limit_collapse_length holds it under the field too; turned off, it coarsens past the field.
+for name, extra in [("coarsen_pass", {}), ("coarsen_pass, limit off", {"limit_collapse_length": False})]:
+    outputs, report = wm.tetwild(
+        {"input": ["sphere"], "filter": "tracked", "num_threads": 0, "sizing_mesh": "box",
+         "coarsen_pass": True, **extra},
+        {"sphere": sphere, "box": box})
+    tets = len(outputs["mesh"]["cells"]["tetrahedron"]["connectivity"])
+    print(f"tetwild, {name}: {tets} tets, {against(outputs['mesh'], 'tetrahedron', box_field)}")
+# --8<-- [end:coarsen]
+
+def bunny_field(points):
+    """The bunny's length at points: linear in y."""
+    return diag * np.interp(points[:, 1], [y0, y1], [0.04, 0.01])
+
 
 # --8<-- [start:isotropic]
 # Isotropic remeshing: the sizing mesh is a surface, read at the point closest to each vertex.
@@ -125,6 +145,6 @@ for name, extra in [("length_rel 0.025", {"length_rel": 0.025}),
     outputs, _ = wm.isotropic_remeshing({"input": "bunny", "max_iterations": 5, **extra},
                                         {"bunny": bunny, "field": bunny_sizing})
     triangles = len(outputs["mesh"]["cells"]["triangle"]["connectivity"])
-    print(f"isotropic_remeshing, {name}: {triangles} triangles, " + against(
-        outputs["mesh"], "triangle", lambda p: diag * np.interp(p[:, 1], [y0, y1], [0.04, 0.01])))
+    print(f"isotropic_remeshing, {name}: {triangles} triangles, "
+          f"{against(outputs['mesh'], 'triangle', bunny_field)}")
 # --8<-- [end:isotropic]

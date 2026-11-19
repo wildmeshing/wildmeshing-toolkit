@@ -40,8 +40,8 @@ bool TriOptimizerMesh::smooth_after(const Tuple& t)
     // both the tangential gradient and Hessian scale with w_amips, so Newton cancels the
     // weight and vertices slide identically at any fitting strength.
     opts.two_stage = false;
-    opts.smoothing_mode = m_params.smoothing_mode == "exact"
-                              ? optimization::SmoothVertexOptions::SmoothingMode::Exact
+    opts.smoothing_mode = m_params.smoothing_mode == "penalty"
+                              ? optimization::SmoothVertexOptions::SmoothingMode::Penalty
                               : optimization::SmoothVertexOptions::SmoothingMode::Projected;
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;

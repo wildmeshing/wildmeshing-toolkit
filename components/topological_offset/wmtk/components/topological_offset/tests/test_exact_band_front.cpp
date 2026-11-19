@@ -243,7 +243,7 @@ TEST_CASE("exact-band-front-identity", "[offset][exact_band][front_flux]")
 namespace {
 
 /// A ring of four cells under x around ctr and its boundary faces through x (those in one cell
-/// only, the top four), oriented out of the cells, as smooth_front_vertex() builds them.
+/// only, the top four), oriented out of the cells, as smooth_vertex_under_energy() builds them.
 struct Ring
 {
     std::vector<BandVolumeEnergy3D::Cell> cells;

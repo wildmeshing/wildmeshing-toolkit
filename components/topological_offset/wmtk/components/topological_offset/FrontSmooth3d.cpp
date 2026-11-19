@@ -17,167 +17,10 @@
 namespace wmtk::components::topological_offset {
 
 /**
- * Front placement: an offset-surface vertex is placed by the shared 3-D smoother with the offset's
- * energy (see smooth_front_vertex()). Everything else is smoothed by Optimize3d.cpp. The 2D twin
- * is FrontSmooth2d.cpp.
+ * The front's objective and placement measures, and the repulsion smoother. Every vertex the loop
+ * smooths, the front's included, is placed by smooth_vertex_under_energy() in Optimize3d.cpp. The
+ * 2D twin is FrontSmooth2d.cpp.
  */
-
-bool TopoOffsetTetMesh::smooth_front_vertex(const Tuple& t)
-{
-    // See the header: the shared smoother with the offset's options. The whole objective arrives
-    // through smoothing_extra_energy() -- the vertex's part of the energy, the AMIPS term over the
-    // ring and the band term of its band cells -- and w_amips 0 keeps the smoother from adding an
-    // AMIPS term of its own; a front vertex an input envelope pins carries no band term. The
-    // smoother holds a front vertex to no envelope (see smoothing_containment_envelope()), so
-    // neither the projected path nor the containment check applies -- solve, exact inversion
-    // test, then the veto on tet_energy() below.
-    const size_t vid = t.vid(*this);
-    optimization::SmoothVertexOptions opts;
-    opts.w_amips = 0.;
-    opts.w_envelope = m_params.w_envelope;
-    opts.s_amips = m_s_amips;
-    opts.s_envelope = m_s_envelope;
-    opts.two_stage = false;
-    // The engine's veto compares AMIPS^3 alone (smoothing_cell_energy()), and a front vertex
-    // must be free to worsen its ring's shape on the way to the level set: off, as it always was
-    // here. solve_3d() vetoes on the energy instead.
-    opts.quality_veto = false;
-    opts.max_step = damping_step(vid); // EXPERIMENTAL_damping; infinity when off
-    // "exact_swept": the vertex smoothed, for smoothing_ring_energy(), as smooth_nonfront_vertex()
-    // records it. A front vertex held on a region boundary (every one is held since 2026-11-04)
-    // takes the engine's projected step, which reads it; before, it read the last non-front
-    // vertex's and threw (double_sphere, one round).
-    if (swept_rule()) m_swept_stored.local().first = vid;
-    const Vector3d x0 = std::as_const(m_vertex_attribute)[vid].m_posf;
-    auto& solver =
-        m_solver.local(); // the thread's shared solver, criteria set by smoothing_solver()
-    smoothing_solver();
-    // THE FRONT SMOOTHER'S VETO (see tet_energy()), on every 3-D solve: the sum of tet_energy()
-    // over the vertex's one-ring may not rise. A tie passes, as in the engine's AMIPS veto. Read
-    // before the solve and after it, on the mesh: a smoothing move changes no label and moves one
-    // vertex, so the one-ring holds every cell whose energy it can change. Refused,
-    // TetMesh::smooth_vertex() rolls back the position and the ring's stored qualities.
-    // smooth_vertex_3d() has counted the move accepted by then; it is recounted as a quality
-    // refusal, so the counters still partition the attempts.
-    // The change this solve makes to the vertex's own error, 0 when the move is refused and
-    // rolled back (see VertexExtra::m_front_change).
-    const double r_before = front_vertex_relative_residual(vid);
-    const auto record_change = [&](const bool moved) {
-        VertexExtra& ve = m_vertex_extra[vid];
-        ve.m_front_change_group = m_smooth_group;
-        const double r_after = moved ? front_vertex_relative_residual(vid) : r_before;
-        // in the vertex's piece's bar (one entry: the run's)
-        const int piece = m_offset_params.offsets.size() > 1 ? place_piece(&vid, 1) : -1;
-        ve.m_front_change = moved ? std::abs(r_after - r_before) / front_conv_frac_of(piece) : 0.;
-    };
-    const auto solve_3d = [&]() {
-        const std::vector<size_t>& ring = get_one_ring_tids_for_vertex(vid);
-        // EXPERIMENTAL_band_volume_rule "surface": the offset faces through vid move with it, and
-        // their term joins both sides of the veto. "exact_swept": the AMIPS part alone, for
-        // swept_accept().
-        const bool surface = surface_energy();
-        const double before =
-            tet_energy_sum(ring, !swept_rule()) + (surface ? surface_term_at(vid) : 0.);
-        // growth_mode "individual_op_reject": the turned offset faces through vid before the
-        // move, which may not raise them (every face it changes goes through vid).
-        int turned_before = -1;
-        if (turned_reject_active()) {
-            std::set<std::array<size_t, 3>> f;
-            turned_front_faces_at(vid, f);
-            turned_before = int(f.size());
-        }
-        // DEBUG_crossings (log-only): the ring measures this move can change -- of vid and of
-        // every vertex that shares a front face with it -- before the solve.
-        std::vector<size_t> nb;
-        std::vector<double> nb_before;
-        if (m_offset_params.debug_crossings) {
-            nb.push_back(vid);
-            for (const Tuple& ft : offset_surface_faces_live_at(vid)) {
-                for (const size_t u : get_face_vids(ft)) nb.push_back(u);
-            }
-            wmtk::vector_unique(nb);
-            for (const size_t u : nb) nb_before.push_back(ring_measure_at(u));
-        }
-        // The solve's own counter, so DEBUG_output can pin its outcome to vid
-        // (m_front_solve_log), folded into the pass's m_newton_front, which therefore counts
-        // exactly what passing it in counted. At most one solve (two_stage is off), none when
-        // smooth_vertex_3d() refuses an already-inverted ring before solving; nothing after the
-        // solve touches the solver, so it still holds that solve's state here.
-        optimization::NewtonCounters one;
-        // EXPERIMENTAL_band_volume_rule "front_flux": the band term's exceptions (a curved
-        // bisector crossing a piece, a partition that does not tile) are errors, not failed line
-        // searches; the shared smoother takes any exception out of a solve for the latter, so
-        // the term keeps its message (BandVolumeEnergy3D::front_flux_error()) and it is rethrown
-        // here.
-        std::string& ff_error = BandVolumeEnergy3D::front_flux_error();
-        ff_error.clear();
-        const bool ok =
-            optimization::smooth_vertex_3d(*this, t, opts, solver, &m_smooth_rejects, &one);
-        if (!ff_error.empty()) {
-            const std::string msg = std::move(ff_error);
-            ff_error.clear();
-            log_and_throw_error("front smoother, vertex {}: {}", vid, msg);
-        }
-        if (one.solves() > 0) {
-            m_newton_front.record(*solver, one.threw.load() > 0);
-            if (m_offset_params.debug_output) {
-                std::lock_guard<std::mutex> lock(m_front_solve_log_mutex);
-                m_front_solve_log.push_back(
-                    {vid, int(solver->current_criteria().iterations), int(solver->status()) + 1});
-            }
-        }
-        if (!ok) {
-            record_change(false);
-            return false;
-        }
-        {
-            // Diagnostic: the solve's final gradient norm and its ratio to the first one.
-            const auto& cr = solver->current_criteria();
-            const auto bin = [](double v, int lo) {
-                if (!(v > 0.)) return 0;
-                return std::clamp(int(std::floor(std::log10(v))) - lo + 1, 0, kGradBins - 1);
-            };
-            ++m_front_grad_abs[size_t(bin(cr.gradNorm, -14))];
-            ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
-        }
-        ++m_front_veto_asked;
-        if (swept_rule() ? !swept_accept(vid, ring, x0, before, m_swept_front)
-                         : !(tet_energy_sum(ring) + (surface ? surface_term_at(vid) : 0.) <=
-                             before)) { // a NaN refuses
-            ++m_front_veto_fired;
-            --m_smooth_rejects.accepted;
-            ++m_smooth_rejects.quality;
-            record_change(false);
-            return false;
-        }
-        if (turned_before >= 0) {
-            std::set<std::array<size_t, 3>> f;
-            turned_front_faces_at(vid, f);
-            if (int(f.size()) > turned_before) {
-                ++m_turned_reject_smooth;
-                --m_smooth_rejects.accepted;
-                ++m_smooth_rejects.quality;
-                record_change(false);
-                return false;
-            }
-        }
-        record_change(true);
-        count_damped_move(vid, x0, opts.max_step);
-        if (m_offset_params.debug_crossings) {
-            for (size_t k = 0; k < nb.size(); ++k) {
-                const double after = ring_measure_at(nb[k]);
-                if (!(nb_before[k] <= 1.) || !(after > 1.)) continue;
-                if (nb[k] == vid) {
-                    ++m_cross_own;
-                } else {
-                    ++m_cross_neighbour;
-                }
-            }
-        }
-        return true;
-    };
-    return solve_3d();
-}
 
 bool TopoOffsetTetMesh::smooth_repulsion_vertex(const Tuple& t)
 {
@@ -357,31 +200,60 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_energy_at(
     const size_t vid) const
 {
-    // band_cell_term() of each band cell of the ring, x moving (BandVolumeEnergy3D).
-    // EXPERIMENTAL_band_volume_rule "surface": no cell carries a band term.
+    // band_cell_term() of each band cell of the ring, x moving (BandVolumeEnergy3D), and under
+    // "exact_swept" its piece. EXPERIMENTAL_band_volume_rule "surface": no cell carries a band
+    // term.
     if (surface_energy()) return nullptr;
+    const bool swept = swept_rule();
     std::vector<BandVolumeEnergy3D::Cell> cells;
+    std::vector<int> cell_piece;
     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
         if (!cell_is_offset_band(tid)) continue;
         BandVolumeEnergy3D::Cell c;
         int k = 0;
-        for (const size_t u : oriented_tet_vids(tid)) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        for (const size_t u : vs) {
             if (u == vid) continue;
             (k == 0 ? c.q1 : k == 1 ? c.q2 : c.q3) = m_vertex_attribute[u].m_posf;
             ++k;
         }
         if (k != 3) continue;
         cells.push_back(c);
+        if (swept) cell_piece.push_back(place_piece(vs.data(), 4));
     }
     if (cells.empty()) return nullptr;
     // EXPERIMENTAL_band_volume_rule "exact_swept": the search model is the function the move is
-    // judged on (BandVolumeEnergy3D::set_swept()), over the boundary faces of B through vid in the
-    // list and order swept_accept() reads (band_swept_faces()). None: no band term, the move's
-    // band change being 0.
-    std::vector<std::array<Vector3d, 2>> swept_faces;
-    if (swept_rule()) {
-        band_swept_faces(vid, m_vertex_attribute[vid].m_posf, swept_faces);
-        if (swept_faces.empty()) return nullptr;
+    // judged on (BandVolumeEnergy3D::set_swept()): one per piece r, over the boundary faces of
+    // B_r through vid in the lists and order swept_accept() reads (band_swept_faces()), with the
+    // ring's band cells of piece r and r's distance, engine and integral, summed where there are
+    // several (EXACT SWEPT CHANGE, several entries). None: no band term, the move's band change
+    // being 0.
+    if (swept) {
+        std::vector<SweptFacesOfPiece> pieces;
+        band_swept_faces(vid, m_vertex_attribute[vid].m_posf, pieces);
+        auto& models = m_swept_model.local();
+        models.clear();
+        if (pieces.empty()) return nullptr;
+        auto sum = pieces.size() > 1 ? std::make_shared<optimization::EnergySum>() : nullptr;
+        std::shared_ptr<BandVolumeEnergy3D> e;
+        for (SweptFacesOfPiece& q : pieces) {
+            std::vector<BandVolumeEnergy3D::Cell> cq;
+            for (size_t i = 0; i < cells.size(); ++i) {
+                if (cell_piece[i] == q.piece) cq.push_back(cells[i]);
+            }
+            const double delta = region_delta(q.piece);
+            e = std::make_shared<BandVolumeEnergy3D>(
+                envelope_for(q.piece),
+                m_input_complex_pad,
+                std::move(cq),
+                m_vertex_attribute[vid].m_posf,
+                delta);
+            e->set_swept(band_exact_for(q.piece), delta, std::move(q.faces), &m_swept_derivs);
+            models.push_back(e);
+            if (sum) sum->add_energy(e);
+        }
+        if (sum) return sum;
+        return e;
     }
     // The ring's piece's distance, engine and integral (place_piece(); the run's and the whole
     // complex's with one entry): the cells of a band vertex's ring are its piece's band.
@@ -394,11 +266,6 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_en
         std::move(cells),
         m_vertex_attribute[vid].m_posf,
         delta);
-    if (swept_rule()) {
-        e->set_swept(band_exact, delta, std::move(swept_faces), &m_swept_derivs);
-        m_swept_model.local() = e;
-        return e;
-    }
 
     // EXPERIMENTAL_band_volume_rule "exact": each cell's closed-form integral, as band_cell_term().
     if (m_offset_params.band_volume_rule == "exact") {

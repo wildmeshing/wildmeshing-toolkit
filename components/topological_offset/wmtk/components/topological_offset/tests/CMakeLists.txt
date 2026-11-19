@@ -5,14 +5,16 @@ if(NOT ${WMTK_ENABLE_COMPONENT_TEST_${COMPONENT_NAME}})
     return()
 endif()
 
-add_component_test(${COMPONENT_NAME})
+add_component_test(${COMPONENT_NAME} PER_CASE)
 
 set(SRC_FILES
     test_topological_offset.cpp
     test_offset_potential.cpp
     test_exact_band_integral.cpp
+    test_exact_band_integral_2d.cpp
     test_exact_band_front.cpp
     test_exact_swept.cpp
+    test_exact_swept_2d.cpp
     exact_band_integral_data.hpp
     exact_band_max_data.hpp
     exact_band_parallel_data.hpp

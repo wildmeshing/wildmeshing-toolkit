@@ -1100,3 +1100,101 @@ TEST_CASE("min over a 2D box's primitives is the BVH's nearest distance", "[enve
         CHECK(env.nearest_point(p, q) == Catch::Approx(m_box * m_box).margin(1e-12));
     }
 }
+
+// The sampled triangle envelope accepts a triangle when every sample is within eps2's radius,
+// eps - sampling_dist/sqrt(3), of the input; for that to keep the whole triangle within eps,
+// every point of it must be within sampling_dist/sqrt(3) of a sample. TetWild's lattice sampler
+// did not ensure it (gaps of up to 0.92 sampling_dist in thin triangles).
+namespace {
+// The largest distance from a check point of `tri` -- a barycentric grid of m steps -- to its
+// nearest sample. Plain doubles: in a Debug build, Eigen's expressions in this loop made the
+// test take minutes on MSVC.
+double sampled_covering_radius(
+    const std::array<Eigen::Vector3d, 3>& tri,
+    const std::vector<Eigen::Vector3d>& ps,
+    const int m)
+{
+    std::vector<std::array<double, 3>> samples(ps.size());
+    for (size_t k = 0; k < ps.size(); ++k) samples[k] = {{ps[k][0], ps[k][1], ps[k][2]}};
+    double worst2 = 0;
+    for (int j = 0; j <= m; ++j) {
+        for (int i = 0; i + j <= m; ++i) {
+            const Eigen::Vector3d q =
+                tri[0] + (double(i) / m) * (tri[1] - tri[0]) + (double(j) / m) * (tri[2] - tri[0]);
+            double best = std::numeric_limits<double>::max();
+            for (const auto& p : samples) {
+                const double dx = p[0] - q[0], dy = p[1] - q[1], dz = p[2] - q[2];
+                best = std::min(best, dx * dx + dy * dy + dz * dz);
+            }
+            worst2 = std::max(worst2, best);
+        }
+    }
+    return std::sqrt(worst2);
+}
+} // namespace
+
+TEST_CASE("sampleTriangle covers the triangle within sampling_dist / sqrt(3)", "[envelope]")
+{
+    std::mt19937_64 rng(4242);
+    std::uniform_real_distribution<double> U(-1, 1);
+    const double s = 0.37;
+    const double bound = s / std::sqrt(3.0) * (1 + 1e-9);
+    for (int t = 0; t < 300; ++t) {
+        std::array<Eigen::Vector3d, 3> tri;
+        const double scale = 0.2 + 3.0 * std::abs(U(rng)); // up to ~9 sampling distances
+        for (auto& v : tri) v = scale * Eigen::Vector3d(U(rng), U(rng), U(rng));
+        switch (t % 5) {
+        case 1: // thin: the third vertex close to the line of the first two
+            tri[2] = tri[0] + std::abs(U(rng)) * (tri[1] - tri[0]) +
+                     1e-3 * scale * Eigen::Vector3d(U(rng), U(rng), U(rng));
+            break;
+        case 2: // needle: two vertices close together
+            tri[1] = tri[0] + 0.05 * s * Eigen::Vector3d(U(rng), U(rng), U(rng));
+            break;
+        case 3: // collinear: no area at all
+            tri[2] = tri[0] + std::abs(U(rng)) * (tri[1] - tri[0]);
+            break;
+        case 4: // a repeated vertex
+            tri[2] = tri[1];
+            break;
+        default: break;
+        }
+        if (t % 2 == 1) { // far from the origin, where rounding is coarser
+            const Eigen::Vector3d shift = 1e3 * Eigen::Vector3d(U(rng), U(rng), U(rng));
+            for (auto& v : tri) v += shift;
+        }
+        std::vector<Eigen::Vector3d> ps;
+        sampleTriangle(tri, ps, s);
+        REQUIRE(ps.size() >= 3);
+        const double radius = sampled_covering_radius(tri, ps, 60);
+        INFO(
+            "triangle " << t << ": a point at " << radius / s
+                        << " sampling_dist from every sample");
+        REQUIRE(radius <= bound);
+    }
+}
+
+// A sliver takes samples in proportion to its length, as an area-proportional lattice does, not
+// to its length squared: a grid over the triangle (the triangle scaled by 1/n) takes 377,146
+// samples on the one below.
+TEST_CASE("sampleTriangle samples a sliver in proportion to its length", "[envelope]")
+{
+    const double s = 1;
+    // 1000 sampling distances long and 0.01 wide, at an angle to every axis.
+    const Eigen::Vector3d u = Eigen::Vector3d(1, 2, 3).normalized();
+    const Eigen::Vector3d v = u.cross(Eigen::Vector3d(0, 0, 1)).normalized();
+    const Eigen::Vector3d o(5, -7, 11);
+    std::array<Eigen::Vector3d, 3> tri = {{o, o + 1000 * u, o + 400 * u + 0.01 * v}};
+    std::vector<Eigen::Vector3d> ps;
+    sampleTriangle(tri, ps, s);
+    CHECK(ps.size() <= 2 * 1000);
+
+    // The covering radius on a shorter one, with check points a tenth of s apart along it.
+    tri = {{o, o + 40 * u, o + 15 * u + 0.01 * v}};
+    ps.clear();
+    sampleTriangle(tri, ps, s);
+    CHECK(ps.size() <= 2 * 40);
+    CHECK(sampled_covering_radius(tri, ps, 400) <= s / std::sqrt(3.0) * (1 + 1e-9));
+
+    CHECK_THROWS(sampleTriangle(tri, ps, 0));
+}

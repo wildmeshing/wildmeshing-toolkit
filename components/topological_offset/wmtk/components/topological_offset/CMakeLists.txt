@@ -28,6 +28,8 @@ set(SRC_FILES
 	OffsetPotential.cpp
 	ExactBandIntegral.hpp
 	ExactBandIntegral.cpp
+	ExactBandIntegral2D.hpp
+	ExactBandIntegral2D.cpp
 
 	topological_offset.hpp
 	topological_offset.cpp

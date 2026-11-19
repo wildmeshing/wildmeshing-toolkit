@@ -102,11 +102,11 @@ A vertex on the tracked surface must also stay on the input.
   incident element is taken; if none is, after
   [`project_line_search_steps`](../reference/tetwild.md#project_line_search_steps) (12) halvings,
   the vertex does not move. The vertex lands exactly on the input.
-- **`exact`**. Minimize, with the same Newton solver, the energy below, in which the distance to
-  the input pulls the vertex back. The vertex rests at a small distance from the input,
-  proportional to \(w\).
+- **`penalty`**. No projection. Minimize, with the same Newton solver, the energy below, in which a
+  quadratic penalty on the distance to the input pulls the vertex back. The vertex rests at a
+  small distance from the input, proportional to \(w\).
 
-The energy of the `exact` mode, for a vertex at \(x\), is
+The energy of the `penalty` mode, for a vertex at \(x\), is
 
 \[
 w \sum_{c \ni x} E(c) \;+\; (1 - w)\left(\frac{d(x)}{\varepsilon}\right)^2 ,
@@ -176,6 +176,10 @@ without letting the max energy rise:
 - [`coarsen_unbounded`](../reference/tetwild.md#coarsen_unbounded) (on) lets it coarsen past the
   target edge length, as far as the energy allows. Off, it leaves edges of \(\tfrac45\,l\) and
   longer alone.
+- Either way, [`limit_collapse_length`](../reference/tetwild.md#limit_collapse_length), when on,
+  keeps it from leaving an edge longer than \(\tfrac43\,l\), or 4/3 of a
+  [sizing mesh](../tutorials/workflows/sizing-mesh.md#the-coarsening-pass)'s length, with which
+  the limit is on by default.
 
 The pass trades run time for elements: it is off by default. With
 [`volume_history_output`](../reference/tetwild.md#volume_history_output) it is refused when

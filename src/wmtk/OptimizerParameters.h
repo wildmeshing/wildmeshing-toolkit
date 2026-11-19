@@ -183,7 +183,7 @@ struct OptimizerParameters
      * light quality preference.
      */
     double w_amips = 1e-4;
-    /// "projected" or "exact"; see SmoothVertexOptions::SmoothingMode.
+    /// "projected" or "penalty"; see SmoothVertexOptions::SmoothingMode.
     std::string smoothing_mode = "projected";
     /// Bisections tried before the projected search gives up. See SmoothVertexOptions.
     int project_line_search_steps = 12;
