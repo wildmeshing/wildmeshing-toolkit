@@ -228,20 +228,25 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             return;
         }
 
-        // check for inversions in input mesh
-        auto tris_before = mesh.get_faces();
-        if (!mesh.invariants(tris_before)) {
-            std::string bad_tris_str = "";
-            for (const TriMesh::Tuple& t : tris_before) {
-                std::vector<TriMesh::Tuple> tvec;
-                tvec.push_back(t);
-                if (!mesh.invariants(tvec)) {
-                    bad_tris_str += (std::to_string(t.fid(mesh)) + " ");
-                }
+        // Inverted or flat input triangles, checked in doubles as simwild checks its double input
+        // (SimWildMeshTri::init_from_image()): only without exact positions (V_rational). With
+        // them V is their rounding, in which a triangle that is valid exactly can be inverted or
+        // flat, and the input is taken as given.
+        if (input_data.V_input_r.size() == 0) {
+            const auto faces = mesh.get_faces();
+            const size_t n_inverted = std::count_if(faces.begin(), faces.end(), [&](const auto& t) {
+                return mesh.is_inverted_f(t.fid(mesh));
+            });
+            if (n_inverted > 0 && n_inverted == faces.size()) {
+                log_and_throw_error(
+                    "Input mesh is fully inverted! This should not happen... Might be a bug.");
+            } else if (n_inverted > 0) {
+                log_and_throw_error(
+                    "Faces with different orientations in the input! ({} of {} inverted or flat)",
+                    n_inverted,
+                    faces.size());
             }
-            log_and_throw_error("Inverted input element. Aborting. Bad tri ids: {}", bad_tris_str);
         }
-        tris_before.clear();
 
         // initial number of connected components
         size_t initial_num_comps = mesh.flood_fill();
@@ -271,21 +276,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
         // checks
         {
-            // inversion check
-            auto tris = mesh.get_faces();
-            bool noninverted = mesh.invariants(tris);
-            if (!noninverted) {
-                std::string bad_tris_str = "";
-                for (const TriMesh::Tuple& t : tris) {
-                    std::vector<TriMesh::Tuple> tvec;
-                    tvec.push_back(t);
-                    if (!mesh.invariants(tvec)) {
-                        bad_tris_str += (" " + std::to_string(t.fid(mesh)));
-                    }
-                }
-                log_and_throw_error("INVERSION DURING OFFSET! bad tri ids: {}", bad_tris_str);
-            }
-
             // Did conservative growth run out of room? Reported here, not inside the
             // optimization, because it is a property of the offset as constructed: the
             // optimization cannot move vertices off the bounding box, so a band clipped here
@@ -547,20 +537,25 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             return;
         }
 
-        // check for inversions in input mesh
-        auto tets_before = mesh.get_tets();
-        if (!mesh.invariants(tets_before)) {
-            std::string bad_tets_str = "";
-            for (const TetMesh::Tuple& t : tets_before) {
-                std::vector<TetMesh::Tuple> tvec;
-                tvec.push_back(t);
-                if (!mesh.invariants(tvec)) {
-                    bad_tets_str += (std::to_string(t.tid(mesh)) + " ");
-                }
+        // Inverted or flat input tets, checked in doubles as simwild checks its double input
+        // (SimWildMesh::init_from_image()): only without exact positions (V_rational). With them
+        // V is their rounding, in which a tet that is valid exactly can be inverted or flat, and
+        // the input is taken as given.
+        if (input_data.V_input_r.size() == 0) {
+            const auto tets = mesh.get_tets();
+            const size_t n_inverted = std::count_if(tets.begin(), tets.end(), [&](const auto& t) {
+                return mesh.is_inverted_f(t);
+            });
+            if (n_inverted > 0 && n_inverted == tets.size()) {
+                log_and_throw_error(
+                    "Input mesh is fully inverted! This should not happen... Might be a bug.");
+            } else if (n_inverted > 0) {
+                log_and_throw_error(
+                    "Tets with different orientations in the input! ({} of {} inverted or flat)",
+                    n_inverted,
+                    tets.size());
             }
-            log_and_throw_error("Inverted input element. Aborting. Bad tet ids: {}", bad_tets_str);
         }
-        tets_before.clear();
 
         // initial number of connected components
         size_t initial_num_comps = mesh.flood_fill();
@@ -591,21 +586,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
         // checks
         {
-            // inversion check
-            auto tets = mesh.get_tets();
-            bool noninverted = mesh.invariants(tets);
-            if (!noninverted) {
-                std::string bad_tets_str = "";
-                for (const TetMesh::Tuple& t : tets) {
-                    std::vector<TetMesh::Tuple> tvec;
-                    tvec.push_back(t);
-                    if (!mesh.invariants(tvec)) {
-                        bad_tets_str += (" " + std::to_string(t.tid(mesh)));
-                    }
-                }
-                log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
-            }
-
             // Did conservative growth run out of room? Reported here, not inside the
             // optimization, because it is a property of the offset as constructed: the
             // optimization cannot move vertices off the bounding box, so a band clipped here
