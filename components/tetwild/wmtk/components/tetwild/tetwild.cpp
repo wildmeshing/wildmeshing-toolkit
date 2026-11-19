@@ -444,7 +444,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         tagged ? tagged_mesh->feature_names : curve_labels;
     // filter_inputs: the inputs that bound the domain a filter keeps, by their labels (bit i:
     // face_tags[i]). Every input by default, as before the key.
-    InputSet bounding = ~InputSet(0);
+    std::optional<LabelIds> bounding; // none: every input
     const auto filter_inputs = json_params["filter_inputs"].get<std::vector<std::string>>();
     if (!filter_inputs.empty()) {
         if (filter_option == "none") {
@@ -456,7 +456,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 "inputs",
                 filter_option);
         }
-        bounding = 0;
+        bounding.emplace();
         for (const std::string& name : filter_inputs) {
             const auto it = std::find(face_tags.begin(), face_tags.end(), name);
             if (it == face_tags.end()) {
@@ -465,7 +465,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                     name,
                     face_tags);
             }
-            bounding |= InputSet(1) << (it - face_tags.begin());
+            bounding->insert(LabelId(it - face_tags.begin()));
         }
         logger().info("filter \"{}\": the domain bounded by {} only", filter_option, filter_inputs);
     }
@@ -518,14 +518,14 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 -1,
                 &tri_input,
                 record_history ? &read : nullptr);
-            // Each tracked face records the inputs it covers in max_inputs bits (see
-            // SurfaceTagAttributes::input_set()), so a run with more cannot hold every face to its
-            // own inputs. Refused here, before any work, rather than answered by the union.
-            if (input_paths.size() > size_t(SurfaceTagAttributes::max_inputs)) {
+            // Each tracked face records the inputs it covers by id (SurfaceTagAttributes::labels(),
+            // a LabelId each), so a run with more than max_labels cannot hold every face to its own
+            // inputs. Refused here, before any work, rather than answered by the union.
+            if (input_paths.size() > max_labels) {
                 log_and_throw_error(
                     "{} input surfaces; at most {} are supported",
                     input_paths.size(),
-                    SurfaceTagAttributes::max_inputs);
+                    max_labels);
             }
             box_minmax.first = V.colwise().minCoeff();
             box_minmax.second = V.colwise().maxCoeff();
@@ -866,9 +866,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
             }
             tet_envelope->init(env_V, env_F, tet_eps);
             const std::vector<int>& env_input = env_around_simplified ? fsimp_input : tri_input;
-            std::vector<InputSet> F_sets(env_F.size(), 0);
+            std::vector<LabelIds> F_sets(env_F.size());
             for (size_t i = 0; i < env_F.size() && i < env_input.size(); ++i) {
-                if (env_input[i] >= 0) F_sets[i] = InputSet(1) << env_input[i];
+                if (env_input[i] >= 0) F_sets[i] = LabelIds{LabelId(env_input[i])};
             }
             io::append_envelope_block(
                 envelope_out,
@@ -876,9 +876,9 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 CellType::Triangle,
                 F_sets,
                 face_tags);
-            std::vector<InputSet> E_sets;
+            std::vector<LabelIds> E_sets;
             for (const int file : features.edge_input) {
-                E_sets.push_back(file < SurfaceTagAttributes::max_inputs ? InputSet(1) << file : 0);
+                E_sets.push_back(file < max_labels ? LabelIds{LabelId(file)} : LabelIds{});
             }
             io::append_envelope_block(
                 envelope_out,
@@ -1014,7 +1014,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         // face tags, one per input. As triwild takes its segments'. Until 2026-11 only with
         // per_input_envelopes, and without it every tracked face was input 0's.
         const bool per_input = input_paths.size() > 1;
-        std::vector<InputSet> facet_input_set; // per facet, with several inputs only
+        std::vector<LabelIds> facet_input_set; // per facet, with several inputs only
         std::vector<std::vector<uint32_t>> facet_sources;
         // Per facet, each input's own orientation, with several inputs in a build that keeps one
         // count per input (SurfaceTagAttributes::m_input_orientation).
@@ -1094,8 +1094,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         // each triangle with its input.
         if (!env_around_simplified && simplify) {
             assert(tri_input.size() == tris.size());
-            std::vector<InputSet> tri_sets(tris.size());
-            for (size_t i = 0; i < tris.size(); ++i) tri_sets[i] = InputSet(1) << tri_input[i];
+            std::vector<LabelIds> tri_sets(tris.size());
+            for (size_t i = 0; i < tris.size(); ++i) tri_sets[i] = LabelIds{LabelId(tri_input[i])};
             mesh_new.set_input_curves(verts, tris, tri_sets, &features);
         }
 
@@ -1126,7 +1126,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         std::vector<std::array<size_t, 4>>().swap(tets);
         std::vector<bool>().swap(tet_face_on_input_surface);
         std::vector<int8_t>().swap(tet_face_orientation);
-        std::vector<InputSet>().swap(facet_input_set);
+        std::vector<LabelIds>().swap(facet_input_set);
         std::vector<InputOrientations>().swap(facet_input_orientation);
         std::vector<Eigen::Vector3d>().swap(vsimp);
         std::vector<std::array<size_t, 3>>().swap(fsimp);
@@ -1165,18 +1165,18 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         std::optional<io::HeldRows> held;
         utils::FeatureInputs reference_curves;
         MatrixXd reference_points;
-        std::vector<InputSet> reference_point_labels;
+        std::vector<LabelIds> reference_point_labels;
         if (envelope_given) {
-            const auto bits_named = [&](const std::string& name) {
-                InputSet bits = 0;
+            const auto labels_named = [&](const std::string& name) {
+                LabelIds bits;
                 for (size_t i = 0; i < face_tags.size(); ++i)
-                    if (face_tags[i] == name) bits |= InputSet(1) << i;
+                    if (face_tags[i] == name) bits.insert(LabelId(i));
                 return bits;
             };
             io::LabelledReference reference = io::read_labelled_envelope(
                 *envelope_given,
                 3,
-                bits_named,
+                labels_named,
                 feature_tags,
                 features.point_names);
             held = io::held_rows(reference.V, reference.F, reference.F_labels);
@@ -1188,7 +1188,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
         // given, else the tracked surface as received, on vertices of its own. What the envelopes
         // are built around, and what the output is measured against (DEBUG_hausdorff, the Euler
         // characteristics); F_sets, each triangle's labels.
-        std::vector<InputSet> F_sets;
+        std::vector<LabelIds> F_sets;
         if (held) {
             for (Eigen::Index v = 0; v < held->V.rows(); ++v) {
                 verts.push_back(held->V.row(v).transpose());
@@ -1249,8 +1249,8 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 CellType::Triangle,
                 F_sets,
                 face_tags);
-            std::vector<InputSet> E_sets;
-            for (const int j : features.edge_input) E_sets.push_back(InputSet(1) << j);
+            std::vector<LabelIds> E_sets;
+            for (const int j : features.edge_input) E_sets.push_back(LabelIds{LabelId(j)});
             io::append_envelope_block(
                 envelope_out,
                 io::geometry_data(features.edge_vertices, features.edges, CellType::Edge),
@@ -1521,7 +1521,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 tris,
                 tri_input,
                 int(input_paths.size()),
-                filter_option == "input" ? bounding : ~InputSet(0));
+                filter_option == "input" ? bounding : std::nullopt);
             logger().info(
                 "finalize: input winding numbers ({} inputs) {:.4}s",
                 input_paths.size(),
@@ -1538,13 +1538,13 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
                 finalize_barycenters,
                 {},
                 {},
-                filter_option == "tracked" ? bounding : ~InputSet(0));
+                filter_option == "tracked" ? bounding : std::nullopt);
             logger().info("finalize: tracked winding number {:.4}s", step_timer.getElapsedTime());
         }
         if (need_parts) {
             step_timer.start();
             const int num_parts =
-                mesh_new.flood_fill(filter_option == "flood" ? bounding : ~InputSet(0));
+                mesh_new.flood_fill(filter_option == "flood" ? bounding : std::nullopt);
             logger().info(
                 "finalize: flood fill, {} parts {:.4}s",
                 num_parts,

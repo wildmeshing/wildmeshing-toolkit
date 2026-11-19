@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <wmtk/MeshData.hpp>
 
 #include <igl/Timer.h>
@@ -246,7 +248,7 @@ public:
         const Eigen::MatrixXd& barycenters,
         const std::vector<Vector3d>& vertices = {},
         const std::vector<std::array<size_t, 3>>& faces = {},
-        InputSet bounding = ~InputSet(0));
+        const std::optional<LabelIds>& bounding = std::nullopt);
 
     /**
      * @brief The winding numbers of the input: with respect to each input surface
@@ -273,7 +275,7 @@ public:
         const std::vector<std::array<size_t, 3>>& faces,
         const std::vector<int>& face_input,
         int n_inputs,
-        InputSet bounding = ~InputSet(0));
+        const std::optional<LabelIds>& bounding = std::nullopt);
 
     /// Which of the finalization's per-tet fields were computed, so that the writers leave
     /// out the ones that were not rather than writing their defaults as if they were values.
@@ -338,7 +340,7 @@ public:
         const std::vector<Vector3d>& feature_points = {},
         utils::EmbedFeaturesResult* features_out = nullptr,
         const std::vector<int>* face_input = nullptr,
-        std::vector<InputSet>* facet_input_set = nullptr,
+        std::vector<LabelIds>* facet_input_set = nullptr,
         std::vector<std::vector<uint32_t>>* facet_sources = nullptr,
         std::vector<InputOrientations>* facet_input_orientation = nullptr);
 
@@ -363,7 +365,7 @@ public:
         const std::vector<bool>& tet_face_on_input_surface,
         const std::vector<int8_t>* tet_face_orientation = nullptr,
         const utils::EmbedFeaturesResult* features = nullptr,
-        const std::vector<InputSet>* facet_input_set = nullptr,
+        const std::vector<LabelIds>* facet_input_set = nullptr,
         const utils::FeatureInputs* feature_input = nullptr,
         const std::vector<InputOrientations>* facet_input_orientation = nullptr);
 
@@ -413,7 +415,7 @@ public:
     /// The parts the tracked faces separate. `bounding` (filter_inputs): only the faces whose
     /// input set meets it separate; the others are crossed. All bits, the default: every tracked
     /// face, as before the key.
-    int flood_fill(InputSet bounding = ~InputSet(0));
+    int flood_fill(const std::optional<LabelIds>& bounding = std::nullopt);
 
     void save_paraview(const std::string& path, const bool use_hdf5, MeshMap* output = nullptr);
     void write_optimization_debug_output(const std::string& path) override

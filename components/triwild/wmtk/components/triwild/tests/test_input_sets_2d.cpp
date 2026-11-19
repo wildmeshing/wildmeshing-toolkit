@@ -1,5 +1,5 @@
 // The 2D counterpart of tetwild's test_input_sets.cpp: each tracked segment carries its INPUT
-// SET (SurfaceTagAttributes::input_set()) and stays within eps of every input in it. A split's
+// SET (SurfaceTagAttributes::labels()) and stays within eps of every input in it. A split's
 // halves copy the set, the segments a collapse makes one unite theirs (2D has no surface flip),
 // and the containment check holds each segment to its own set's envelopes. Below: the two
 // operations on a hand-built fan, and a square crossed by an open polyline through the
@@ -56,7 +56,7 @@ std::vector<Vector2d> fan_points()
 
 /// The fan with (x,v1) tracked as input set `s1` and (x,v2) as `s2`, every face's quality high
 /// so no operation is refused on quality, and m_envelope loose.
-void build_fan(TriWildMesh& mesh, InputSet s1, InputSet s2)
+void build_fan(TriWildMesh& mesh, const LabelIds& s1, const LabelIds& s2)
 {
     const auto p = fan_points();
     mesh.init(
@@ -73,10 +73,10 @@ void build_fan(TriWildMesh& mesh, InputSet s1, InputSet s2)
     }
     for (const size_t i : {X, V1, V2}) mesh.m_vertex_attribute[i].m_is_on_surface = true;
     for (size_t f = 0; f < 4; ++f) mesh.m_face_attribute[f].m_quality = 1e40;
-    for (const auto& [v, s] : {std::pair<size_t, InputSet>{V1, s1}, {V2, s2}}) {
+    for (const auto& [v, s] : {std::pair<size_t, LabelIds>{V1, s1}, {V2, s2}}) {
         auto& a = mesh.m_edge_attribute[std::get<1>(mesh.tuple_from_edge({{X, v}}))];
         a.m_is_surface_fs = true;
-        a.set_input_set(s);
+        a.labels_mut() = s;
     }
     mesh.m_envelope = envelope_around(p, {Vector2i(X, V1), Vector2i(X, V2)}, 10.0);
 }
@@ -120,16 +120,16 @@ TEST_CASE("input-set-2d-split-copies", "[triwild][input_sets]")
 {
     Parameters params = make_params();
     TriWildMesh mesh(params, 1e-2, 0);
-    build_fan(mesh, 0b01, 0b10);
+    build_fan(mesh, LabelIds{0}, LabelIds{1});
     mesh.m_input_envelopes.set({around_fan_edge(X, V1, 1e-2), around_fan_edge(X, V2, 1e-2)});
     auto t = std::get<0>(mesh.tuple_from_edge({{X, V1}}));
     std::vector<TriMesh::Tuple> new_t;
     REQUIRE(mesh.split_edge(t, new_t));
     const size_t m = mesh.vert_capacity() - 1;
     CHECK(edge(mesh, X, m).m_is_surface_fs);
-    CHECK(edge(mesh, X, m).input_set() == 0b01);
-    CHECK(edge(mesh, m, V1).input_set() == 0b01);
-    CHECK(edge(mesh, X, V2).input_set() == 0b10);
+    CHECK(edge(mesh, X, m).labels() == LabelIds{0});
+    CHECK(edge(mesh, m, V1).labels() == LabelIds{0});
+    CHECK(edge(mesh, X, V2).labels() == LabelIds{1});
 }
 
 TEST_CASE("input-set-2d-collapse-unites", "[triwild][input_sets]")
@@ -138,29 +138,29 @@ TEST_CASE("input-set-2d-collapse-unites", "[triwild][input_sets]")
     SECTION("the merged segment carries both sets")
     {
         TriWildMesh mesh(params, 1e-2, 0);
-        build_fan(mesh, 0b01, 0b10);
+        build_fan(mesh, LabelIds{0}, LabelIds{1});
         mesh.m_input_envelopes.set({loose_fan_envelope(), loose_fan_envelope()});
         REQUIRE(collapse_v1_into_v2(mesh));
         CHECK(edge(mesh, X, V2).m_is_surface_fs);
-        CHECK(edge(mesh, X, V2).input_set() == 0b11);
+        CHECK(edge(mesh, X, V2).labels() == LabelIds{0, 1});
     }
     SECTION("refused when the merged segment leaves one input's envelope")
     {
         // Input 0 is the segment (x, v1) itself; the merged one lies on (x, v2), 60 degrees
         // away. Union semantics would accept it: input 1 holds it.
         TriWildMesh mesh(params, 1e-2, 0);
-        build_fan(mesh, 0b01, 0b10);
+        build_fan(mesh, LabelIds{0}, LabelIds{1});
         mesh.m_input_envelopes.set({around_fan_edge(X, V1, 1e-2), loose_fan_envelope()});
         CHECK_FALSE(collapse_v1_into_v2(mesh));
-        CHECK(edge(mesh, X, V1).input_set() == 0b01);
+        CHECK(edge(mesh, X, V1).labels() == LabelIds{0});
     }
     SECTION("the same move, accepted when both segments are input 1's")
     {
         TriWildMesh mesh(params, 1e-2, 0);
-        build_fan(mesh, 0b10, 0b10);
+        build_fan(mesh, LabelIds{1}, LabelIds{1});
         mesh.m_input_envelopes.set({around_fan_edge(X, V1, 1e-2), loose_fan_envelope()});
         REQUIRE(collapse_v1_into_v2(mesh));
-        CHECK(edge(mesh, X, V2).input_set() == 0b10);
+        CHECK(edge(mesh, X, V2).labels() == LabelIds{1});
     }
 }
 
@@ -195,9 +195,9 @@ TEST_CASE("input-sets-2d-square-and-crossing-polyline", "[triwild][input_sets]")
     std::vector<std::vector<int>> sources;
     std::vector<int> orientation;
     utils::embed_segments(V, E, Vo, Vr, F, Eo, &sources, &orientation);
-    std::vector<InputSet> e_set(Eo.rows(), 0);
+    std::vector<LabelIds> e_set(Eo.rows());
     for (int i = 0; i < Eo.rows(); ++i) {
-        for (const int s : sources[i]) e_set[i] |= InputSet(1) << e_input[s];
+        for (const int s : sources[i]) e_set[i].insert(LabelId(e_input[s]));
     }
 
     TriWildMesh mesh(params, params.eps, 0);
@@ -211,17 +211,17 @@ TEST_CASE("input-sets-2d-square-and-crossing-polyline", "[triwild][input_sets]")
             const EdgeAttributes& a = mesh.m_edge_attribute[t.eid(mesh)];
             if (!a.m_is_surface_fs) continue;
             ++n_tracked;
-            const InputSet s = a.input_set();
-            if (s == 0 || s > 3) {
+            const LabelIds& s = a.labels();
+            if (s.none() || !s.subset_of(LabelIds{0, 1})) {
                 ++n_empty;
                 continue;
             }
-            ++by_set[s];
+            ++by_set[size_t(s.contains(0)) + 2 * size_t(s.contains(1))];
             const std::array<Vector2d, 2> seg{
                 {mesh.m_vertex_attribute[t.vid(mesh)].m_posf,
                  mesh.m_vertex_attribute[t.switch_vertex(mesh).vid(mesh)].m_posf}};
             for (int k = 0; k < 2; ++k) {
-                if ((s & (InputSet(1) << k)) && mesh.m_input_envelopes.member(k)->is_outside(seg)) {
+                if (s.contains(LabelId(k)) && mesh.m_input_envelopes.member(k)->is_outside(seg)) {
                     ++n_outside;
                 }
             }
@@ -282,15 +282,15 @@ TEST_CASE("input-sets-2d-survive-removing-triangles", "[triwild][input_sets]")
     // edges of the fan have triangle 0, (x,v2,v1), as their lowest.
     Parameters params = make_params();
     TriWildMesh mesh(params, 1e-2, 0);
-    build_fan(mesh, 0b01, 0b10);
+    build_fan(mesh, LabelIds{0}, LabelIds{1});
     REQUIRE(std::get<1>(mesh.tuple_from_edge({{X, V1}})) / 3 == 0);
     REQUIRE(std::get<1>(mesh.tuple_from_edge({{X, V2}})) / 3 == 0);
     mesh.remove_tris_by_ids({0});
-    for (const auto& [v, s] : {std::pair<size_t, InputSet>{V1, 0b01}, {V2, 0b10}}) {
+    for (const auto& [v, s] : {std::pair<size_t, LabelIds>{V1, LabelIds{0}}, {V2, LabelIds{1}}}) {
         INFO("edge (x, " << v << ")");
         const EdgeAttributes& a = edge(mesh, X, v);
         CHECK(a.m_is_surface_fs);
-        CHECK(a.input_set() == s);
+        CHECK(a.labels() == s);
     }
 }
 
@@ -371,7 +371,7 @@ TEST_CASE("curve-history-finishes-on-a-consolidated-mesh", "[triwild][tracking]"
     // once the mesh is consolidated: finishing it before refuses, after gives the history.
     Parameters params = make_params();
     TriWildMesh mesh(params, 1e-2, 0);
-    build_fan(mesh, 0b01, 0b10);
+    build_fan(mesh, LabelIds{0}, LabelIds{1});
     mesh.m_input_envelopes.set({loose_fan_envelope(), loose_fan_envelope()});
     mesh.record_curve_history("{}");
     REQUIRE(collapse_v1_into_v2(mesh));

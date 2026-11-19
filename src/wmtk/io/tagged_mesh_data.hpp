@@ -54,7 +54,7 @@ inline void append_envelope_block(
     MeshData& envelope,
     const MeshData& block,
     const CellType type,
-    const std::vector<InputSet>& sets,
+    const std::vector<LabelIds>& sets,
     const std::vector<std::string>& names)
 {
     const auto& cells = block.cell(type).connectivity;
@@ -71,8 +71,8 @@ inline void append_envelope_block(
     if (names.empty()) return;
     DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(cells.rows(), names.size());
     for (Eigen::Index r = 0; r < cells.rows(); ++r)
-        for (size_t j = 0; j < names.size() && j < size_t(SurfaceTagAttributes::max_inputs); ++j)
-            member(r, j) = (sets[r] >> j) & 1;
+        for (const LabelId j : sets[r])
+            if (j < names.size()) member(r, j) = 1;
     out.attributes["tags"] = {std::move(member), names};
 }
 // The reference's input points, as the envelope's point block: point i labelled by the bit
@@ -88,10 +88,10 @@ void append_envelope_points(
     std::vector<std::array<int64_t, 1>> cells(points.size());
     for (size_t i = 0; i < points.size(); ++i) cells[i] = {{int64_t(i)}};
     const bool labelled = !names.empty() && labels.size() == points.size();
-    std::vector<InputSet> sets;
+    std::vector<LabelIds> sets;
     if (labelled) {
         for (const int l : labels)
-            sets.push_back(l >= 0 && l < SurfaceTagAttributes::max_inputs ? InputSet(1) << l : 0);
+            sets.push_back(l >= 0 && l <= 0xFFFF ? LabelIds{LabelId(l)} : LabelIds{});
     }
     append_envelope_block(
         envelope,
@@ -160,7 +160,7 @@ template <size_t N>
 void orient_tagged_row(
     SurfaceTagAttributes& attr,
     const std::array<size_t, N>& row,
-    const InputSet set,
+    const LabelIds& set,
     const MatrixSi& counts,
     const Eigen::Index r)
 {
@@ -168,8 +168,9 @@ void orient_tagged_row(
         attr.set_orientation_along(set, row, 1);
         return;
     }
-    for (Eigen::Index j = 0; j < counts.cols() && j < SurfaceTagAttributes::max_inputs; ++j)
-        if ((set >> j) & 1) attr.set_orientation_along(InputSet(1) << j, row, counts.coeff(r, j));
+    for (const LabelId j : set)
+        if (Eigen::Index(j) < counts.cols())
+            attr.set_orientation_along(LabelIds{j}, row, counts.coeff(r, j));
 }
 /// A labelled reference (append_envelope_block()) as a receiving mesh reads it
 /// (read_labelled_envelope()): its triangles (2D: segments) on vertices of their own (`dim`
@@ -181,16 +182,16 @@ struct LabelledReference
 {
     MatrixXd V;
     MatrixXi F;
-    std::vector<InputSet> F_labels;
+    std::vector<LabelIds> F_labels;
     utils::FeatureInputs curves;
     MatrixXd P;
-    std::vector<InputSet> P_labels;
+    std::vector<LabelIds> P_labels;
 };
 /**
  * @brief Read `envelope`, a labelled reference (is_labelled_envelope()), for a receiving mesh of
  * dimension `dim`: its triangles (2D: segments) and, in 3D, feature curves, each row with its
  * labels, which name the receiver's tags, and its points, each with its labels, which name the
- * receiver's input points. Matched to the receiver by name: `bits_named(name)` is the
+ * receiver's input points. Matched to the receiver by name: `labels_named(name)` is the
  * receiver's bits a label names (several where its tags share a name), `feature_names` its
  * feature labels and `point_names` its point labels, bit i the i-th. Throws on cells a labelled
  * reference does not have, and drops every field but `tags` (ComponentIO::dropped_fields()).
@@ -201,7 +202,7 @@ struct LabelledReference
 inline LabelledReference read_labelled_envelope(
     const MeshData& envelope,
     const int dim,
-    const std::function<InputSet(const std::string&)>& bits_named,
+    const std::function<LabelIds(const std::string&)>& labels_named,
     const std::vector<std::string>& feature_names,
     const std::vector<std::string>& point_names = {})
 {
@@ -244,11 +245,11 @@ inline LabelledReference read_labelled_envelope(
     const MeshAttribute& row_tags = labelled(rows);
     const auto& member = std::get<DataMatrix<uint8_t>>(row_tags.values);
     own_vertices(rows.connectivity, out.V, out.F);
-    out.F_labels.assign(out.F.rows(), 0);
+    out.F_labels.assign(out.F.rows(), LabelIds{});
     for (size_t j = 0; j < row_tags.labels.size(); ++j) {
-        const InputSet bits = bits_named(row_tags.labels[j]);
+        const LabelIds ids = labels_named(row_tags.labels[j]);
         for (Eigen::Index r = 0; r < member.rows(); ++r)
-            if (member(r, Eigen::Index(j))) out.F_labels[r] |= bits;
+            if (member(r, Eigen::Index(j))) out.F_labels[r].merge(ids);
     }
     // The feature curves of the labels the receiver's feature curves have (feature_names), one
     // input edge per edge and label, as a tagged mesh's own are read.
@@ -283,7 +284,7 @@ inline LabelledReference read_labelled_envelope(
     if (const auto points = envelope.cells.find(CellType::Point); points != envelope.cells.end()) {
         const auto& C = points->second.connectivity;
         out.P.resize(C.rows(), dim);
-        out.P_labels.assign(size_t(C.rows()), 0);
+        out.P_labels.assign(size_t(C.rows()), LabelIds{});
         for (Eigen::Index r = 0; r < C.rows(); ++r)
             out.P.row(r) = envelope.V.row(C(r, 0)).head(dim);
         if (points->second.attributes.count("tags")) {
@@ -293,10 +294,9 @@ inline LabelledReference read_labelled_envelope(
                 const auto k =
                     std::find(point_names.begin(), point_names.end(), point_tags.labels[j]);
                 const size_t bit = size_t(k - point_names.begin());
-                if (k == point_names.end() || bit >= size_t(SurfaceTagAttributes::max_inputs))
-                    continue;
+                if (k == point_names.end() || bit > size_t(0xFFFF)) continue;
                 for (Eigen::Index r = 0; r < C.rows(); ++r)
-                    if (on(r, Eigen::Index(j))) out.P_labels[size_t(r)] |= InputSet(1) << bit;
+                    if (on(r, Eigen::Index(j))) out.P_labels[size_t(r)].insert(LabelId(bit));
             }
         }
     }
@@ -309,7 +309,7 @@ struct HeldRows
 {
     MatrixXd V;
     MatrixXi F;
-    std::vector<InputSet> labels;
+    std::vector<LabelIds> labels;
 };
 /**
  * @brief What a run given a reference holds to: its rows of the labels of the mesh. A row of a
@@ -318,12 +318,12 @@ struct HeldRows
  * geometry of a label it does not carry. A reference none of whose rows does throws. Moved here
  * from simwild (2026-11), unchanged.
  */
-inline HeldRows held_rows(const MatrixXd& V, const MatrixXi& F, const std::vector<InputSet>& labels)
+inline HeldRows held_rows(const MatrixXd& V, const MatrixXi& F, const std::vector<LabelIds>& labels)
 {
     HeldRows out;
     std::vector<Eigen::Index> rows;
     for (Eigen::Index r = 0; r < F.rows(); ++r) {
-        if (labels[r] != 0) rows.push_back(r);
+        if (!labels[r].none()) rows.push_back(r);
     }
     if (rows.empty()) {
         log_and_throw_error(
@@ -429,21 +429,22 @@ void collect_input_set_tags(
     int64_t n = 0;
     for (const auto& v : mesh.get_vertices()) row[v.vid(mesh)] = n++;
     std::vector<std::array<int64_t, N>> simplices;
-    std::vector<InputSet> sets;
+    std::vector<LabelIds> sets;
     std::vector<int64_t> counts; // per row, names.size() of them: with WMTK_PER_INPUT_ORIENTATION
-    const InputSet mask = names.size() >= size_t(SurfaceTagAttributes::max_inputs)
-                              ? ~InputSet(0)
-                              : (InputSet(1) << names.size()) - 1;
+    // Labels past the names are not these tags -- simwild's region labels -- and are not written.
+    const auto named = [&](LabelIds set) {
+        set.erase_if([&](const LabelId l) { return size_t(l) >= names.size(); });
+        return set;
+    };
     const auto add = [&](const SurfaceTagAttributes& attr, std::array<size_t, N> vids) {
-        // Bits past the names are not these tags -- simwild's region labels -- and are not
-        // written.
-        const InputSet set = attr.input_set() & mask;
-        if (set == 0) return;
+        const LabelIds set = named(attr.labels());
+        if (set.none()) return;
         std::sort(vids.begin(), vids.end());
         if (attr.orientation_along(vids) < 0) std::swap(vids[N - 2], vids[N - 1]);
 #ifdef WMTK_PER_INPUT_ORIENTATION
         for (size_t j = 0; j < names.size(); ++j)
-            counts.push_back(((set >> j) & 1) ? attr.input_orientation_along(int(j), vids) : 0);
+            counts.push_back(
+                set.contains(LabelId(j)) ? attr.input_orientation_along(LabelId(j), vids) : 0);
 #endif
         std::array<int64_t, N> r;
         for (size_t k = 0; k < N; ++k) r[k] = row[vids[k]];
@@ -462,7 +463,7 @@ void collect_input_set_tags(
     DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(simplices.size(), names.size());
     for (size_t i = 0; i < simplices.size(); ++i) {
         for (size_t k = 0; k < N; ++k) block.connectivity(i, k) = simplices[i][k];
-        for (size_t j = 0; j < names.size(); ++j) member(i, j) = (sets[i] >> j) & 1;
+        for (size_t j = 0; j < names.size(); ++j) member(i, j) = sets[i].contains(LabelId(j));
     }
     block.attributes["tags"] = {std::move(member), names};
     if (!SurfaceTagAttributes::per_input_orientation) return;
@@ -488,16 +489,18 @@ void collect_feature_edge_tags(
     std::vector<int64_t> row(mesh.vert_capacity(), -1);
     int64_t n = 0;
     for (const auto& v : mesh.get_vertices()) row[v.vid(mesh)] = n++;
-    const InputSet mask = names.size() >= size_t(SurfaceTagAttributes::max_inputs)
-                              ? ~InputSet(0)
-                              : (InputSet(1) << names.size()) - 1;
+    // Labels past the names are not these tags -- simwild's region labels -- and are not written.
+    const auto named = [&](LabelIds set) {
+        set.erase_if([&](const LabelId l) { return size_t(l) >= names.size(); });
+        return set;
+    };
     std::vector<std::array<int64_t, 2>> edges;
-    std::vector<InputSet> sets;
+    std::vector<LabelIds> sets;
     for (const auto& e : mesh.get_edges()) {
         const auto& attr = mesh.m_feature_edge_attribute[e.eid(mesh)];
         if (!attr.has(EdgeTags::feature)) continue;
-        const InputSet set = attr.inputs(EdgeTags::feature) & mask;
-        if (set == 0) continue;
+        const LabelIds set = named(attr.labels(EdgeTags::feature));
+        if (set.none()) continue;
         const size_t a = e.vid(mesh), b = e.switch_vertex(mesh).vid(mesh);
         edges.push_back({{row[std::min(a, b)], row[std::max(a, b)]}});
         sets.push_back(set);
@@ -507,7 +510,7 @@ void collect_feature_edge_tags(
     DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Zero(edges.size(), names.size());
     for (size_t i = 0; i < edges.size(); ++i) {
         for (size_t k = 0; k < 2; ++k) block.connectivity(i, k) = edges[i][k];
-        for (size_t j = 0; j < names.size(); ++j) member(i, j) = (sets[i] >> j) & 1;
+        for (size_t j = 0; j < names.size(); ++j) member(i, j) = sets[i].contains(LabelId(j));
     }
     block.attributes["tags"] = {std::move(member), names};
 }
@@ -533,12 +536,14 @@ void collect_point_tags(const Mesh& mesh, MeshMap& outputs, const std::vector<st
         const size_t f = mesh.m_feature_point_attribute[vid].m_feature_point_id;
         if (f < inputs.size()) carrier[f] = vid;
     }
-    const InputSet mask = names.size() >= size_t(SurfaceTagAttributes::max_inputs)
-                              ? ~InputSet(0)
-                              : (InputSet(1) << names.size()) - 1;
-    std::map<int64_t, InputSet> sets; // output row -> labels
+    // Labels past the names are not these tags -- simwild's region labels -- and are not written.
+    const auto named = [&](LabelIds set) {
+        set.erase_if([&](const LabelId l) { return size_t(l) >= names.size(); });
+        return set;
+    };
+    std::map<int64_t, LabelIds> sets; // output row -> labels
     for (size_t f = 0; f < inputs.size(); ++f) {
-        if ((inputs[f] & mask) == 0) continue;
+        if (named(inputs[f]).none()) continue;
         size_t vid = carrier[f];
         if (vid == size_t(-1)) {
             const double r = mesh.m_feature_point_radius[f];
@@ -554,7 +559,7 @@ void collect_point_tags(const Mesh& mesh, MeshMap& outputs, const std::vector<st
             }
             if (vid == size_t(-1)) continue;
         }
-        sets[row[vid]] |= inputs[f] & mask;
+        sets[row[vid]].merge(named(inputs[f]));
     }
     auto& block = outputs.at("mesh").cells[CellType::Point];
     block.connectivity.resize(Eigen::Index(sets.size()), 1);
@@ -562,7 +567,8 @@ void collect_point_tags(const Mesh& mesh, MeshMap& outputs, const std::vector<st
     Eigen::Index i = 0;
     for (const auto& [r, set] : sets) {
         block.connectivity(i, 0) = r;
-        for (size_t j = 0; j < names.size(); ++j) member(i, Eigen::Index(j)) = (set >> j) & 1;
+        for (size_t j = 0; j < names.size(); ++j)
+            member(i, Eigen::Index(j)) = set.contains(LabelId(j));
         ++i;
     }
     block.attributes["tags"] = {std::move(member), names};
@@ -593,8 +599,8 @@ inline PointTags read_point_tags(const MeshData& mesh, const std::string& what)
     if ((member.array() > 1).any()) throw std::runtime_error("tags must be binary");
     if ((member.cast<int>().rowwise().sum().array() == 0).any())
         throw std::runtime_error(what + ": every tagged point needs a tag");
-    if (field.labels.size() > size_t(SurfaceTagAttributes::max_inputs))
-        throw std::runtime_error(what + ": more point labels than an input set holds");
+    if (field.labels.size() > size_t(0xFFFF) + 1)
+        throw std::runtime_error(what + ": more point labels than a label id holds");
     out.names = field.labels;
     const auto& C = it->second.connectivity;
     for (Eigen::Index r = 0; r < C.rows(); ++r) {

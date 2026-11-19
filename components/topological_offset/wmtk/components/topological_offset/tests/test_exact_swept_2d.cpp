@@ -111,7 +111,7 @@ std::unique_ptr<TopoOffsetTriMesh> make_mesh(
     for (size_t v = 0; v < pts.size(); ++v) {
         mesh->m_vertex_attribute[v].m_is_on_surface = false;
         mesh->m_vertex_extra[v].m_is_on_region = false;
-        mesh->m_vertex_extra[v].m_boundary_mask = 0;
+        mesh->m_vertex_extra[v].m_boundary_labels.clear();
     }
     for (size_t i = 0; i < F.size(); ++i) {
         REQUIRE(!mesh->is_inverted(i));

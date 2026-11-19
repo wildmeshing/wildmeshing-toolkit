@@ -129,12 +129,12 @@ TaggedTriMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
                 "envelope as `envelope`",
                 what);
         }
-        if (out.edge_names.size() > size_t(SurfaceTagAttributes::max_inputs)) {
+        if (out.edge_names.size() > max_labels) {
             log_and_throw_error(
                 "{}: {} edge labels; at most {} are supported",
                 what,
                 out.edge_names.size(),
-                SurfaceTagAttributes::max_inputs);
+                max_labels);
         }
         // One row per edge, by its vertex set: the labels united, the directions counted. With
         // WMTK_PER_INPUT_ORIENTATION label by label too: the rows' `orientation` entries summed
@@ -143,10 +143,10 @@ TaggedTriMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
         struct Merged
         {
             size_t row;
-            InputSet set = 0;
+            LabelIds set;
             bool along = false, against = false;
             std::map<int, int> count; // per label, with WMTK_PER_INPUT_ORIENTATION
-            InputSet label_along = 0, label_against = 0;
+            LabelIds label_along, label_against;
         };
         std::map<std::array<size_t, 2>, Merged> edges;
         std::vector<std::array<size_t, 2>> order;
@@ -157,7 +157,7 @@ TaggedTriMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
             auto [m, added] = edges.emplace(key, Merged{order.size()});
             if (added) order.push_back(e);
             for (Eigen::Index j = 0; j < member.cols(); ++j)
-                if (member(r, j)) m->second.set |= InputSet(1) << j;
+                if (member(r, j)) m->second.set.insert(LabelId(j));
             const bool along = e == order[m->second.row];
             (along ? m->second.along : m->second.against) = true;
             if (!SurfaceTagAttributes::per_input_orientation) continue;
@@ -166,7 +166,7 @@ TaggedTriMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
                 if (counts.rows() > 0) {
                     m->second.count[int(j)] += (along ? 1 : -1) * int(counts(r, j));
                 } else {
-                    (along ? m->second.label_along : m->second.label_against) |= InputSet(1) << j;
+                    (along ? m->second.label_along : m->second.label_against).insert(LabelId(j));
                 }
             }
         }
@@ -183,9 +183,9 @@ TaggedTriMesh read_tagged_mesh(const MeshData& mesh, const std::string& what)
             if (!SurfaceTagAttributes::per_input_orientation) continue;
             auto& per = out.E_input_orientation.emplace_back();
             for (int j = 0; j < int(out.edge_names.size()); ++j) {
-                const int c = counts.rows() > 0
-                                  ? (m.count.count(j) ? m.count.at(j) : 0)
-                                  : int((m.label_along >> j) & 1) - int((m.label_against >> j) & 1);
+                const int c = counts.rows() > 0 ? (m.count.count(j) ? m.count.at(j) : 0)
+                                                : int(m.label_along.contains(LabelId(j))) -
+                                                      int(m.label_against.contains(LabelId(j)));
                 if (c != 0) per.emplace_back(j, c);
             }
         }

@@ -160,9 +160,10 @@ bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
     }
 
     // A flip across a junction would detach the new diagonal from one of the boundaries the old
-    // edge lay on: refuse when the endpoints' masks differ from the apexes'. 3D twin: the
+    // edge lay on: refuse when the endpoints' labels differ from the apexes'. 3D twin: the
     // face_mask comparison in swap_before_surface().
-    if (edge_mask({{t.vid(*this), t.switch_vertex(*this).vid(*this)}}) != edge_mask({{c, d}})) {
+    if (edge_boundary_labels({{t.vid(*this), t.switch_vertex(*this).vid(*this)}}) !=
+        edge_boundary_labels({{c, d}})) {
         return false;
     }
 
@@ -221,54 +222,24 @@ void TopoOffsetTriMesh::warn_if_offset_reaches_domain_boundary() const
         m_offset_params.target_distance);
 }
 
-std::shared_ptr<Envelope> TopoOffsetTriMesh::envelope_for_mask(uint64_t mask) const
+std::shared_ptr<Envelope> TopoOffsetTriMesh::envelope_for_labels(const LabelIds& labels) const
 {
-    if (mask == 0) return nullptr;
-    if ((mask & (mask - 1)) == 0) {
-        // Single bit: the member envelope itself -- a real Envelope, safe on every path
-        // including the pull. Linear scan; the tag count is tiny.
-        for (const auto& [tag, env] : m_tag_envelopes) {
-            const auto it = m_tag_bit.find(tag);
-            if (it != m_tag_bit.end() && (mask >> it->second) == 1) return env;
-        }
-        return nullptr; // a bit whose tag never got an envelope (no boundary edges at init)
-    }
-    // Several bits: the memoized intersection. Lazy and mutex-guarded because containment
-    // queries run concurrently under kPartition; creation is rare (a handful of junction masks
-    // per model), so the lock is uncontended in steady state.
-    {
-        std::lock_guard<std::mutex> lock(m_isect_mutex);
-        const auto it = m_isect_cache.find(mask);
-        if (it != m_isect_cache.end()) return it->second;
-    }
-    std::vector<std::shared_ptr<Envelope>> members;
-    for (const auto& [tag, env] : m_tag_envelopes) {
-        const auto it = m_tag_bit.find(tag);
-        if (it != m_tag_bit.end() && (mask & (uint64_t(1) << it->second))) {
-            members.push_back(env);
-        }
-    }
-    std::shared_ptr<Envelope> isect;
-    if (members.empty()) {
-        isect = nullptr; // every bit dangled; nothing to contain in
-    } else if (members.size() == 1) {
-        isect = members.front(); // the other bits dangled; degrade to the one real tube
-    } else {
-        isect = std::make_shared<IntersectionEnvelope>(std::move(members));
-    }
-    std::lock_guard<std::mutex> lock(m_isect_mutex);
-    m_isect_cache.emplace(mask, isect);
-    return isect;
+    // The labels whose tag has a tube: a label whose tag never got one (no boundary edges at
+    // init) holds nothing. One: the member envelope itself -- a real Envelope, safe on every path
+    // including the pull. Several: the intersection m_tag_label_envelopes memoizes, read-mostly
+    // under its own lock, as the containment queries run concurrently under kPartition.
+    const LabelIds held = labels_with_tubes(labels);
+    if (held.none()) return nullptr;
+    return m_tag_label_envelopes.containment(held);
 }
 
 std::shared_ptr<Envelope> TopoOffsetTriMesh::containment_for(
-    const uint64_t region_mask,
+    const LabelIds& region_labels,
     const bool on_offset) const
 {
-    // The region side first, and OUTSIDE the lock: envelope_for_mask() takes m_isect_mutex
-    // itself and std::mutex is not recursive, so calling it while holding the lock below
-    // deadlocks. Nothing here re-enters it after the lock is taken.
-    const std::shared_ptr<Envelope> region = envelope_for_mask(region_mask);
+    // The region side first, and OUTSIDE the lock below: nothing here re-enters it after the
+    // lock is taken.
+    const std::shared_ptr<Envelope> region = envelope_for_labels(region_labels);
 
     // The offset side, for the operations of the frozen-front final pass only: in the loop the
     // offset boundary is held to no envelope, by the operations or the smoother (see
@@ -279,17 +250,17 @@ std::shared_ptr<Envelope> TopoOffsetTriMesh::containment_for(
     if (!hold_offset) return region; // may itself be null: nothing contains this simplex
     if (!region) return m_offset_envelope;
 
-    // On both: the intersection, inside every tube it lies on. Memoized per region mask;
+    // On both: the intersection, inside every tube it lies on. Memoized per region labels;
     // rebuild_offset_envelope() clears the map, so an entry can never outlive its tube.
     {
         std::lock_guard<std::mutex> lock(m_isect_mutex);
-        const auto it = m_offset_isect_cache.find(region_mask);
+        const auto it = m_offset_isect_cache.find(region_labels);
         if (it != m_offset_isect_cache.end()) return it->second;
     }
     std::shared_ptr<Envelope> isect = std::make_shared<IntersectionEnvelope>(
         std::vector<std::shared_ptr<Envelope>>{region, m_offset_envelope});
     std::lock_guard<std::mutex> lock(m_isect_mutex);
-    return m_offset_isect_cache.emplace(region_mask, std::move(isect)).first->second;
+    return m_offset_isect_cache.emplace(region_labels, std::move(isect)).first->second;
 }
 
 bool TopoOffsetTriMesh::face_is_deformable(const size_t fid) const
@@ -773,8 +744,8 @@ void TopoOffsetTriMesh::collapse_after_vertex(const size_t v1_id, const size_t v
     m_vertex_extra[v2_id].m_is_on_region =
         m_vertex_extra.at(v1_id).m_is_on_region || m_vertex_extra.at(v2_id).m_is_on_region;
     // The survivor now carries both vertices' geometry, so it lies on the union of their
-    // boundaries. See VertexExtra2d::m_boundary_mask.
-    m_vertex_extra[v2_id].m_boundary_mask |= m_vertex_extra.at(v1_id).m_boundary_mask;
+    // boundaries. See VertexExtra2d::m_boundary_labels.
+    m_vertex_extra[v2_id].m_boundary_labels.merge(m_vertex_extra.at(v1_id).m_boundary_labels);
     // The construction labels of the survivor and the link, the vertices whose triangles changed
     // (carried_vertex_label()).
     m_vertex_extra[v2_id].label = carried_vertex_label(v2_id);
@@ -896,8 +867,8 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
     // Assigned, not OR'd -- v_id may be a recycled slot carrying a dead vertex's bits. The bits
     // are the endpoints' mask AND, captured in split_edge_before(); the class gate right above is
     // what keeps a chord's midpoint maskless, and the mask is inert on a vertex with no region.
-    m_vertex_extra[v_id].m_boundary_mask =
-        m_vertex_extra[v_id].m_is_on_region ? c.edge_bits : uint64_t(0);
+    m_vertex_extra[v_id].m_boundary_labels =
+        m_vertex_extra[v_id].m_is_on_region ? c.edge_labels : LabelIds{};
 
     for (const size_t endpoint : {c.v1_id, c.v2_id}) {
         const simplex::Edge new_edge(endpoint, v_id);
@@ -1213,7 +1184,7 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
                 // is what warns.
                 logger().info(
                     "[needle-smooth #{}] vid {} ring max {:.6g} -> {:.6g} ({:.3g}x) | moved "
-                    "{:.6g} | input {} offset {} region {} mask 0x{:x} | pos ({:.17g}, {:.17g})",
+                    "{:.6g} | input {} offset {} region {} labels {} | pos ({:.17g}, {:.17g})",
                     m_needle_smooth_reports.load(),
                     vid,
                     pre.first,
@@ -1223,7 +1194,7 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
                     ve.m_is_on_input,
                     ve.m_is_on_offset,
                     ve.m_is_on_region,
-                    ve.m_boundary_mask,
+                    labels_str(ve.m_boundary_labels),
                     m_vertex_attribute[vid].m_posf[0],
                     m_vertex_attribute[vid].m_posf[1]);
             }
@@ -1516,7 +1487,7 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
     struct Bad
     {
         size_t a = 0, b = 0;
-        uint64_t mask = 0;
+        LabelIds labels;
         bool offset_class = false;
         double worst_d = 0.; ///< furthest ALONG-SEGMENT distance to a real member tube
         double worst_end_d = 0.; ///< furthest ENDPOINT distance -- 0 means both ends are inside
@@ -1534,13 +1505,13 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
         ++n_tracked;
         const std::array<size_t, 2> vids = {{e.vid(*this), e.switch_vertex(*this).vid(*this)}};
         // The edge's own stored class is ground truth here: this sweep runs between operations,
-        // so no attribute slot is mid-write. Classifying by `mask != 0` instead repeats the
+        // so no attribute slot is mid-write. Classifying by region labels instead repeats the
         // endpoint-AND over-claim and files offset edges under "region".
         const bool is_offset = edge_is_offset(eid);
-        const uint64_t mask = is_offset ? uint64_t(0) : edge_mask(vids);
+        const LabelIds labels = is_offset ? LabelIds{} : edge_boundary_labels(vids);
         if (is_offset)
             ++n_offset_class;
-        else if (mask != 0)
+        else if (!labels.none())
             ++n_region_class;
         else
             ++n_other;
@@ -1551,12 +1522,12 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
         Bad r;
         r.a = vids[0];
         r.b = vids[1];
-        r.mask = mask;
+        r.labels = labels;
         r.offset_class = is_offset;
         r.len = (m_vertex_attribute[vids[1]].m_posf - m_vertex_attribute[vids[0]].m_posf).norm();
         if (r.offset_class)
             ++bad_offset;
-        else if (mask != 0)
+        else if (!labels.none())
             ++bad_region;
         else
             ++bad_other;
@@ -1586,10 +1557,10 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
                 }
             }
         };
-        if (mask != 0) {
+        if (!labels.none()) {
             for (const auto& [tag, env] : m_tag_envelopes) {
-                const auto it = m_tag_bit.find(tag);
-                if (it != m_tag_bit.end() && (mask & (uint64_t(1) << it->second))) probe(env, tag);
+                const auto it = m_tag_label.find(tag);
+                if (it != m_tag_label.end() && labels.contains(it->second)) probe(env, tag);
             }
         } else if (r.offset_class) {
             probe(m_offset_envelope, -1);
@@ -1630,12 +1601,12 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
     for (size_t i = 0; i < show; ++i) {
         const Bad& r = bad[i];
         logger().warn(
-            "\t  [{}] edge [{}, {}] mask 0x{:x} len {:.6g} | ({:.6g}, {:.6g}) -- ({:.6g}, {:.6g}) "
+            "\t  [{}] edge [{}, {}] labels {} len {:.6g} | ({:.6g}, {:.6g}) -- ({:.6g}, {:.6g}) "
             "| OUT BY {:.6g} at u={:.3g} along the segment; endpoints out by {:.6g}{}",
-            r.offset_class ? "offset" : (r.mask ? "region" : "other "),
+            r.offset_class ? "offset" : (!r.labels.none() ? "region" : "other "),
             r.a,
             r.b,
-            r.mask,
+            labels_str(r.labels),
             r.len,
             m_vertex_attribute[r.a].m_posf.x(),
             m_vertex_attribute[r.a].m_posf.y(),
@@ -1645,23 +1616,24 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
             r.worst_u,
             r.worst_end_d,
             r.worst_tag >= 0 ? fmt::format(" (tag {})", r.worst_tag) : std::string());
-        // Why it is tracked and why it claims that mask: the per-endpoint bits the AND is taken
-        // over, and the edge's own stored class. A chord over-claim shows as two endpoints that
-        // each legitimately carry the bit, joined by an edge whose own class is not region.
+        // Why it is tracked and why it claims those labels: the per-endpoint labels the
+        // intersection is taken over, and the edge's own stored class. A chord over-claim shows as
+        // two endpoints that each legitimately carry the label, joined by an edge whose own class
+        // is not region.
         const auto& ea = m_vertex_extra[r.a];
         const auto& eb = m_vertex_extra[r.b];
         const auto [tup, eid] = tuple_from_edge({{r.a, r.b}});
         logger().warn(
-            "\t      endpoints: v{} mask 0x{:x} on_region {} on_offset {} on_input {} | v{} mask "
-            "0x{:x} on_region {} on_offset {} on_input {} || edge: surface_fs {} region {} offset "
-            "{} label {} | live boundary bits 0x{:x}",
+            "\t      endpoints: v{} labels {} on_region {} on_offset {} on_input {} | v{} labels "
+            "{} on_region {} on_offset {} on_input {} || edge: surface_fs {} region {} offset "
+            "{} label {} | live boundary labels {}",
             r.a,
-            ea.m_boundary_mask,
+            labels_str(ea.m_boundary_labels),
             ea.m_is_on_region,
             ea.m_is_on_offset,
             ea.m_is_on_input,
             r.b,
-            eb.m_boundary_mask,
+            labels_str(eb.m_boundary_labels),
             eb.m_is_on_region,
             eb.m_is_on_offset,
             eb.m_is_on_input,
@@ -1669,17 +1641,18 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
             edge_is_region(eid),
             edge_is_offset(eid),
             m_edge_extra[eid].label,
-            edge_boundary_bits(tup));
+            labels_str(edge_face_boundary_labels(tup)));
     }
 }
 
 void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) const
 {
-    // Two counts, one invariant and one expectation. The invariant is on the stored masks: every
-    // tracked region edge must dispatch to an envelope, so edge_mask() of its endpoints -- the
-    // expression surface_envelope_for_edge() uses -- must be nonzero, and a zero is a propagation
-    // hole. The expectation is that the LIVE bits go quiet: the band replaces the tags of every
-    // face it grows through, which is why the masks must be propagated, not rederived.
+    // Two counts, one invariant and one expectation. The invariant is on the stored labels: every
+    // tracked region edge must dispatch to an envelope, so edge_boundary_labels() of its
+    // endpoints -- the expression surface_envelope_for_edge() uses -- must be non-empty, and an
+    // empty set is a propagation hole. The expectation is that the LIVE labels go quiet: the band
+    // replaces the tags of every face it grows through, which is why the labels must be
+    // propagated, not rederived.
     int n_region = 0, n_unmasked = 0, n_released = 0, n_live_dead = 0, n_wall = 0;
     int n_band = 0, n_outside = 0, n_mixed = 0, n_ends_offset = 0, n_ends_input = 0;
     size_t worst = size_t(-1);
@@ -1688,12 +1661,12 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
         if (!edge_is_region(eid)) continue;
         ++n_region;
         if (!e.switch_face(*this)) ++n_wall;
-        if (edge_boundary_bits(e) == 0) ++n_live_dead;
+        if (edge_face_boundary_labels(e).none()) ++n_live_dead;
         const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
-        if (edge_mask({va, vb}) != 0) continue;
+        if (!edge_boundary_labels({va, vb}).none()) continue;
         // A quiet edge bounds nothing any more: the band retagged both its sides, so there is no
         // boundary left to hold and a zero mask on it is moot, not a violation.
-        if (edge_boundary_bits(e) == 0) continue;
+        if (edge_face_boundary_labels(e).none()) continue;
         // A released boundary is freed on purpose -- deform_others zeroes its endpoint masks by
         // this same symmetric-difference test -- so a zero mask there is the feature, not a
         // propagation hole. Everything else still violates the invariant and is counted below.
@@ -1729,12 +1702,12 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
             const auto& EB = m_vertex_extra[vb];
             const std::optional<Tuple> opp2 = e.switch_face(*this);
             logger().warn(
-                "\t    unmasked e{}: v{}(mask 0x{:x} in/reg/off {}{}{} bbox {}) at "
-                "({:.4g},{:.4g})  --  v{}(mask 0x{:x} in/reg/off {}{}{} bbox {}) at "
+                "\t    unmasked e{}: v{}(labels {} in/reg/off {}{}{} bbox {}) at "
+                "({:.4g},{:.4g})  --  v{}(labels {} in/reg/off {}{}{} bbox {}) at "
                 "({:.4g},{:.4g}) | labels {} vs {}",
                 eid,
                 va,
-                EA.m_boundary_mask,
+                labels_str(EA.m_boundary_labels),
                 int(EA.m_is_on_input),
                 int(EA.m_is_on_region),
                 int(EA.m_is_on_offset),
@@ -1742,7 +1715,7 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
                 A.m_posf.x(),
                 A.m_posf.y(),
                 vb,
-                EB.m_boundary_mask,
+                labels_str(EB.m_boundary_labels),
                 int(EB.m_is_on_input),
                 int(EB.m_is_on_region),
                 int(EB.m_is_on_offset),
@@ -1804,11 +1777,14 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
                 v.second);
         }
         std::string bits;
-        for (const auto& [t, b] : m_tag_bit) {
-            bits += fmt::format("{}{}->bit{}", bits.empty() ? "" : " ", t, b);
+        for (const auto& [t, l] : m_tag_label) {
+            bits += fmt::format("{}{}->label{}", bits.empty() ? "" : " ", t, l);
         }
-        logger()
-            .info("\t[envelope health @ {}] faces by tag set: {} | tag bits: {}", when, tags, bits);
+        logger().info(
+            "\t[envelope health @ {}] faces by tag set: {} | tag labels: {}",
+            when,
+            tags,
+            bits);
     }
     if (n_unmasked > 0) {
         logger().warn(
@@ -2241,7 +2217,7 @@ void TopoOffsetTriMesh::report_needle(const char* op, const size_t fid, const do
         const size_t v = vs[k];
         const auto& x = m_vertex_extra[v];
         per_vertex += fmt::format(
-            "\n\t    v{} id {} ({:.17g}, {:.17g}) input {} offset {} region {} mask 0x{:x} "
+            "\n\t    v{} id {} ({:.17g}, {:.17g}) input {} offset {} region {} labels {} "
             "epoch {} rounded {} sizing {:.6g}",
             k,
             v,
@@ -2250,7 +2226,7 @@ void TopoOffsetTriMesh::report_needle(const char* op, const size_t fid, const do
             x.m_is_on_input,
             x.m_is_on_offset,
             x.m_is_on_region,
-            x.m_boundary_mask,
+            labels_str(x.m_boundary_labels),
             x.m_born_epoch,
             m_vertex_attribute[v].m_is_rounded,
             m_vertex_attribute[v].m_sizing_scalar);
@@ -2371,7 +2347,7 @@ void TopoOffsetTriMesh::record_flatness(
         for (int k = 0; k < 3; ++k) {
             const auto& x = m_vertex_extra[vs[k]];
             vtx += fmt::format(
-                "\n\t    v{} id {} ({:.17g}, {:.17g}) epoch {} input {} region {} mask 0x{:x}",
+                "\n\t    v{} id {} ({:.17g}, {:.17g}) epoch {} input {} region {} labels {}",
                 k,
                 vs[k],
                 m_vertex_attribute[vs[k]].m_posf[0],
@@ -2379,7 +2355,7 @@ void TopoOffsetTriMesh::record_flatness(
                 x.m_born_epoch,
                 x.m_is_on_input,
                 x.m_is_on_region,
-                x.m_boundary_mask);
+                labels_str(x.m_boundary_labels));
         }
         // Per-event forensic detail at INFO -- see report_needle(); the flat-population sweep is
         // the warning when flat faces exist now.
@@ -4337,15 +4313,15 @@ void TopoOffsetTriMesh::log_worst_dist_vertex() const
         vertex_delta(vid),
         std::abs(d - vertex_delta(vid)));
     logger().info(
-        "\t  flags: on_offset {} on_input {} on_region {} on_bbox {} rounded {} | boundary mask "
-        "{:#x} | incident edges: {} offset, {} region, {} bbox | phi {:.6} (level {:.6}), "
+        "\t  flags: on_offset {} on_input {} on_region {} on_bbox {} rounded {} | boundary labels "
+        "{} | incident edges: {} offset, {} region, {} bbox | phi {:.6} (level {:.6}), "
         "residual {:.6}, containment envelope {}",
         ve.m_is_on_offset,
         ve.m_is_on_input,
         ve.m_is_on_region,
         !m_vertex_attribute[vid].on_bbox_faces.empty(),
         m_vertex_attribute[vid].m_is_rounded,
-        vertex_boundary_mask(vid),
+        labels_str(vertex_boundary_labels(vid)),
         n_offset_e,
         n_region_e,
         n_bbox_e,

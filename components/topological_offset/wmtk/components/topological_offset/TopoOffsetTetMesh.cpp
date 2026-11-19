@@ -194,11 +194,11 @@ void TopoOffsetTetMesh::init_from_image(
             {size_t(F_tagged(r, 0)), size_t(F_tagged(r, 1)), size_t(F_tagged(r, 2))}};
         const auto face = try_tuple_from_face(vids);
         if (!face) log_and_throw_error("Tagged face {} is not a face of the tet mesh", r);
-        InputSet set = 0;
+        LabelIds set;
         for (Eigen::Index j = 0; j < F_tags.cols(); ++j)
-            if (F_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
+            if (F_tags.coeff(r, j) != 0) set.insert(LabelId(j));
         auto& attr = m_face_attribute[std::get<1>(*face)];
-        attr.set_input_set(attr.input_set() | set);
+        attr.labels_mut().merge(set);
         io::orient_tagged_row(attr, vids, set, F_orientation, r);
     }
 
@@ -250,26 +250,25 @@ void TopoOffsetTetMesh::init_from_image(
         }
         for (size_t k = 0; k < features->points.size(); ++k) {
             const int bit = m_input_point_labels[k];
-            if (bit < 0 || bit >= int(SurfaceTagAttributes::max_inputs) ||
-                size_t(bit) >= m_point_names.size()) {
+            if (bit < 0 || bit >= int(max_labels) || size_t(bit) >= m_point_names.size()) {
                 log_and_throw_error(
                     "Input point {}: label {} of {} names, in {} bits",
                     k,
                     bit,
                     m_point_names.size(),
-                    SurfaceTagAttributes::max_inputs);
+                    max_labels);
             }
-            m_vertex_extra[size_t(features_placed->point_vertex[k])].point_inputs |= InputSet(1)
-                                                                                     << bit;
+            m_vertex_extra[size_t(features_placed->point_vertex[k])].point_inputs.insert(
+                LabelId(bit));
         }
         m_input_features = *features;
         for (size_t e = 0; e < features_placed->edge_tiling.size(); ++e) {
             const int bit = features->edge_input[e];
-            if (bit < 0 || bit >= int(SurfaceTagAttributes::max_inputs)) {
+            if (bit < 0 || bit >= int(max_labels)) {
                 log_and_throw_error(
                     "Edge tag {}: an edge records its tags in {} bits",
                     bit,
-                    SurfaceTagAttributes::max_inputs);
+                    max_labels);
             }
             for (const auto& seg : features_placed->edge_tiling[e]) {
                 const Tuple t = tuple_from_edge({{seg[0], seg[1]}});
@@ -278,7 +277,7 @@ void TopoOffsetTetMesh::init_from_image(
                         "Tagged edge ({}, {}) is not an edge of the tet mesh",
                         seg[0],
                         seg[1]);
-                m_edge_attribute[t.eid(*this)].feature_inputs |= InputSet(1) << bit;
+                m_edge_attribute[t.eid(*this)].feature_inputs.insert(LabelId(bit));
             }
         }
     }
@@ -393,10 +392,8 @@ bool TopoOffsetTetMesh::face_is_tag_boundary(const Tuple& f) const
     // The face tags' bits only: from build_envelopes() on, the input set also carries the labels
     // assign_face_labels() gives every tracked face, which say it WAS tracked, not why.
     const size_t F = m_face_tag_names.size();
-    const InputSet face_tags = F >= size_t(SurfaceTagAttributes::max_inputs)
-                                   ? ~InputSet(0)
-                                   : (InputSet(1) << F) - InputSet(1);
-    return (m_face_attribute[fid].input_set() & face_tags) != 0;
+    const LabelIds& set = m_face_attribute[fid].labels();
+    return !set.none() && size_t(set.lowest()) < F;
 }
 
 void TopoOffsetTetMesh::untrack_covered_boundaries()
@@ -526,7 +523,7 @@ void TopoOffsetTetMesh::build_envelopes()
     // of these or one the operations made from them, carrying their labels: after this the
     // tracked flag is raised anew only on the front (label_offset_boundary(), the label flip).
     std::vector<Eigen::Vector3i> tris;
-    std::vector<InputSet> sets;
+    std::vector<LabelIds> sets;
     size_t n_tracked = 0;
     for (const Tuple& f : get_faces()) {
         if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
@@ -534,7 +531,7 @@ void TopoOffsetTetMesh::build_envelopes()
         if (!face_is_held(f)) continue;
         const auto vs = get_face_vids(f);
         tris.emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
-        sets.push_back(m_face_attribute[f.fid(*this)].input_set());
+        sets.push_back(m_face_attribute[f.fid(*this)].labels());
     }
     if (m_has_reference) {
         // As simwild's reference route (SimWildMesh::init_surfaces_and_boundaries()): every label
@@ -658,12 +655,12 @@ void TopoOffsetTetMesh::hold_curves_and_points()
         std::vector<int64_t> ids;
         for (const Tuple& e : get_edges()) {
             const size_t eid = e.eid(*this);
-            InputSet bits = m_edge_attribute[eid].feature_inputs;
+            LabelIds bits = m_edge_attribute[eid].feature_inputs;
             const size_t u = e.vid(*this), v = e.switch_vertex(*this).vid(*this);
-            if (expression_curve && bits == 0 && m_edge_attribute[eid].label == 1 &&
+            if (expression_curve && bits.none() && m_edge_attribute[eid].label == 1 &&
                 offset_curves(offset_of(u)) && expression_entry(offset_of(u)))
-                bits |= InputSet(1) << n_tags;
-            if (bits == 0) continue;
+                bits.insert(LabelId(n_tags));
+            if (bits.none()) continue;
             const Vector3d& pu = m_vertex_attribute[u].m_posf;
             const Vector3d& pv = m_vertex_attribute[v].m_posf;
             boxes.primitives_in_box(
@@ -671,7 +668,7 @@ void TopoOffsetTetMesh::hold_curves_and_points()
                 Vector3d(pu.cwiseMax(pv).array() + feature_eps),
                 ids);
             for (int bit = 0; bit <= n_tags; ++bit) {
-                if (((bits >> bit) & 1) == 0) continue;
+                if (!bits.contains(LabelId(bit))) continue;
                 int64_t best = -1;
                 double bd = std::numeric_limits<double>::infinity();
                 for (const int64_t k : ids) {
@@ -691,7 +688,7 @@ void TopoOffsetTetMesh::hold_curves_and_points()
                 }
                 placed.edge_tiling[size_t(best)].push_back({{u, v}});
             }
-            m_edge_attribute[eid].feature_inputs = 0; // the engine's tags from here on
+            m_edge_attribute[eid].feature_inputs.clear(); // the engine's tags from here on
         }
         n_feature = tag_feature_edges(placed, &input, feature_eps, /*exact=*/true);
     }
@@ -730,14 +727,14 @@ void TopoOffsetTetMesh::hold_curves_and_points()
     std::vector<char> is_input_point(vert_capacity(), 0);
     for (const Tuple& t : get_vertices()) {
         const size_t vid = t.vid(*this);
-        InputSet& bits = m_vertex_extra[vid].point_inputs;
-        for (int j = 0; j < int(SurfaceTagAttributes::max_inputs); ++j) {
-            if (((bits >> j) & 1) == 0) continue;
+        LabelIds& bits = m_vertex_extra[vid].point_inputs;
+        for (int j = 0; j < int(max_labels); ++j) {
+            if (!bits.contains(LabelId(j))) continue;
             point_vids.push_back(vid);
             point_labels.push_back(j);
             is_input_point[vid] = 1;
         }
-        bits = 0;
+        bits.clear();
     }
     m_input_point_labels = point_labels;
     size_t n_anchors = anchor_feature_points(point_vids, order2_eps, feature_eps);
@@ -788,8 +785,8 @@ TopoOffsetTetMesh::InputCurveCounts TopoOffsetTetMesh::input_curve_counts() cons
         ++c.tagged;
         FeatureEdgeAttributes only; // the feature kind alone, in its own tubes
         only.add(FeatureEdgeAttributes::feature);
-        only.inputs(FeatureEdgeAttributes::feature) =
-            m_feature_edge_attribute[eid].inputs(FeatureEdgeAttributes::feature);
+        only.labels(FeatureEdgeAttributes::feature) =
+            m_feature_edge_attribute[eid].labels(FeatureEdgeAttributes::feature);
         c.outside += tagged_edge_leaves_tube(
                          only,
                          m_vertex_attribute[e.vid(*this)].m_posf,
@@ -822,7 +819,7 @@ void TopoOffsetTetMesh::audit_input_curves() const
 
 void TopoOffsetTetMesh::assign_face_labels()
 {
-    // See the declaration. Bits past the face tags, one per tet tag; refused past InputSet's
+    // See the declaration. Label ids past the face tags, one per tet tag; refused past LabelId's
     // width rather than wrapped onto another label.
     const size_t F = m_face_tag_names.size();
     size_t n_labelled = 0;
@@ -833,20 +830,20 @@ void TopoOffsetTetMesh::assign_face_labels()
         if (!opp) continue; // a face-tagged boundary face, which the driver refuses
         const CellTag& a = m_tet_attribute[f.tid(*this)].tag;
         const CellTag& b = m_tet_attribute[opp->tid(*this)].tag;
-        InputSet bits = 0;
+        LabelIds bits;
         const auto add = [&](const CellTag& x, const CellTag& y) {
             for (const int64_t t : x) {
                 if (t <= 0 || y.count(t)) continue; // ambient carries no label
                 const size_t bit = F + size_t(t) - 1;
-                if (bit >= size_t(SurfaceTagAttributes::max_inputs)) {
+                if (bit >= max_labels) {
                     log_and_throw_error(
                         "{} face tags and tet tag {} need more than the {} labels an input set "
                         "holds",
                         F,
                         t,
-                        SurfaceTagAttributes::max_inputs);
+                        max_labels);
                 }
-                bits |= InputSet(1) << bit;
+                bits.insert(LabelId(bit));
             }
         };
         add(a, b);
@@ -854,8 +851,8 @@ void TopoOffsetTetMesh::assign_face_labels()
         // The envelope surface group, when the .msh has one (m_sheet_tag): its faces lie on it,
         // matched geometrically, with the same tags on both sides, so it is a label of its own.
         if (m_sheet_tag > 0 && m_face_extra[fid].on_sheet) add(CellTag{m_sheet_tag}, CellTag{});
-        if (bits == 0) continue;
-        m_face_attribute[fid].set_input_set(m_face_attribute[fid].input_set() | bits);
+        if (bits.none()) continue;
+        m_face_attribute[fid].labels_mut().merge(bits);
         ++n_labelled;
     }
     logger().info("\t[labels] {} faces carry the tet tags of the regions they bound", n_labelled);
@@ -943,19 +940,19 @@ void TopoOffsetTetMesh::classify_sheet_faces()
 bool TopoOffsetTetMesh::edge_has_tag(const size_t eid, const int bit) const
 {
     // See the declaration.
-    if (!m_edge_tags_held) return (m_edge_attribute[eid].feature_inputs >> bit) & 1;
+    if (!m_edge_tags_held) return m_edge_attribute[eid].feature_inputs.contains(LabelId(bit));
     const FeatureEdgeAttributes& tags = m_feature_edge_attribute[eid];
     return m_track_feature_edges && tags.has(FeatureEdgeAttributes::feature) &&
-           ((tags.inputs(FeatureEdgeAttributes::feature) >> bit) & 1);
+           tags.labels(FeatureEdgeAttributes::feature).contains(LabelId(bit));
 }
 
 bool TopoOffsetTetMesh::vertex_has_point(const size_t vid, const int bit) const
 {
     // See the declaration.
-    if (!m_edge_tags_held) return (m_vertex_extra[vid].point_inputs >> bit) & 1;
+    if (!m_edge_tags_held) return m_vertex_extra[vid].point_inputs.contains(LabelId(bit));
     if (!m_track_feature_points) return false;
     const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
-    return f < m_feature_point_inputs.size() && ((m_feature_point_inputs[f] >> bit) & 1);
+    return f < m_feature_point_inputs.size() && m_feature_point_inputs[f].contains(LabelId(bit));
 }
 
 void TopoOffsetTetMesh::label_input_complex()
@@ -1231,7 +1228,7 @@ void TopoOffsetTetMesh::label_offset(const size_t k)
                 // optimize_offset, from before the loop held face tags).
                 for (const Tuple& f : get_faces())
                     m_face_extra[f.fid(*this)].on_sheet =
-                        (m_face_attribute[f.fid(*this)].input_set() >> bit->second) & 1;
+                        m_face_attribute[f.fid(*this)].labels().contains(LabelId(bit->second));
             }
             size_t n = 0;
             for (const Tuple& f : get_faces()) {
@@ -1284,9 +1281,9 @@ void TopoOffsetTetMesh::label_offset(const size_t k)
             for (const Tuple& f : get_faces()) {
                 const size_t fid = f.fid(*this);
                 CellTag ids;
-                const InputSet set = m_face_attribute[fid].input_set();
+                const LabelIds& set = m_face_attribute[fid].labels();
                 for (const auto& [id, bit] : m_face_tag_bit) {
-                    if (size_t(bit) < F && ((set >> bit) & 1)) ids.insert(id);
+                    if (size_t(bit) < F && set.contains(LabelId(bit))) ids.insert(id);
                 }
                 if (m_sheet_tag > 0 && m_face_extra[fid].on_sheet) ids.insert(m_sheet_tag);
                 if (ids.empty()) continue;
@@ -1857,7 +1854,7 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
         // by mesh vertices: a row's is row_vid's, whichever entry's copy it is
         std::set<std::pair<size_t, size_t>> tagged;
         for (const Tuple& e : edges) {
-            if (m_edge_attribute[e.eid(*this)].feature_inputs == 0) continue;
+            if (m_edge_attribute[e.eid(*this)].feature_inputs.none()) continue;
             const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
             tagged.emplace(std::min(a, b), std::max(a, b));
         }
@@ -3363,8 +3360,7 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
     // the names joined by '|'.
     const size_t F = m_face_tag_names.size();
     const size_t sheet_bit = m_sheet_tag > 0 ? F + size_t(m_sheet_tag) - 1 : 0;
-    const bool sheet_has_bit =
-        m_sheet_tag > 0 && sheet_bit < size_t(SurfaceTagAttributes::max_inputs);
+    const bool sheet_has_bit = m_sheet_tag > 0 && sheet_bit < max_labels;
     for (const Tuple& f : get_faces()) {
         const size_t fid = f.fid(*this);
         if (m_face_extra[fid].label == 1) continue;
@@ -3372,22 +3368,24 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
         if (!opp || !cell_is_offset_band(f.tid(*this)) || !cell_is_offset_band(opp->tid(*this)))
             continue;
         FaceAttributes& attr = m_face_attribute[fid];
-        const InputSet set = attr.input_set();
+        const LabelIds& set = attr.labels();
         CellTag own;
         for (const auto& [id, bit] : m_face_tag_bit) {
-            if (size_t(bit) < F && ((set >> bit) & 1)) own.insert(id);
+            if (size_t(bit) < F && set.contains(LabelId(bit))) own.insert(id);
         }
         if (m_sheet_tag > 0 &&
-            (m_face_extra[fid].on_sheet || (sheet_has_bit && ((set >> sheet_bit) & 1))))
+            (m_face_extra[fid].on_sheet || (sheet_has_bit && set.contains(LabelId(sheet_bit)))))
             own.insert(m_sheet_tag);
         const CellTag kept = m_offset_params.protected_kept(own);
-        InputSet gives_way = 0;
+        LabelIds gives_way;
         for (const auto& [id, bit] : m_face_tag_bit) {
-            if (size_t(bit) < F && !kept.count(id)) gives_way |= InputSet(1) << bit;
+            if (size_t(bit) < F && !kept.count(id)) gives_way.insert(LabelId(bit));
         }
         const bool sheet_gives_way = m_sheet_tag > 0 && !kept.count(m_sheet_tag);
-        if (sheet_gives_way && sheet_has_bit) gives_way |= InputSet(1) << sheet_bit;
-        attr.set_input_set(set & ~gives_way);
+        if (sheet_gives_way && sheet_has_bit) gives_way.insert(LabelId(sheet_bit));
+        LabelIds kept_set = set;
+        kept_set.erase_if([&](const LabelId l) { return gives_way.contains(l); });
+        attr.labels_mut() = kept_set;
         if (sheet_gives_way) m_face_extra[fid].on_sheet = false;
     }
 }

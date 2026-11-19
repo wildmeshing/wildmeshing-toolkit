@@ -263,7 +263,7 @@ public:
      *
      * Within a kind the tag is a union: which curve an edge belongs to is not carried through
      * the optimization, and the kind's edges are held by one tube around all its curves.
-     * Tracked faces are different: each carries its input set (SurfaceTagAttributes::input_set())
+     * Tracked faces are different: each carries its labels (SurfaceTagAttributes::labels())
      * through every operation and is held to its own inputs' envelopes, because one envelope
      * around every input let a solid's boundary ride a sheet crossing it -- measured, 12 faces up
      * to 3.61 eps off the solid -- and an audit at the end can find that but not prevent it.
@@ -278,13 +278,13 @@ public:
         };
         /// The Kind bits of every curve this edge tiles; 0 = untagged.
         uint8_t m_kinds = 0;
-        /// Per kind, the inputs whose curves of that kind this edge tiles, bit i for input i, as
-        /// a tracked face carries the inputs it lies on (SurfaceTagAttributes::input_set()):
+        /// Per kind, the labels whose curves of that kind this edge tiles, as a tracked face
+        /// carries the labels it lies on (SurfaceTagAttributes::labels()):
         /// the input curve for `feature`, the inputs of the tracked faces at the edge for
         /// `order2`. The edge is held to those inputs' tubes (tagged_edge_leaves_tube()); an
         /// empty set falls back to the kind's union tube.
-        InputSet m_feature_inputs = 0;
-        InputSet m_order2_inputs = 0;
+        LabelIds m_feature_inputs;
+        LabelIds m_order2_inputs;
 
         bool is_tagged() const { return m_kinds != 0; }
         bool has(Kind k) const { return (m_kinds & k) != 0; }
@@ -293,16 +293,19 @@ public:
         void remove(Kind k)
         {
             m_kinds &= uint8_t(~k);
-            inputs(k) = 0;
+            labels(k).clear();
         }
-        InputSet& inputs(Kind k) { return k == feature ? m_feature_inputs : m_order2_inputs; }
-        InputSet inputs(Kind k) const { return k == feature ? m_feature_inputs : m_order2_inputs; }
+        LabelIds& labels(Kind k) { return k == feature ? m_feature_inputs : m_order2_inputs; }
+        const LabelIds& labels(Kind k) const
+        {
+            return k == feature ? m_feature_inputs : m_order2_inputs;
+        }
         /// Add the tags of `o`: what one edge carries where a collapse welds two into it.
         void merge(const FeatureEdgeAttributes& o)
         {
             m_kinds |= o.m_kinds;
-            m_feature_inputs |= o.m_feature_inputs;
-            m_order2_inputs |= o.m_order2_inputs;
+            m_feature_inputs.merge(o.m_feature_inputs);
+            m_order2_inputs.merge(o.m_order2_inputs);
         }
     };
     using EdgeAttCol = AttributeCollection<FeatureEdgeAttributes>;
@@ -479,7 +482,7 @@ public:
         std::vector<Eigen::Vector3d> V;
         /// Segments into V, each with the inputs it is a curve of (bit k = input k).
         std::vector<Eigen::Vector2i> order2;
-        std::vector<InputSet> order2_inputs;
+        std::vector<LabelIds> order2_inputs;
         /// Where the input's curves -- those segments and the feature curves -- end or three or
         /// more meet, coincident vertices merged.
         std::vector<Eigen::Vector3d> points;
@@ -493,7 +496,7 @@ public:
     void set_input_curves(
         const std::vector<Eigen::Vector3d>& V,
         const std::vector<std::array<size_t, 3>>& F,
-        const std::vector<InputSet>& F_inputs,
+        const std::vector<LabelIds>& F_inputs,
         const utils::FeatureInputs* features);
 
     /**
@@ -631,7 +634,7 @@ public:
     /// filled by anchor_feature_points(). Until 2026-11 no output marked the input points.
     std::vector<std::string> m_point_names;
     std::vector<int> m_input_point_labels;
-    std::vector<InputSet> m_feature_point_inputs;
+    std::vector<LabelIds> m_feature_point_inputs;
     /// Beside m_feature_points: whether the anchor stands for an end or a junction of the
     /// feature curves (1 or 3+ edges tagged `feature`) or for an input point, set by
     /// anchor_feature_points(). Those are the feature points of a curve history
@@ -754,7 +757,7 @@ public:
 
     /**
      * @brief One envelope per input, and each tracked face held to those of its input set
-     * (FaceAttributes::input_set()); m_envelope stays their union. The 3D twin of
+     * (FaceAttributes::labels()); m_envelope stays their union. The 3D twin of
      * TriOptimizerMesh::m_input_envelopes.
      *
      * What an input is, is the application's: tetwild's are its input surface files, simwild's
@@ -779,7 +782,7 @@ public:
     size_t init_input_envelopes(
         const std::vector<Eigen::Vector3d>& V,
         const std::vector<Eigen::Vector3i>& F,
-        const std::vector<InputSet>& F_sets,
+        const std::vector<LabelIds>& F_sets,
         double eps,
         bool exact);
 
@@ -885,11 +888,11 @@ public:
     struct ReferencePoints
     {
         std::vector<Vector3d> V;
-        std::vector<InputSet> labels;
+        std::vector<LabelIds> labels;
     };
     std::optional<ReferencePoints> m_reference_points;
     /// Set m_reference_points from the reference's points `P` (rows, x y z) and their labels.
-    void set_reference_points(const MatrixXd& P, const std::vector<InputSet>& labels);
+    void set_reference_points(const MatrixXd& P, const std::vector<LabelIds>& labels);
     /// Names of the feature curves' inputs: bit i of a feature edge's input set
     /// (FeatureEdgeAttributes::inputs(feature)) is m_feature_edge_names[i], the output's edge tag
     /// (io::collect_feature_edge_tags()). Set by the application: the label of its i-th input
@@ -900,7 +903,7 @@ public:
     virtual std::string label_name(size_t bit) const;
     /// Throws for the labels the held faces carry that none of `reference_labels` (one per
     /// triangle of the reference held to) has, naming them.
-    void require_reference_face_labels(const std::vector<InputSet>& reference_labels) const;
+    void require_reference_face_labels(const std::vector<LabelIds>& reference_labels) const;
     /// After tag_feature_edges(): the feature tubes rebuilt around m_reference_curves, at `eps`
     /// and with predicate `exact`, as tag_feature_edges() builds them around the curves as read --
     /// one around all, one per input where it built those -- after throwing for a label a feature
@@ -1294,7 +1297,7 @@ public:
      * Null means this triangle carries no containment requirement, and every containment check
      * on it is skipped. The default answers with the one surface envelope, or with
      * m_input_envelopes built, a tracked face with the envelopes of its input set
-     * (SurfaceTagAttributes::input_set()); an application tracking more than one surface (see
+     * (SurfaceTagAttributes::labels()); an application tracking more than one surface (see
      * SurfaceTagAttributes::m_surface_class) answers per class -- the offset boundary, for
      * instance, is free to move and is checked against nothing.
      *
@@ -1316,7 +1319,7 @@ public:
         const FaceAttributes& attr) const
     {
         if (m_input_envelopes.empty()) return m_envelope;
-        return m_input_envelopes.containment(attr.input_set());
+        return m_input_envelopes.containment(attr.labels());
     }
 
     /**

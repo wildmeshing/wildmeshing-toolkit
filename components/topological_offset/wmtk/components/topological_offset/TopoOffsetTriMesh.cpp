@@ -95,10 +95,10 @@ void TopoOffsetTriMesh::init_from_image(
         m_offset_output_tag_ids.insert(m_tag_name_to_id[name]);
     }
 
-    // Edge tags (a triangle mesh's edge block): each a tag id past every other, with a mask bit
-    // and a tube of its own (build_boundary_envelopes()), as the curve group's -- the 2D twin of
-    // 3D's face tags (TopoOffsetTetMesh::init_from_image()), held as every tracked boundary is --
-    // and selectable by its name (m_edge_tag_bit) unless a triangle tag, an output tag or the
+    // Edge tags (a triangle mesh's edge block): each a tag id past every other, with a boundary
+    // label and a tube of its own (build_boundary_envelopes()), as the curve group's -- the 2D twin
+    // of 3D's face tags (TopoOffsetTetMesh::init_from_image()), held as every tracked boundary is
+    // -- and selectable by its name (m_edge_tag_bit) unless a triangle tag, an output tag or the
     // curve group already has it, as triwild names an input's region and its curve alike: the
     // name then selects the region. No triangle tag (m_tags_count stays).
     m_edge_tag_bit.clear();
@@ -112,24 +112,26 @@ void TopoOffsetTriMesh::init_from_image(
         m_edge_tag_bit[id] = int(j);
     }
 
-    // One mask bit per input tag, ambient included, in id order. Assigned here, once the maps are
-    // complete and before init_surfaces_and_boundaries() seeds the vertex masks. Tags introduced
-    // later (the band's output tag) get no bit: boundary membership is a property of the input
-    // partition, which is why the masks are propagated rather than recomputed from current tags.
-    if (m_tag_id_to_name.size() > 62) {
+    // One boundary label per input tag, ambient included, in id order. Assigned here, once the
+    // maps are complete and before init_surfaces_and_boundaries() seeds the vertex labels. Tags
+    // introduced later (the band's output tag) get no label: boundary membership is a property of
+    // the input partition, which is why the labels are propagated rather than recomputed from
+    // current tags. Until 2026-11 one bit of a 64-bit mask each, at most 62 input tags.
+    if (m_tag_id_to_name.size() + 2 > max_labels) {
         log_and_throw_error(
-            "Per-tag boundary envelopes support at most 62 input tags (two mask bits are "
-            "reserved for the domain wall and the input complex boundary), got {}",
+            "Per-tag boundary envelopes support at most {} input tags (two labels are reserved "
+            "for the domain wall and the input complex boundary), got {}",
+            max_labels - 2,
             m_tag_id_to_name.size());
     }
-    m_tag_bit.clear();
+    m_tag_label.clear();
     for (const auto& [tag_id, name] : m_tag_id_to_name) {
-        const int bit = int(m_tag_bit.size());
-        m_tag_bit[tag_id] = bit;
+        const LabelId label = LabelId(m_tag_label.size());
+        m_tag_label[tag_id] = label;
     }
-    // The two reserved bits of the WallComplex setup, see EnvelopeSetup.
-    m_tag_bit[m_wall_tag] = int(m_tag_bit.size());
-    m_tag_bit[m_complex_tag] = int(m_tag_bit.size());
+    // The two reserved labels of the WallComplex setup, see EnvelopeSetup.
+    m_tag_label[m_wall_tag] = LabelId(m_tag_label.size());
+    m_tag_label[m_complex_tag] = LabelId(m_tag_label.size());
 
     // propagate tags to faces
     auto faces = get_faces();
@@ -171,20 +173,20 @@ void TopoOffsetTriMesh::init_from_image(
         const std::array<size_t, 2> vids = {{size_t(E_tagged(r, 0)), size_t(E_tagged(r, 1))}};
         const auto edge = try_tuple_from_edge(vids);
         if (!edge) log_and_throw_error("Tagged edge {} is not an edge of the triangle mesh", r);
-        InputSet set = 0;
+        LabelIds set;
         for (Eigen::Index j = 0; j < E_tags.cols(); ++j)
-            if (E_tags.coeff(r, j) != 0) set |= InputSet(1) << j;
+            if (E_tags.coeff(r, j) != 0) set.insert(LabelId(j));
         auto& attr = m_edge_attribute[std::get<1>(*edge)];
-        attr.set_input_set(attr.input_set() | set);
+        attr.labels_mut().merge(set);
         io::orient_tagged_row(attr, vids, set, E_orientation, r);
     }
     // Point labels, the input points' (a tagged mesh's point block), as in 3D: bit j is
     // m_point_names[j], set by the caller before this, each name a tag id a selection (offsets)
-    // can name (m_point_tag_bit), past every other tag. After m_tag_bit, above: a point label
-    // bounds no region, and takes no mask bit. A name a triangle tag or the curve group has keeps
-    // apart (see m_point_tag_bit; 3D refuses it). Until 2026-11 the 2D offset selected no point.
-    // One name is one input, as in 3D: a curve input's vertices on no segment are its points, so
-    // a label an edge tag also has shares its id, and selecting it selects both.
+    // can name (m_point_tag_bit), past every other tag. After m_tag_label, above: a point label
+    // bounds no region, and takes no boundary label. A name a triangle tag or the curve group has
+    // keeps apart (see m_point_tag_bit; 3D refuses it). Until 2026-11 the 2D offset selected no
+    // point. One name is one input, as in 3D: a curve input's vertices on no segment are its
+    // points, so a label an edge tag also has shares its id, and selecting it selects both.
     for (size_t j = 0; j < m_point_names.size(); ++j) {
         const std::string& name = m_point_names[j];
         int64_t id;
@@ -215,16 +217,15 @@ void TopoOffsetTriMesh::init_from_image(
     }
     for (size_t k = 0; k < point_vids.size(); ++k) {
         const int bit = m_input_point_labels[k];
-        if (bit < 0 || bit >= int(SurfaceTagAttributes::max_inputs) ||
-            size_t(bit) >= m_point_names.size()) {
+        if (bit < 0 || bit >= int(max_labels) || size_t(bit) >= m_point_names.size()) {
             log_and_throw_error(
                 "Input point {}: label {} of {} names, in {} bits",
                 k,
                 bit,
                 m_point_names.size(),
-                SurfaceTagAttributes::max_inputs);
+                max_labels);
         }
-        m_vertex_extra[point_vids[k]].point_inputs |= InputSet(1) << bit;
+        m_vertex_extra[point_vids[k]].point_inputs.insert(LabelId(bit));
     }
 
     // Once at load too, before the masks are seeded: init_surfaces_and_boundaries() reads on_curve
@@ -247,7 +248,7 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
     size_t n_edges_tracked = 0;
     for (const Tuple& e : edges) {
         const size_t eid = e.eid(*this);
-        const bool on_curve = m_edge_extra[eid].on_curve || edge_tag_set(eid) != 0;
+        const bool on_curve = m_edge_extra[eid].on_curve || edge_has_any_tag(eid);
         const std::optional<Tuple> f_opp = e.switch_face(*this);
         if (f_opp) {
             const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
@@ -338,8 +339,8 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
             m_envelope_eps);
     }
 
-    // Fresh: every mask from the tracked edges as they stand, nothing carried over.
-    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].m_boundary_mask = 0;
+    // Fresh: every vertex's labels from the tracked edges as they stand, nothing carried over.
+    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].m_boundary_labels.clear();
 
     std::map<int64_t, std::vector<Eigen::Vector2i>> buckets;
     size_t n_tracked = 0, n_wall = 0, n_complex = 0, n_free = 0;
@@ -366,9 +367,8 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
             // edge: every tag of its one face, which is how ambient's tube comes to hold the
             // box. The curve group's edges are in its tube too, and an edge tag's in its own.
             if (m_edge_extra[eid].on_curve) keys.insert(m_curve_tag);
-            const InputSet edge_tags = edge_tag_set(eid);
             for (size_t j = 0; j < m_edge_tag_id.size(); ++j) {
-                if ((edge_tags >> j) & 1) keys.insert(m_edge_tag_id[j]);
+                if (edge_has_tag(eid, int(j))) keys.insert(m_edge_tag_id[j]);
             }
             if (f_opp) {
                 const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
@@ -388,8 +388,8 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
         }
         const size_t v1 = e.vid(*this);
         const size_t v2 = e.switch_vertex(*this).vid(*this);
-        const uint64_t bits = tag_bits(keys);
-        for (const size_t v : {v1, v2}) m_vertex_extra[v].m_boundary_mask |= bits;
+        const LabelIds labels = tag_label_set(keys);
+        for (const size_t v : {v1, v2}) m_vertex_extra[v].m_boundary_labels.merge(labels);
         for (const int64_t t : keys) buckets[t].emplace_back(int(v1), int(v2));
     }
 
@@ -399,7 +399,6 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
     m_tag_envelopes.clear();
     {
         std::lock_guard<std::mutex> lock(m_isect_mutex);
-        m_isect_cache.clear();
         m_offset_isect_cache.clear();
     }
     std::vector<std::shared_ptr<Envelope>> members;
@@ -412,9 +411,19 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
         members.push_back(env);
         per_tag_log += fmt::format(" {}:{}", envelope_key_name(tag), bucket.size());
     }
+    // The tubes by label, for the per-simplex dispatch (envelope_for_labels()): a tag without a
+    // tube is a null member. set() drops the intersections built so far.
+    {
+        std::vector<std::shared_ptr<Envelope>> by_label(m_tag_label.size());
+        for (const auto& [tag, env] : m_tag_envelopes) {
+            const auto it = m_tag_label.find(tag);
+            if (it != m_tag_label.end()) by_label[it->second] = env;
+        }
+        m_tag_label_envelopes.set(std::move(by_label));
+    }
     // The base's pointer survives as the union of the members -- inside any tube -- because
     // the shared engine's direct uses of it ask exactly that question. Everything else
-    // dispatches per simplex through envelope_for_mask().
+    // dispatches per simplex through envelope_for_labels().
     m_envelope = members.empty() ? nullptr : std::make_shared<UnionEnvelope>(std::move(members));
 
     logger().info(
@@ -504,10 +513,10 @@ void TopoOffsetTriMesh::classify_curve_edges()
 bool TopoOffsetTriMesh::vertex_has_point(const size_t vid, const int bit) const
 {
     // See the declaration.
-    if (!m_points_held) return (m_vertex_extra[vid].point_inputs >> bit) & 1;
+    if (!m_points_held) return m_vertex_extra[vid].point_inputs.contains(LabelId(bit));
     if (!m_track_feature_points) return false;
     const size_t f = m_feature_point_attribute[vid].m_feature_point_id;
-    return f < m_feature_point_inputs.size() && ((m_feature_point_inputs[f] >> bit) & 1);
+    return f < m_feature_point_inputs.size() && m_feature_point_inputs[f].contains(LabelId(bit));
 }
 
 void TopoOffsetTriMesh::label_input_complex()
@@ -735,7 +744,7 @@ void TopoOffsetTriMesh::label_offset(const size_t k)
             if (edge_bit != m_edge_tag_bit.end()) {
                 for (const Tuple& e : get_edges()) {
                     const size_t e_id = e.eid(*this);
-                    if (((edge_tag_set(e_id) >> edge_bit->second) & 1) == 0) continue;
+                    if (!edge_has_tag(e_id, edge_bit->second)) continue;
                     m_edge_extra[e_id].label = 1;
                     m_vertex_extra[e.vid(*this)].label = 1;
                     m_vertex_extra[e.switch_vertex(*this).vid(*this)].label = 1;
@@ -791,7 +800,7 @@ void TopoOffsetTriMesh::label_offset(const size_t k)
             CellTag ids;
             if (m_curve_tag >= 0 && m_edge_extra[e_id].on_curve) ids.insert(m_curve_tag);
             for (const auto& [id, bit] : m_edge_tag_bit) {
-                if ((edge_tag_set(e_id) >> bit) & 1) ids.insert(id);
+                if (edge_has_tag(e_id, bit)) ids.insert(id);
             }
             if (ids.empty()) continue;
             own_e[e_id].insert(ids.begin(), ids.end());
@@ -1636,14 +1645,13 @@ void TopoOffsetTriMesh::hold_curves_and_points()
     std::vector<char> is_input_point(vert_capacity(), 0);
     for (const Tuple& t : get_vertices()) {
         const size_t vid = t.vid(*this);
-        InputSet& bits = m_vertex_extra[vid].point_inputs;
-        for (int j = 0; j < int(SurfaceTagAttributes::max_inputs); ++j) {
-            if (((bits >> j) & 1) == 0) continue;
+        LabelIds& bits = m_vertex_extra[vid].point_inputs;
+        for (const LabelId j : bits) {
             point_vids.push_back(vid);
-            point_labels.push_back(j);
+            point_labels.push_back(int(j));
             is_input_point[vid] = 1;
         }
-        bits = 0;
+        bits.clear();
     }
     m_input_point_labels = point_labels;
     size_t n_anchors = anchor_feature_points(point_vids, order2_eps, feature_eps);
@@ -1805,7 +1813,7 @@ void TopoOffsetTriMesh::repulsion_smoothing()
             if (!seen[v_out]) {
                 seen[v_out] = 1;
                 outer.push_back(v_out);
-                if (vertex_boundary_mask(v_out) != 0) ++n_held;
+                if (!vertex_boundary_labels(v_out).none()) ++n_held;
             }
         }
     };

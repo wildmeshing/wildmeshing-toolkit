@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <wmtk/MeshData.hpp>
 
 #include <wmtk/TriOptimizerMesh.h>
@@ -200,7 +202,7 @@ public:
         const std::vector<int>* E_orientation = nullptr,
         const std::vector<size_t>& free_point_vids = {},
         const std::vector<int>* E_env_input = nullptr,
-        const std::vector<InputSet>* E_input_set = nullptr,
+        const std::vector<LabelIds>* E_input_set = nullptr,
         const std::vector<InputOrientations>* E_input_orientation = nullptr);
 
     void init_surfaces_and_boundaries();
@@ -245,7 +247,7 @@ public:
     /// Remove the faces that lie inside no input (needs compute_winding_numbers).
     /// `bounding` (filter_inputs): faces inside none of its inputs are dropped. All bits, the
     /// default: every input, as before the key.
-    void filter_with_input_winding_number(InputSet bounding = ~InputSet(0));
+    void filter_with_input_winding_number(const std::optional<LabelIds>& bounding = std::nullopt);
 
     /**
      * @brief Winding number of every face's centroid w.r.t. the tracked curves, oriented as the
@@ -258,7 +260,7 @@ public:
      */
     /// `bounding` (filter_inputs): of the tracked edges whose input set meets it only. All bits,
     /// the default: every tracked edge.
-    void compute_tracked_winding_number(InputSet bounding = ~InputSet(0));
+    void compute_tracked_winding_number(const std::optional<LabelIds>& bounding = std::nullopt);
     /// Remove the faces whose tracked winding number is at most 1/2.
     void filter_with_tracked_winding_number();
     /// Remove the flood-fill region that dominates the mesh boundary (needs flood_fill).
@@ -266,7 +268,7 @@ public:
 
     /// `bounding` (filter_inputs): only the tracked edges whose input set meets it separate; the
     /// others are crossed. All bits, the default: every tracked edge.
-    int flood_fill(InputSet bounding = ~InputSet(0));
+    int flood_fill(const std::optional<LabelIds>& bounding = std::nullopt);
     /// Whether flood_fill ran, so that the writers leave the part ids out rather than writing
     /// their defaults as if they were parts.
     bool m_has_parts = false;

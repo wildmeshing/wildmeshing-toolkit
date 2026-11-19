@@ -136,7 +136,7 @@ private:
 
 /**
  * @brief One envelope per input, and the containment and the pull of an INPUT SET (bit i =
- * input i; see SurfaceTagAttributes::input_set()).
+ * input i; see SurfaceTagAttributes::labels()).
  *
  * The invariant it serves: a tracked simplex stays within eps of every input in its set.
  * containment() is therefore that input's own envelope for a one-input set, and the
@@ -155,13 +155,10 @@ public:
     /// no triangle). Not while the operations run: it drops the intersections built so far.
     void set(std::vector<std::shared_ptr<Envelope>> members)
     {
-        if (members.size() > size_t(SurfaceTagAttributes::max_inputs)) {
+        if (members.size() > size_t(0xFFFF) + 1) {
             log_and_throw_error(
-                "{} inputs; a tracked simplex records its inputs in {} bits, so at most {} are "
-                "supported",
-                members.size(),
-                SurfaceTagAttributes::max_inputs,
-                SurfaceTagAttributes::max_inputs);
+                "{} inputs; a label id (LabelId) holds at most 65536",
+                members.size());
         }
         m_members = std::move(members);
         m_intersections.clear();
@@ -171,10 +168,10 @@ public:
     bool empty() const { return m_members.empty(); }
     const std::shared_ptr<Envelope>& member(size_t i) const { return m_members[i]; }
 
-    std::shared_ptr<Envelope> containment(const InputSet set) const
+    std::shared_ptr<Envelope> containment(const LabelIds& set) const
     {
         check(set);
-        if ((set & (set - 1)) == 0) return m_members[lowest_bit(set)];
+        if (set.count() == 1) return m_members[set.lowest()];
         // Read-mostly: a set's intersection is built once, then every check only looks it up,
         // concurrently. An exclusive lock on every lookup serialized the operations' threads.
         {
@@ -187,7 +184,7 @@ public:
         if (!e) {
             std::vector<std::shared_ptr<Envelope>> members;
             for (size_t i = 0; i < m_members.size(); ++i) {
-                if (set & (InputSet(1) << i)) members.push_back(m_members[i]);
+                if (set.contains(LabelId(i))) members.push_back(m_members[i]);
             }
             e = std::make_shared<IntersectionEnvelope>(std::move(members));
         }
@@ -196,14 +193,14 @@ public:
 
     /// The member of `set` farthest from `p` (Vector2d or Vector3d). Ties go to the lower input.
     template <typename Point>
-    std::shared_ptr<Envelope> pull(const InputSet set, const Point& p) const
+    std::shared_ptr<Envelope> pull(const LabelIds& set, const Point& p) const
     {
         check(set);
-        if ((set & (set - 1)) == 0) return m_members[lowest_bit(set)];
+        if (set.count() == 1) return m_members[set.lowest()];
         std::shared_ptr<Envelope> best;
         double worst = -1.;
         for (size_t i = 0; i < m_members.size(); ++i) {
-            if (!(set & (InputSet(1) << i))) continue;
+            if (!set.contains(LabelId(i))) continue;
             const double d2 = m_members[i]->squared_distance(p);
             if (d2 > worst) {
                 worst = d2;
@@ -214,31 +211,26 @@ public:
     }
 
 private:
-    void check(const InputSet set) const
+    void check(const LabelIds& set) const
     {
-        if (set == 0) {
+        if (set.none()) {
             log_and_throw_error(
-                "a tracked simplex has an empty input set: the insertion or an operation did "
-                "not carry it");
+                "a tracked simplex has no labels: the insertion or an operation did not carry "
+                "them");
         }
-        if (m_members.size() < size_t(SurfaceTagAttributes::max_inputs) &&
-            (set >> m_members.size())) {
-            log_and_throw_error(
-                "input set {:#x} names an input beyond the {} that have envelopes",
-                set,
-                m_members.size());
+        for (const LabelId l : set) {
+            if (size_t(l) >= m_members.size()) {
+                log_and_throw_error(
+                    "label {} has no envelope: only {} labels have one",
+                    l,
+                    m_members.size());
+            }
         }
-    }
-    static size_t lowest_bit(const InputSet set)
-    {
-        size_t i = 0;
-        while (!(set & (InputSet(1) << i))) ++i;
-        return i;
     }
 
     std::vector<std::shared_ptr<Envelope>> m_members;
     /// Built on first use, under the mutex: the operations ask concurrently.
-    mutable std::map<InputSet, std::shared_ptr<Envelope>> m_intersections;
+    mutable std::map<LabelIds, std::shared_ptr<Envelope>> m_intersections;
     mutable std::shared_mutex m_mutex;
 };
 

@@ -100,12 +100,18 @@ public:
      */
     void init_label_envelopes(double eps, bool exact);
 
-    /// The face-tag bits of an input set: those below the number of face tags.
-    InputSet face_tag_mask() const
+    /// The face tags among `set`: the labels below the number of face tags (the region labels
+    /// come after them).
+    LabelIds face_tags_of(LabelIds set) const
     {
         const size_t n = m_face_tag_names.size();
-        return n >= size_t(SurfaceTagAttributes::max_inputs) ? ~InputSet(0)
-                                                             : (InputSet(1) << n) - 1;
+        set.erase_if([&](const LabelId l) { return size_t(l) >= n; });
+        return set;
+    }
+    /// Whether `set` holds a face tag.
+    bool has_face_tag(const LabelIds& set) const
+    {
+        return !set.none() && size_t(set.lowest()) < m_face_tag_names.size();
     }
 
     /// Per row of m_F_envelope: its label bits, when m_F_envelope is the inputs' triangles
@@ -115,11 +121,11 @@ public:
     /// "around the mesh's faces as they are then": at load that left the per-label envelopes to
     /// follow the faces, so after the simplification under envelope_reference "input" they were
     /// rebuilt around the simplified faces while the union was rebuilt around the input.
-    std::vector<InputSet> m_F_envelope_labels;
+    std::vector<LabelIds> m_F_envelope_labels;
     /// Per row of m_F_envelope, when it was built from the mesh's own surface faces
     /// (init_surfaces_and_boundaries(), simplify()): that face's input set; empty otherwise. What
     /// envelope_data() labels the rows by where m_F_envelope_labels is empty (after simplify()).
-    std::vector<InputSet> m_F_envelope_face_sets;
+    std::vector<LabelIds> m_F_envelope_face_sets;
 
     // A reference an `envelope` input gave (InputData::envelope_reference), the first
     // component's labelled input, is the base's (TetOptimizerMesh::m_has_reference, which states

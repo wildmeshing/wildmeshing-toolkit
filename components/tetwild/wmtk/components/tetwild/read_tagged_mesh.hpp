@@ -33,7 +33,7 @@ struct TaggedMesh
     /// The tagged faces, rows of the triangle block on V, in the block's vertex order, which is
     /// their orientation; F_sets[r] has bit j for label face_names[j].
     std::vector<std::array<size_t, 3>> F;
-    std::vector<InputSet> F_sets;
+    std::vector<LabelIds> F_sets;
     std::vector<std::string> face_names;
     /// Per row of F and label, its count along the row (io::read_orientation()): with
     /// WMTK_PER_INPUT_ORIENTATION, from the block's `orientation`; 0 rows without one.
@@ -56,7 +56,7 @@ bool is_tet_mesh(const MeshData& mesh);
  * hold: tets tagged other than ambient (a volume, simwild's to remesh), cells other than tets,
  * triangles, edges and points, tets not positively oriented, a lower block without tags, a row
  * without a tag, rows labelled EnvelopeSurface (an embedded envelope), more labels than
- * SurfaceTagAttributes::max_inputs, a row on a vertex no tet has. `what` names the input in the
+ * max_labels, a row on a vertex no tet has. `what` names the input in the
  * errors.
  *
  * Fields: `tags` is read (and with WMTK_PER_INPUT_ORIENTATION the faces' `orientation`,

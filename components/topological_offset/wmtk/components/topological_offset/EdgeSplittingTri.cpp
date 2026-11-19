@@ -59,13 +59,14 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
         auto& c = m_opt_split_cache.local();
         c.v1_id = t.vid(*this);
         c.v2_id = t.switch_vertex(*this).vid(*this);
-        // Captured here, while both endpoints are in hand, and propagated as the endpoints' AND
-        // -- never recomputed from the incident faces, whose tags construct_offset() replaces as
-        // the band grows. Boundary membership is a property of the input partition, not of the
-        // current tags. split_after_vertex() gates these bits on the edge's own persistent
-        // class, so a chord's midpoint never picks them up.
-        c.edge_bits =
-            m_vertex_extra[c.v1_id].m_boundary_mask & m_vertex_extra[c.v2_id].m_boundary_mask;
+        // Captured here, while both endpoints are in hand, and propagated as the intersection of
+        // the endpoints' labels -- never recomputed from the incident faces, whose tags
+        // construct_offset() replaces as the band grows. Boundary membership is a property of the
+        // input partition, not of the current tags. split_adjust_position() gates these labels on
+        // the edge's own persistent class, so a chord's midpoint never picks them up.
+        c.edge_labels = common_labels(
+            m_vertex_extra[c.v1_id].m_boundary_labels,
+            m_vertex_extra[c.v2_id].m_boundary_labels);
         const simplex::Edge edge(c.v1_id, c.v2_id);
         // parent_q_max is diagnostic: split_after_vertex() uses it to say whether a needle child
         // came from a parent that was already unscoreable, or from a healthy one.
@@ -168,13 +169,15 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
     }
     // The flag is the edge's own class, not an AND of the endpoints: two vertices sharing a
     // region can be joined by a chord through the interior, and marching splits exactly such
-    // chords. Behind that gate the bits are the endpoints' AND, propagated, never recomputed from
-    // the incident faces, whose tags construct_offset() replaces as the band grows.
+    // chords. Behind that gate the labels are the intersection of the endpoints', propagated,
+    // never recomputed from the incident faces, whose tags construct_offset() replaces as the band
+    // grows.
     cache.new_v_extra.m_is_on_region = edge_is_region(e_id);
-    cache.new_v_extra.m_boundary_mask = cache.new_v_extra.m_is_on_region
-                                            ? (m_vertex_extra[cache.v1_id].m_boundary_mask &
-                                               m_vertex_extra[cache.v2_id].m_boundary_mask)
-                                            : uint64_t(0);
+    cache.new_v_extra.m_boundary_labels = cache.new_v_extra.m_is_on_region
+                                              ? common_labels(
+                                                    m_vertex_extra[cache.v1_id].m_boundary_labels,
+                                                    m_vertex_extra[cache.v2_id].m_boundary_labels)
+                                              : LabelIds{};
 
     // split edge attribute
     cache.split_eattr = edge_snapshot(e_id);

@@ -412,12 +412,11 @@ InputData read_mesh(
         const auto& F_input = envelope_is_read ? F_read_input : image_mesh.F_input();
         // Only where every envelope triangle's input is known; else the mesh's faces serve.
         if (F_input.size() == size_t(input_data.F_envelope.rows())) {
-            input_data.F_envelope_labels.assign(input_data.F_envelope.rows(), 0);
+            input_data.F_envelope_labels.assign(input_data.F_envelope.rows(), LabelIds{});
             for (Eigen::Index r = 0; r < input_data.F_envelope.rows(); ++r) {
                 const size_t in = F_input[r];
-                if (in < input_bit.size() && input_bit[in] >= 0 &&
-                    input_bit[in] < SurfaceTagAttributes::max_inputs) {
-                    input_data.F_envelope_labels[r] = InputSet(1) << input_bit[in];
+                if (in < input_bit.size() && input_bit[in] >= 0 && input_bit[in] < max_labels) {
+                    input_data.F_envelope_labels[r] = LabelIds{LabelId(input_bit[in])};
                 }
             }
         }
@@ -551,11 +550,11 @@ InputData read_curves(
     // Each envelope row's label bit (input_bit). Only where every row's input is known; else
     // the mesh's edges serve.
     if (E_input.size() == size_t(input_data.F_envelope.rows())) {
-        input_data.F_envelope_labels.assign(input_data.F_envelope.rows(), 0);
+        input_data.F_envelope_labels.assign(input_data.F_envelope.rows(), LabelIds{});
         for (Eigen::Index r = 0; r < input_data.F_envelope.rows(); ++r) {
             const size_t in = E_input[r];
-            if (in < n_inputs && input_bit[in] < size_t(SurfaceTagAttributes::max_inputs)) {
-                input_data.F_envelope_labels[r] = InputSet(1) << input_bit[in];
+            if (in < n_inputs && input_bit[in] < max_labels) {
+                input_data.F_envelope_labels[r] = LabelIds{LabelId(input_bit[in])};
             }
         }
     }
@@ -805,7 +804,7 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
             if (tags(i, columns[j])) out.T_input_tag.coeffRef(i, j) = 1;
     // A lower block's tags. The column labelled EnvelopeSurface, simwild's envelope group (a
     // reserved name, like ambient), marks the envelope's rows; every other label is a tag, one bit
-    // of a row's input set, so at most max_inputs. Every row needs a label. `what` names the rows.
+    // of a row's labels, so at most max_labels. Every row needs a label. `what` names the rows.
     struct LowerTags
     {
         DataMatrix<uint8_t> member;
@@ -835,13 +834,9 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
             lt.columns.push_back(j);
             lt.names.push_back(fa.labels[j]);
         }
-        if (lt.columns.size() > size_t(SurfaceTagAttributes::max_inputs))
+        if (lt.columns.size() > max_labels)
             throw std::runtime_error(
-                fmt::format(
-                    "At most {} {} tags, not {}",
-                    SurfaceTagAttributes::max_inputs,
-                    what,
-                    lt.columns.size()));
+                fmt::format("At most {} {} tags, not {}", max_labels, what, lt.columns.size()));
         for (Eigen::Index i = 0; i < lt.member.rows(); ++i) {
             if (envelope_column >= 0 && lt.member(i, envelope_column))
                 lt.envelope_rows.push_back(i);
@@ -1008,20 +1003,19 @@ InputData read_mesh_data(const MeshData& mesh, const MeshData* envelope)
         // The mesh's bits named `name`: a face tag's (2D: an edge tag's), a region's after them.
         // In 2D a curve and a region may share a name, as triwild names them, and the segments
         // then hold both: the curve is the region's boundary.
-        const auto bits_named = [&](const std::string& name) {
-            InputSet bits = 0;
+        const auto labels_named = [&](const std::string& name) {
+            LabelIds bits;
             const size_t F = out.face_tag_names.size();
-            for (size_t i = 0; i < F && i < size_t(SurfaceTagAttributes::max_inputs); ++i)
-                if (out.face_tag_names[i] == name) bits |= InputSet(1) << i;
+            for (size_t i = 0; i < F && i < max_labels; ++i)
+                if (out.face_tag_names[i] == name) bits.insert(LabelId(i));
             for (size_t j = 0; j < out.tag_names.size(); ++j)
-                if (out.tag_names[j] == name && F + j < size_t(SurfaceTagAttributes::max_inputs))
-                    bits |= InputSet(1) << (F + j);
+                if (out.tag_names[j] == name && F + j < max_labels) bits.insert(LabelId(F + j));
             return bits;
         };
         io::LabelledReference reference = io::read_labelled_envelope(
             *envelope,
             dim,
-            bits_named,
+            labels_named,
             out.feature_edge_names,
             out.point_names);
         out.V_envelope = std::move(reference.V);

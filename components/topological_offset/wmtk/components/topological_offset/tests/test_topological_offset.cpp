@@ -1945,7 +1945,7 @@ std::unique_ptr<TopoOffsetTriMesh> energy_mesh_2d(
     for (size_t v = 0; v < size_t(V.rows()); ++v) {
         mesh->m_vertex_attribute[v].m_is_on_surface = false;
         mesh->m_vertex_extra[v].m_is_on_region = false;
-        mesh->m_vertex_extra[v].m_boundary_mask = 0;
+        mesh->m_vertex_extra[v].m_boundary_labels.clear();
     }
     for (size_t i = 0; i < F.size(); ++i) {
         std::array<size_t, 3> want{
@@ -2740,7 +2740,7 @@ TEST_CASE("swap-face-keeps-edge-tags", "[offset][3d]")
         return A->m_feature_edge_attribute[A->tuple_from_edge({{p, q}}).eid(*A)];
     };
     tags(a, d).add(EdgeTags::order2);
-    tags(a, d).inputs(EdgeTags::order2) = 1;
+    tags(a, d).labels(EdgeTags::order2) = LabelIds{0};
 
     std::vector<TopoOffsetTetMesh::Tuple> new_tets;
     const auto [face, fid] = A->tuple_from_face(std::array<size_t, 3>{{a, b, c}});
@@ -2748,7 +2748,7 @@ TEST_CASE("swap-face-keeps-edge-tags", "[offset][3d]")
     REQUIRE(A->swap_face(face, new_tets));
     REQUIRE(new_tets.size() == 3);
     CHECK(tags(a, d).has(EdgeTags::order2));
-    CHECK(tags(a, d).inputs(EdgeTags::order2) == 1);
+    CHECK(tags(a, d).labels(EdgeTags::order2) == LabelIds{0});
     size_t n_tagged = 0;
     for (const auto& edge : A->get_edges()) {
         n_tagged += A->m_feature_edge_attribute[edge.eid(*A)].is_tagged();
@@ -3763,7 +3763,7 @@ TEST_CASE("band-covered-face-tags", "[offset][3d][envelope]")
             param,
             std::filesystem::temp_directory_path() / "wmtk_offset_covered_face_tags");
         const auto tagged = [&](const TetMesh::Tuple& f) {
-            return (mesh->m_face_attribute[f.fid(*mesh)].input_set() & 1) != 0; // S is bit 0
+            return mesh->m_face_attribute[f.fid(*mesh)].labels().contains(0); // S is label 0
         };
         const auto tracked = [&](const TetMesh::Tuple& f) {
             return mesh->m_face_attribute[f.fid(*mesh)].m_is_surface_fs;
@@ -3866,7 +3866,7 @@ TEST_CASE("band-crossed-sheet-keeps-its-orientation", "[offset][3d][split_op]")
     size_t n_tagged = 0;
     for (const auto& f : mesh->get_faces()) {
         const auto& attr = mesh->m_face_attribute[f.fid(*mesh)];
-        if (!attr.m_is_surface_fs || (attr.input_set() & 1) == 0) continue; // S is bit 0
+        if (!attr.m_is_surface_fs || !attr.labels().contains(0)) continue; // S is label 0
         std::array<size_t, 3> vs = mesh->get_face_vids(f);
         std::sort(vs.begin(), vs.end());
         const int o = attr.orientation_along(vs);
@@ -3930,7 +3930,7 @@ TEST_CASE("face-split-keeps-the-surface", "[split_op][3d]")
     };
     const auto f_attr = mesh.m_face_attribute[fid_of(1, 2, 3)]; // a copy: f goes
     REQUIRE(f_attr.m_is_surface_fs);
-    REQUIRE(f_attr.input_set() == 1);
+    REQUIRE(f_attr.labels() == LabelIds{0});
     REQUIRE(f_attr.orientation_along(std::array<size_t, 3>{{1, 2, 3}}) == 1);
     REQUIRE(!mesh.is_simplicially_embedded());
     mesh.m_edge_split_mode = TopoOffsetTetMesh::EdgeSplitMode::Midpoint;
@@ -3953,7 +3953,7 @@ TEST_CASE("face-split-keeps-the-surface", "[split_op][3d]")
         const size_t fid = fid_of(a, b, v);
         const auto& piece = mesh.m_face_attribute[fid];
         CHECK(piece.m_is_surface_fs);
-        CHECK(piece.input_set() == f_attr.input_set());
+        CHECK(piece.labels() == f_attr.labels());
         CHECK(piece.orientation_along(std::array<size_t, 3>{{a, b, v}}) == 1);
         CHECK(mesh.m_face_extra[fid].label == 0); // f's: not the complex's
         CHECK(mesh.m_face_attribute[fid_of(0, a, b)].m_is_surface_fs); // C's boundary, as it was
@@ -3963,7 +3963,7 @@ TEST_CASE("face-split-keeps-the-surface", "[split_op][3d]")
             INFO("interior face (v, " << w << ", " << u << ")");
             const auto& inner = mesh.m_face_attribute[fid_of(v, w, u)];
             CHECK(!inner.m_is_surface_fs);
-            CHECK(inner.input_set() == 0);
+            CHECK(inner.labels().none());
         }
     }
 }
@@ -7574,7 +7574,7 @@ TEST_CASE("hold-curves-and-points-2d", "[offset][2d]")
     size_t n_anchored = 0;
     for (const auto& v : mesh->get_vertices()) {
         const size_t vid = v.vid(*mesh);
-        CHECK(mesh->m_vertex_extra[vid].point_inputs == 0); // the anchors carry them now
+        CHECK(mesh->m_vertex_extra[vid].point_inputs.none()); // the anchors carry them now
         if (!anchored_2d(*mesh, vid)) continue;
         ++n_anchored;
         const Vector2d x = mesh->m_vertex_attribute[vid].m_posf;
@@ -7590,16 +7590,16 @@ TEST_CASE("hold-curves-and-points-2d", "[offset][2d]")
         CHECK(mesh->smoothing_position_is_allowed(vid, it->at + Vector2d(it->radius / 2., 0.)));
         CHECK_FALSE(
             mesh->smoothing_position_is_allowed(vid, it->at + Vector2d(2. * it->radius, 0.)));
-        const InputSet labels =
-            f < mesh->m_feature_point_inputs.size() ? mesh->m_feature_point_inputs[f] : 0;
+        const LabelIds labels =
+            f < mesh->m_feature_point_inputs.size() ? mesh->m_feature_point_inputs[f] : LabelIds{};
         if (it->label.empty()) {
-            CHECK(labels == 0);
+            CHECK(labels.none());
         } else {
             const auto& names = mesh->m_point_names;
             const size_t bit =
                 size_t(std::find(names.begin(), names.end(), it->label) - names.begin());
             REQUIRE(bit < names.size());
-            CHECK(labels == (InputSet(1) << bit));
+            CHECK(labels == LabelIds{LabelId(bit)});
         }
     }
     CHECK(n_anchored == want.size());
@@ -9300,7 +9300,7 @@ TEST_CASE("driver-refusals-2d", "[offset][2d]")
             reference,
             io::geometry_data(V, E, CellType::Edge),
             CellType::Edge,
-            {InputSet(1)},
+            {LabelIds{0}},
             {"curve"});
         meshes["e"] = reference;
         j["envelope"] = "e";
@@ -11261,8 +11261,11 @@ struct MeshState2d
     std::vector<Vector2d> posf;
     std::vector<Vector2r> pos;
     std::vector<double> sizing;
-    std::vector<std::array<int64_t, 11>> vertex_flags;
-    std::vector<std::array<int64_t, 7>> edge_flags;
+    std::vector<std::array<int64_t, 9>> vertex_flags;
+    std::vector<std::array<int64_t, 6>> edge_flags;
+    std::vector<LabelIds> point_inputs; ///< per vertex
+    std::vector<LabelIds> boundary_labels; ///< per vertex
+    std::vector<LabelIds> edge_labels; ///< per edge slot, as edge_flags
     bool operator==(const MeshState2d& o) const
     {
         return std::tie(
@@ -11273,7 +11276,10 @@ struct MeshState2d
                    pos,
                    sizing,
                    vertex_flags,
-                   edge_flags) ==
+                   edge_flags,
+                   point_inputs,
+                   boundary_labels,
+                   edge_labels) ==
                std::tie(
                    o.faces,
                    o.face_tags,
@@ -11282,7 +11288,10 @@ struct MeshState2d
                    o.pos,
                    o.sizing,
                    o.vertex_flags,
-                   o.edge_flags);
+                   o.edge_flags,
+                   o.point_inputs,
+                   o.boundary_labels,
+                   o.edge_labels);
     }
 };
 
@@ -11296,16 +11305,16 @@ MeshState2d mesh_state_2d(const TopoOffsetTriMesh& m)
         s.posf.push_back(a.m_posf);
         s.pos.push_back(a.pos());
         s.sizing.push_back(a.m_sizing_scalar);
+        s.point_inputs.push_back(x.point_inputs);
+        s.boundary_labels.push_back(x.m_boundary_labels);
         s.vertex_flags.push_back(
             {{a.m_is_rounded,
               a.m_is_on_surface,
               x.label,
               x.offset,
-              int64_t(x.point_inputs),
               x.m_is_on_input,
               x.m_is_on_offset,
               x.m_is_on_region,
-              int64_t(x.m_boundary_mask),
               x.m_corr_input_vid,
               x.m_corr_carried}});
     }
@@ -11317,11 +11326,11 @@ MeshState2d mesh_state_2d(const TopoOffsetTriMesh& m)
         for (size_t j = 0; j < 3; ++j) {
             const SurfaceTagAttributes& a = m.m_edge_attribute[3 * fid + j];
             const EdgeExtra2d& x = m.m_edge_extra[3 * fid + j];
+            s.edge_labels.push_back(a.labels());
             s.edge_flags.push_back(
                 {{a.m_is_surface_fs,
                   a.m_is_bbox_fs,
                   a.m_surface_class,
-                  int64_t(a.input_set()),
                   a.orientation(),
                   x.label,
                   x.on_curve}});

@@ -85,7 +85,7 @@ public:
     /// at load (init_from_image()), carried by the construction, which only splits, and cleared
     /// by hold_curves_and_points(), from which on the anchors carry them
     /// (TopoOffsetTetMesh::vertex_has_point()).
-    InputSet point_inputs = 0;
+    LabelIds point_inputs;
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset surface itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
@@ -121,7 +121,7 @@ public:
     /// set at load (init_from_image()), carried by the construction's own splits, which copy
     /// this whole, and cleared by hold_curves_and_points(), from which on the engine's feature
     /// tags carry the curves through every operation (TopoOffsetTetMesh::edge_has_tag()).
-    InputSet feature_inputs = 0;
+    LabelIds feature_inputs;
 };
 
 
@@ -608,7 +608,7 @@ public:
     /// construction; what build_envelopes() builds the envelopes around. Empty otherwise.
     MatrixXd m_reference_V;
     MatrixXi m_reference_F;
-    std::vector<InputSet> m_reference_labels;
+    std::vector<LabelIds> m_reference_labels;
     /// The label of bit `bit` of a face's input set (assign_face_labels()), as the output names
     /// it: a face tag's name, else tet tag t's label (io::collect_tags()) for bit F + t - 1, F the
     /// face tags' count. What the reference checks name a label by.

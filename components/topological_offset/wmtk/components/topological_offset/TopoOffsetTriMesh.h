@@ -57,20 +57,23 @@ public:
     /// them, through the operations, which do not carry this. As VertexExtra::point_inputs in 3D.
     /// A mesh not held (an empty input complex) writes its point block from this
     /// (collect_loaded_curves_and_points()).
-    InputSet point_inputs = 0;
+    LabelIds point_inputs;
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset boundary itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
 
     /**
-     * @brief Which tag boundaries this vertex lies on -- one bit per input tag, ambient included.
-     * See TopoOffsetTriMesh::m_tag_envelopes for what the bits dispatch to.
+     * @brief Which tag boundaries this vertex lies on -- one label per input tag, ambient
+     * included (TopoOffsetTriMesh::m_tag_label). See TopoOffsetTriMesh::m_tag_envelopes for what
+     * the labels dispatch to.
      *
      * Seeded in init_surfaces_and_boundaries() from the input partition, then propagated by the
-     * operations: a split's new vertex takes the AND of its endpoints (it lies on a boundary only
-     * if the whole edge did), a collapse's survivor the OR (it carries both vertices' geometry).
+     * operations: a split's new vertex takes the intersection of its endpoints' (it lies on a
+     * boundary only if the whole edge did), a collapse's survivor the union (it carries both
+     * vertices' geometry). Until 2026-11 a 64-bit mask, one bit per tag, which refused more than
+     * 62 input tags.
      */
-    uint64_t m_boundary_mask = 0;
+    LabelIds m_boundary_labels;
 
     /// The input-complex vertex this offset vertex was split off from by marching_tris(): the
     /// marched edge's endpoint on the complex. -1 for every vertex the march did not make. Written
@@ -528,7 +531,7 @@ public:
      * mesh carried them, built in init_surfaces_and_boundaries() before offset construction: the
      * band's tags replace a face's own, so an envelope built later would be a tube around a curve
      * truncated at the band. A simplex on several boundaries is held by the intersection of its
-     * tags' tubes (envelope_for_mask()), which pins junction points to the junction itself.
+     * tags' tubes (envelope_for_labels()), which pins junction points to the junction itself.
      *
      * m_envelope (the base's pointer) survives as a UnionEnvelope over these members, purely so
      * the shared engine's direct uses of it -- the collapse_edge_before point check and the
@@ -539,32 +542,49 @@ public:
      */
     std::map<int64_t, std::shared_ptr<Envelope>> m_tag_envelopes;
 
-    /// Input tag id -> bit position in VertexExtra2d::m_boundary_mask. Assigned in
-    /// init_from_image() once the tag maps are complete; at most 64 input tags.
-    std::map<int64_t, int> m_tag_bit;
+    /// Input tag id -> its label in VertexExtra2d::m_boundary_labels. Assigned in
+    /// init_from_image() once the tag maps are complete, the domain wall's and the input
+    /// complex's last; at most max_labels.
+    std::map<int64_t, LabelId> m_tag_label;
 
-    /// Memoized IntersectionEnvelope per multi-bit mask. Lazily built under the mutex because
-    /// the queries that need them run concurrently under kPartition.
-    mutable std::map<uint64_t, std::shared_ptr<Envelope>> m_isect_cache;
+    /// m_tag_envelopes by label (m_tag_label): member l is the tube of the tag of label l, null
+    /// for a tag no tracked edge bounded when the tubes were built. Its containment() is a label
+    /// set's tube, or the memoized intersection of its members' tubes for several; its pull() the
+    /// member farthest from a point. The core's machinery, as 3D's label envelopes
+    /// (the base's m_input_envelopes). Set by build_boundary_envelopes().
+    InputEnvelopes m_tag_label_envelopes;
+    /// The labels of `labels` whose tag has a tube (m_tag_label_envelopes): a label whose tag got
+    /// none (no boundary edges when the tubes were built) holds nothing, and the others hold as
+    /// if it were not there.
+    LabelIds labels_with_tubes(const LabelIds& labels) const
+    {
+        LabelIds out;
+        for (const LabelId l : labels) {
+            if (size_t(l) < m_tag_label_envelopes.size() && m_tag_label_envelopes.member(l))
+                out.insert(l);
+        }
+        return out;
+    }
     mutable std::mutex m_isect_mutex;
 
     /**
-     * @brief Memoized "region tubes AND the offset envelope", keyed by the region mask.
+     * @brief Memoized "region tubes AND the offset envelope", keyed by the region labels.
      *
      * A simplex can be on both, so this is always their intersection, never an either/or.
      *
-     * Separate from m_isect_cache because the members differ in lifetime: the tag envelopes live
-     * for the whole run, m_offset_envelope is built for the final pass.
-     * rebuild_offset_envelope() clears this and must keep doing so. Guarded by m_isect_mutex.
+     * Separate from m_tag_label_envelopes' intersections because the members differ in
+     * lifetime: the tag envelopes live for the whole run, m_offset_envelope is built for the
+     * final pass. rebuild_offset_envelope() clears this and must keep doing so. Guarded by
+     * m_isect_mutex.
      */
-    mutable std::map<uint64_t, std::shared_ptr<Envelope>> m_offset_isect_cache;
+    mutable std::map<LabelIds, std::shared_ptr<Envelope>> m_offset_isect_cache;
 
     /**
-     * @brief The containment a simplex with this region mask, on/off the offset front, must
+     * @brief The containment a simplex with these region labels, on/off the offset front, must
      * satisfy -- the intersection of everything that holds it, or null if nothing does.
      *
-     * The single place the two containment families are composed. `region_mask` dispatches
-     * through envelope_for_mask() (itself an intersection when the mask is multi-bit, which is
+     * The single place the two containment families are composed. `region_labels` dispatches
+     * through envelope_for_labels() (itself an intersection for several labels, which is
      * what pins a junction to the junction); `on_offset` adds m_offset_envelope, in the
      * frozen-front final pass only. Every operation's containment check reaches this through
      * surface_envelope_for_edge(), so in the final pass split, collapse and swap hold the offset
@@ -572,7 +592,7 @@ public:
      * (smoothing_containment_envelope()): placing the front is what moves the offset boundary,
      * and a tube around where it currently sits would cap how far it can travel. As in 3D.
      */
-    std::shared_ptr<Envelope> containment_for(uint64_t region_mask, bool on_offset) const;
+    std::shared_ptr<Envelope> containment_for(const LabelIds& region_labels, bool on_offset) const;
 
     /// The final pass: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
@@ -907,7 +927,7 @@ public:
     /// Edge tags, the tagged curves of a triangle mesh's edge block (triwild's and simwild's): bit
     /// j of an edge's input set is m_edge_tag_names[j]. The 3D twin is
     /// TopoOffsetTetMesh::m_face_tag_names. Each has a tag id (m_edge_tag_id[j]), past every other
-    /// tag, whose mask bit and tube hold its edges (init_surfaces_and_boundaries(),
+    /// tag, whose label and tube hold its edges (init_surfaces_and_boundaries(),
     /// build_boundary_envelopes()), and which a selection (offsets) can name (m_edge_tag_bit: id
     /// -> bit) -- unless a triangle tag, an output tag or the curve group has the name, as triwild
     /// names an input's region and its curve alike (SimWildMeshTri::m_edge_tag_names): the name
@@ -915,16 +935,22 @@ public:
     std::vector<std::string> m_edge_tag_names;
     std::vector<int64_t> m_edge_tag_id;
     std::map<int64_t, int> m_edge_tag_bit;
-    /// The edge tags of edge `eid`: the bits of its input set below m_edge_tag_names.size().
-    InputSet edge_tag_set(const size_t eid) const
+    /// Whether edge `eid` carries edge tag j (m_edge_tag_names[j]): label j of its labels, the
+    /// labels below m_edge_tag_names.size() being the edge tags.
+    bool edge_has_tag(const size_t eid, const int j) const
     {
-        const size_t n = m_edge_tag_names.size();
-        const InputSet all = n >= 64 ? ~InputSet(0) : (InputSet(1) << n) - 1;
-        return m_edge_attribute[eid].input_set() & all;
+        return j >= 0 && size_t(j) < m_edge_tag_names.size() &&
+               m_edge_attribute[eid].labels().contains(LabelId(j));
+    }
+    /// Whether edge `eid` carries any edge tag: its smallest label is one (the labels are sorted).
+    bool edge_has_any_tag(const size_t eid) const
+    {
+        const LabelIds& l = m_edge_attribute[eid].labels();
+        return !l.none() && size_t(*l.begin()) < m_edge_tag_names.size();
     }
     /// Point labels, the input points' (a tagged mesh's point block): bit j is the base's
     /// m_point_names[j], each name a tag id a selection (offsets) can name (m_point_tag_bit: id ->
-    /// bit), past every other tag and with no mask bit (m_tag_bit), an edge tag's id where the two
+    /// bit), past every other tag and with no boundary label (m_tag_label), an edge tag's id where the two
     /// share a name, as in 3D. Where 2D differs: a label a triangle tag or the curve group already
     /// names keeps apart, not selectable by the name, which selects the region (3D refuses the
     /// name, "is also a tet or face tag"): triwild names an input's region, its curve and its
@@ -1599,7 +1625,7 @@ public:
         /// keeps a chord's midpoint maskless so the AND cannot over-claim through one. Never
         /// derived from the incident faces' current tags: the band retag empties the live
         /// symmetric difference on every region edge it swallows.
-        uint64_t edge_bits = 0;
+        LabelIds edge_labels;
         /// Diagnostic: the two parent faces' AMIPS before the split, so split_after_vertex() can
         /// say whether a needle child came from a healthy parent or an already unscoreable one.
         double parent_q_max = -1.;
@@ -1902,7 +1928,7 @@ public:
     bool is_repulsion_vertex(const size_t vid) const
     {
         if (!m_repulsion_potential || m_vertex_extra[vid].label != 0 ||
-            vertex_boundary_mask(vid) != 0) {
+            !vertex_boundary_labels(vid).none()) {
             return false;
         }
         for (const size_t u : get_one_ring_vids_for_vertex_duplicate(vid)) {
@@ -1935,7 +1961,7 @@ public:
         if (!has_complex) return 0.;
         double e = 0.;
         for (const size_t v : vids) {
-            if (m_vertex_extra[v].label == 0 && vertex_boundary_mask(v) == 0) {
+            if (m_vertex_extra[v].label == 0 && vertex_boundary_labels(v).none()) {
                 e += repulsion_term_at(v);
             }
         }
@@ -2238,9 +2264,9 @@ public:
     /**
      * @brief Are the tracked region boundaries actually contained by anything?
      *
-     * A class-0 edge is dispatched to an envelope by its boundary mask, the symmetric difference
+     * A class-0 edge is dispatched to an envelope by its boundary labels, the symmetric difference
      * of its two faces' tags. An edge whose faces carry the same tags has an empty difference, so
-     * envelope_for_mask() gives it nullptr: tracked as a region boundary and held by nothing.
+     * envelope_for_labels() gives it nullptr: tracked as a region boundary and held by nothing.
      * Construction cannot produce one, so a non-zero count here is a hole opened afterwards.
      * Called at construction.
      */
@@ -2252,10 +2278,10 @@ public:
      * The shared pass driver's sanity_checks() reports "Edge [a, b] is outside!" but not which
      * envelope refused it, and the answer forks the diagnosis: offset-class (mask 0) means the
      * final pass moved the offset boundary out of the tube holding it; region-class
-     * (mask != 0) means a tag-region boundary has drifted off the input partition, refused by that
-     * tag's tube or by the intersection of several at a junction.
+     * (region labels) means a tag-region boundary has drifted off the input partition, refused by
+     * that tag's tube or by the intersection of several at a junction.
      *
-     * Reports per-endpoint distance to each real member tube. A multi-bit mask dispatches an
+     * Reports per-endpoint distance to each real member tube. Several labels dispatch an
      * IntersectionEnvelope, which must never be asked squared_distance (CompositeEnvelopes.hpp:
      * its BVH is null), so the members are walked individually instead of querying the composite.
      *
@@ -2278,38 +2304,54 @@ public:
         return m_vertex_extra[vid].m_is_on_region || !m_vertex_attribute[vid].on_bbox_faces.empty();
     }
 
-    /// The three helpers of the per-tag envelope dispatch. tag_bits() and edge_mask() are
-    /// trivial; envelope_for_mask() is out of line (it builds IntersectionEnvelopes lazily).
-    uint64_t tag_bits(const CellTag& tags) const
+    /// The helpers of the per-tag envelope dispatch. tag_label_set(), edge_boundary_labels() and
+    /// common_labels() are trivial; envelope_for_labels() asks m_tag_label_envelopes.
+    LabelIds tag_label_set(const CellTag& tags) const
     {
-        uint64_t bits = 0;
+        LabelIds labels;
         for (const int64_t t : tags) {
-            const auto it = m_tag_bit.find(t);
-            if (it != m_tag_bit.end()) bits |= (uint64_t(1) << it->second);
+            const auto it = m_tag_label.find(t);
+            if (it != m_tag_label.end()) labels.insert(it->second);
         }
-        return bits;
+        return labels;
+    }
+    /// The labels `a` and `b` share.
+    static LabelIds common_labels(const LabelIds& a, const LabelIds& b)
+    {
+        LabelIds out;
+        for (const LabelId l : a) {
+            if (b.contains(l)) out.insert(l);
+        }
+        return out;
+    }
+    /// A label set for the logs: "{3,7}".
+    static std::string labels_str(const LabelIds& labels)
+    {
+        std::string s = "{";
+        for (const LabelId l : labels) s += fmt::format("{}{}", s.size() > 1 ? "," : "", l);
+        return s + "}";
     }
 
     /**
-     * @brief The tag boundaries this vertex lies on -- the raw mask gated on the vertex still
+     * @brief The tag boundaries this vertex lies on -- the raw labels gated on the vertex still
      * being region geometry at all.
      *
-     * The gate is not redundant, it is what keeps the mask honest. m_boundary_mask propagates by a
-     * bare AND of a split's endpoints, which over-claims: an edge whose two ends happen to share a
-     * bit hands that bit to its midpoint even when the edge is a chord through the interior, and
-     * the offset front is built by splitting precisely such edges. So the mask says which
-     * boundaries and vertex_is_on_region() says whether the vertex is on one at all.
+     * The gate is not redundant, it is what keeps the labels honest. m_boundary_labels propagate by
+     * a bare intersection of a split's endpoints', which over-claims: an edge whose two ends
+     * happen to share a label hands it to its midpoint even when the edge is a chord through the
+     * interior, and the offset front is built by splitting precisely such edges. So the labels say
+     * which boundaries and vertex_is_on_region() says whether the vertex is on one at all.
      */
-    uint64_t vertex_boundary_mask(const size_t vid) const
+    LabelIds vertex_boundary_labels(const size_t vid) const
     {
-        return vertex_is_on_region(vid) ? m_vertex_extra[vid].m_boundary_mask : uint64_t(0);
+        return vertex_is_on_region(vid) ? m_vertex_extra[vid].m_boundary_labels : LabelIds{};
     }
 
-    /// A segment lies on a boundary only if both ends do: the AND of its endpoints' masks. The
-    /// 2D twin of face_mask(), which ANDs three.
-    uint64_t edge_mask(const std::array<size_t, 2>& vids) const
+    /// A segment lies on a boundary only if both ends do: the intersection of its endpoints'
+    /// labels. The 2D twin of face_mask(), which intersects three.
+    LabelIds edge_boundary_labels(const std::array<size_t, 2>& vids) const
     {
-        return vertex_boundary_mask(vids[0]) & vertex_boundary_mask(vids[1]);
+        return common_labels(vertex_boundary_labels(vids[0]), vertex_boundary_labels(vids[1]));
     }
 
     /**
@@ -2319,16 +2361,16 @@ public:
      * Nothing dispatches or propagates from this. It is only trustworthy while the face tags are
      * still the input's own: construct_offset() replaces the tags of every face the band grows
      * through, after which this is empty across every region edge the band swallowed, so deriving
-     * split masks from it mints uncontained region vertices (log_region_edge_mask_health counts
-     * the divergence). New vertices take the endpoints' mask AND behind the parent edge's class
-     * gate instead -- 3D's rule at both of its split sites -- which is what stops a chord, not
-     * being a region-class edge, from over-claiming a tube a full target_distance away.
+     * split labels from it mints uncontained region vertices (log_region_edge_mask_health counts
+     * the divergence). New vertices take the endpoints' label intersection behind the parent
+     * edge's class gate instead -- 3D's rule at both of its split sites -- which is what stops a
+     * chord, not being a region-class edge, from over-claiming a tube a full target_distance away.
      */
-    uint64_t edge_boundary_bits(const Tuple& e) const
+    LabelIds edge_face_boundary_labels(const Tuple& e) const
     {
         const std::optional<Tuple> opp = e.switch_face(*this);
         if (!opp) {
-            return tag_bits(m_face_attribute[e.fid(*this)].tags); // domain wall
+            return tag_label_set(m_face_attribute[e.fid(*this)].tags); // domain wall
         }
         const auto& t0 = m_face_attribute[e.fid(*this)].tags;
         const auto& t1 = m_face_attribute[opp->fid(*this)].tags;
@@ -2339,19 +2381,19 @@ public:
             t1.begin(),
             t1.end(),
             std::inserter(diff, diff.begin()));
-        return tag_bits(diff);
+        return tag_label_set(diff);
     }
 
     /**
-     * @brief The envelope a simplex with this boundary mask is contained in, or null.
+     * @brief The envelope a simplex with these boundary labels is contained in, or null.
      *
-     * Zero bits: no boundary, no container. One bit: that tag's own envelope. Several bits: a
-     * memoized IntersectionEnvelope over the members -- inside means inside every tube, which pins
-     * junction geometry to the junction. Containment-only for the multi-bit case: the composite
-     * implements just the virtual is_outside queries, so it must never be returned from
-     * smoothing_energy_envelope(), whose pull calls the non-virtual nearest_point.
+     * No label (or none whose tag has a tube): no boundary, no container. One: that tag's own
+     * envelope. Several: their intersection, memoized by m_tag_label_envelopes -- inside means
+     * inside every tube, which pins junction geometry to the junction. Containment-only for
+     * several: the composite implements just the virtual is_outside queries, so it must never be
+     * returned from smoothing_energy_envelope(), whose pull calls the non-virtual nearest_point.
      */
-    std::shared_ptr<Envelope> envelope_for_mask(uint64_t mask) const;
+    std::shared_ptr<Envelope> envelope_for_labels(const LabelIds& labels) const;
 
     /**
      * @brief Class-0 segments -- every region boundary, the input complex and the domain wall
@@ -2380,7 +2422,7 @@ public:
         // it is about to create or has just created, whose own edge attributes are not written
         // yet. The endpoints' masks are, maintained by the operations themselves (AND at a split,
         // OR at a collapse).
-        uint64_t mask = edge_mask(vids);
+        LabelIds labels = edge_boundary_labels(vids);
         bool all_offset = true;
         for (const size_t v : vids) {
             all_offset = all_offset && m_vertex_extra[v].m_is_on_offset;
@@ -2400,12 +2442,12 @@ public:
         // offset flag are mutually exclusive by construction, so one of `mask` and `all_offset` is
         // always empty -- and the m_is_surface_fs guard leaves both constraints standing rather
         // than dropping one when a slot is illegible.
-        if (mask != 0 && all_offset) {
+        if (!labels.none() && all_offset) {
             if (const auto found = try_tuple_from_edge(vids)) {
                 const size_t eid = std::get<1>(*found);
                 if (m_edge_attribute[eid].m_is_surface_fs) {
                     if (edge_is_offset(eid)) {
-                        mask = 0; // an offset edge lies on no region boundary
+                        labels.clear(); // an offset edge lies on no region boundary
                     } else {
                         all_offset = false; // a region edge is not the offset front
                     }
@@ -2415,7 +2457,7 @@ public:
         // Both families compose: whatever holds this segment holds it at once. The offset side
         // holds only in the frozen-front final pass (see containment_for()); in the loop the
         // front is what the optimization moves, so it contributes nothing there.
-        const std::shared_ptr<Envelope> base = containment_for(mask, all_offset);
+        const std::shared_ptr<Envelope> base = containment_for(labels, all_offset);
         if (base || m_deform_tags.empty()) return base;
         // deform_others' ops-only tube: a released boundary is held by no mask -- its vertices
         // were freed so smoothing can carry the object -- which would leave the operations free
@@ -2454,31 +2496,16 @@ public:
         if (m_vertex_extra[vid].m_is_on_offset && !vertex_is_on_region(vid)) {
             return nullptr;
         }
-        const uint64_t mask = vertex_boundary_mask(vid);
-        if (mask == 0) {
+        // The member tube the vertex is farthest from, among its labels' (InputEnvelopes::pull(),
+        // as the base pulls a vertex on several labels in 3D).
+        const LabelIds labels = labels_with_tubes(vertex_boundary_labels(vid));
+        if (labels.none()) {
             // Reachable only for a construction artefact (a wall-chord midpoint flagged
-            // on-surface with disjoint endpoint masks); its containment is vacuous too, so no
+            // on-surface with disjoint endpoint labels); its containment is vacuous too, so no
             // pull is behavior-neutral. Not an error.
             return nullptr;
         }
-        std::shared_ptr<Envelope> best;
-        double worst_d2 = -1.;
-        for (const auto& [tag, env] : m_tag_envelopes) {
-            const auto it = m_tag_bit.find(tag);
-            if (it == m_tag_bit.end() || !(mask & (uint64_t(1) << it->second))) continue;
-            if (!best) {
-                best = env;
-                if ((mask & (mask - 1)) == 0) break; // single bit: no violation contest to run
-                worst_d2 = env->squared_distance(m_vertex_attribute[vid].m_posf);
-                continue;
-            }
-            const double d2 = env->squared_distance(m_vertex_attribute[vid].m_posf);
-            if (d2 > worst_d2) {
-                worst_d2 = d2;
-                best = env;
-            }
-        }
-        return best;
+        return m_tag_label_envelopes.pull(labels, m_vertex_attribute[vid].m_posf);
     }
 
     /// ... and it is not contained by the offset tube either: placing the front is what moves
@@ -2487,7 +2514,7 @@ public:
     /// containment_for(). As in 3D.
     std::shared_ptr<Envelope> smoothing_containment_envelope(const size_t vid) const
     {
-        return containment_for(vertex_boundary_mask(vid), /*on_offset=*/false);
+        return containment_for(vertex_boundary_labels(vid), /*on_offset=*/false);
     }
     /// The smoother holds each tracked segment at a vertex to its own containment, the base's
     /// per-segment answer (surface_envelope_for_edge() above): a held segment to its labels'
@@ -2591,7 +2618,7 @@ public:
     /// held, as 2D holds every one, the front could not settle where it meets another region).
     bool vertex_is_held_on_input(const size_t vid) const
     {
-        return m_vertex_extra[vid].m_is_on_input && vertex_boundary_mask(vid) != 0;
+        return m_vertex_extra[vid].m_is_on_input && !vertex_boundary_labels(vid).none();
     }
     /// Whether the smoother places vid against the offset term: a front vertex, outside the
     /// frozen-front final pass, not held on the input complex (vertex_is_held_on_input()). As in
@@ -3112,7 +3139,7 @@ public:
         // Still reported, never silent: the pinned half of every band measure is logged beside the
         // reachable half, the same contract vertex_is_on_domain_boundary() gets below. This is a
         // retreat, to be reverted the moment a placement that works exists.
-        if (m_vertex_extra[vid].m_is_on_offset && vertex_boundary_mask(vid) != 0) return false;
+        if (m_vertex_extra[vid].m_is_on_offset && !vertex_boundary_labels(vid).none()) return false;
 
         return !vertex_is_on_domain_boundary(vid);
     }
@@ -3177,8 +3204,9 @@ public:
      *    signed area, so the base's exact inversion check can only fire on an already-inverted
      *    parent. The census reports the parent's own inversion instead of probing.
      *  - the envelope of a child segment is the parent's: surface_envelope_for_edge dispatches on
-     *    edge_mask(), and the midpoint's mask is itself the AND of the parent's endpoints, so
-     *    mask(a,m) == mask(m,b) == mask(a,b) and one dispatch serves both halves. Same reasoning
+     *    edge_boundary_labels(), and the midpoint's labels are themselves the intersection of the
+     *    parent's endpoints', so labels(a,m) == labels(m,b) == labels(a,b) and one dispatch
+     *    serves both halves. Same reasoning
      *    split_adjust_position relies on.
      *
      * Each bad face is also located: centroid, distance to the input complex, and Phi/c there,

@@ -809,7 +809,7 @@ void TriOptimizerMesh::set_input_curve_points(const MatrixXd& V, const MatrixXi&
     m_input_curve_points = std::move(points);
 }
 
-void TriOptimizerMesh::set_reference_points(const MatrixXd& P, const std::vector<InputSet>& labels)
+void TriOptimizerMesh::set_reference_points(const MatrixXd& P, const std::vector<LabelIds>& labels)
 {
     assert(labels.size() == size_t(P.rows()));
     ReferencePoints ref;
@@ -919,8 +919,8 @@ size_t TriOptimizerMesh::anchor_feature_points(
         const Vector2d* centre = nullptr;
         double best = feature_radius * feature_radius;
         for (size_t q = 0; q < m_reference_points->V.size(); ++q) {
-            if (label < 0 || label >= SurfaceTagAttributes::max_inputs ||
-                ((m_reference_points->labels[q] >> label) & 1) == 0) {
+            if (label < 0 || label > 0xFFFF ||
+                !m_reference_points->labels[q].contains(LabelId(label))) {
                 continue;
             }
             const double sq = (p - m_reference_points->V[q]).squaredNorm();
@@ -979,7 +979,7 @@ size_t TriOptimizerMesh::anchor_feature_points(
 
 void TriOptimizerMesh::label_feature_points(const std::vector<size_t>& input_point_vids)
 {
-    m_feature_point_inputs.assign(m_feature_points.size(), 0);
+    m_feature_point_inputs.assign(m_feature_points.size(), LabelIds{});
     if (m_input_point_labels.empty()) return;
     if (m_input_point_labels.size() != input_point_vids.size()) {
         log_and_throw_error(
@@ -989,9 +989,9 @@ void TriOptimizerMesh::label_feature_points(const std::vector<size_t>& input_poi
     }
     for (size_t k = 0; k < input_point_vids.size(); ++k) {
         const int label = m_input_point_labels[k];
-        if (label < 0 || label >= SurfaceTagAttributes::max_inputs) continue;
+        if (label < 0 || label > 0xFFFF) continue;
         const size_t f = m_feature_point_attribute[input_point_vids[k]].m_feature_point_id;
-        if (f < m_feature_point_inputs.size()) m_feature_point_inputs[f] |= InputSet(1) << label;
+        if (f < m_feature_point_inputs.size()) m_feature_point_inputs[f].insert(LabelId(label));
     }
 }
 
@@ -1091,23 +1091,23 @@ std::shared_ptr<Envelope> TriOptimizerMesh::smoothing_energy_envelope(const size
     if (m_input_envelopes.empty()) return m_envelope;
     // A vertex flagged on the surface with no tracked segment left (a stale flag) has no
     // inputs, and keeps the union's pull.
-    InputSet set = 0;
+    LabelIds set;
     const auto& EA = std::as_const(m_edge_attribute);
     // Named, not iterated as a temporary: edges() returns a reference into the collection, which
     // a range-for over get_surface_edges_for_vertex(vid).edges() destroys before the first
     // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
     const simplex::SimplexCollection surf = get_surface_edges_for_vertex(vid);
     for (const simplex::Edge& e : surf.edges()) {
-        set |= EA[std::get<1>(tuple_from_edge(e.vertices()))].input_set();
+        set.merge(EA[std::get<1>(tuple_from_edge(e.vertices()))].labels());
     }
-    if (set == 0) return m_envelope;
+    if (set.none()) return m_envelope;
     return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
 }
 
 void TriOptimizerMesh::init_input_envelopes(
     const std::vector<Vector2d>& V,
     const std::vector<Vector2i>& E,
-    const std::vector<InputSet>& E_sets,
+    const std::vector<LabelIds>& E_sets,
     const double eps,
     const bool exact)
 {
@@ -1117,46 +1117,46 @@ void TriOptimizerMesh::init_input_envelopes(
     }
     // Each input from one source: its rows of (V, E) when E_sets says which and it has any,
     // else the tracked segments carrying it.
-    InputSet from_rows = 0;
+    LabelIds from_rows;
     if (E_sets.size() == E.size()) {
-        for (const InputSet s : E_sets) from_rows |= s;
+        for (const LabelIds& s : E_sets) from_rows.merge(s);
     }
     // The tracked segments carrying an input no row carries. Visited in place, each edge once
     // at its own slot, as init does, rather than through a list of every edge.
     std::vector<Vector2i> E_mesh;
-    std::vector<InputSet> E_mesh_sets;
+    std::vector<LabelIds> E_mesh_sets;
     for (size_t fid = 0; fid < tri_capacity(); ++fid) {
         if (!tuple_from_tri(fid).is_valid(*this)) continue;
         for (size_t j = 0; j < 3; ++j) {
             const Tuple e = tuple_from_edge(fid, j);
             if (e.eid(*this) != 3 * fid + j) continue;
             const EdgeAttributes& attr = m_edge_attribute[3 * fid + j];
-            const InputSet set = attr.input_set() & ~from_rows;
-            if (!attr.m_is_surface_fs || set == 0) continue;
+            LabelIds set = attr.labels();
+            set.erase_if([&](const LabelId l) { return from_rows.contains(l); });
+            if (!attr.m_is_surface_fs || set.none()) continue;
             const auto vids = get_edge_vids(e);
             E_mesh.emplace_back(int(vids[0]), int(vids[1]));
             E_mesh_sets.push_back(set);
         }
     }
-    InputSet from_mesh = 0;
-    for (const InputSet s : E_mesh_sets) from_mesh |= s;
+    LabelIds from_mesh;
+    for (const LabelIds& s : E_mesh_sets) from_mesh.merge(s);
     size_t n = 0;
-    for (size_t b = 0; b < size_t(SurfaceTagAttributes::max_inputs); ++b) {
-        if ((from_rows | from_mesh) & (InputSet(1) << b)) n = b + 1;
-    }
+    if (!from_rows.none()) n = std::max(n, size_t(*(from_rows.end() - 1)) + 1);
+    if (!from_mesh.none()) n = std::max(n, size_t(*(from_mesh.end() - 1)) + 1);
 
     // One input's segments over its own vertices only: an envelope keeps a copy of the
     // vertices it is given.
-    const auto build = [&](const InputSet bit,
+    const auto build = [&](const LabelId bit,
                            const std::vector<Vector2i>& edges,
-                           const std::vector<InputSet>& sets,
+                           const std::vector<LabelIds>& sets,
                            const auto& position,
                            const size_t n_vertices) {
         std::vector<int> local(n_vertices, -1);
         std::vector<Vector2d> V_b;
         std::vector<Vector2i> E_b;
         for (size_t i = 0; i < edges.size(); ++i) {
-            if (!(sets[i] & bit)) continue;
+            if (!sets[i].contains(bit)) continue;
             Vector2i e;
             for (int j = 0; j < 2; ++j) {
                 int& l = local[edges[i][j]];
@@ -1174,11 +1174,11 @@ void TriOptimizerMesh::init_input_envelopes(
     };
     std::vector<std::shared_ptr<Envelope>> members;
     for (size_t b = 0; b < n; ++b) {
-        const InputSet bit = InputSet(1) << b;
-        if (from_rows & bit) {
+        const LabelId bit = LabelId(b);
+        if (from_rows.contains(bit)) {
             members.push_back(
                 build(bit, E, E_sets, [&](int v) -> const Vector2d& { return V[v]; }, V.size()));
-        } else if (from_mesh & bit) {
+        } else if (from_mesh.contains(bit)) {
             members.push_back(build(
                 bit,
                 E_mesh,
@@ -1223,20 +1223,19 @@ std::string TriOptimizerMesh::label_name(const size_t bit) const
 }
 
 void TriOptimizerMesh::require_reference_edge_labels(
-    const std::vector<InputSet>& reference_labels) const
+    const std::vector<LabelIds>& reference_labels) const
 {
-    InputSet held = 0, given = 0;
+    LabelIds held, given;
     for (const Tuple& e : get_edges()) {
         const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
-        if (attr.m_is_surface_fs) held |= attr.input_set();
+        if (attr.m_is_surface_fs) held.merge(attr.labels());
     }
-    for (const InputSet s : reference_labels) given |= s;
-    const InputSet missing = held & ~given;
-    if (missing == 0) return;
+    for (const LabelIds& s : reference_labels) given.merge(s);
+    LabelIds missing = held;
+    missing.erase_if([&](const LabelId l) { return given.contains(l); });
+    if (missing.none()) return;
     std::string names;
-    for (size_t b = 0; b < size_t(SurfaceTagAttributes::max_inputs); ++b) {
-        if ((missing >> b) & 1) names += (names.empty() ? "" : ", ") + label_name(b);
-    }
+    for (const LabelId b : missing) names += (names.empty() ? "" : ", ") + label_name(b);
     log_and_throw_error(
         "envelope: no segment of it is labelled {}, which this mesh's edges carry; an envelope "
         "must carry every label of the mesh it comes with",
@@ -1247,8 +1246,7 @@ void TriOptimizerMesh::check_reference_containment() const
 {
     // Per label bit, the held edges outside its envelope; an edge outside any of its labels' is
     // one edge outside. Each member asked on its own: inside their intersection is inside each.
-    constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
-    std::vector<size_t> outside(max_bits, 0);
+    std::vector<size_t> outside; // per label id, grown to the highest counted
     size_t n = 0;
     for (const Tuple& e : get_edges()) {
         const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
@@ -1257,12 +1255,12 @@ void TriOptimizerMesh::check_reference_containment() const
         const std::array<Vector2d, 2> segment = {
             {m_vertex_attribute[vids[0]].m_posf, m_vertex_attribute[vids[1]].m_posf}};
         bool out = false;
-        for (size_t b = 0; b < max_bits; ++b) {
-            if (((attr.input_set() >> b) & 1) == 0) continue;
+        for (const LabelId b : attr.labels()) {
             const Envelope* env = m_input_envelopes.empty()      ? m_envelope.get()
                                   : b < m_input_envelopes.size() ? m_input_envelopes.member(b).get()
                                                                  : nullptr;
             if (env && !env->is_outside(segment)) continue;
+            if (outside.size() <= b) outside.resize(size_t(b) + 1, 0);
             ++outside[b];
             out = true;
         }
@@ -1276,7 +1274,7 @@ void TriOptimizerMesh::check_reference_containment() const
         return;
     }
     std::string counts;
-    for (size_t b = 0; b < max_bits; ++b) {
+    for (size_t b = 0; b < outside.size(); ++b) {
         if (outside[b] == 0) continue;
         counts += fmt::format("{}{} ({})", counts.empty() ? "" : ", ", label_name(b), outside[b]);
     }

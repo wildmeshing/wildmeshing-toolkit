@@ -54,12 +54,12 @@ public:
     std::vector<Vector2i> m_E_envelope;
     /// Per row of m_E_envelope: its label bits, when m_E_envelope is the input curves
     /// (InputData::F_envelope_labels); empty once m_E_envelope is rebuilt from the mesh.
-    std::vector<InputSet> m_E_envelope_labels;
+    std::vector<LabelIds> m_E_envelope_labels;
     /// Per row of m_E_envelope, when it was built from the mesh's own surface edges
     /// (init_surfaces_and_boundaries()): that edge's input set; empty otherwise. What
     /// envelope_data() labels the rows by where m_E_envelope_labels is empty. The 2D twin of
     /// SimWildMesh::m_F_envelope_face_sets.
-    std::vector<InputSet> m_E_envelope_edge_sets;
+    std::vector<LabelIds> m_E_envelope_edge_sets;
     // A reference an `envelope` input gave, held to as given, is the base's
     // (TriOptimizerMesh::m_has_reference): set by the driver before init, with m_V_envelope,
     // m_E_envelope and m_E_envelope_labels its segments of this mesh's labels, and
@@ -82,12 +82,18 @@ public:
     /// Names of the edge tags: bit i of an edge's input set is m_edge_tag_names[i].
     std::vector<std::string> m_edge_tag_names;
 
-    /// The edge-tag bits of an input set: those below the number of edge tags.
-    InputSet edge_tag_mask() const
+    /// The edge tags among `set`: the labels below the number of edge tags (the region labels
+    /// come after them).
+    LabelIds edge_tags_of(LabelIds set) const
     {
         const size_t n = m_edge_tag_names.size();
-        return n >= size_t(SurfaceTagAttributes::max_inputs) ? ~InputSet(0)
-                                                             : (InputSet(1) << n) - 1;
+        set.erase_if([&](const LabelId l) { return size_t(l) >= n; });
+        return set;
+    }
+    /// Whether `set` holds an edge tag.
+    bool has_edge_tag(const LabelIds& set) const
+    {
+        return !set.none() && size_t(set.lowest()) < m_edge_tag_names.size();
     }
 
     /**
