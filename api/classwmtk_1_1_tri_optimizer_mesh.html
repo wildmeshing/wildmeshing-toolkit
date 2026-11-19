@@ -162,9 +162,9 @@ Public Member Functions</h2></td></tr>
 std::vector&lt; std::pair&lt; size_t, int &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tracked_curve_boundary</b> () const</td></tr>
 <tr class="memdesc:a4ff0715ca94ae4fa13a612421d9b2853"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vertices where the oriented tracked curves have a boundary (in minus out != 0), each with that sum. Empty for closed input curves; the operations preserve it. <br /></td></tr>
 <tr class="separator:a4ff0715ca94ae4fa13a612421d9b2853"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6ac8da9c40fe2bd3d3ef6ee91670dfb" id="r_af6ac8da9c40fe2bd3d3ef6ee91670dfb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af6ac8da9c40fe2bd3d3ef6ee91670dfb">init_input_envelopes</a> (const std::vector&lt; Vector2d &gt; &amp;V, const std::vector&lt; Vector2i &gt; &amp;E, const std::vector&lt; InputSet &gt; &amp;E_sets, double eps, bool exact)</td></tr>
-<tr class="memdesc:af6ac8da9c40fe2bd3d3ef6ee91670dfb"><td class="mdescLeft">&#160;</td><td class="mdescRight">(Re)build m_input_envelopes, at <code>eps</code> and with predicate <code>exact</code>: member i around the rows of the curves (V, E) whose E_sets entry has bit i, else &ndash; for an input no row carries, or for every input when E_sets is not one entry per row of E &ndash; around the tracked segments carrying bit i. Null for an input neither has.  <br /></td></tr>
-<tr class="separator:af6ac8da9c40fe2bd3d3ef6ee91670dfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f448c8d3daf948a8884014faff74fe9" id="r_a1f448c8d3daf948a8884014faff74fe9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a1f448c8d3daf948a8884014faff74fe9">init_input_envelopes</a> (const std::vector&lt; Vector2d &gt; &amp;V, const std::vector&lt; Vector2i &gt; &amp;E, const std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt; &amp;E_sets, double eps, bool exact)</td></tr>
+<tr class="memdesc:a1f448c8d3daf948a8884014faff74fe9"><td class="mdescLeft">&#160;</td><td class="mdescRight">(Re)build m_input_envelopes, at <code>eps</code> and with predicate <code>exact</code>: member i around the rows of the curves (V, E) whose E_sets entry has bit i, else &ndash; for an input no row carries, or for every input when E_sets is not one entry per row of E &ndash; around the tracked segments carrying bit i. Null for an input neither has.  <br /></td></tr>
+<tr class="separator:a1f448c8d3daf948a8884014faff74fe9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0d0fc9ce3697c0a1b8407c7a4e45693" id="r_ab0d0fc9ce3697c0a1b8407c7a4e45693"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ab0d0fc9ce3697c0a1b8407c7a4e45693">require_box_boundary</a> (const std::string &amp;who) const</td></tr>
 <tr class="memdesc:ab0d0fc9ce3697c0a1b8407c7a4e45693"><td class="mdescLeft">&#160;</td><td class="mdescRight">Throws unless the mesh fills its box: every boundary edge (no triangle across) an edge of the box (m_is_bbox_fs &gt;= 0) and untracked, naming the count of each kind found otherwise. <code>who</code> names the run in the message. Call after init, with the tracked edges and the box flags set.  <br /></td></tr>
 <tr class="separator:ab0d0fc9ce3697c0a1b8407c7a4e45693"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -734,7 +734,7 @@ std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> = -1</td></tr>
 <tr class="separator:afb7836d522c81f89a4c895aad2fb721e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8452e265098625fa90a5da375843cedd" id="r_a8452e265098625fa90a5da375843cedd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_input_envelopes.html">wmtk::InputEnvelopes</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8452e265098625fa90a5da375843cedd">m_input_envelopes</a></td></tr>
-<tr class="memdesc:a8452e265098625fa90a5da375843cedd"><td class="mdescLeft">&#160;</td><td class="mdescRight">One envelope per input, and each tracked segment held to those of its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">EdgeAttributes::input_set()</a>); m_envelope stays their union. The 2D twin of the per-input envelopes of tetwild and simwild 3D.  <br /></td></tr>
+<tr class="memdesc:a8452e265098625fa90a5da375843cedd"><td class="mdescLeft">&#160;</td><td class="mdescRight">One envelope per input, and each tracked segment held to those of its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a2b27f8374803d31d0edea87d69b1ee90" title="The LABELS: which inputs this simplex covers, by id (LabelIds). Until 2026-11 a 64-bit mask (InputSet...">EdgeAttributes::labels()</a>); m_envelope stays their union. The 2D twin of the per-input envelopes of tetwild and simwild 3D.  <br /></td></tr>
 <tr class="separator:a8452e265098625fa90a5da375843cedd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa60213b39e8f40b355b17bd5a059cc01" id="r_aa60213b39e8f40b355b17bd5a059cc01"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#aa60213b39e8f40b355b17bd5a059cc01">m_s_amips</a> = -1</td></tr>
 <tr class="separator:aa60213b39e8f40b355b17bd5a059cc01"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -964,9 +964,9 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>FeaturePointAttCol</
 <tr class="memitem:ab2f31bf010d1877037aa6884982967ac" id="r_ab2f31bf010d1877037aa6884982967ac"><td class="memItemLeft" align="right" valign="top"><a id="ab2f31bf010d1877037aa6884982967ac" name="ab2f31bf010d1877037aa6884982967ac"></a>
 std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_input_point_labels</b></td></tr>
 <tr class="separator:ab2f31bf010d1877037aa6884982967ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a687da027cc917de48c93be00197266ac" id="r_a687da027cc917de48c93be00197266ac"><td class="memItemLeft" align="right" valign="top"><a id="a687da027cc917de48c93be00197266ac" name="a687da027cc917de48c93be00197266ac"></a>
-std::vector&lt; InputSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_feature_point_inputs</b></td></tr>
-<tr class="separator:a687da027cc917de48c93be00197266ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae06c3e030c1f2d4194dffc8147e20603" id="r_ae06c3e030c1f2d4194dffc8147e20603"><td class="memItemLeft" align="right" valign="top"><a id="ae06c3e030c1f2d4194dffc8147e20603" name="ae06c3e030c1f2d4194dffc8147e20603"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_feature_point_inputs</b></td></tr>
+<tr class="separator:ae06c3e030c1f2d4194dffc8147e20603"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ce2585f6652ea33412e5bec957e183a" id="r_a8ce2585f6652ea33412e5bec957e183a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8ce2585f6652ea33412e5bec957e183a">m_track_feature_points</a> = false</td></tr>
 <tr class="separator:a8ce2585f6652ea33412e5bec957e183a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace3fb1d2e341955935d4042b0ab24516" id="r_ace3fb1d2e341955935d4042b0ab24516"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ace3fb1d2e341955935d4042b0ab24516">m_feature_rejects</a> = 0</td></tr>
@@ -1027,14 +1027,14 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_has_reference</b> =
 <tr class="memitem:a019f13ef259315b2fa4fe45cab24e3cb" id="r_a019f13ef259315b2fa4fe45cab24e3cb"><td class="memItemLeft" align="right" valign="top"><a id="a019f13ef259315b2fa4fe45cab24e3cb" name="a019f13ef259315b2fa4fe45cab24e3cb"></a>
 std::optional&lt; <a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_reference_points.html">ReferencePoints</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_reference_points</b></td></tr>
 <tr class="separator:a019f13ef259315b2fa4fe45cab24e3cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1bec72781413ce2df84f39d07a7deed6" id="r_a1bec72781413ce2df84f39d07a7deed6"><td class="memItemLeft" align="right" valign="top"><a id="a1bec72781413ce2df84f39d07a7deed6" name="a1bec72781413ce2df84f39d07a7deed6"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_reference_points</b> (const MatrixXd &amp;P, const std::vector&lt; InputSet &gt; &amp;labels)</td></tr>
-<tr class="memdesc:a1bec72781413ce2df84f39d07a7deed6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set m_reference_points from the reference's points <code>P</code> (rows, x y) and their labels. <br /></td></tr>
-<tr class="separator:a1bec72781413ce2df84f39d07a7deed6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ed5fd5bea29645f69c835bafa8a8a5a" id="r_a8ed5fd5bea29645f69c835bafa8a8a5a"><td class="memItemLeft" align="right" valign="top"><a id="a8ed5fd5bea29645f69c835bafa8a8a5a" name="a8ed5fd5bea29645f69c835bafa8a8a5a"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_reference_points</b> (const MatrixXd &amp;P, const std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt; &amp;labels)</td></tr>
+<tr class="memdesc:a8ed5fd5bea29645f69c835bafa8a8a5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set m_reference_points from the reference's points <code>P</code> (rows, x y) and their labels. <br /></td></tr>
+<tr class="separator:a8ed5fd5bea29645f69c835bafa8a8a5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7731bcada52524979cdcc528bdfb79db" id="r_a7731bcada52524979cdcc528bdfb79db"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7731bcada52524979cdcc528bdfb79db">label_name</a> (size_t bit) const</td></tr>
 <tr class="separator:a7731bcada52524979cdcc528bdfb79db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3020569cd787c0dc589299767afe3bf6" id="r_a3020569cd787c0dc589299767afe3bf6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a3020569cd787c0dc589299767afe3bf6">require_reference_edge_labels</a> (const std::vector&lt; InputSet &gt; &amp;reference_labels) const</td></tr>
-<tr class="separator:a3020569cd787c0dc589299767afe3bf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d0a19de6ed56235746b543029ec68c8" id="r_a0d0a19de6ed56235746b543029ec68c8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a0d0a19de6ed56235746b543029ec68c8">require_reference_edge_labels</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt; &amp;reference_labels) const</td></tr>
+<tr class="separator:a0d0a19de6ed56235746b543029ec68c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a8a51a0ab5ece5229ea9e589438f615" id="r_a7a8a51a0ab5ece5229ea9e589438f615"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7a8a51a0ab5ece5229ea9e589438f615">check_reference_containment</a> () const</td></tr>
 <tr class="separator:a7a8a51a0ab5ece5229ea9e589438f615"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -1663,8 +1663,8 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
-<a id="af6ac8da9c40fe2bd3d3ef6ee91670dfb" name="af6ac8da9c40fe2bd3d3ef6ee91670dfb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af6ac8da9c40fe2bd3d3ef6ee91670dfb">&#9670;&#160;</a></span>init_input_envelopes()</h2>
+<a id="a1f448c8d3daf948a8884014faff74fe9" name="a1f448c8d3daf948a8884014faff74fe9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f448c8d3daf948a8884014faff74fe9">&#9670;&#160;</a></span>init_input_envelopes()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1684,7 +1684,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::vector&lt; InputSet &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>E_sets</em>, </td>
         </tr>
         <tr>
@@ -2122,8 +2122,8 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 
 </div>
 </div>
-<a id="a3020569cd787c0dc589299767afe3bf6" name="a3020569cd787c0dc589299767afe3bf6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3020569cd787c0dc589299767afe3bf6">&#9670;&#160;</a></span>require_reference_edge_labels()</h2>
+<a id="a0d0a19de6ed56235746b543029ec68c8" name="a0d0a19de6ed56235746b543029ec68c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d0a19de6ed56235746b543029ec68c8">&#9670;&#160;</a></span>require_reference_edge_labels()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2131,7 +2131,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
         <tr>
           <td class="memname">void wmtk::TriOptimizerMesh::require_reference_edge_labels </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; InputSet &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>reference_labels</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -2379,7 +2379,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 <p>The envelope this vertex is PULLED TOWARD while smoothing, and the one it is CONTAINED BY afterwards. Split, as in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">wmtk::TetOptimizerMesh</a>. </p>
 <p>Null means "no envelope for this vertex", which the smoother handles by minimising AMIPS (plus whatever <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad53db51377c95f0dfc59f946915e2572" title="An extra term the application adds to this vertex&#39;s smoothing objective, or null.">smoothing_extra_energy()</a> adds) with no pull and no containment check.</p>
 <p>The default of both is what TriWild and SimWild do &ndash; one envelope, applied to every vertex on the tracked surface, or with m_input_envelopes built, the envelopes of each segment's input set (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ac232b143240a6d4b4d788c9fb4faf560" title="Envelope the tracked-surface segment vids must stay inside, given the attributes attr it carries – or...">surface_envelope_for_edge()</a>) and the pull below. An application tracking more than one surface overrides them: topological_offset returns null for a vertex that is ONLY on the offset boundary, because that is the surface the optimization exists to move, and a tube around its initial position caps how far it can ever travel.</p>
-<p>WHY TWO HOOKS AND NOT ONE. The pull calls the NON-virtual <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> queries &ndash; nearest_point and the ExactDistanceEnergy2D trio &ndash; so whatever it returns must be a real envelope with a built BVH. Containment asks only is_outside(), which is virtual, so it may be answered by a composite over several envelopes (topological_offset holds a junction simplex in the INTERSECTION of its tags' tubes). Answering both from one hook would statically bind a composite's null BVH the moment a junction vertex was pulled. With m_input_envelopes built, the pull is toward the inputs of the vertex's own segments, one real envelope at a time: the member of their union of input sets the vertex is farthest from (<a class="el" href="classwmtk_1_1_input_envelopes.html#a2ed7927e1f2ee208358b8a792693424e" title="The member of set farthest from p (Vector2d or Vector3d). Ties go to the lower input.">InputEnvelopes::pull()</a>). The containment check then holds every segment to its own set. A vertex whose segments carry no input keeps m_envelope's pull. </p>
+<p>WHY TWO HOOKS AND NOT ONE. The pull calls the NON-virtual <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> queries &ndash; nearest_point and the ExactDistanceEnergy2D trio &ndash; so whatever it returns must be a real envelope with a built BVH. Containment asks only is_outside(), which is virtual, so it may be answered by a composite over several envelopes (topological_offset holds a junction simplex in the INTERSECTION of its tags' tubes). Answering both from one hook would statically bind a composite's null BVH the moment a junction vertex was pulled. With m_input_envelopes built, the pull is toward the inputs of the vertex's own segments, one real envelope at a time: the member of their union of input sets the vertex is farthest from (<a class="el" href="classwmtk_1_1_input_envelopes.html#aa9fd7d21ef3dd4a2c5d198eb247adffe" title="The member of set farthest from p (Vector2d or Vector3d). Ties go to the lower input.">InputEnvelopes::pull()</a>). The containment check then holds every segment to its own set. A vertex whose segments carry no input keeps m_envelope's pull. </p>
 
 <p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af7d24138d8269113c17e05dfd65e817f">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
@@ -2723,7 +2723,7 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
 </div><div class="memdoc">
 
 <p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface segment <code>vids</code> must stay inside, given the attributes <code>attr</code> it carries &ndash; or, for a segment an operation is creating, the ones the operation is about to write there. </p>
-<p>The 2D counterpart of <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3739c2160bf9fab80cbeebf2506f6cb6" title="Envelope the tracked-surface triangle vids must stay inside, given the attributes attr it carries – o...">wmtk::TetOptimizerMesh::surface_envelope_for_face</a>. Null means this segment carries no containment requirement, and every containment check on it is skipped. The default answers with the one envelope, or with m_input_envelopes built, a tracked segment with the envelopes of its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">SurfaceTagAttributes::input_set()</a>); an application tracking more than one surface (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573" title="Which tracked surface this simplex belongs to, for applications that track more than one....">SurfaceTagAttributes::m_surface_class</a>) answers per class.</p>
+<p>The 2D counterpart of <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3739c2160bf9fab80cbeebf2506f6cb6" title="Envelope the tracked-surface triangle vids must stay inside, given the attributes attr it carries – o...">wmtk::TetOptimizerMesh::surface_envelope_for_face</a>. Null means this segment carries no containment requirement, and every containment check on it is skipped. The default answers with the one envelope, or with m_input_envelopes built, a tracked segment with the envelopes of its labels (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a2b27f8374803d31d0edea87d69b1ee90" title="The LABELS: which inputs this simplex covers, by id (LabelIds). Until 2026-11 a 64-bit mask (InputSet...">SurfaceTagAttributes::labels()</a>); an application tracking more than one surface (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#adafbc2ff3b07876e7922846baa80c573" title="Which tracked surface this simplex belongs to, for applications that track more than one....">SurfaceTagAttributes::m_surface_class</a>) answers per class.</p>
 <p>A segment that is not tracked covers no input &ndash; the collapse's test of the collapsing edge asks about one (<a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#aeb199d4e0cf5bd0bedc5cb4e78d8ef55" title="User specified preparations and desideratas for an edge collapse including the link check as collapse...">TriOptimizerMesh::collapse_edge_before()</a>) &ndash; and is held to the union, m_envelope. A tracked segment with an empty input set throws (<a class="el" href="classwmtk_1_1_input_envelopes.html" title="One envelope per input, and the containment and the pull of an INPUT SET (bit i = input i; see Surfac...">InputEnvelopes</a>): it is an insertion or propagation defect.</p>
 <p>Keyed on the vertex ids rather than the eid because every caller is a topological operation asking about segments it is ABOUT to create or has just created; the attributes come from the caller for the same reason (see the 3D twin). </p>
 
@@ -3236,8 +3236,8 @@ static <a class="el" href="structwmtk_1_1_tri_mesh_1_1_slot_usage.html">SlotUsag
       </table>
 </div><div class="memdoc">
 
-<p>One envelope per input, and each tracked segment held to those of its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">EdgeAttributes::input_set()</a>); m_envelope stays their union. The 2D twin of the per-input envelopes of tetwild and simwild 3D. </p>
-<p>What an input is, is the application's: triwild's are its input curve files, simwild's its labels (an input kept as a curve, and the region of each triangle tag). Built by <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af6ac8da9c40fe2bd3d3ef6ee91670dfb" title="(Re)build m_input_envelopes, at eps and with predicate exact: member i around the rows of the curves ...">init_input_envelopes()</a>. Empty by default, and then every segment is held to m_envelope, as it was before triwild moved these here. </p>
+<p>One envelope per input, and each tracked segment held to those of its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a2b27f8374803d31d0edea87d69b1ee90" title="The LABELS: which inputs this simplex covers, by id (LabelIds). Until 2026-11 a 64-bit mask (InputSet...">EdgeAttributes::labels()</a>); m_envelope stays their union. The 2D twin of the per-input envelopes of tetwild and simwild 3D. </p>
+<p>What an input is, is the application's: triwild's are its input curve files, simwild's its labels (an input kept as a curve, and the region of each triangle tag). Built by <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a1f448c8d3daf948a8884014faff74fe9" title="(Re)build m_input_envelopes, at eps and with predicate exact: member i around the rows of the curves ...">init_input_envelopes()</a>. Empty by default, and then every segment is held to m_envelope, as it was before triwild moved these here. </p>
 
 </div>
 </div>

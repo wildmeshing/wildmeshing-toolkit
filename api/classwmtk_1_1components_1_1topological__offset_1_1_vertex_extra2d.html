@@ -91,8 +91,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a8dfa0f63b7fafc6ec9ea68f460b9d83a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a710b43806e14b0bf10ed0b6a5db69682" id="r_a710b43806e14b0bf10ed0b6a5db69682"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a710b43806e14b0bf10ed0b6a5db69682">offset</a> = -1</td></tr>
 <tr class="separator:a710b43806e14b0bf10ed0b6a5db69682"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a64562b467031b605895ae354edcd3cb5" id="r_a64562b467031b605895ae354edcd3cb5"><td class="memItemLeft" align="right" valign="top">InputSet&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a64562b467031b605895ae354edcd3cb5">point_inputs</a> = 0</td></tr>
-<tr class="separator:a64562b467031b605895ae354edcd3cb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab918153e2174de32f4be36e9703c8ce0" id="r_ab918153e2174de32f4be36e9703c8ce0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#ab918153e2174de32f4be36e9703c8ce0">point_inputs</a></td></tr>
+<tr class="separator:ab918153e2174de32f4be36e9703c8ce0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c240333447786a16d788405f93ddf03" id="r_a7c240333447786a16d788405f93ddf03"><td class="memItemLeft" align="right" valign="top"><a id="a7c240333447786a16d788405f93ddf03" name="a7c240333447786a16d788405f93ddf03"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_input</b> = false</td></tr>
 <tr class="separator:a7c240333447786a16d788405f93ddf03"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -102,9 +102,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_offset</b> = 
 <tr class="memitem:a1cfaa5eaab1fca8ad236d20bb69a61c0" id="r_a1cfaa5eaab1fca8ad236d20bb69a61c0"><td class="memItemLeft" align="right" valign="top"><a id="a1cfaa5eaab1fca8ad236d20bb69a61c0" name="a1cfaa5eaab1fca8ad236d20bb69a61c0"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = false</td></tr>
 <tr class="separator:a1cfaa5eaab1fca8ad236d20bb69a61c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7782cf5be960945eb7046ef6cdc571e0" id="r_a7782cf5be960945eb7046ef6cdc571e0"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a7782cf5be960945eb7046ef6cdc571e0">m_boundary_mask</a> = 0</td></tr>
-<tr class="memdesc:a7782cf5be960945eb7046ef6cdc571e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which tag boundaries this vertex lies on &ndash; one bit per input tag, ambient included. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac0645d9701278346c59ff42a5efa1330" title="One containment envelope per input tag, ambient included. Both phases.">TopoOffsetTriMesh::m_tag_envelopes</a> for what the bits dispatch to.  <br /></td></tr>
-<tr class="separator:a7782cf5be960945eb7046ef6cdc571e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f0f4fbdc64c571fbc362d10a6eec61a" id="r_a1f0f4fbdc64c571fbc362d10a6eec61a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a1f0f4fbdc64c571fbc362d10a6eec61a">m_boundary_labels</a></td></tr>
+<tr class="memdesc:a1f0f4fbdc64c571fbc362d10a6eec61a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which tag boundaries this vertex lies on &ndash; one label per input tag, ambient included (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a74d6301ab7e5e7d7bf6e7d0079f9bcac">TopoOffsetTriMesh::m_tag_label</a>). See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac0645d9701278346c59ff42a5efa1330" title="One containment envelope per input tag, ambient included. Both phases.">TopoOffsetTriMesh::m_tag_envelopes</a> for what the labels dispatch to.  <br /></td></tr>
+<tr class="separator:a1f0f4fbdc64c571fbc362d10a6eec61a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69261ae99a382b04d9f8f76934cf9276" id="r_a69261ae99a382b04d9f8f76934cf9276"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a69261ae99a382b04d9f8f76934cf9276">m_corr_input_vid</a> = -1</td></tr>
 <tr class="separator:a69261ae99a382b04d9f8f76934cf9276"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a764f7be80c160a2e04bd511e835a165e" id="r_a764f7be80c160a2e04bd511e835a165e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html#a764f7be80c160a2e04bd511e835a165e">m_corr_carried</a> = false</td></tr>
@@ -146,20 +146,20 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = 
 
 </div>
 </div>
-<a id="a7782cf5be960945eb7046ef6cdc571e0" name="a7782cf5be960945eb7046ef6cdc571e0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7782cf5be960945eb7046ef6cdc571e0">&#9670;&#160;</a></span>m_boundary_mask</h2>
+<a id="a1f0f4fbdc64c571fbc362d10a6eec61a" name="a1f0f4fbdc64c571fbc362d10a6eec61a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f0f4fbdc64c571fbc362d10a6eec61a">&#9670;&#160;</a></span>m_boundary_labels</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint64_t wmtk::components::topological_offset::VertexExtra2d::m_boundary_mask = 0</td>
+          <td class="memname"><a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> wmtk::components::topological_offset::VertexExtra2d::m_boundary_labels</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Which tag boundaries this vertex lies on &ndash; one bit per input tag, ambient included. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac0645d9701278346c59ff42a5efa1330" title="One containment envelope per input tag, ambient included. Both phases.">TopoOffsetTriMesh::m_tag_envelopes</a> for what the bits dispatch to. </p>
-<p>Seeded in init_surfaces_and_boundaries() from the input partition, then propagated by the operations: a split's new vertex takes the AND of its endpoints (it lies on a boundary only if the whole edge did), a collapse's survivor the OR (it carries both vertices' geometry). </p>
+<p>Which tag boundaries this vertex lies on &ndash; one label per input tag, ambient included (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a74d6301ab7e5e7d7bf6e7d0079f9bcac">TopoOffsetTriMesh::m_tag_label</a>). See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac0645d9701278346c59ff42a5efa1330" title="One containment envelope per input tag, ambient included. Both phases.">TopoOffsetTriMesh::m_tag_envelopes</a> for what the labels dispatch to. </p>
+<p>Seeded in init_surfaces_and_boundaries() from the input partition, then propagated by the operations: a split's new vertex takes the intersection of its endpoints' (it lies on a boundary only if the whole edge did), a collapse's survivor the union (it carries both vertices' geometry). Until 2026-11 a 64-bit mask, one bit per tag, which refused more than 62 input tags. </p>
 
 </div>
 </div>
@@ -208,18 +208,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_region</b> = 
 
 </div>
 </div>
-<a id="a64562b467031b605895ae354edcd3cb5" name="a64562b467031b605895ae354edcd3cb5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a64562b467031b605895ae354edcd3cb5">&#9670;&#160;</a></span>point_inputs</h2>
+<a id="ab918153e2174de32f4be36e9703c8ce0" name="ab918153e2174de32f4be36e9703c8ce0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab918153e2174de32f4be36e9703c8ce0">&#9670;&#160;</a></span>point_inputs</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">InputSet wmtk::components::topological_offset::VertexExtra2d::point_inputs = 0</td>
+          <td class="memname"><a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> wmtk::components::topological_offset::VertexExtra2d::point_inputs</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The labels of the input points on this vertex, bit j for the base's m_point_names[j]: set at load (init_from_image()) and carried by the construction, which only splits, a new vertex starting from none (marching_split_edge_before(), split_face_before()), until hold_curves_and_points() anchors the points and clears it: from there on the anchors carry them, through the operations, which do not carry this. As <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#aaf891296fe91c0df8346a71ab961f686">VertexExtra::point_inputs</a> in 3D. A mesh not held (an empty input complex) writes its point block from this (collect_loaded_curves_and_points()). </p>
+<p>The labels of the input points on this vertex, bit j for the base's m_point_names[j]: set at load (init_from_image()) and carried by the construction, which only splits, a new vertex starting from none (marching_split_edge_before(), split_face_before()), until hold_curves_and_points() anchors the points and clears it: from there on the anchors carry them, through the operations, which do not carry this. As <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#a0401b2210a438869ee8c71bd35f30809">VertexExtra::point_inputs</a> in 3D. A mesh not held (an empty input complex) writes its point block from this (collect_loaded_curves_and_points()). </p>
 
 </div>
 </div>

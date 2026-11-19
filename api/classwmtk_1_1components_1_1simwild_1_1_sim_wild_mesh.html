@@ -197,10 +197,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a19187c82a62adb534757f6edf46ac597" id="r_a19187c82a62adb534757f6edf46ac597"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a19187c82a62adb534757f6edf46ac597">init_label_envelopes</a> (double eps, bool exact)</td></tr>
 <tr class="memdesc:a19187c82a62adb534757f6edf46ac597"><td class="mdescLeft">&#160;</td><td class="mdescRight">(Re)build the base's m_input_envelopes: one envelope per label, and each surface face held by those of the labels it lies on: bit i &lt; F of a face's input set is face tag i (m_face_tag_names, F of them), bit F + j the boundary of tet tag j's region. A border between tet tag sets S and S' carries the bits of the tags in one and not the other; ambient is the empty set, so a border of region X with ambient is held by X's envelope, one between X and Y by both. As tetwild holds a tracked face to its inputs' envelopes, and topological_offset's 2D mesh a region boundary to its tags'.  <br /></td></tr>
 <tr class="separator:a19187c82a62adb534757f6edf46ac597"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b73e3ee2d4bafe6c620ecc0db34d4ba" id="r_a4b73e3ee2d4bafe6c620ecc0db34d4ba"><td class="memItemLeft" align="right" valign="top"><a id="a4b73e3ee2d4bafe6c620ecc0db34d4ba" name="a4b73e3ee2d4bafe6c620ecc0db34d4ba"></a>
-InputSet&#160;</td><td class="memItemRight" valign="bottom"><b>face_tag_mask</b> () const</td></tr>
-<tr class="memdesc:a4b73e3ee2d4bafe6c620ecc0db34d4ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">The face-tag bits of an input set: those below the number of face tags. <br /></td></tr>
-<tr class="separator:a4b73e3ee2d4bafe6c620ecc0db34d4ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9257c59d55974beb00f0ce9d6a49d21b" id="r_a9257c59d55974beb00f0ce9d6a49d21b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a9257c59d55974beb00f0ce9d6a49d21b">face_tags_of</a> (<a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> set) const</td></tr>
+<tr class="separator:a9257c59d55974beb00f0ce9d6a49d21b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa641cced92ab653b51e579b47c7013f7" id="r_aa641cced92ab653b51e579b47c7013f7"><td class="memItemLeft" align="right" valign="top"><a id="aa641cced92ab653b51e579b47c7013f7" name="aa641cced92ab653b51e579b47c7013f7"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>has_face_tag</b> (const <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &amp;set) const</td></tr>
+<tr class="memdesc:aa641cced92ab653b51e579b47c7013f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether <code>set</code> holds a face tag. <br /></td></tr>
+<tr class="separator:aa641cced92ab653b51e579b47c7013f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5372e95775f315beaf6f81446e4789d3" id="r_a5372e95775f315beaf6f81446e4789d3"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a5372e95775f315beaf6f81446e4789d3">label_name</a> (size_t bit) const override</td></tr>
 <tr class="separator:a5372e95775f315beaf6f81446e4789d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2de472dead863d44edddf13c65e2dc40" id="r_a2de472dead863d44edddf13c65e2dc40"><td class="memItemLeft" align="right" valign="top"><a id="a2de472dead863d44edddf13c65e2dc40" name="a2de472dead863d44edddf13c65e2dc40"></a>
@@ -391,10 +393,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>vertex_has_edge_of_ki
 <tr class="memitem:a4978151a697924b40cc51fcdffbd70e3 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a4978151a697924b40cc51fcdffbd70e3"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a4978151a697924b40cc51fcdffbd70e3">holds_order2_edge</a> (const size_t n_faces) const</td></tr>
 <tr class="memdesc:a4978151a697924b40cc51fcdffbd70e3 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Does the application hold an order-2 edge with <code>n_faces</code> tracked faces?  <br /></td></tr>
 <tr class="separator:a4978151a697924b40cc51fcdffbd70e3 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afa1e3f2c721362a4c4b36ac037393c86 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_afa1e3f2c721362a4c4b36ac037393c86"><td class="memItemLeft" align="right" valign="top">
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_input_curves</b> (const std::vector&lt; Eigen::Vector3d &gt; &amp;V, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;F, const std::vector&lt; InputSet &gt; &amp;F_inputs, const <a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a> *features)</td></tr>
-<tr class="memdesc:afa1e3f2c721362a4c4b36ac037393c86 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set m_input_curves from the input surface <code>V</code>, <code>F</code>, each face with its input set (<code>F_inputs</code>), and the feature curves (<code>features</code>, may be null): per input, the edges <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a4978151a697924b40cc51fcdffbd70e3" title="Does the application hold an order-2 edge with n_faces tracked faces?">holds_order2_edge()</a> holds by their count of that input's faces. <br /></td></tr>
-<tr class="separator:afa1e3f2c721362a4c4b36ac037393c86 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a973e5b0ca0f5d6ca6159d3591013ca9e inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a973e5b0ca0f5d6ca6159d3591013ca9e"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_input_curves</b> (const std::vector&lt; Eigen::Vector3d &gt; &amp;V, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;F, const std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt; &amp;F_inputs, const <a class="el" href="structwmtk_1_1utils_1_1_feature_inputs.html">utils::FeatureInputs</a> *features)</td></tr>
+<tr class="memdesc:a973e5b0ca0f5d6ca6159d3591013ca9e inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set m_input_curves from the input surface <code>V</code>, <code>F</code>, each face with its input set (<code>F_inputs</code>), and the feature curves (<code>features</code>, may be null): per input, the edges <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a4978151a697924b40cc51fcdffbd70e3" title="Does the application hold an order-2 edge with n_faces tracked faces?">holds_order2_edge()</a> holds by their count of that input's faces. <br /></td></tr>
+<tr class="separator:a973e5b0ca0f5d6ca6159d3591013ca9e inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc3a96eaf504aac6d1cb69295a54772c inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_adc3a96eaf504aac6d1cb69295a54772c"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#adc3a96eaf504aac6d1cb69295a54772c">tag_order2_edges</a> (double eps, bool exact)</td></tr>
 <tr class="memdesc:adc3a96eaf504aac6d1cb69295a54772c inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tag the input's order-2 edges the application holds (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a4978151a697924b40cc51fcdffbd70e3" title="Does the application hold an order-2 edge with n_faces tracked faces?">holds_order2_edge()</a>) with the order2 kind and build their tube, m_order2_edge_envelope, of half-width <code>eps</code>. Returns the number of edges tagged.  <br /></td></tr>
 <tr class="separator:adc3a96eaf504aac6d1cb69295a54772c inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -418,9 +420,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_input_curves</b> 
 <tr class="separator:ac816bce43a91c03c6ae3581f235ec8ef inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62f971977c80736d7a66d5beb3efe83e inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a62f971977c80736d7a66d5beb3efe83e"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a62f971977c80736d7a66d5beb3efe83e">smoothing_position_is_allowed</a> (const size_t vid, const Vector3d &amp;p) const</td></tr>
 <tr class="separator:a62f971977c80736d7a66d5beb3efe83e inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab128d68ee048ae077f7bf9d3951ea77c inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_ab128d68ee048ae077f7bf9d3951ea77c"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ab128d68ee048ae077f7bf9d3951ea77c">init_input_envelopes</a> (const std::vector&lt; Eigen::Vector3d &gt; &amp;V, const std::vector&lt; Eigen::Vector3i &gt; &amp;F, const std::vector&lt; InputSet &gt; &amp;F_sets, double eps, bool exact)</td></tr>
-<tr class="memdesc:ab128d68ee048ae077f7bf9d3951ea77c inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">(Re)build m_input_envelopes, at <code>eps</code> and with predicate <code>exact</code>: member b around the triangles (V, F) whose F_sets entry has bit b, else &ndash; for an input no row carries, or for every input when F_sets is not one entry per row of F &ndash; around the mesh's faces carrying bit b. Null for an input neither has. Shared, empty, without per_input_envelopes. Returns the number of members.  <br /></td></tr>
-<tr class="separator:ab128d68ee048ae077f7bf9d3951ea77c inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a7ec6afc39bb1e89a3b545cbcc9c0cc inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a5a7ec6afc39bb1e89a3b545cbcc9c0cc"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5a7ec6afc39bb1e89a3b545cbcc9c0cc">init_input_envelopes</a> (const std::vector&lt; Eigen::Vector3d &gt; &amp;V, const std::vector&lt; Eigen::Vector3i &gt; &amp;F, const std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt; &amp;F_sets, double eps, bool exact)</td></tr>
+<tr class="memdesc:a5a7ec6afc39bb1e89a3b545cbcc9c0cc inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">(Re)build m_input_envelopes, at <code>eps</code> and with predicate <code>exact</code>: member b around the triangles (V, F) whose F_sets entry has bit b, else &ndash; for an input no row carries, or for every input when F_sets is not one entry per row of F &ndash; around the mesh's faces carrying bit b. Null for an input neither has. Shared, empty, without per_input_envelopes. Returns the number of members.  <br /></td></tr>
+<tr class="separator:a5a7ec6afc39bb1e89a3b545cbcc9c0cc inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad92aaf1035e1879d5e069463c399f84 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_aad92aaf1035e1879d5e069463c399f84"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aad92aaf1035e1879d5e069463c399f84">require_box_boundary</a> (const std::string &amp;who) const</td></tr>
 <tr class="memdesc:aad92aaf1035e1879d5e069463c399f84 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Throws unless the mesh fills its box: every boundary face (no tet across) a face of the box (m_is_bbox_fs &gt;= 0) and untracked, naming the count of each kind found otherwise &ndash; the tracked boundary faces, and the untracked ones in no plane of the box. <code>who</code> names the run in the message. Call after init, with the tracked faces and the box flags set.  <br /></td></tr>
 <tr class="separator:aad92aaf1035e1879d5e069463c399f84 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -741,12 +743,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>round_indirect_vertic
 void&#160;</td><td class="memItemRight" valign="bottom"><b>tag_bbox_faces</b> (const Vector3d &amp;box_min, const Vector3d &amp;box_max)</td></tr>
 <tr class="memdesc:a44a3704e811e3dc994b8549f8de2f75e inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flag each face in a plane of the box [box_min, box_max] with that plane (m_is_bbox_fs: 2 k on the min side of axis k, 2 k + 1 on the max side) and give each of its vertices the plane (on_bbox_faces, sorted, once each). Exact: compares the exact positions. <br /></td></tr>
 <tr class="separator:a44a3704e811e3dc994b8549f8de2f75e inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca304ebf376d390e7b2f51690d91eee3 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_aca304ebf376d390e7b2f51690d91eee3"><td class="memItemLeft" align="right" valign="top">
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_reference_points</b> (const MatrixXd &amp;P, const std::vector&lt; InputSet &gt; &amp;labels)</td></tr>
-<tr class="memdesc:aca304ebf376d390e7b2f51690d91eee3 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set m_reference_points from the reference's points <code>P</code> (rows, x y z) and their labels. <br /></td></tr>
-<tr class="separator:aca304ebf376d390e7b2f51690d91eee3 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af9c8eb225c4ef94f2cd434f7296fd3cf inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_af9c8eb225c4ef94f2cd434f7296fd3cf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#af9c8eb225c4ef94f2cd434f7296fd3cf">require_reference_face_labels</a> (const std::vector&lt; InputSet &gt; &amp;reference_labels) const</td></tr>
-<tr class="separator:af9c8eb225c4ef94f2cd434f7296fd3cf inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad17cde1e3cd3b57c70e14bc3baa4faf inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_aad17cde1e3cd3b57c70e14bc3baa4faf"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_reference_points</b> (const MatrixXd &amp;P, const std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt; &amp;labels)</td></tr>
+<tr class="memdesc:aad17cde1e3cd3b57c70e14bc3baa4faf inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set m_reference_points from the reference's points <code>P</code> (rows, x y z) and their labels. <br /></td></tr>
+<tr class="separator:aad17cde1e3cd3b57c70e14bc3baa4faf inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae226ed23c4a088a13ca7058ec2d90cd6 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_ae226ed23c4a088a13ca7058ec2d90cd6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ae226ed23c4a088a13ca7058ec2d90cd6">require_reference_face_labels</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt; &amp;reference_labels) const</td></tr>
+<tr class="separator:ae226ed23c4a088a13ca7058ec2d90cd6 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab69ea937589eced2cd948e500ceae2d9 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_ab69ea937589eced2cd948e500ceae2d9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ab69ea937589eced2cd948e500ceae2d9">init_reference_feature_tubes</a> (double eps, bool exact)</td></tr>
 <tr class="separator:ab69ea937589eced2cd948e500ceae2d9 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a256af05afda07b7dea7bfd56baa4b2df inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a256af05afda07b7dea7bfd56baa4b2df"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a256af05afda07b7dea7bfd56baa4b2df">check_reference_containment</a> (double eps) const</td></tr>
@@ -1177,10 +1179,10 @@ std::map&lt; std::string, int64_t &gt;&#160;</td><td class="memItemRight" valign
 std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_face_tag_names</b></td></tr>
 <tr class="memdesc:a04e6a745845ff1379cdb664df7e9f031"><td class="mdescLeft">&#160;</td><td class="mdescRight">Names of the face tags: bit i of a face's input set is m_face_tag_names[i]. <br /></td></tr>
 <tr class="separator:a04e6a745845ff1379cdb664df7e9f031"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f7305c1b8708f0bb03a600629a6b23e" id="r_a9f7305c1b8708f0bb03a600629a6b23e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; InputSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a9f7305c1b8708f0bb03a600629a6b23e">m_F_envelope_labels</a></td></tr>
-<tr class="separator:a9f7305c1b8708f0bb03a600629a6b23e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6dddcc6eedeb5eb622fb5caf25a2450c" id="r_a6dddcc6eedeb5eb622fb5caf25a2450c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; InputSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a6dddcc6eedeb5eb622fb5caf25a2450c">m_F_envelope_face_sets</a></td></tr>
-<tr class="separator:a6dddcc6eedeb5eb622fb5caf25a2450c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae44b9191716f1db56c9a055e83501d2" id="r_aae44b9191716f1db56c9a055e83501d2"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aae44b9191716f1db56c9a055e83501d2">m_F_envelope_labels</a></td></tr>
+<tr class="separator:aae44b9191716f1db56c9a055e83501d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa69cd1e04dc728f31217e37dba1383ce" id="r_aa69cd1e04dc728f31217e37dba1383ce"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aa69cd1e04dc728f31217e37dba1383ce">m_F_envelope_face_sets</a></td></tr>
+<tr class="separator:aa69cd1e04dc728f31217e37dba1383ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a624be29b679dfce5a3d00d0198947c44" id="r_a624be29b679dfce5a3d00d0198947c44"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_parameters.html">Parameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a624be29b679dfce5a3d00d0198947c44">m_sim_params</a></td></tr>
 <tr class="separator:a624be29b679dfce5a3d00d0198947c44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a962ca6a6832cd8755c59d1db0c9526" id="r_a2a962ca6a6832cd8755c59d1db0c9526"><td class="memItemLeft" align="right" valign="top"><a id="a2a962ca6a6832cd8755c59d1db0c9526" name="a2a962ca6a6832cd8755c59d1db0c9526"></a>
@@ -1267,7 +1269,7 @@ std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_envelope.html">Envelope</a
 <tr class="memdesc:af0a3b868d05a21b160ef476c02b02433 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Surface envelope: what a surface vertex is pulled toward and checked against. <br /></td></tr>
 <tr class="separator:af0a3b868d05a21b160ef476c02b02433 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a13c5c0144f9780ad1a427139d45e3420 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a13c5c0144f9780ad1a427139d45e3420"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_input_envelopes.html">InputEnvelopes</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a13c5c0144f9780ad1a427139d45e3420">m_input_envelopes</a></td></tr>
-<tr class="memdesc:a13c5c0144f9780ad1a427139d45e3420 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">One envelope per input, and each tracked face held to those of its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a4d76d2c26d832b561a20d4342d5c0202" title="The INPUT SET: which inputs this simplex covers, bit i for input i. At most max_inputs,...">FaceAttributes::input_set()</a>); m_envelope stays their union. The 3D twin of <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8452e265098625fa90a5da375843cedd" title="One envelope per input, and each tracked segment held to those of its input set (EdgeAttributes::inpu...">TriOptimizerMesh::m_input_envelopes</a>.  <br /></td></tr>
+<tr class="memdesc:a13c5c0144f9780ad1a427139d45e3420 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">One envelope per input, and each tracked face held to those of its input set (<a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a2b27f8374803d31d0edea87d69b1ee90" title="The LABELS: which inputs this simplex covers, by id (LabelIds). Until 2026-11 a 64-bit mask (InputSet...">FaceAttributes::labels()</a>); m_envelope stays their union. The 3D twin of <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8452e265098625fa90a5da375843cedd" title="One envelope per input, and each tracked segment held to those of its input set (EdgeAttributes::labe...">TriOptimizerMesh::m_input_envelopes</a>.  <br /></td></tr>
 <tr class="separator:a13c5c0144f9780ad1a427139d45e3420 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad0c84e47f57f6f934b290de93a282426 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_ad0c84e47f57f6f934b290de93a282426"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad0c84e47f57f6f934b290de93a282426">m_s_amips</a> = 1.</td></tr>
 <tr class="separator:ad0c84e47f57f6f934b290de93a282426 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1395,9 +1397,9 @@ std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>c
 <tr class="memitem:a7802b42cfc6517c750d35a7a1d1914b7 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a7802b42cfc6517c750d35a7a1d1914b7"><td class="memItemLeft" align="right" valign="top">
 std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_input_point_labels</b></td></tr>
 <tr class="separator:a7802b42cfc6517c750d35a7a1d1914b7 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe15e3847c894d3ed36fd8bcf41dbf4f inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_afe15e3847c894d3ed36fd8bcf41dbf4f"><td class="memItemLeft" align="right" valign="top">
-std::vector&lt; InputSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_feature_point_inputs</b></td></tr>
-<tr class="separator:afe15e3847c894d3ed36fd8bcf41dbf4f inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aacbb1bdff9ef2dcf1dd7dce0760a3934 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_aacbb1bdff9ef2dcf1dd7dce0760a3934"><td class="memItemLeft" align="right" valign="top">
+std::vector&lt; <a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_feature_point_inputs</b></td></tr>
+<tr class="separator:aacbb1bdff9ef2dcf1dd7dce0760a3934 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb8f0aed3888201203f211d03e0edac0 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_afb8f0aed3888201203f211d03e0edac0"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#afb8f0aed3888201203f211d03e0edac0">m_curve_feature_point</a></td></tr>
 <tr class="separator:afb8f0aed3888201203f211d03e0edac0 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5d3c66718fa5a4519d94850ac832c99 inherit pub_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_ac5d3c66718fa5a4519d94850ac832c99"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ac5d3c66718fa5a4519d94850ac832c99">m_track_feature_points</a> = false</td></tr>
@@ -2089,6 +2091,33 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a9257c59d55974beb00f0ce9d6a49d21b" name="a9257c59d55974beb00f0ce9d6a49d21b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9257c59d55974beb00f0ce9d6a49d21b">&#9670;&#160;</a></span>face_tags_of()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a> wmtk::components::simwild::SimWildMesh::face_tags_of </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a>&#160;</td>
+          <td class="paramname"><em>set</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The face tags among <code>set</code>: the labels below the number of face tags (the region labels come after them). </p>
 
 </div>
 </div>
@@ -3656,14 +3685,14 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a6dddcc6eedeb5eb622fb5caf25a2450c" name="a6dddcc6eedeb5eb622fb5caf25a2450c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6dddcc6eedeb5eb622fb5caf25a2450c">&#9670;&#160;</a></span>m_F_envelope_face_sets</h2>
+<a id="aa69cd1e04dc728f31217e37dba1383ce" name="aa69cd1e04dc728f31217e37dba1383ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa69cd1e04dc728f31217e37dba1383ce">&#9670;&#160;</a></span>m_F_envelope_face_sets</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;InputSet&gt; wmtk::components::simwild::SimWildMesh::m_F_envelope_face_sets</td>
+          <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a>&gt; wmtk::components::simwild::SimWildMesh::m_F_envelope_face_sets</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -3671,18 +3700,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="a9f7305c1b8708f0bb03a600629a6b23e" name="a9f7305c1b8708f0bb03a600629a6b23e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9f7305c1b8708f0bb03a600629a6b23e">&#9670;&#160;</a></span>m_F_envelope_labels</h2>
+<a id="aae44b9191716f1db56c9a055e83501d2" name="aae44b9191716f1db56c9a055e83501d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae44b9191716f1db56c9a055e83501d2">&#9670;&#160;</a></span>m_F_envelope_labels</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;InputSet&gt; wmtk::components::simwild::SimWildMesh::m_F_envelope_labels</td>
+          <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1_label_ids.html">LabelIds</a>&gt; wmtk::components::simwild::SimWildMesh::m_F_envelope_labels</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Per row of m_F_envelope: its label bits, when m_F_envelope is the inputs' triangles (<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#abb756344817dcf785378af2152cd2ebd">InputData::F_envelope_labels</a>) or the mesh's own surface faces at load (<a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a3ed09bfe86676cf3e5755f30c68d688a">init_surfaces_and_boundaries()</a>: each face's input set); empty once <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ae1e683f32589e3f37c3f2fc4361cd75b">simplify()</a> rebuilds m_F_envelope around the simplified faces. <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a19187c82a62adb534757f6edf46ac597" title="(Re)build the base&#39;s m_input_envelopes: one envelope per label, and each surface face held by those o...">init_label_envelopes()</a> reads an empty one as "around the mesh's faces as they are then": at load that left the per-label envelopes to follow the faces, so after the simplification under envelope_reference "input" they were rebuilt around the simplified faces while the union was rebuilt around the input. </p>
+<p>Per row of m_F_envelope: its label bits, when m_F_envelope is the inputs' triangles (<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_input_data.html#a0f8df21fb2068b002c93a43b6380cb0d">InputData::F_envelope_labels</a>) or the mesh's own surface faces at load (<a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a3ed09bfe86676cf3e5755f30c68d688a">init_surfaces_and_boundaries()</a>: each face's input set); empty once <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ae1e683f32589e3f37c3f2fc4361cd75b">simplify()</a> rebuilds m_F_envelope around the simplified faces. <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a19187c82a62adb534757f6edf46ac597" title="(Re)build the base&#39;s m_input_envelopes: one envelope per label, and each surface face held by those o...">init_label_envelopes()</a> reads an empty one as "around the mesh's faces as they are then": at load that left the per-label envelopes to follow the faces, so after the simplification under envelope_reference "input" they were rebuilt around the simplified faces while the union was rebuilt around the input. </p>
 
 </div>
 </div>

@@ -2,9 +2,9 @@ var searchData=
 [
   ['e_0',['E',['../structwmtk_1_1components_1_1triwild_1_1_tagged_tri_mesh.html#a2e5d37186f5a8571a4b566f773720c90',1,'wmtk::components::triwild::TaggedTriMesh']]],
   ['e_5finput_5forientation_1',['E_input_orientation',['../structwmtk_1_1components_1_1triwild_1_1_tagged_tri_mesh.html#a5d7fcc0df1e60047150e87e5550a7714',1,'wmtk::components::triwild::TaggedTriMesh']]],
-  ['edge_5fbits_2',['edge_bits',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_opt_split_cache2d.html#af54a60c04cf67a0286e32057de9a24b1',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::OptSplitCache2d']]],
-  ['edge_5findices_3',['edge_indices',['../structwmtk_1_1utils_1_1_embed_features_input.html#a308dcf4d8fb58b14dcea6e03cfbb2160',1,'wmtk::utils::EmbedFeaturesInput']]],
-  ['edge_5finput_4',['edge_input',['../structwmtk_1_1utils_1_1_feature_inputs.html#a58e8347bfa8ca6a1e3e406498e7ddeb2',1,'wmtk::utils::FeatureInputs']]],
+  ['edge_5findices_2',['edge_indices',['../structwmtk_1_1utils_1_1_embed_features_input.html#a308dcf4d8fb58b14dcea6e03cfbb2160',1,'wmtk::utils::EmbedFeaturesInput']]],
+  ['edge_5finput_3',['edge_input',['../structwmtk_1_1utils_1_1_feature_inputs.html#a58e8347bfa8ca6a1e3e406498e7ddeb2',1,'wmtk::utils::FeatureInputs']]],
+  ['edge_5flabels_4',['edge_labels',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_opt_split_cache2d.html#a94883d70f7ad8a4551c2b5822be2d58e',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::OptSplitCache2d']]],
   ['edge_5fsplit_5fpieces_5',['edge_split_pieces',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#aabea4728eb7d0f37da95cdaaa6789d68',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats::edge_split_pieces'],['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_max_info.html#a1213650968eab0d692b9134e295bb9b7',1,'wmtk::components::topological_offset::ExactBandIntegral::MaxInfo::edge_split_pieces']]],
   ['edge_5fsplit_5fvol_6',['edge_split_vol',['../structwmtk_1_1components_1_1topological__offset_1_1_exact_band_integral_1_1_stats.html#acf42358e722cc31add136f881711ac61',1,'wmtk::components::topological_offset::ExactBandIntegral::Stats']]],
   ['edge_5ftags_7',['edge_tags',['../structwmtk_1_1_tet_optimizer_mesh_1_1_split_info_cache.html#acf5f8d6a34945054673d36d1fc4953c8',1,'wmtk::TetOptimizerMesh::SplitInfoCache']]],
