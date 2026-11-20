@@ -754,8 +754,69 @@ public:
      * passes the band-region map. One [label cleanup] line. Called by loop_group() after the
      * operation passes; a no-op with the key "off". "energy_decrease" reads the "surface" rule's
      * face term, which 2D has not, and is refused (see the definition).
+     *
+     * `side` picks the side test: the key's mode (Cleanup), or label growth's corner rule
+     * (Corners, label_growth()): a non-band triangle joins the band iff every corner is inside
+     * the level set, a band triangle leaves it iff every corner is beyond. Everything else --
+     * eligibility, the topology test, the held objects' test, the crossing slide, the
+     * re-derivations and the component check -- is the same for both. Returns the flips.
      */
-    void label_cleanup(const std::string& where);
+    enum class FlipSide { Cleanup, Corners };
+    size_t label_cleanup(const std::string& where, FlipSide side = FlipSide::Cleanup);
+
+    /**
+     * @brief label_growth (see the spec, 2026-11-20): after construction, before the
+     * optimization, grow the band toward the level set: label_cleanup() under the corner rule,
+     * then rounds of level-set splits (growth_splits()) each followed by the corner rule's flips,
+     * until a round splits nothing. Calls prepare_front() first. Each split point is within
+     * front_conv of the level set, so no edge from it is split again, every edge is split at most
+     * once, and the rounds end.
+     */
+    void label_growth();
+    /**
+     * @brief Label growth's splits: every edge of a non-band triangle with a front edge whose one
+     * end u is inside with d(u) <= delta - front_conv and whose other end w is beyond, split at a
+     * point x with delta - front_conv < d(x) < delta (bisection_on_edge()), delta and front_conv
+     * the triangle's piece's. Serial. Returns {splits, edges the shared split refused}.
+     */
+    std::array<size_t, 2> growth_splits(const std::string& where);
+    /**
+     * @brief The bisection of growth_splits(): x(s) = u + s (w - u) exact (growth_point()), d
+     * read at its rounding, keeping d(x(lo)) < delta <= d(x(hi)); returns the first lo with
+     * d > delta - front_conv, which d being 1-Lipschitz guarantees once the bracket is shorter
+     * than front_conv. s is a dyadic fraction k / 2^n, n <= 52, so a double holds it exactly;
+     * throws if 52 halvings do not reach the bound.
+     */
+    double bisection_on_edge(
+        size_t u,
+        size_t w,
+        const ExactBandIntegral2D& be,
+        double delta,
+        double front_conv) const;
+    /// The exact point u + s (w - u) of the edge (u, w), from the endpoints' exact positions.
+    Vector2r growth_point(size_t u, size_t w, double s) const
+    {
+        const Vector2r pu = m_vertex_attribute[u].pos();
+        const Vector2r pw = m_vertex_attribute[w].pos();
+        return pu + (pw - pu) * Rational(s);
+    }
+    /// A pending growth split: the shared split's position hook (split_adjust_position()) puts
+    /// the new vertex at growth_point(u, w, s). Unset outside growth_splits().
+    struct GrowthSplit
+    {
+        size_t u = 0;
+        double s = 0.5;
+        bool active = false;
+    };
+    GrowthSplit m_growth_split;
+    /**
+     * @brief The optimization's setup that label growth also reads, run once by whichever of
+     * label_growth() and optimize_offset() comes first: the optimization split mode, the front
+     * edge classes (label_offset_boundary()), the membership baseline and DEBUG_held_topology's
+     * baseline.
+     */
+    void prepare_front();
+    bool m_front_prepared = false;
     /**
      * @name The level set out of reach
      * The last clean-up's non-band triangles wholly inside the level set (the one-sided side

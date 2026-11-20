@@ -802,8 +802,41 @@ void TopoOffsetTriMesh::split_after_vertex(const size_t v_id)
     }
 }
 
-bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vector<Tuple>&)
+bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vector<Tuple>& children)
 {
+    // Label growth's split (growth_splits()): the new vertex at the bisection's fraction s of the
+    // edge from u, exactly. On the edge, no child inverts: a child's signed area is s or 1 - s
+    // times its parent's. Rounded where the rounding inverts no child, else kept exact, as the
+    // base keeps its exact midpoint. m_posf is the rounding of this exact point, the point the
+    // bisection read d at. Before the base's containment check, which then tests the two halves
+    // of the split edge as placed.
+    if (m_growth_split.active) {
+        const auto& sc = split_cache.local();
+        const size_t u = m_growth_split.u;
+        if (u != sc.v1_id && u != sc.v2_id) {
+            log_and_throw_error(
+                "[label growth] the pending split's vertex {} is not an end of the split edge "
+                "({}, {})",
+                u,
+                sc.v1_id,
+                sc.v2_id);
+        }
+        const Vector2r x = growth_point(u, u == sc.v1_id ? sc.v2_id : sc.v1_id, m_growth_split.s);
+        auto& va = m_vertex_attribute[v_id];
+        va.m_posf = to_double(x);
+        va.set_pos_to_posf();
+        va.m_is_rounded = true;
+        for (const Tuple& t : children) {
+            if (is_inverted(t)) {
+                va.m_is_rounded = false;
+                break;
+            }
+        }
+        if (!va.m_is_rounded) {
+            va.set_pos(x);
+            m_all_rounded.store(false, std::memory_order_relaxed);
+        }
+    }
     // Carry each parent's construction label onto its two children. Not automatic, because the
     // children land in fresh fid slots, whose m_face_extra defaults to label 0 (or, for a
     // recycled slot, to the previous occupant's label). split_edge_before() records the parents'
@@ -5373,17 +5406,20 @@ void TopoOffsetTriMesh::check_level_set_reachable(const std::string& when)
     logger().warn("\t{}", msg);
 }
 
-void TopoOffsetTriMesh::label_cleanup(const std::string& where)
+size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide side)
 {
     // EXPERIMENTAL_label_cleanup (see the spec and the declaration): the 2D twin of
     // TopoOffsetTetMesh::label_cleanup(), whose measurements motivate it (cube_in, target 0.45,
     // 5% tolerance: thin non-band cells left beyond the level set, E 1.2e-7 above its optimum
     // against a settle bar of 3.5e-5, so nothing removed them). Not in the final pass
     // (m_freeze_front; 3D: a TetWild pass), which loop_group() does not run anyway.
-    const std::string& mode = m_offset_params.label_cleanup;
-    if (mode == "off" || m_freeze_front) return;
-    const bool tips = mode == "one_sided_tips";
-    const bool at_target = mode == "one_sided_at_target";
+    // Label growth (FlipSide::Corners, label_growth()) runs whatever the key says, under its own
+    // side rule; the key picks the clean-up's.
+    const bool corners = side == FlipSide::Corners;
+    const std::string mode = corners ? "label_growth" : m_offset_params.label_cleanup;
+    if (!corners && (mode == "off" || m_freeze_front)) return 0;
+    const bool tips = !corners && mode == "one_sided_tips";
+    const bool at_target = !corners && mode == "one_sided_at_target";
     // "energy_decrease" reads the "surface" rule's face term (3D: label_flip_surface_change()),
     // which 2D has not: refused. "one_sided_tips" and "one_sided_at_target" flip by the sign of a
     // triangle's band term b(t) (band_cell_term()), which tri_energy() carries since the energy
@@ -5439,6 +5475,11 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
     //   one_sided_at_target: one_sided, and also any triangle with a front edge (1 or 2 edges on
     //     the other label; 3D: 1 to 3 faces) whose three corners are all within front_conv of the
     //     level set, by the tip rule's sign of b(t). As in 3D.
+    //   label growth (FlipSide::Corners): non-band -> band iff every corner is inside, d < delta;
+    //     band -> non-band iff every corner is beyond, d >= delta. The two exclude each other.
+    //     Read at the corners alone, it does not say the whole triangle is on that side: d is not
+    //     linear on t, and t can cross the level set between its corners where the level set
+    //     curves toward the band or near the medial axis. The optimization removes that.
     const auto wants_flip = [&](const size_t fid) {
         const std::array<size_t, 3> vs = oriented_tri_vids(fid);
         const bool band = face_is_offset_band(fid);
@@ -5453,6 +5494,15 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
         const ExactBandIntegral2D& band_exact = *band_exact_for(piece);
         std::array<Vector2d, 3> p;
         for (int k = 0; k < 3; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
+        if (corners) {
+            bool all_inside = true, all_beyond = true;
+            for (const Vector2d& q : p) {
+                const bool inside = band_exact.distance(q) < delta;
+                all_inside = all_inside && inside;
+                all_beyond = all_beyond && !inside;
+            }
+            return band ? all_beyond : all_inside;
+        }
         if (!band && band_exact.distance_bound(p) < delta) return true;
         if (band) {
             const Vector2d c = (p[0] + p[1] + p[2]) / 3.;
@@ -6116,6 +6166,225 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
             non1,
             n_odd);
     }
+    return to_band + to_non;
+}
+
+void TopoOffsetTriMesh::prepare_front()
+{
+    if (m_front_prepared) return;
+    m_front_prepared = true;
+    m_edge_split_mode = EdgeSplitMode::Optimization;
+
+    // label the offset boundary, and with it the vertices the optimization places
+    logger().info("\tLabel offset edges...");
+    label_offset_boundary();
+    // The baseline the propagation has to hold from here on: label_offset_boundary() marks the
+    // flag from the construction labels; this asks the live label test the same question.
+    check_offset_membership("construction");
+    held_topology_check("construction"); // DEBUG_held_topology's baseline
+}
+
+double TopoOffsetTriMesh::bisection_on_edge(
+    const size_t u,
+    const size_t w,
+    const ExactBandIntegral2D& be,
+    const double delta,
+    const double front_conv) const
+{
+    // d(x(lo)) < delta <= d(x(hi)) throughout, x(s) read at the rounding of its exact point, the
+    // position the split gives the vertex (split_adjust_position()). Each midpoint of two dyadic
+    // fractions k / 2^n is one with n + 1, so after 52 halvings s is still a double exactly.
+    double lo = 0., hi = 1.;
+    for (int n = 0; n < 52; ++n) {
+        const double mid = 0.5 * (lo + hi);
+        const double d = be.distance(to_double(growth_point(u, w, mid)));
+        if (d < delta) {
+            lo = mid;
+            if (d > delta - front_conv) return lo;
+        } else {
+            hi = mid;
+        }
+    }
+    log_and_throw_error(
+        "[label growth] the bisection of edge ({}, {}) found no point with {} < d < {} in 52 "
+        "halvings: front_conv {} is below what the edge's length resolves",
+        u,
+        w,
+        delta - front_conv,
+        delta,
+        front_conv);
+}
+
+std::array<size_t, 2> TopoOffsetTriMesh::growth_splits(const std::string& where)
+{
+    // The edges first, each once, then the splits: a split replaces the two triangles at its edge,
+    // not the other listed edges. An edge is listed by the first non-band triangle with a front
+    // edge that has it, with that triangle's piece's distance, target and front_conv.
+    struct Pending
+    {
+        size_t u, w;
+        int piece;
+    };
+    std::vector<Pending> todo;
+    std::set<std::array<size_t, 2>> seen;
+    for (const Tuple& t : get_faces()) {
+        const size_t fid = t.fid(*this);
+        if (m_face_extra[fid].label != 0) continue;
+        bool front = false;
+        for (int j = 0; j < 3; ++j) {
+            const std::optional<Tuple> o = tuple_from_edge(fid, size_t(j)).switch_face(*this);
+            front = front || (o && m_face_extra[o->fid(*this)].label == 2);
+        }
+        if (!front) continue;
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const int piece = place_piece(vs.data(), 3);
+        const std::shared_ptr<const ExactBandIntegral2D>& be = band_exact_for(piece);
+        if (!be) {
+            log_and_throw_error(
+                "[label growth] {}: triangle {} has no exact band integral to read d from",
+                where,
+                fid);
+        }
+        const double delta = region_delta(piece), eps = front_conv_of(piece);
+        std::array<double, 3> d;
+        for (int k = 0; k < 3; ++k)
+            d[size_t(k)] = be->distance(m_vertex_attribute[vs[size_t(k)]].m_posf);
+        for (int k = 0; k < 3; ++k) {
+            const size_t a = size_t(k), b = size_t((k + 1) % 3);
+            size_t u = 0, w = 0;
+            if (d[a] <= delta - eps && d[b] >= delta) {
+                u = vs[a];
+                w = vs[b];
+            } else if (d[b] <= delta - eps && d[a] >= delta) {
+                u = vs[b];
+                w = vs[a];
+            } else {
+                continue;
+            }
+            const std::array<size_t, 2> key{{std::min(u, w), std::max(u, w)}};
+            if (!seen.insert(key).second) continue;
+            todo.push_back({u, w, piece});
+        }
+    }
+    size_t n_split = 0, n_refused = 0;
+    for (const Pending& p : todo) {
+        const double s = bisection_on_edge(
+            p.u,
+            p.w,
+            *band_exact_for(p.piece),
+            region_delta(p.piece),
+            front_conv_of(p.piece));
+        m_growth_split = {p.u, s, true};
+        std::vector<Tuple> new_edges;
+        const Tuple t = get_tuple_from_edge(simplex::Edge(p.u, p.w));
+        // As the march: the mesh's slots are not reserved before the optimization, and a split
+        // without a free triangle slot is refused. MEASURED (circle_2d, target 0.1 x the diagonal,
+        // front_conv_rel 0.01): 3 edges refused for it in each of the 3 rounds, 81 split, the front
+        // left up to 9.9 front_conv short there.
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+        const bool ok = split_edge(t, new_edges);
+        m_growth_split.active = false;
+        ++(ok ? n_split : n_refused);
+    }
+    return {{n_split, n_refused}};
+}
+
+void TopoOffsetTriMesh::label_growth()
+{
+    // Euclidean only: the side rule and the splits read d through the exact band integral's
+    // searches, the Euclidean distance, as the label clean-up does; under offset_field "smooth"
+    // the front would grow to a different level set than the optimization places it on.
+    if (m_offset_params.offset_field != "euclidean") {
+        log_and_throw_error(
+            "label_growth reads the Euclidean distance; offset_field \"{}\" is refused",
+            m_offset_params.offset_field);
+    }
+    logger().info("Label growth (2D)...");
+    prepare_front();
+    // Round 0 flips; every later round splits, then flips, so the flips take in the pieces its
+    // splits made and no round ends with split points the front has not reached (a frame after the
+    // splits shows them, one after the flips the front through them). A round that splits nothing
+    // flips nothing: the flips before it ran until nothing flipped, and nothing has changed since.
+    // One frame after each step under DEBUG_output. MEASURED before (dd_regions, target 0.3,
+    // front_conv_rel 0.01), with flips then splits in each round and one frame after both: 16 of
+    // 94 front vertices more than front_conv inside after round 2, every unflipped triangle at
+    // them with every corner inside a piece of that round's splits.
+    size_t flips = label_cleanup("label growth round 0", FlipSide::Corners), splits = 0,
+           refused = 0;
+    held_topology_check("label_growth flips");
+    logger().info("\t[label growth] round 0: {} flips", flips);
+    if (m_offset_params.debug_output) write_debug_frame("label_growth_0_flips");
+    int round = 0;
+    for (;;) {
+        ++round;
+        const std::string where = fmt::format("label growth round {}", round);
+        const std::array<size_t, 2> sp = growth_splits(where);
+        held_topology_check("label_growth splits");
+        if (m_offset_params.debug_output) {
+            write_debug_frame(fmt::format("label_growth_{}_splits", round));
+        }
+        const size_t f = label_cleanup(where, FlipSide::Corners);
+        held_topology_check("label_growth flips");
+        if (m_offset_params.debug_output) {
+            write_debug_frame(fmt::format("label_growth_{}_flips", round));
+        }
+        flips += f;
+        splits += sp[0];
+        refused += sp[1];
+        logger().info(
+            "\t[label growth] round {}: {} splits ({} refused by the split), then {} flips",
+            round,
+            sp[0],
+            sp[1],
+            f);
+        if (sp[0] == 0 && f == 0) break;
+    }
+    consolidate_mesh();
+
+    // What the growth left: the front vertices' distance to the level set, d - delta, over their
+    // piece's front_conv.
+    // And the front edges on a held object: a one-triangle flip whose crossing slide was refused
+    // leaves the front along a held edge (both held and front; label_cleanup(), flip()).
+    std::set<size_t> front;
+    size_t n_held_front = 0;
+    for (const std::array<size_t, 2>& e : offset_surface_edges()) {
+        front.insert({e[0], e[1]});
+        n_held_front += held_object_edge(get_tuple_from_edge(simplex::Edge(e[0], e[1]))) ? 1 : 0;
+    }
+    size_t n_inside = 0, n_beyond = 0, n_off = 0;
+    double worst = 0., mean = 0.;
+    size_t worst_v = 0;
+    for (const size_t v : front) {
+        const int piece = place_piece(&v, 1);
+        const double r =
+            (band_exact_for(piece)->distance(m_vertex_attribute[v].m_posf) - region_delta(piece)) /
+            front_conv_of(piece);
+        ++(r < 0. ? n_inside : n_beyond);
+        n_off += std::abs(r) > 1. ? 1 : 0;
+        mean += r / double(front.size());
+        if (std::abs(r) > std::abs(worst)) {
+            worst = r;
+            worst_v = v;
+        }
+    }
+    const Vector2d& x = m_vertex_attribute[worst_v].m_posf;
+    logger().info(
+        "\t[label growth] {} round(s): {} flips, {} splits ({} refused) | front vertices {}: {} "
+        "inside, {} beyond, {} more than front_conv from the level set; (d - delta) / front_conv "
+        "mean {:.4g}, worst {:.4g} at ({:.4g}, {:.4g}) | front edges on a held object {}",
+        round,
+        flips,
+        splits,
+        refused,
+        front.size(),
+        n_inside,
+        n_beyond,
+        n_off,
+        mean,
+        worst,
+        x[0],
+        x[1],
+        n_held_front);
 }
 
 void TopoOffsetTriMesh::loop_group(const std::array<int, 4>& ops, const std::string& where)
@@ -7275,15 +7544,9 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // From here on every edge split is an optimization split, run by the shared engine. The
     // marching-triangles placement mode requires one endpoint inside the offset and one outside,
     // which does not hold for an arbitrary long edge. split_edge_before/after dispatch on this.
-    m_edge_split_mode = EdgeSplitMode::Optimization;
-
-    // label the offset boundary, and with it the vertices the optimization places
-    logger().info("\tLabel offset edges...");
-    label_offset_boundary();
-    // The baseline the propagation has to hold from here on: label_offset_boundary() marks the
-    // flag from the construction labels; this asks the live label test the same question.
-    check_offset_membership("construction");
-    held_topology_check("construction"); // DEBUG_held_topology's baseline
+    // The optimization split mode, the front edge classes and the baselines; label_growth() may
+    // have run them already.
+    prepare_front();
 
     // deform_others: from here on, other input regions deform instead of being envelope-held.
     // deform_others was removed on the 3D-only branch spenbert/offsets-cleanup (2026-10-13); its

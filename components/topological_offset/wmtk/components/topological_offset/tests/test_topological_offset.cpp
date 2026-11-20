@@ -12226,3 +12226,74 @@ TEST_CASE("offset-direction-complement-out-is-in-2d", "[offset][2d]")
     CHECK(!in.empty());
     CHECK(run("!a", "out") == in);
 }
+
+TEST_CASE("label-growth-2d", "[offset][2d]")
+{
+    // label_growth (2026-11-20), growth alone (optimize_offset false): p, the grid's centre,
+    // offset to delta past the march's reach (the march traces to half its maximum marchable
+    // distance, within the grid's 0.25 one-ring). Over front_conv_rel's whole range: every front
+    // vertex inside the level set and within front_conv of it -- the corner rule flips a triangle
+    // in only with every corner inside, and a split puts its vertex in (delta - front_conv,
+    // delta) -- and the run's own checks (the components, the inversion check) hold.
+    const double delta = GENERATE(0.3, 0.5);
+    const double rel = GENERATE(0.01, 0.1, 0.5, 1.0);
+    INFO("delta " << delta << ", front_conv_rel " << rel);
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", delta}}})},
+        {"label_growth", true},
+        {"optimize_offset", false},
+        {"front_conv_rel", rel},
+        {"envelope_size", 1e-4}, // under front_conv at every rel (startup refuses a wider one)
+        {"num_threads", 1}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", grid_2d({{"p", {{4, 4}}}})}}));
+    const auto front = result_front_2d(res.first.at("mesh"));
+    REQUIRE(!front.empty());
+    const Vector2d p = grid_point_2d({{4, 4}});
+    for (const auto& e : front) {
+        for (const Vector2d& x : e) {
+            CHECK((x - p).norm() < delta);
+            CHECK((x - p).norm() > delta - rel * delta);
+        }
+    }
+}
+
+TEST_CASE("label-growth-held-point-2d", "[offset][2d]")
+{
+    // A held point inside the level set keeps the status the construction gave it: q, 0.25 from
+    // p, the outer end of a marched edge and untouched by the band as constructed, stays
+    // untouched under label_growth at delta 0.3 and 0.5 (the held objects' test refuses every
+    // flip that would make the band touch it), and no front vertex is beyond the level set.
+    const double delta = GENERATE(0.3, 0.5);
+    INFO("delta " << delta);
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", delta}}})},
+        {"label_growth", true},
+        {"optimize_offset", false},
+        {"num_threads", 1}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", grid_2d({{"p", {{4, 4}}}, {"q", {{5, 4}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto touched = band_touched_2d(out);
+    const Vector2d q = result_points_2d(out).at("q").at(0);
+    Eigen::Index qv = 0;
+    for (Eigen::Index v = 1; v < out.V.rows(); ++v) {
+        if ((out.V.row(v).head<2>().transpose() - q).norm() <
+            (out.V.row(qv).head<2>().transpose() - q).norm())
+            qv = v;
+    }
+    REQUIRE((out.V.row(qv).head<2>().transpose() - q).norm() == 0.);
+    CHECK(touched[size_t(qv)] == 0);
+    const Vector2d p = grid_point_2d({{4, 4}});
+    for (const auto& e : result_front_2d(out)) {
+        for (const Vector2d& x : e) CHECK((x - p).norm() < delta);
+    }
+}

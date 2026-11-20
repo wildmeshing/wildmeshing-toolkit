@@ -103,6 +103,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: false stops the run at the constructed offset, optimize_offset() is not
     /// called and the constructed band is written as the result.
     bool optimize_offset;
+    /// See the spec (2026-11-20, 2D): after construction and before the optimization, grow the
+    /// band toward the level set by topology-keeping label flips and level-set splits
+    /// (TopoOffsetTriMesh::label_growth()). With optimize_offset false the grown band is the
+    /// result.
+    bool label_growth = false;
     // Half-width of the envelope that holds the held surfaces (3D: every region boundary, the
     // input complex's included, and the domain wall; see the spec doc).
     // Absolute; if <= 0, computed from envelope_size_rel (relative to the bbox diagonal) by
@@ -466,6 +471,7 @@ struct Parameters : public wmtk::OptimizerParameters
         throw_on_nonconvergence = json_params["throw_on_nonconvergence"];
         throw_on_unreachable_level_set = json_params["throw_on_unreachable_level_set"];
         optimize_offset = json_params["optimize_offset"];
+        label_growth = json_params["label_growth"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
         per_input_envelopes = json_params["per_input_envelopes"];

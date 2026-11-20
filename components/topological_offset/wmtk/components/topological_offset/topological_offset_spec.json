@@ -15,6 +15,7 @@
       "throw_on_nonconvergence",
       "throw_on_unreachable_level_set",
       "optimize_offset",
+      "label_growth",
       "envelope_size",
       "envelope_size_rel",
       "per_input_envelopes",
@@ -219,6 +220,12 @@
     "type": "bool",
     "default": true,
     "doc": "Run the optimization (optimize_offset: pre-loop setup, the loop's turns, the final pass and the convergence verdict) after the offset is constructed. Default true. false: the run stops at the constructed offset -- the simplicial embedding, the marching and the tag assignment still run -- and writes it as the result. The march traces the front to target_distance only when target_distance is below the maximum marchable distance (construction_mode); otherwise the front's distance to the input complex is set by the input mesh's resolution, the same for every target_distance from that distance up, and the run warns that target_distance has no effect (unless repulsion_smoothing_passes or repulsion_rounds ran, which read it). The report then carries only the before/after counts, threads and time -- no converged, offset_level, offset_dhat or optimization_metrics -- and throw_on_nonconvergence is not consulted. The offset potential is built only for the optimization, so with false phi_grid_resolution is ignored (with a warning) and the result's distance_over_target is NaN."
+  },
+  {
+    "pointer": "/label_growth",
+    "type": "bool",
+    "default": false,
+    "doc": "2D (2026-11-20). After construction (the march) and before the optimization, grow the band toward the level set d = target_distance by label flips and level-set splits, keeping the topology the construction gave the band, the non-band and every held object. Round 0 flips; every later round splits, then flips, until a round splits nothing. Flips: the passes of the label clean-up (EXPERIMENTAL_label_cleanup) with its eligibility, topology test, held objects' test and crossing slide, under this side rule, read at the corners alone: a non-band triangle with a front edge joins the band iff every corner is inside (d < target_distance); a band triangle with a front edge leaves it iff every corner is beyond (d >= target_distance). The two exclude each other, and no vertex moves, so a triangle flips at most once. Splits: every edge of a non-band triangle with a front edge whose one end u is inside with d(u) <= target_distance - front_conv and whose other end is beyond is split at a point x with target_distance - front_conv < d(x) < target_distance, found by bisection of the edge (stopped by that test itself; d is 1-Lipschitz, so it is met once the bracket is shorter than front_conv). The new vertex has the exact position of the bisection's dyadic fraction of the edge, so no triangle inverts; d is read at its rounded position, the one the bisection tested. A split point is within front_conv of the level set, so no edge from it is split again, and every edge is split at most once: the rounds end. Not guaranteed: a triangle with every corner inside may cross the level set between them, where the level set curves toward the band or near the medial axis; the optimization removes that. d is the Euclidean distance through the exact band integral's searches, as the clean-up reads it (offset_field \"smooth\" is refused). One [label growth] line per round and a summary; under DEBUG_output a frame after each step (label_growth_0_flips, then label_growth_k_splits and label_growth_k_flips). With optimize_offset false the grown band is the result. 3D: refused (no port yet)."
   },
   {
     "pointer": "/envelope_size_rel",
