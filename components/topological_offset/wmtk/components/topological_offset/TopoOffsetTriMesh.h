@@ -774,8 +774,8 @@ public:
      */
     void label_growth();
     /**
-     * @brief Label growth's splits: every edge of a non-band triangle with a front edge whose one
-     * end u is inside with d(u) <= delta - front_conv and whose other end w is beyond, split at a
+     * @brief Label growth's splits: every edge from a front vertex u with d(u) <= delta -
+     * front_conv to a vertex w beyond, in any non-band triangle at u, split at a
      * point x with delta - front_conv < d(x) < delta (bisection_on_edge()), delta and front_conv
      * the triangle's piece's. Serial. Returns {splits, edges the shared split refused}.
      */

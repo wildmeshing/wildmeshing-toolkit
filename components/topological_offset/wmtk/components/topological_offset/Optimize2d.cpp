@@ -6218,8 +6218,13 @@ double TopoOffsetTriMesh::bisection_on_edge(
 std::array<size_t, 2> TopoOffsetTriMesh::growth_splits(const std::string& where)
 {
     // The edges first, each once, then the splits: a split replaces the two triangles at its edge,
-    // not the other listed edges. An edge is listed by the first non-band triangle with a front
-    // edge that has it, with that triangle's piece's distance, target and front_conv.
+    // not the other listed edges. An edge runs from a front vertex u to a vertex beyond, in any
+    // non-band triangle at u: the march's own rule, from the front. It is listed by the first such
+    // triangle, with that triangle's piece's distance, target and front_conv. MEASURED before,
+    // when only the crossing edges of non-band triangles with a FRONT EDGE were split (dd_regions,
+    // target 0.3, front_conv_rel 0.01): 16 of 94 front vertices more than front_conv inside
+    // after round 1, 15 of them on the front since round 0, their non-band triangles touching
+    // the front only at them -- one triangle of a vertex's fan reached per round.
     struct Pending
     {
         size_t u, w;
@@ -6230,13 +6235,9 @@ std::array<size_t, 2> TopoOffsetTriMesh::growth_splits(const std::string& where)
     for (const Tuple& t : get_faces()) {
         const size_t fid = t.fid(*this);
         if (m_face_extra[fid].label != 0) continue;
-        bool front = false;
-        for (int j = 0; j < 3; ++j) {
-            const std::optional<Tuple> o = tuple_from_edge(fid, size_t(j)).switch_face(*this);
-            front = front || (o && m_face_extra[o->fid(*this)].label == 2);
-        }
-        if (!front) continue;
         const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        const auto on_front = [&](const size_t k) { return m_vertex_extra[vs[k]].m_is_on_offset; };
+        if (!on_front(0) && !on_front(1) && !on_front(2)) continue;
         const int piece = place_piece(vs.data(), 3);
         const std::shared_ptr<const ExactBandIntegral2D>& be = band_exact_for(piece);
         if (!be) {
@@ -6252,10 +6253,10 @@ std::array<size_t, 2> TopoOffsetTriMesh::growth_splits(const std::string& where)
         for (int k = 0; k < 3; ++k) {
             const size_t a = size_t(k), b = size_t((k + 1) % 3);
             size_t u = 0, w = 0;
-            if (d[a] <= delta - eps && d[b] >= delta) {
+            if (on_front(a) && d[a] <= delta - eps && d[b] >= delta) {
                 u = vs[a];
                 w = vs[b];
-            } else if (d[b] <= delta - eps && d[a] >= delta) {
+            } else if (on_front(b) && d[b] <= delta - eps && d[a] >= delta) {
                 u = vs[b];
                 w = vs[a];
             } else {
