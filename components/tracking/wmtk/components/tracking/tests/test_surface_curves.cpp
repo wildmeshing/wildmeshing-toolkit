@@ -117,8 +117,9 @@ Eigen::Vector3d position(
     const std::vector<Eigen::Vector3d>& V,
     const std::vector<std::array<uint64_t, 3>>& F)
 {
+    // Homogeneous coordinates: the point they give scaled to sum 1.
     const auto& f = F[face];
-    return b[0] * V[f[0]] + b[1] * V[f[1]] + b[2] * V[f[2]];
+    return (b[0] * V[f[0]] + b[1] * V[f[1]] + b[2] * V[f[2]]) / b.sum();
 }
 
 /// A remeshing of the unit sphere that keeps the curve between the faces above and below `z` as a

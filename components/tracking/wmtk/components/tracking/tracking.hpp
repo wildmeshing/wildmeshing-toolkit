@@ -43,6 +43,8 @@ struct InputPoint
     /// Histories from a tet mesh: its vertices at the corners of the tracked face holding the
     /// point. Last, so that {face, bary} still names a point on input files.
     std::array<uint64_t, 3> vertices = {{kNoId, kNoId, kNoId}};
+    /// A further term of bary (SurfacePoint::lo), faces only.
+    Eigen::Vector3d lo = Eigen::Vector3d::Zero();
 };
 
 /**
@@ -61,6 +63,8 @@ struct OutputPoint
     /// Tet outputs: the output's vertices at the corners of the tracked face holding the point.
     std::array<uint64_t, 3> vertices = {{kNoId, kNoId, kNoId}};
     Eigen::Vector3d bary = Eigen::Vector3d::Constant(1. / 3);
+    /// A further term of bary (SurfacePoint::lo), faces only.
+    Eigen::Vector3d lo = Eigen::Vector3d::Zero();
 };
 
 /**

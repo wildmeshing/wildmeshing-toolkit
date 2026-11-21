@@ -6,6 +6,8 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -17,13 +19,26 @@ struct SurfacePoint
 {
     uint64_t face;
     Eigen::Vector3d bary;
+    /// A further term of the coordinates (bary + lo), for a point given more precisely than
+    /// doubles hold (a node of a mapped curve, say). Mapped points come back with lo = 0.
+    Eigen::Vector3d lo = Eigen::Vector3d::Zero();
 };
 
-/// A straight piece of a curve: one face, and the barycentric coordinates of its two ends.
+/// Further terms of a point's coordinates, past the doubles of its `bary`: coordinate k is
+/// bary[k] + sum_i terms[i][k], exactly -- a floating-point expansion, each term below the last
+/// place of the one before.
+using BaryTail = std::vector<Eigen::Vector3d>;
+
+/// A straight piece of a curve: one face, and the barycentric coordinates of its two ends. The
+/// coordinates are homogeneous -- the point is the one they give scaled to sum 1, and a mapped curve
+/// keeps them as computed, exactly or rounded, without dividing by their sum -- and an end may have
+/// further terms (`tail`); most have none.
 struct SurfaceSegment
 {
     uint64_t face;
     std::array<Eigen::Vector3d, 2> bary;
+    /// The further terms of each end, or null if neither has any.
+    std::shared_ptr<const std::array<BaryTail, 2>> tail = nullptr;
 };
 
 /// A curve on a triangle complex: segments end to end, each on one face. Where a curve goes from
@@ -122,8 +137,12 @@ class SurfaceMap
 public:
     explicit SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions& options = {});
 
-    /// Points on the last state, mapped onto the first. `warnings`, if given, gets what this call
-    /// found. The map is not changed: any number of threads may map through it at once.
+    /// Points on the last state, mapped onto the first. Each step is computed in double-doubles
+    /// (exactly where their bound is above 2^-44 of the coordinates) and a point is kept in
+    /// double-doubles from step to step, so rounding does not pile up; it is rounded to doubles
+    /// once, at the end, and scaled to sum 1 if it was computed at all. `warnings`, if given, gets
+    /// what this call found. The map is not changed: any number of threads may map through it at
+    /// once.
     std::vector<SurfacePoint> to_input(
         std::vector<SurfacePoint> points,
         MapWarnings* warnings = nullptr) const;
@@ -139,6 +158,22 @@ public:
      * linear, so the image of a segment is a polyline that bends where the local map does. Each
      * segment is cut at the local map's edges and nothing is straightened, so a point of a curve
      * and its point under to_output() agree up to rounding, and curves grow where the map bends.
+     *
+     * Exact, with as much precision as each point needs. Every decision -- which piece or
+     * triangle holds a point, whether it is on an edge or a corner, which edge or corner a segment
+     * leaves through -- is taken by exact predicates (segment_walk.hpp), so the images are embedded
+     * as the curves are: they cross where the curves cross and nowhere else. Each segment's image
+     * is computed in doubles, double-doubles or exactly, the lowest that decides every sign and
+     * gives every point the accuracy it needs, and each point is kept to as many terms
+     * (SurfaceSegment::tail) as that takes: its error below 2^-20 of its local feature size -- the
+     * shortest piece it ends, and the nearest piece of any curve in the same face that it does not
+     * end -- and below 2^-44 of the face. Most points need one term, the doubles of `bary`; a
+     * point a few units in the last place from its neighbours needs two. Nothing is moved onto an
+     * edge or a corner that is not exactly on it, and no tolerance decides where a point goes.
+     * Within one step each point lands once, so every copy of it -- the end of one segment and the
+     * start of the next, in the face on either side of an edge -- gets the same terms; a point on
+     * the outline of a local map keeps its terms as they are; a point on a split edge is exact (a
+     * short expansion), so both faces of the edge agree.
      * One part unless a segment has no image (MapWarnings::broken_segments). `warnings`, as in
      * to_output(); the map is not changed.
      */
@@ -168,6 +203,15 @@ public:
     struct Cell
     {
         std::vector<Face> before, after;
+        /// An edge split's cell: the ends a, b of the edge as laid out, and the new vertex
+        /// w = t0 a + t1 b on it, exactly (t0 + t1 = 1, both doubles). A point on the edge maps
+        /// by these numbers alone, so the two faces of the edge map it alike, bit for bit.
+        struct EdgeSplit
+        {
+            Eigen::Vector2d a, b, w;
+            double t0, t1;
+        };
+        std::optional<EdgeSplit> split;
     };
     /// The local maps of history edit `edit`, one cell per patch flattened (a collapse or a move
     /// has one per side of the curves through it); none for an edit that needed none. A cell

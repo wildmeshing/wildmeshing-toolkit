@@ -10,6 +10,8 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
+#include <bit>
+#include <cfloat>
 #include <cmath>
 #include <iterator>
 #include <limits>
@@ -24,6 +26,7 @@ namespace wmtk::components::tracking {
 using history::Edit;
 using history::EditKind;
 using history::Replay;
+using exact::Dyadic;
 
 namespace {
 
@@ -235,6 +238,481 @@ Landing land(const Eigen::Vector2d& q, const std::vector<SurfaceMap::Face>& to)
         }
     }
     return at;
+}
+
+/// A face's own corners, in its barycentric coordinates.
+const TriangleH kFaceCorners = {
+    {Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitZ()}};
+
+using exact::Hom;
+using exact::Value;
+
+/// Points are mapped to within this, of their coordinates' sum: an accuracy, which decides when a
+/// value is computed exactly, not where a point goes.
+constexpr double kPointAccuracy = 0x1p-44;
+/// A point of a curve is kept to within this fraction of the shortest piece it ends (and within
+/// kPointAccuracy): the precision it needs so that no piece turns over, vanishes or swaps with its
+/// neighbour when the point is stored. A point a few units in the last place from the next one
+/// is so kept to two or more terms.
+constexpr double kCurveSafety = 0x1p-20;
+constexpr size_t kNoNode = std::numeric_limits<size_t>::max();
+
+/// A lower bound on the distance between two points of a face: the largest difference of their
+/// coordinates scaled to sum 1. From the coordinates scaled in double-doubles and their bounds, or
+/// exactly for points known exactly where those cannot tell.
+double distance_below(const Hom& a, const Hom& b)
+{
+    const bool was_undecided = exact::undecided();
+    Hom na, nb;
+    {
+        const exact::Precision dd(exact::kDoubleDouble);
+        na = exact::normalized(a);
+        nb = exact::normalized(b);
+    }
+    const bool scaled = !exact::undecided();
+    if (!was_undecided) exact::clear_undecided();
+    double d = 0, e = 0;
+    for (int k = 0; scaled && k < 3; ++k) {
+        // (na.v - nb.v) + (na.lo - nb.lo), the first difference exactly (Knuth's two-sum).
+        const double s1 = na.v[k] - nb.v[k];
+        const double bb = s1 - na.v[k];
+        const double r1 = (na.v[k] - (s1 - bb)) + (-nb.v[k] - bb);
+        d = std::max(d, std::abs(s1 + (r1 + (na.lo[k] - nb.lo[k]))));
+        e = std::max(e, na.e[k] + nb.e[k]);
+    }
+    // The last sums are rounded: within a few units in the last place of d.
+    e = e + 0x1p-50 * d + 0x1p-1000;
+    if (scaled && d > 2 * e) return d - e;
+    if (a.known() && b.known()) {
+        const exact::Exact3 x = a.value(), y = b.value();
+        const Dyadic s = x[0] + x[1] + x[2], t = y[0] + y[1] + y[2];
+        // x_k / s - y_k / t = (x_k t - y_k s) / (s t): the numerator exactly, the rest in doubles.
+        const double st = s.to_double() * t.to_double();
+        double m = 0;
+        for (int k = 0; k < 3; ++k) {
+            m = std::max(m, std::abs((x[k] * t - y[k] * s).to_double()) / st);
+        }
+        return m * (1 - 0x1p-48);
+    }
+    return scaled ? std::max(0., d - e) : 0.;
+}
+
+/// Within this of a piece it does not end, a point's precision depends on how far it is from it;
+/// farther, the precision kPointAccuracy asks for is enough already.
+constexpr double kNear = kPointAccuracy / kCurveSafety;
+
+/// A point of a face scaled to sum 1, its last two coordinates in double-doubles (the face's frame
+/// in the plane), and a bound on their error; not `ok` if that could not be done.
+struct Flat
+{
+    double x = 0, xl = 0, y = 0, yl = 0, e = 0;
+    bool ok = false;
+};
+Flat flat(const Hom& h)
+{
+    Hom in = h;
+    if (h.x) {
+        // The exact coordinates as double-doubles, the rest of them in the bound.
+        for (int k = 0; k < 3; ++k) {
+            const Dyadic& c = (*h.x)[k];
+            in.v[k] = c.to_double();
+            const Dyadic r = c - Dyadic(in.v[k]);
+            in.lo[k] = r.to_double();
+            in.e[k] = std::abs((r - Dyadic(in.lo[k])).to_double()) * (1 + 0x1p-50) + 0x1p-1000;
+        }
+        in.x.reset();
+    }
+    const bool was_undecided = exact::undecided();
+    Hom n;
+    {
+        const exact::Precision dd(exact::kDoubleDouble);
+        n = exact::normalized(in);
+    }
+    Flat out{n.v[1], n.lo[1], n.v[2], n.lo[2], n.e.maxCoeff(), !exact::undecided()};
+    if (!was_undecided) exact::clear_undecided();
+    return out;
+}
+/// a - b for double-doubles, to within a unit in the last place of the result.
+double difference(const double a, const double al, const double b, const double bl)
+{
+    const double s = a - b;
+    const double bb = s - a;
+    const double r = (a - (s - bb)) + (-b - bb);
+    return s + (r + (al - bl));
+}
+/// The distance from p to the segment from a to b (all in one face's frame), from their values;
+/// the points' errors are not in it.
+double point_segment(const Flat& p, const Flat& a, const Flat& b)
+{
+    const double abx = difference(b.x, b.xl, a.x, a.xl), aby = difference(b.y, b.yl, a.y, a.yl);
+    const double apx = difference(p.x, p.xl, a.x, a.xl), apy = difference(p.y, p.yl, a.y, a.yl);
+    const double bpx = difference(p.x, p.xl, b.x, b.xl), bpy = difference(p.y, p.yl, b.y, b.yl);
+    const double l2 = abx * abx + aby * aby, t = abx * apx + aby * apy;
+    double d;
+    if (l2 == 0 || t <= 0) {
+        d = std::hypot(apx, apy);
+    } else if (t >= l2) {
+        d = std::hypot(bpx, bpy);
+    } else {
+        d = std::abs(abx * apy - aby * apx) / std::sqrt(l2);
+    }
+    return d * (1 - 0x1p-48); // the rounding above: a few units in the last place of d
+}
+
+/// Coordinates as a curve holds them: the doubles, and their further terms if any -- one further
+/// term is the low part of a double-double, more are known exactly.
+Hom stored_of(const Eigen::Vector3d& v, const BaryTail* tail)
+{
+    Hom h = Hom::of(v);
+    h.stored = true;
+    if (!tail || tail->empty()) return h;
+    h.lo = tail->front();
+    if (tail->size() == 1) return h;
+    exact::Exact3 x = h.value();
+    for (size_t i = 1; i < tail->size(); ++i) {
+        for (int k = 0; k < 3; ++k) {
+            const double t = (*tail)[i][k];
+            if (t == 0) continue;
+            x[k] = x[k] + Dyadic(t);
+            h.e[k] += std::abs(t);
+        }
+    }
+    h.e *= 1 + 0x1p-50;
+    h.x = std::make_shared<const exact::Exact3>(std::move(x));
+    return h;
+}
+
+/// The terms a point is kept to: doubles whose sum is within `tol` of its exact coordinates
+/// (relative to their sum), each coordinate on its own, as few as that takes (one for most
+/// points) -- or, for coordinates as a curve held them (Hom::stored), exactly the terms they had.
+/// None if the point is known only approximately and its bound is above tol: it must be computed
+/// exactly first.
+std::optional<std::pair<Eigen::Vector3d, BaryTail>> terms_of(const Hom& h, const double tol)
+{
+    if (h.zeros() == 2 && !h.stored) {
+        // A corner of the face: one representation for it, whatever its scale.
+        Eigen::Vector3d c = Eigen::Vector3d::Zero();
+        c[h.v[0] != 0 ? 0 : (h.v[1] != 0 ? 1 : 2)] = 1;
+        return std::pair{c, BaryTail{}};
+    }
+    if (!h.x) {
+        const double t = tol * h.v.sum();
+        const bool has_lo = (h.lo.array() != 0).any();
+        if (h.stored || h.e.maxCoeff() <= t) {
+            // A double-double: its low part is a term of its own if the high part alone is not
+            // within tol (or if the curve held it so).
+            if (has_lo && (h.stored || h.e.maxCoeff() + h.lo.cwiseAbs().maxCoeff() > t)) {
+                return std::pair{h.v, BaryTail{h.lo}};
+            }
+            if (!has_lo || h.e.maxCoeff() + h.lo.cwiseAbs().maxCoeff() <= t) {
+                return std::pair{h.v, BaryTail{}};
+            }
+        }
+        return std::nullopt;
+    }
+    // Truncate term by term: each remainder has the sign of the coordinate and is below the last
+    // place of the term before, so the terms do not overlap, and coordinates stored this way give
+    // back the same terms.
+    exact::Exact3 r = *h.x;
+    std::pair<Eigen::Vector3d, BaryTail> out;
+    // A remainder too small for a double (never, for coordinates near 1 and a point that is not
+    // within 2^-1000 of another) ends the terms.
+    bool representable = true;
+    const auto next = [&]() {
+        Eigen::Vector3d t = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 3; ++k) {
+            if (r[k].sign() == 0) continue;
+            t[k] = r[k].to_double();
+            if (std::abs(t[k]) < DBL_MIN) {
+                representable = false;
+                t[k] = 0;
+                continue;
+            }
+            r[k] = r[k] - Dyadic(t[k]);
+        }
+        return t;
+    };
+    const auto rest = [&]() {
+        double m = 0;
+        for (int k = 0; k < 3; ++k) m = std::max(m, std::abs(r[k].to_double()));
+        return m;
+    };
+    out.first = next();
+    // A remainder below the smallest normal double has no term to hold it (never, for
+    // coordinates near 1): at most 20 terms.
+    while (representable && out.second.size() < 20 &&
+           (h.stored ? (r[0].sign() || r[1].sign() || r[2].sign()) : rest() > tol * h.v.sum())) {
+        out.second.push_back(next());
+    }
+    if (!out.second.empty() && (out.second.back().array() == 0).all()) out.second.pop_back();
+    return out;
+}
+
+/// The point l of a piece in the face's barycentric coordinates. A point on an edge or a corner
+/// of the face keeps its zeros: the corners of a piece on an edge are zero there. Not rescaled: a
+/// point of a face that is not in pieces is l itself, so one carried onto the cell's outline
+/// keeps its terms as they are, as the face on the other side of the outline, which the edit
+/// leaves alone, has them.
+Hom in_face(const SurfaceMap::Face& g, const Hom& l)
+{
+    if (g.sub[0] == kFaceCorners[0] && g.sub[1] == kFaceCorners[1] && g.sub[2] == kFaceCorners[2]) {
+        return l;
+    }
+    // sum_k l_k sub_k, at the current precision; a coordinate with a single term by 1 is l's own.
+    std::array<Value, 3> out;
+    bool copied = true;
+    for (int i = 0; i < 3; ++i) {
+        int terms = 0;
+        for (int k = 0; k < 3; ++k) {
+            const double s = g.sub[k][i];
+            if (l.v[k] == 0 || s == 0) continue;
+            out[i] = exact::muladd(out[i], exact::coordinate(l, k), s);
+            copied = copied && s == 1 && ++terms == 1;
+        }
+    }
+    Hom b = exact::hom(out[0], out[1], out[2]);
+    b.stored = l.stored && copied;
+    return b;
+}
+
+/// The geometry of one cell, one way: its faces (or pieces) before and after laid out in its
+/// domain, lifted to homogeneous coordinates for exact predicates.
+struct CellGeometry
+{
+    const SurfaceMap::Cell& cell;
+    const std::vector<SurfaceMap::Face>& from;
+    const std::vector<SurfaceMap::Face>& to;
+    bool forward;
+    std::vector<TriangleH> from_uv, to_uv;
+
+    CellGeometry(const SurfaceMap::Cell& c, const bool fw)
+        : cell(c)
+        , from(fw ? c.before : c.after)
+        , to(fw ? c.after : c.before)
+        , forward(fw)
+    {
+        for (const auto& f : from) from_uv.push_back(lift(f.uv));
+        for (const auto& g : to) to_uv.push_back(lift(g.uv));
+    }
+
+    /// The piece among first..last (the pieces of one face, before) holding the point b of the
+    /// face, and the point's coordinates in it. Exact; a point on an edge of the face gets the
+    /// same coordinates whichever face of the edge it is given in (lin2 is antisymmetric), and a
+    /// corner or an edge a piece shares with the face keeps its coordinates as they are.
+    std::pair<size_t, Hom> piece_of(const Hom& b, const size_t first, const size_t last) const
+    {
+        if (last - first == 1) return {first, b};
+        for (size_t k = first; k < last; ++k) {
+            if (const auto l = carry(kFaceCorners, b, from[k].sub)) return {k, *l};
+        }
+        if (b.zeros() == 1) {
+            // On an edge of the face that is cut at a virtual vertex: between two corners of a
+            // piece on that edge, by the two coordinates along it.
+            const int m = b.v[0] == 0 ? 0 : (b.v[1] == 0 ? 1 : 2);
+            const int i = (m + 1) % 3, j = (m + 2) % 3;
+            const Value bi = exact::coordinate(b, i), bj = exact::coordinate(b, j);
+            for (size_t k = first; k < last; ++k) {
+                const auto& s = from[k].sub;
+                for (int x = 0; x < 3; ++x) {
+                    for (int y = x + 1; y < 3; ++y) {
+                        if (s[x][m] != 0 || s[y][m] != 0) continue;
+                        const Eigen::Vector3d &X = s[x], &Y = s[y];
+                        const Value D = exact::lin2(Value{X[i]}, Y[j], Value{X[j]}, Y[i]);
+                        if (D.sign() == 0) continue;
+                        Value al = exact::lin2(bi, Y[j], bj, Y[i]);
+                        Value be = exact::lin2(bj, X[i], bi, X[j]);
+                        if (D.sign() < 0) {
+                            al = exact::negated(al);
+                            be = exact::negated(be);
+                        }
+                        if (al.sign() < 0 || be.sign() < 0 || (al.sign() == 0 && be.sign() == 0)) {
+                            continue;
+                        }
+                        std::array<Value, 3> l;
+                        l[x] = al;
+                        l[y] = be;
+                        return {k, exact::normalized(exact::hom(l[0], l[1], l[2]))};
+                    }
+                }
+            }
+        }
+        std::vector<TriangleH> pieces;
+        for (size_t k = first; k < last; ++k) pieces.push_back(from[k].sub);
+        if (const auto at = locate(pieces, exact::Point{&kFaceCorners, b})) {
+            return {first + at->tri, at->bary};
+        }
+        const auto [k, l] = tracking::piece_of(b.v, from, first, last);
+        return {k, Hom::of(l)};
+    }
+
+    /// An edge split's rule for a point on the split edge (forward) or on one of the halves
+    /// (backward): by t0 and t1 alone. Exact, and not rescaled: the weights are products and sums
+    /// of doubles, kept as the finite expansions they are (Hom::stored), so both cells of the edge
+    /// -- each with its own pieces next to the point -- give the point the same terms.
+    std::optional<HWalkPoint> by_split(const TriangleH& tf, const Hom& l) const
+    {
+        const auto& S = *cell.split;
+        const Eigen::Vector3d A(S.a.x(), S.a.y(), 1), B(S.b.x(), S.b.y(), 1), W(S.w.x(), S.w.y(), 1);
+        int ia = -1, ib = -1, iw = -1;
+        for (int k = 0; k < 3; ++k) {
+            if (l.v[k] == 0) continue;
+            if (tf[k] == A) {
+                ia = k;
+            } else if (tf[k] == B) {
+                ib = k;
+            } else if (tf[k] == W) {
+                iw = k;
+            } else {
+                return std::nullopt; // not on the edge
+            }
+        }
+        if (forward ? (ia < 0 || ib < 0 || iw >= 0) : iw < 0) return std::nullopt;
+        if (!l.known()) {
+            exact::give_up();
+            return std::nullopt;
+        }
+        const exact::Exact3 x = l.value();
+        const Dyadic zero(0.);
+        const Dyadic ca = ia >= 0 ? x[ia] : zero, cb = ib >= 0 ? x[ib] : zero,
+                       cw = iw >= 0 ? x[iw] : zero;
+        // The weights on (A, B, W) the point has after.
+        Dyadic wa = zero, wb = zero, ww = zero;
+        if (forward) {
+            // ca A + cb B against W = t0 A + t1 B: on A..W if cb t0 < ca t1.
+            const Dyadic s = cb * Dyadic(S.t0) - ca * Dyadic(S.t1);
+            if (s.sign() < 0) {
+                wa = -s;
+                ww = cb;
+            } else if (s.sign() > 0) {
+                ww = ca;
+                wb = s;
+            } else {
+                ww = Dyadic(1.);
+            }
+        } else {
+            wa = ca + cw * Dyadic(S.t0);
+            wb = cb + cw * Dyadic(S.t1);
+        }
+        for (size_t m = 0; m < to_uv.size(); ++m) {
+            exact::Exact3 out;
+            bool ok = true;
+            for (const auto& [c, w] : {std::pair{&A, &wa}, std::pair{&B, &wb}, std::pair{&W, &ww}}) {
+                if (w->sign() == 0) continue;
+                const int k = int(std::find(to_uv[m].begin(), to_uv[m].end(), *c) - to_uv[m].begin());
+                if (k == 3) {
+                    ok = false;
+                    break;
+                }
+                out[k] = *w;
+            }
+            if (!ok) continue;
+            Hom h;
+            h.stored = true;
+            bool exact_doubles = true;
+            for (int k = 0; k < 3; ++k) {
+                const int sign = out[k].sign();
+                if (sign == 0) continue;
+                h.v[k] = out[k].to_double();
+                if (h.v[k] == 0) h.v[k] = sign * DBL_MIN;
+                exact_doubles = exact_doubles && Dyadic(h.v[k]) == out[k];
+                h.e[k] = std::max(0x1p-52 * std::abs(h.v[k]), DBL_MIN);
+            }
+            if (exact_doubles) {
+                h.e.setZero();
+            } else {
+                h.x = std::make_shared<const exact::Exact3>(std::move(out));
+            }
+            return HWalkPoint{m, h};
+        }
+        return std::nullopt;
+    }
+
+    /// Where the point l of piece `piece` (before) lands after: on the same corner or edge if a
+    /// piece after has it (the cell's outline, or an edge the edit kept), coordinates and zeros
+    /// as they are; by the split's rule on a split edge; otherwise located exactly. `inside` is
+    /// set false if no piece after holds it (not for a valid cell): it is then clamped onto the
+    /// nearest.
+    HWalkPoint land(const size_t piece, const Hom& l, bool& inside) const
+    {
+        inside = true;
+        const TriangleH& tf = from_uv[piece];
+        if (l.zeros() > 0) {
+            for (size_t m = 0; m < to_uv.size(); ++m) {
+                if (const auto c = carry(tf, l, to_uv[m])) return {m, *c};
+            }
+        }
+        if (cell.split) {
+            if (const auto s = by_split(tf, l)) return *s;
+        }
+        if (const auto at = locate(to_uv, exact::Point{&tf, l})) return *at;
+        const auto& f = from[piece];
+        const Eigen::Vector3d n = l.v / l.v.sum();
+        const Landing at = tracking::land(n[0] * f.uv[0] + n[1] * f.uv[1] + n[2] * f.uv[2], to);
+        inside = false;
+        return {at.piece, Hom::of(at.l)};
+    }
+
+    /// The real corners of the face whose pieces are first..last, as laid out (lifted).
+    TriangleH face_corners(const size_t first, const size_t last) const
+    {
+        if (last - first == 1) return from_uv[first];
+        TriangleH out = from_uv[first];
+        for (size_t k = first; k < last; ++k) {
+            for (int j = 0; j < 3; ++j) {
+                for (int c = 0; c < 3; ++c) {
+                    if (from[k].sub[j] == kFaceCorners[c]) out[c] = from_uv[k][j];
+                }
+            }
+        }
+        return out;
+    }
+};
+
+/// A point of a face before, by its corners' places in the cell's domain and its terms there:
+/// the same for a point on an edge or a corner whichever face it is given in. The corners with a
+/// non-zero coordinate, sorted, each with its place and the coordinate's terms.
+struct PointKey
+{
+    std::array<uint64_t, 10> v{};
+    std::vector<uint64_t> tail; // the further terms, if any
+    bool operator==(const PointKey& o) const { return v == o.v && tail == o.tail; }
+};
+struct PointKeyHash
+{
+    size_t operator()(const PointKey& k) const
+    {
+        uint64_t h = 1469598103934665603ull;
+        for (const uint64_t x : k.v) h ^= x + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2);
+        for (const uint64_t x : k.tail) h ^= x + 0x9e3779b97f4a7c15ull + (h << 6) + (h >> 2);
+        return size_t(h);
+    }
+};
+PointKey key_of(const TriangleH& corners, const Eigen::Vector3d& b, const BaryTail* tail)
+{
+    std::array<std::array<uint64_t, 3>, 3> e{};
+    std::array<int, 3> which{};
+    int n = 0;
+    for (int k = 0; k < 3; ++k) {
+        if (b[k] == 0) continue;
+        e[n] = {std::bit_cast<uint64_t>(corners[k][0]), std::bit_cast<uint64_t>(corners[k][1]),
+                std::bit_cast<uint64_t>(b[k])};
+        which[n++] = k;
+    }
+    std::array<int, 3> order = {0, 1, 2};
+    std::sort(order.begin(), order.begin() + n, [&](int i, int j) { return e[i] < e[j]; });
+    PointKey key;
+    key.v[0] = uint64_t(n);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < 3; ++j) key.v[1 + 3 * i + j] = e[order[i]][j];
+    }
+    if (tail && !tail->empty()) {
+        for (int i = 0; i < n; ++i) {
+            for (const Eigen::Vector3d& t : *tail) {
+                key.tail.push_back(std::bit_cast<uint64_t>(t[which[order[i]]]));
+            }
+        }
+    }
+    return key;
 }
 
 /// A face, or a piece of one, in a local patch: its corners -- vertex ids, or a virtual vertex on
@@ -884,6 +1362,10 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
             const Eigen::Vector3d pn = position_after(e, vn, (p0 + p1) / 2);
             const double l2 = (p1 - p0).squaredNorm();
             const double t = l2 > 0 ? std::clamp((pn - p0).dot(p1 - p0) / l2, 1e-9, 1 - 1e-9) : 0.5;
+            // The new vertex at t0 v0 + t1 v1 with t0 + t1 = 1 exactly (Sterbenz: one of 1 - t and
+            // 1 - t0 is exact), so in every layout below -- corners at 0 and 1 -- it is exactly on
+            // the edge, and both faces of the edge put it at the same place along it.
+            const double t0 = 1 - t, t1 = 1 - t0;
             std::vector<Tri> parents;
             for (size_t i = 0; i + 1 < e.faces.size(); i += 2) {
                 parents.push_back(r.faces()[e.faces[i]]);
@@ -893,8 +1375,9 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
                 const Tri& parent = parents[i / 2];
                 UV uv;
                 for (int k = 0; k < 3; ++k) uv[parent[k]] = kCanonical[k];
-                uv[vn] = (1 - t) * uv.at(v0) + t * uv.at(v1);
+                uv[vn] = t0 * uv.at(v0) + t1 * uv.at(v1);
                 Cell cell;
+                cell.split = Cell::EdgeSplit{uv.at(v0), uv.at(v1), uv.at(vn), t0, t1};
                 cell.before.push_back({e.faces[i], kCanonical});
                 cell.after.push_back({e.faces[i], layout(r.faces()[e.faces[i]], uv)});
                 cell.after.push_back({e.faces[i + 1], layout(r.faces()[e.faces[i + 1]], uv)});
@@ -1215,6 +1698,16 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
         }
     }
     std::vector<std::pair<uint64_t, size_t>> landed;
+    // Between steps a point is kept in double-doubles, bary + lo: the rounding of each step stays
+    // a few units in the 106th bit, and the point is rounded to doubles once, at the end.
+    std::vector<Eigen::Vector3d> lo(pts.size(), Eigen::Vector3d::Zero());
+    for (size_t i = 0; i < pts.size(); ++i) {
+        lo[i] = pts[i].lo;
+        pts[i].lo.setZero();
+    }
+    // Whether a point was computed anew (not only carried as it was): such a point is scaled to
+    // sum 1 at the end; one never computed keeps its doubles.
+    std::vector<char> computed(pts.size(), 0);
 
     const auto visit = [&](const Step& s) {
         if (s.kind == EditKind::consolidate) {
@@ -1263,6 +1756,8 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
                     best_l = best_l.sum() > 0 ? Eigen::Vector3d(best_l / best_l.sum())
                                               : Eigen::Vector3d(1. / 3, 1. / 3, 1. / 3);
                     pts[i] = {best_g, best_l};
+                    lo[i].setZero();
+                    computed[i] = 1;
                     moved[best_g].push_back(i);
                 }
             }
@@ -1273,24 +1768,52 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
         for (const Cell& c : s.cells) {
             const auto& from = forward ? c.before : c.after;
             const auto& to = forward ? c.after : c.before;
+            std::optional<CellGeometry> g;
             // The pieces of one face are consecutive.
             for (size_t first = 0; first < from.size();) {
                 size_t last = first + 1;
                 while (last < from.size() && from[last].fid == from[first].fid) ++last;
                 const auto it = on_face.find(from[first].fid);
                 if (it != on_face.end()) {
+                    if (!g) g.emplace(c, forward);
                     for (const size_t i : it->second) {
-                        // The piece of the face holding the point, and the point in the domain.
-                        const auto [piece, l] = piece_of(pts[i].bary, from, first, last);
-                        const auto& f = from[piece];
-                        const Eigen::Vector2d q = l[0] * f.uv[0] + l[1] * f.uv[1] + l[2] * f.uv[2];
-                        const Landing at = land(q, to);
-                        if (!at.inside) ++w.unlocated;
-                        const auto& g = to[at.piece];
-                        pts[i] = {
-                            g.fid,
-                            at.l[0] * g.sub[0] + at.l[1] * g.sub[1] + at.l[2] * g.sub[2]};
-                        landed.emplace_back(g.fid, i);
+                        // The piece of the face holding the point, where it lands after, and its
+                        // coordinates there to within kPointAccuracy -- in doubles if their bound
+                        // allows, exactly otherwise.
+                        const BaryTail tail = {lo[i]};
+                        const Hom b = stored_of(pts[i].bary, (lo[i].array() != 0).any() ? &tail : nullptr);
+                        bool inside = true, fresh = false;
+                        // The point after, as a double-double, if its bound is within kPointAccuracy.
+                        const auto image = [&]() -> std::optional<std::pair<SurfacePoint, Eigen::Vector3d>> {
+                            const auto [piece, l] = g->piece_of(b, first, last);
+                            const HWalkPoint at = g->land(piece, l, inside);
+                            const Hom h = in_face(to[at.tri], at.bary);
+                            Eigen::Vector3d v = h.v, low = h.lo;
+                            fresh = !h.stored;
+                            if (h.x) {
+                                for (int k = 0; k < 3; ++k) {
+                                    v[k] = (*h.x)[k].to_double();
+                                    low[k] = ((*h.x)[k] - Dyadic(v[k])).to_double();
+                                }
+                            } else if (!(h.e.maxCoeff() <= kPointAccuracy * h.v.sum())) {
+                                return std::nullopt;
+                            }
+                            return std::pair{SurfacePoint{to[at.tri].fid, v}, low};
+                        };
+                        // In double-doubles, else exactly.
+                        std::optional<std::pair<SurfacePoint, Eigen::Vector3d>> p;
+                        for (int level = exact::kDoubleDouble; level <= exact::kExact && !p; ++level) {
+                            exact::clear_undecided();
+                            const exact::Precision precision{exact::Level(level)};
+                            const auto q = image();
+                            if (!exact::undecided()) p = q;
+                        }
+                        exact::clear_undecided();
+                        if (!inside) ++w.unlocated;
+                        pts[i] = p->first;
+                        lo[i] = p->second;
+                        computed[i] = computed[i] || fresh;
+                        landed.emplace_back(p->first.face, i);
                     }
                     on_face.erase(it);
                 }
@@ -1311,6 +1834,24 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
         for (const Step& s : m_steps) visit(s);
     } else {
         for (auto it = m_steps.rbegin(); it != m_steps.rend(); ++it) visit(*it);
+    }
+    // Rounded to doubles once, scaled to sum 1: (bary + lo) / sum, the sum in double-doubles.
+    for (size_t i = 0; i < pts.size(); ++i) {
+        if (pts[i].face == kNone) continue;
+        if (!computed[i]) {
+            // Never computed: as given (a further term given folded into the doubles).
+            if ((lo[i].array() != 0).any()) pts[i].bary += lo[i];
+            continue;
+        }
+        const Eigen::Vector3d x = pts[i].bary + lo[i];
+        const double sum = (pts[i].bary.sum() + lo[i].sum());
+        if (sum > 0 && sum != 1) {
+            for (int k = 0; k < 3; ++k) {
+                pts[i].bary[k] = pts[i].bary[k] == 0 ? 0. : (pts[i].bary[k] / sum + lo[i][k] / sum);
+            }
+        } else {
+            pts[i].bary = x;
+        }
     }
     if (warnings) *warnings = w;
     return pts;
@@ -1380,29 +1921,6 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves(
             landed.emplace_back(pieces[k].face, last);
         }
     };
-    // Coordinates that come from a solve leave a rounding where a zero was.
-    const auto snapped = [](Eigen::Vector3d l) {
-        for (int k = 0; k < 3; ++k) {
-            if (std::abs(l[k]) < 1e-14) l[k] = 0;
-        }
-        const double sum = l.sum();
-        return Eigen::Vector3d(l / sum);
-    };
-    // A corner of a piece on the outline, or a point on an edge of it, is where the cell's other
-    // side has the same corner or edge: it stays there exactly, zeros and all. Elsewhere the point
-    // lands where a point does.
-    const auto land_end =
-        [&](const Face& f, const Eigen::Vector3d& l, const std::vector<Face>& to) -> WalkPoint {
-        if (l[0] == 0 || l[1] == 0 || l[2] == 0) {
-            for (size_t k = 0; k < to.size(); ++k) {
-                if (const auto kept = carry(f.uv, l, to[k].uv)) return {k, *kept};
-            }
-        }
-        const Landing at = land(l[0] * f.uv[0] + l[1] * f.uv[1] + l[2] * f.uv[2], to);
-        if (!at.inside) ++w.unlocated;
-        return {at.piece, snapped(at.l)};
-    };
-
     const auto visit = [&](const Step& s) {
         if (s.kind == EditKind::consolidate) {
             const auto& ids = forward ? s.old_to_new : s.new_to_old;
@@ -1487,69 +2005,138 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves(
         for (const Cell& c : s.cells) {
             const auto& from = forward ? c.before : c.after;
             const auto& to = forward ? c.after : c.before;
-            std::vector<Triangle2> to_tris;
+            std::optional<CellGeometry> g;
+            // Every point this step makes: the triangle after it is computed in, and its
+            // coordinates there. A point ends the pieces on either side of it, and the end of a
+            // segment ends the segments on either side of it too, maybe from the face on the other
+            // side of an edge: each such point is computed once, keyed by where it is before.
+            struct Node
+            {
+                size_t tri;
+                Hom h;
+                int level = exact::kDouble; // the precision it was computed at
+            };
+            std::vector<Node> nodes;
+            std::unordered_map<PointKey, size_t, PointKeyHash> ends;
+            // Each segment's image: its points in order, and the triangle of each piece between
+            // two of them; a segment of no length has one point and no piece.
+            struct Chain
+            {
+                size_t id, first, last;
+                std::vector<size_t> nodes, tris;
+                int level = exact::kDouble; // the precision it was traced at
+                size_t unlocated = 0;
+            };
+            std::vector<Chain> chains;
+
+            const auto end_of = [&](const SurfaceSegment& seg, const int k) {
+                return stored_of(seg.bary[k], seg.tail ? &(*seg.tail)[k] : nullptr);
+            };
+            // The image of segment `id`, of the face whose pieces are first..last; none if it has
+            // none. Gives up (exact::undecided()) where approximate values cannot decide.
+            const auto trace = [&](const size_t id,
+                                   const size_t first,
+                                   const size_t last) -> std::optional<Chain> {
+                const SurfaceSegment& seg = links[id].s;
+                size_t unlocated = 0;
+                const TriangleH corners = g->face_corners(first, last);
+                const Hom b0 = end_of(seg, 0), b1 = end_of(seg, 1);
+                // The node of an end: landed once per point. A node landed at a lower precision
+                // before (and not exact) is landed again, at this one, in place.
+                const auto end_node = [&](const Hom& b, const int k) -> size_t {
+                    const PointKey key =
+                        key_of(corners, seg.bary[k], seg.tail ? &(*seg.tail)[k] : nullptr);
+                    const auto found = ends.find(key);
+                    if (found != ends.end() && (nodes[found->second].level >= exact::precision() ||
+                                                nodes[found->second].h.known())) {
+                        return found->second;
+                    }
+                    const auto [piece, l] = g->piece_of(b, first, last);
+                    bool inside = true;
+                    const HWalkPoint at = g->land(piece, l, inside);
+                    if (exact::undecided()) return kNoNode;
+                    if (found != ends.end()) {
+                        nodes[found->second] = {at.tri, at.bary, exact::precision()};
+                        return found->second;
+                    }
+                    if (!inside) ++unlocated;
+                    nodes.push_back({at.tri, at.bary, exact::precision()});
+                    ends.emplace(key, nodes.size() - 1);
+                    return nodes.size() - 1;
+                };
+                // A face in pieces bends along their edges: cut the segment there first, in the
+                // face, exactly.
+                std::vector<HWalkPiece> parts = {{0, {b0, b1}}};
+                if (last - first > 1) {
+                    std::vector<TriangleH> sub_tris;
+                    for (size_t k = first; k < last; ++k) sub_tris.push_back(from[k].sub);
+                    const auto [a, la] = g->piece_of(b0, first, last);
+                    const auto [b, lb] = g->piece_of(b1, first, last);
+                    const auto cut = walk(sub_tris, HWalkPoint{a - first, la}, HWalkPoint{b - first, lb});
+                    if (!cut || exact::undecided()) return std::nullopt;
+                    parts = *cut;
+                }
+                Chain ch{id, first, last, {}, {}};
+                size_t start = end_node(b0, 0);
+                if (start == kNoNode) return std::nullopt;
+                ch.nodes.push_back(start);
+                for (size_t p = 0; p < parts.size(); ++p) {
+                    size_t stop;
+                    if (p + 1 == parts.size()) {
+                        stop = end_node(b1, 1);
+                        if (stop == kNoNode) return std::nullopt;
+                    } else {
+                        bool inside = true;
+                        const HWalkPoint at = g->land(first + parts[p].tri, parts[p].bary[1], inside);
+                        if (exact::undecided()) return std::nullopt;
+                        if (!inside) ++unlocated;
+                        nodes.push_back({at.tri, at.bary, exact::precision()});
+                        stop = nodes.size() - 1;
+                    }
+                    if (stop == start) continue; // the same point: no piece
+                    const HWalkPoint from_here{nodes[start].tri, nodes[start].h};
+                    const HWalkPoint to_there{nodes[stop].tri, nodes[stop].h};
+                    const auto walked = walk(g->to_uv, from_here, to_there);
+                    if (!walked || exact::undecided()) return std::nullopt;
+                    for (size_t q = 0; q < walked->size(); ++q) {
+                        ch.tris.push_back((*walked)[q].tri);
+                        if (q + 1 < walked->size()) {
+                            nodes.push_back({(*walked)[q].tri, (*walked)[q].bary[1], exact::precision()});
+                            ch.nodes.push_back(nodes.size() - 1);
+                        }
+                    }
+                    if (!walked->empty()) ch.nodes.push_back(stop);
+                    start = stop;
+                }
+                ch.unlocated = unlocated;
+                return ch;
+            };
+            // At the lowest precision from `from` on that can decide; none if the segment has no
+            // image.
+            const auto trace_any = [&](const size_t id, const size_t first, const size_t last,
+                                       const int from) -> std::optional<Chain> {
+                for (int level = from; level <= exact::kExact; ++level) {
+                    exact::clear_undecided();
+                    const exact::Precision precision{exact::Level(level)};
+                    auto r = trace(id, first, last);
+                    if (exact::undecided()) continue;
+                    if (r) r->level = level;
+                    return r;
+                }
+                exact::clear_undecided();
+                return std::nullopt;
+            };
+
             for (size_t first = 0; first < from.size();) {
                 size_t last = first + 1;
                 while (last < from.size() && from[last].fid == from[first].fid) ++last;
                 const auto it = on_face.find(from[first].fid);
                 if (it != on_face.end()) {
-                    if (to_tris.empty()) {
-                        for (const Face& g : to) to_tris.push_back(g.uv);
-                    }
-                    // A face in pieces bends along their edges: cut it there first, in the face.
-                    std::vector<Triangle2> sub_tris;
-                    for (size_t k = first; k < last && last - first > 1; ++k) {
-                        Triangle2 t;
-                        for (int j = 0; j < 3; ++j) {
-                            t[j] = Eigen::Vector2d(from[k].sub[j][1], from[k].sub[j][2]);
-                        }
-                        sub_tris.push_back(t);
-                    }
+                    if (!g) g.emplace(c, forward);
                     for (const size_t id : it->second) {
-                        const SurfaceSegment seg = links[id].s;
-                        std::vector<WalkPiece> parts = {{0, seg.bary}};
-                        if (last - first > 1) {
-                            const auto [a, la] = piece_of(seg.bary[0], from, first, last);
-                            const auto [b, lb] = piece_of(seg.bary[1], from, first, last);
-                            const auto cut = walk_segment(
-                                sub_tris,
-                                {a - first, snapped(la)},
-                                {b - first, snapped(lb)});
-                            if (!cut) {
-                                drop(id);
-                                continue;
-                            }
-                            parts = *cut;
-                            if (parts.empty()) parts = {{a - first, {snapped(la), snapped(la)}}};
-                        }
-                        std::vector<SurfaceSegment> pieces;
-                        bool ok = true;
-                        for (const WalkPiece& part : parts) {
-                            const Face& f = from[first + part.tri];
-                            const WalkPoint a = land_end(f, part.bary[0], to);
-                            const WalkPoint b = land_end(f, part.bary[1], to);
-                            const auto walked = walk_segment(to_tris, a, b);
-                            if (!walked) {
-                                ok = false;
-                                break;
-                            }
-                            const auto in_face = [&](const size_t k, const Eigen::Vector3d& l) {
-                                const Face& g = to[k];
-                                return Eigen::Vector3d(
-                                    l[0] * g.sub[0] + l[1] * g.sub[1] + l[2] * g.sub[2]);
-                            };
-                            for (const WalkPiece& p : *walked) {
-                                pieces.push_back(
-                                    {to[p.tri].fid,
-                                     {in_face(p.tri, p.bary[0]), in_face(p.tri, p.bary[1])}});
-                            }
-                            if (walked->empty()) {
-                                const Eigen::Vector3d e = in_face(a.tri, a.bary);
-                                pieces.push_back({to[a.tri].fid, {e, e}});
-                            }
-                        }
-                        if (ok) {
-                            replace(id, pieces);
+                        if (auto ch = trace_any(id, first, last, exact::kDoubleDouble)) {
+                            w.unlocated += ch->unlocated;
+                            chains.push_back(std::move(*ch));
                         } else {
                             drop(id);
                         }
@@ -1557,6 +2144,232 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves(
                     on_face.erase(it);
                 }
                 first = last;
+            }
+            if (chains.empty()) continue;
+
+            // Each point is kept to as many terms as the pieces next to it need: its error below
+            // kCurveSafety of the shortest of them (so no piece turns over, shrinks to nothing or
+            // swaps with its neighbour) and below kPointAccuracy. Its coordinates in the face of
+            // each piece it ends are computed from where it is computed, so every copy of it
+            // agrees.
+            std::unordered_map<uint64_t, Hom> version;
+            const auto version_of = [&](const size_t n, const size_t t) -> Hom& {
+                const auto [slot, fresh] = version.try_emplace(uint64_t(n) * 4096 + t);
+                if (fresh) {
+                    const auto l = carry(g->to_uv[nodes[n].tri], nodes[n].h, g->to_uv[t]);
+                    slot->second = in_face(to[t], l ? *l : nodes[n].h);
+                }
+                return slot->second;
+            };
+            std::vector<double> shortest;
+            const auto tolerance = [&](const size_t n) {
+                return std::min(kCurveSafety * shortest[n], kPointAccuracy);
+            };
+            for (int round = 0;; ++round) {
+                shortest.assign(nodes.size(), std::numeric_limits<double>::infinity());
+                // The pieces a point ends, and those of every curve near it in the same triangle
+                // (other curves may run within a few units in the last place of it, and a point is
+                // kept so as not to touch them either).
+                struct PieceRef
+                {
+                    uint64_t face;
+                    size_t t, a, b;
+                };
+                std::vector<PieceRef> all;
+                for (const Chain& ch : chains) {
+                    for (size_t i = 0; i < ch.tris.size(); ++i) {
+                        const size_t a = ch.nodes[i], b = ch.nodes[i + 1];
+                        const double d = distance_below(version_of(a, ch.tris[i]), version_of(b, ch.tris[i]));
+                        shortest[a] = std::min(shortest[a], d);
+                        shortest[b] = std::min(shortest[b], d);
+                        all.push_back({to[ch.tris[i]].fid, ch.tris[i], a, b});
+                    }
+                }
+                // By face: the pieces of a face after are in its coordinates, whichever of its
+                // pieces (a face may be split virtually) they were walked in.
+                std::sort(all.begin(), all.end(), [](const PieceRef& p, const PieceRef& q) { return p.face < q.face; });
+                struct Box
+                {
+                    double x0, x1, y0, y1;
+                    size_t k;
+                };
+                std::vector<Box> boxes;
+                std::vector<Eigen::Vector2d> ends2; // per piece in the group: its two ends, in doubles
+                std::vector<std::optional<Flat>> flats;
+                for (size_t g0 = 0; g0 < all.size();) {
+                    size_t g1 = g0 + 1;
+                    while (g1 < all.size() && all[g1].face == all[g0].face) ++g1;
+                    const size_t k = g1 - g0;
+                    if (k < 2) {
+                        g0 = g1;
+                        continue;
+                    }
+                    ends2.resize(2 * k);
+                    flats.assign(2 * k, std::nullopt);
+                    boxes.clear();
+                    for (size_t i = 0; i < k; ++i) {
+                        for (int e = 0; e < 2; ++e) {
+                            const Hom& h = version_of(e == 0 ? all[g0 + i].a : all[g0 + i].b, all[g0 + i].t);
+                            const double sum = h.v.sum();
+                            ends2[2 * i + e] = Eigen::Vector2d(h.v[1] / sum, h.v[2] / sum);
+                        }
+                        const Eigen::Vector2d &a = ends2[2 * i], &b = ends2[2 * i + 1];
+                        boxes.push_back({std::min(a.x(), b.x()) - kNear, std::max(a.x(), b.x()) + kNear,
+                                         std::min(a.y(), b.y()) - kNear, std::max(a.y(), b.y()) + kNear, i});
+                    }
+                    std::sort(boxes.begin(), boxes.end(), [](const Box& p, const Box& q) { return p.x0 < q.x0; });
+                    const auto flat_at = [&](const size_t slot) -> const Flat& {
+                        if (!flats[slot]) {
+                            const PieceRef& r = all[g0 + slot / 2];
+                            flats[slot] = flat(version_of(slot % 2 == 0 ? r.a : r.b, r.t));
+                        }
+                        return *flats[slot];
+                    };
+                    // End e of piece i against piece j.
+                    const auto near = [&](const size_t i, const int e, const size_t j) {
+                        const size_t n = e == 0 ? all[g0 + i].a : all[g0 + i].b;
+                        const PieceRef& q = all[g0 + j];
+                        if (n == q.a || n == q.b) return;
+                        // In doubles first: a point farther than 2 kNear needs nothing more.
+                        const Eigen::Vector2d &p = ends2[2 * i + e], &a = ends2[2 * j], &b = ends2[2 * j + 1];
+                        const Eigen::Vector2d ab = b - a, ap = p - a;
+                        const double l2 = ab.squaredNorm();
+                        const double tt = l2 > 0 ? std::clamp(ab.dot(ap) / l2, 0., 1.) : 0.;
+                        if ((ap - tt * ab).norm() > 2 * kNear) return;
+                        const Flat &fp = flat_at(2 * i + e), &fa = flat_at(2 * j), &fb = flat_at(2 * j + 1);
+                        const double d = fp.ok && fa.ok && fb.ok ? point_segment(fp, fa, fb) : 0.;
+                        // Each point is within 2 e of where its value says (scaled to sum 1).
+                        const double err = 2 * (fp.e + fa.e + fb.e);
+                        if (d > 2 * err || !(fp.ok && fa.ok && fb.ok)) {
+                            // The distance is known to within half of itself: every point there
+                            // is kept to within a fraction of it.
+                            const double below = d - err;
+                            if (!(below < kNear)) return;
+                            for (const size_t m : {n, q.a, q.b}) shortest[m] = std::min(shortest[m], std::max(below, 0.));
+                            return;
+                        }
+                        // Not known from the values. If all three points are known exactly, exactly:
+                        // a point on the piece is the same point as one of the piece's (two curves
+                        // crossing there), which asks nothing of their precision; off it, its
+                        // distance is |det[p; a; b]| / (sums |a - b|), the determinant exact.
+                        const Hom &hp = version_of(n, all[g0 + i].t), &ha = version_of(q.a, q.t), &hb = version_of(q.b, q.t);
+                        if (hp.known() && ha.known() && hb.known()) {
+                            const exact::Exact3 x = hp.value(), y = ha.value(), z = hb.value();
+                            const Dyadic D = x[0] * (y[1] * z[2] - y[2] * z[1]) - x[1] * (y[0] * z[2] - y[2] * z[0]) +
+                                             x[2] * (y[0] * z[1] - y[1] * z[0]);
+                            if (D.sign() == 0) {
+                                // On the line through the piece: on the piece itself, or as far
+                                // as the nearer of its ends.
+                                const double abx = difference(fb.x, fb.xl, fa.x, fa.xl), aby = difference(fb.y, fb.yl, fa.y, fa.yl);
+                                const double apx = difference(fp.x, fp.xl, fa.x, fa.xl), apy = difference(fp.y, fp.yl, fa.y, fa.yl);
+                                const double along = abx * apx + aby * apy, l2 = abx * abx + aby * aby;
+                                if (along > 0 && along < l2) return;
+                                const double ends = std::min(distance_below(hp, ha), distance_below(hp, hb));
+                                if (ends < kNear) {
+                                    for (const size_t m : {n, q.a, q.b}) shortest[m] = std::min(shortest[m], ends);
+                                }
+                                return;
+                            }
+                            const double sums = (x[0] + x[1] + x[2]).to_double() * (y[0] + y[1] + y[2]).to_double() *
+                                                (z[0] + z[1] + z[2]).to_double();
+                            const double ab = std::hypot(difference(fb.x, fb.xl, fa.x, fa.xl), difference(fb.y, fb.yl, fa.y, fa.yl));
+                            const double exact_d = std::abs(D.to_double()) / (sums * std::max(ab, 0x1p-1000)) * (1 - 0x1p-40);
+                            if (exact_d < kNear) {
+                                for (const size_t m : {n, q.a, q.b}) shortest[m] = std::min(shortest[m], exact_d);
+                            }
+                            return;
+                        }
+                        // Otherwise the points whose error makes it unknown are computed more
+                        // precisely first (their distance to nothing is known: 0), and asked again.
+                        const double emax = std::max({fp.e, fa.e, fb.e});
+                        const std::array<std::pair<size_t, double>, 3> who = {{{n, fp.e}, {q.a, fa.e}, {q.b, fb.e}}};
+                        for (const auto& [m, em] : who) {
+                            if (em >= emax / 4) shortest[m] = 0;
+                        }
+                    };
+                    for (size_t i = 0; i < boxes.size(); ++i) {
+                        for (size_t j = i + 1; j < boxes.size() && boxes[j].x0 <= boxes[i].x1; ++j) {
+                            if (boxes[j].y0 > boxes[i].y1 || boxes[i].y0 > boxes[j].y1) continue;
+                            const size_t P = boxes[i].k, Q = boxes[j].k;
+                            for (int e = 0; e < 2; ++e) {
+                                near(P, e, Q);
+                                near(Q, e, P);
+                            }
+                        }
+                    }
+                    g0 = g1;
+                }
+                // A point whose bound is too large is computed exactly: its copy in a face, if the
+                // point is known exactly; the whole segment otherwise.
+                std::vector<size_t> again;
+                for (size_t ci = 0; ci < chains.size(); ++ci) {
+                    const Chain& ch = chains[ci];
+                    bool redo = false;
+                    for (size_t i = 0; i < ch.nodes.size() && !redo; ++i) {
+                        const size_t n = ch.nodes[i];
+                        const double tol = tolerance(n);
+                        for (const size_t t :
+                             {i > 0 ? ch.tris[i - 1] : nodes[n].tri,
+                              i < ch.tris.size() ? ch.tris[i] : nodes[n].tri}) {
+                            Hom& h = version_of(n, t);
+                            if (h.x || h.e.maxCoeff() <= tol * h.v.sum()) continue;
+                            if (nodes[n].h.known()) {
+                                const auto l = carry(g->to_uv[nodes[n].tri], nodes[n].h, g->to_uv[t]);
+                                for (const exact::Level level : {exact::kDoubleDouble, exact::kExact}) {
+                                    const exact::Precision precision{level};
+                                    h = in_face(to[t], l ? *l : nodes[n].h);
+                                    if (h.x || h.e.maxCoeff() <= tol * h.v.sum()) break;
+                                }
+                            } else {
+                                redo = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (redo) again.push_back(ci);
+                }
+                // Each segment again, one precision up, until none needs it: at most twice each,
+                // since an exact one needs nothing more.
+                bool raised = false;
+                for (const size_t ci : again) {
+                    Chain& ch = chains[ci];
+                    if (ch.level == exact::kExact) continue;
+                    if (auto again_chain = trace_any(ch.id, ch.first, ch.last, ch.level + 1)) {
+                        ch = std::move(*again_chain);
+                        raised = true;
+                    }
+                }
+                if (!raised) break;
+                version.clear();
+            }
+
+            for (const Chain& ch : chains) {
+                const auto terms = [&](const size_t n, const size_t t) {
+                    const Hom& h = version_of(n, t);
+                    if (auto out = terms_of(h, tolerance(n))) return std::move(*out);
+                    // Not reached once every segment is exact; else as precise as it is.
+                    if ((h.lo.array() != 0).any()) return std::pair{h.v, BaryTail{h.lo}};
+                    return std::pair{h.v, BaryTail{}};
+                };
+                const auto segment = [&](const size_t t, const size_t a, const size_t b) {
+                    auto ta = terms(a, t), tb = terms(b, t);
+                    SurfaceSegment out{to[t].fid, {ta.first, tb.first}};
+                    if (!ta.second.empty() || !tb.second.empty()) {
+                        out.tail = std::make_shared<const std::array<BaryTail, 2>>(
+                            std::array<BaryTail, 2>{std::move(ta.second), std::move(tb.second)});
+                    }
+                    return out;
+                };
+                std::vector<SurfaceSegment> pieces;
+                if (ch.tris.empty()) {
+                    // A segment of no length stays one.
+                    const size_t n = ch.nodes.front();
+                    pieces.push_back(segment(nodes[n].tri, n, n));
+                }
+                for (size_t i = 0; i < ch.tris.size(); ++i) {
+                    pieces.push_back(segment(ch.tris[i], ch.nodes[i], ch.nodes[i + 1]));
+                }
+                replace(ch.id, pieces);
             }
         }
         for (const uint64_t f : forward ? s.dead : s.born) {

@@ -231,6 +231,25 @@ void map_points(
     size_t lost = 0, total = 0;
     MapWarnings warnings;
     timer.start();
+    // Further terms of points, if given: points_path.tail, a line `row n t...` adds the sum of n
+    // terms (three coordinates each) to the point on line `row` (from 0).
+    std::vector<Eigen::Vector3d> lows;
+    if (std::ifstream tails(points_path + ".tail"); tails) {
+        std::string line;
+        while (std::getline(tails, line)) {
+            std::istringstream ss(line);
+            size_t row = 0, n = 0;
+            if (!(ss >> row >> n)) continue;
+            if (row >= lows.size()) lows.resize(row + 1, Eigen::Vector3d::Zero());
+            for (size_t i = 0; i < n; ++i) {
+                Eigen::Vector3d t;
+                if (ss >> t[0] >> t[1] >> t[2]) lows[row] += t;
+            }
+        }
+    }
+    const auto low = [&](const size_t row) {
+        return row < lows.size() ? lows[row] : Eigen::Vector3d(Eigen::Vector3d::Zero());
+    };
     if (forward) {
         std::vector<InputPoint> pts;
         for (const auto& r : read_points(points_path, n_in)) {
@@ -241,6 +260,7 @@ void map_points(
             } else {
                 p.face = id_of(r[0]);
                 p.bary = Eigen::Vector3d(r[1], r[2], r[3]);
+                p.lo = low(pts.size());
             }
             pts.push_back(p);
         }
@@ -266,6 +286,7 @@ void map_points(
             } else {
                 p.face = id_of(r[0]);
                 p.bary = Eigen::Vector3d(r[1], r[2], r[3]);
+                p.lo = low(pts.size());
             }
             pts.push_back(p);
         }
@@ -292,6 +313,47 @@ void map_points(
     log_warnings("mapping", warnings);
 }
 
+/// Further terms of segment ends (SurfaceSegment::tail), in a file of their own beside the
+/// segments: a line `row end n t...` gives end `end` (0 or 1) of the segment on line `row`
+/// (from 0) n terms of three coordinates each. Segments without a line have none.
+void write_tails(std::ostream& out, const size_t row, const SurfaceSegment& s)
+{
+    if (!s.tail) return;
+    for (int end = 0; end < 2; ++end) {
+        const BaryTail& t = (*s.tail)[end];
+        if (t.empty()) continue;
+        out << row << " " << end << " " << t.size();
+        for (const Eigen::Vector3d& x : t) out << " " << x[0] << " " << x[1] << " " << x[2];
+        out << "\n";
+    }
+}
+
+void read_tails(const std::string& path, const std::vector<SurfaceSegment*>& rows)
+{
+    std::ifstream in(path);
+    if (!in) return;
+    std::string line;
+    for (size_t number = 1; std::getline(in, line); ++number) {
+        std::istringstream ss(line);
+        size_t row = 0, n = 0;
+        int end = 0;
+        if (!(ss >> row >> end >> n)) continue;
+        if (row >= rows.size() || end < 0 || end > 1) {
+            log_and_throw_error("{}:{}: no segment end {} {}", path, number, row, end);
+        }
+        BaryTail t(n);
+        for (Eigen::Vector3d& x : t) {
+            if (!(ss >> x[0] >> x[1] >> x[2])) {
+                log_and_throw_error("{}:{}: expected {} terms", path, number, n);
+            }
+        }
+        SurfaceSegment& s = *rows[row];
+        auto both = s.tail ? *s.tail : std::array<BaryTail, 2>{};
+        both[end] = std::move(t);
+        s.tail = std::make_shared<const std::array<BaryTail, 2>>(std::move(both));
+    }
+}
+
 /// The map_curves operation: curves on the input to the output, or back. Each line of the file is
 /// a segment, `curve face a0 a1 a2 b0 b1 b2`; a curve's segments are in order.
 void map_surface_curves(
@@ -310,12 +372,18 @@ void map_surface_curves(
     const SurfaceMap map(h, options_of(json_params));
     logger().info("map built in {:.3}s", timer.getElapsedTimeInSec());
     std::vector<SurfaceCurve> curves;
-    for (const auto& r : read_points(resolve_path(root, json_params["points"]).string(), 8)) {
+    const std::string points_path = resolve_path(root, json_params["points"]).string();
+    std::vector<std::pair<size_t, size_t>> order; // curve and place of each line
+    for (const auto& r : read_points(points_path, 8)) {
         const size_t c = size_t(r[0]);
         if (c >= curves.size()) curves.resize(c + 1);
+        order.emplace_back(c, curves[c].size());
         curves[c].push_back(
             {id_of(r[1]), {Eigen::Vector3d(r[2], r[3], r[4]), Eigen::Vector3d(r[5], r[6], r[7])}});
     }
+    std::vector<SurfaceSegment*> rows;
+    for (const auto& [c, i] : order) rows.push_back(&curves[c][i]);
+    read_tails(points_path + ".tail", rows);
     timer.start();
     MapWarnings warnings;
     const auto mapped =
@@ -326,13 +394,17 @@ void map_surface_curves(
     out.precision(17);
     size_t in = 0, total = 0;
     for (const SurfaceCurve& c : curves) in += c.size();
+    std::ofstream tails(output_points + ".tail");
+    if (!tails) log_and_throw_error("Could not write {}.tail", output_points);
+    tails.precision(17);
     for (size_t c = 0; c < mapped.size(); ++c) {
         for (size_t part = 0; part < mapped[c].size(); ++part) {
             for (const SurfaceSegment& s : mapped[c][part]) {
-                ++total;
                 out << c << " " << part << " " << s.face;
                 for (const auto& b : s.bary) out << " " << b[0] << " " << b[1] << " " << b[2];
                 out << "\n";
+                write_tails(tails, total, s);
+                ++total;
             }
         }
     }
