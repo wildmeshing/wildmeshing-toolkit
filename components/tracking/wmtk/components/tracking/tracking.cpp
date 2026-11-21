@@ -117,6 +117,7 @@ std::vector<OutputPoint> Tracking::to_output(
         const SurfacePoint& p = mapped[i];
         if (p.face >= faces.size() || !alive[p.face]) continue;
         out[i].bary = p.bary;
+        out[i].lo = p.lo;
         if (!output_by_vertices()) {
             out[i].face = p.face;
             continue;
@@ -152,6 +153,7 @@ std::vector<InputPoint> Tracking::to_input(
         const SurfacePoint& p = mapped[i];
         if (p.face >= in_faces.size() || !in_alive[p.face]) continue;
         out[i].bary = p.bary;
+        out[i].lo = p.lo;
         if (!input_by_vertices()) {
             out[i].face = p.face;
             continue;

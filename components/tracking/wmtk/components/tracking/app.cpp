@@ -30,7 +30,7 @@ void log_warnings(const char* what, const MapWarnings& w)
 {
     logger().info(
         "{}: {} warning(s) -- not a disk {}, flat triangle {}, inverted {}, merged faces {}, "
-        "unlocated {}, replaced faces {}, broken curve segments {}",
+        "unlocated {}, replaced faces {}, broken curve segments {}, imprecise {}",
         what,
         w.total(),
         w.not_a_disk,
@@ -39,7 +39,8 @@ void log_warnings(const char* what, const MapWarnings& w)
         w.merged_faces,
         w.unlocated,
         w.replaced,
-        w.broken_segments);
+        w.broken_segments,
+        w.imprecise);
     if (w.total() > 0) logger().warn("{}: the map is not a bijection everywhere", what);
 }
 
@@ -203,6 +204,8 @@ SurfaceMapOptions options_of(const nlohmann::json& json_params)
     if (json_params["collapse_patch"] == "removed_star") {
         options.collapse_patch = CollapsePatch::removed_star;
     }
+    options.certify = json_params["certify"];
+    options.source_accuracy = json_params["source_accuracy"];
     return options;
 }
 
@@ -250,6 +253,19 @@ void map_points(
     const auto low = [&](const size_t row) {
         return row < lows.size() ? lows[row] : Eigen::Vector3d(Eigen::Vector3d::Zero());
     };
+    // Further terms of the mapped points, in the same format, beside them: a point the doubles
+    // do not tell precisely enough (an ill-conditioned map) has one.
+    std::ofstream out_tails(output_points + ".tail");
+    if (!out_tails) log_and_throw_error("Could not write {}.tail", output_points);
+    out_tails.precision(17);
+    size_t row_out = 0, with_term = 0;
+    const auto write_low = [&](const Eigen::Vector3d& lo) {
+        if ((lo.array() != 0).any()) {
+            out_tails << row_out << " 1 " << lo[0] << " " << lo[1] << " " << lo[2] << "\n";
+            ++with_term;
+        }
+        ++row_out;
+    };
     if (forward) {
         std::vector<InputPoint> pts;
         for (const auto& r : read_points(points_path, n_in)) {
@@ -275,6 +291,7 @@ void map_points(
                 out << id_text(p.face) << " ";
             }
             out << p.bary[0] << " " << p.bary[1] << " " << p.bary[2] << "\n";
+            write_low(p.lo);
         }
     } else {
         std::vector<OutputPoint> pts;
@@ -301,14 +318,17 @@ void map_points(
                 out << id_text(p.face) << " ";
             }
             out << p.bary[0] << " " << p.bary[1] << " " << p.bary[2] << "\n";
+            write_low(p.lo);
         }
     }
     logger().info(
-        "{} points mapped to the {} in {:.3}s, {} without an image; written to {}",
+        "{} points mapped to the {} in {:.3}s, {} without an image, {} with a further term; "
+        "written to {}",
         total,
         forward ? "output" : "input",
         timer.getElapsedTimeInSec(),
         lost,
+        with_term,
         output_points);
     log_warnings("mapping", warnings);
 }

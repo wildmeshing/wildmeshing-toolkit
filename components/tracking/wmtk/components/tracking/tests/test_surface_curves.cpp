@@ -1,5 +1,6 @@
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshing.h>
 #include <wmtk/components/tracking/SurfaceMap.hpp>
+#include <wmtk/components/tracking/dyadic.hpp>
 #include <wmtk/components/tracking/segment_walk.hpp>
 #include <wmtk/history/History.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
@@ -503,7 +504,165 @@ TEST_CASE("surface-map-agrees-across-a-feature-curve", "[tracking][surfaces]" + 
     for (size_t i = 0; i < a.size(); ++i) {
         gap = std::max(
             gap,
-            (position(a[i].face, a[i].bary, V, G) - position(b[i].face, b[i].bary, V, G)).norm());
+            (position(a[i].face, a[i].bary + a[i].lo, V, G) - position(b[i].face, b[i].bary + b[i].lo, V, G)).norm());
     }
-    CHECK(gap < 1e-11);
+    WARN("an edge point through its two faces: images " << gap << " apart");
+    CHECK(gap < 1e-14);
+}
+
+TEST_CASE("surface-map-certified-precision", "[tracking][surfaces]" + release_only)
+{
+    // Mapped points and curves are stored as precisely as it takes for each to name, to within
+    // SurfaceMapOptions::source_accuracy, the point of the mesh it came from -- checked by mapping
+    // it back. Asked for 2^-62 of the diagonal, finer than doubles hold a point, most mapped points
+    // need a further term (SurfacePoint::lo, SurfaceSegment::tail), and with it every point goes
+    // there and back to within that, measured exactly. (Real meshes need it where the map is
+    // ill-conditioned: on Thingi10K 126284, 371 of 16,050 points at the default 2^-50.)
+    const auto h = remesh("sphere.obj", 0.6, 2);
+    tracking::SurfaceMapOptions options;
+    options.source_accuracy = 0x1p-62;
+    const SurfaceMap map(h, options);
+    REQUIRE(map.build_warnings().total() == 0);
+    const auto& V = map.input_vertices();
+    const auto& F = map.input_faces();
+    Eigen::Vector3d lo = Eigen::Vector3d::Constant(1e300), hi = -lo;
+    for (uint64_t f = 0; f < F.size(); ++f) {
+        if (!map.input_face_alive()[f]) continue;
+        for (const uint64_t v : F[f]) {
+            lo = lo.cwiseMin(V[v]);
+            hi = hi.cwiseMax(V[v]);
+        }
+    }
+    const double diagonal = (hi - lo).norm();
+    // A point in space, exactly, times the sum of its coordinates: bary + lo, then the tail.
+    struct Exact
+    {
+        std::array<tracking::exact::Dyadic, 3> x;
+        tracking::exact::Dyadic sum;
+    };
+    const auto exact = [&](const uint64_t face, const std::vector<Eigen::Vector3d>& terms) {
+        Exact e;
+        for (const Eigen::Vector3d& t : terms) {
+            for (int k = 0; k < 3; ++k) {
+                if (t[k] == 0) continue;
+                const tracking::exact::Dyadic c(t[k]);
+                e.sum = e.sum + c;
+                for (int d = 0; d < 3; ++d) e.x[d] = e.x[d] + c * tracking::exact::Dyadic(V[F[face][k]][d]);
+            }
+        }
+        return e;
+    };
+    // b - a, the differences exact and then rounded.
+    const auto difference = [](const Exact& a, const Exact& b) {
+        const double s = a.sum.to_double() * b.sum.to_double();
+        Eigen::Vector3d d;
+        for (int k = 0; k < 3; ++k) d[k] = (b.x[k] * a.sum - a.x[k] * b.sum).to_double() / s;
+        return d;
+    };
+
+    std::mt19937 rng(5);
+    std::uniform_real_distribution<double> u(0., 1.);
+    std::vector<SurfacePoint> pts;
+    for (uint64_t f = 0; f < F.size(); ++f) {
+        if (!map.input_face_alive()[f]) continue;
+        for (int k = 0; k < 3; ++k) {
+            Eigen::Vector3d corner = Eigen::Vector3d::Zero(), mid = Eigen::Vector3d::Zero();
+            corner[k] = 1;
+            mid[k] = mid[(k + 1) % 3] = 0.5;
+            pts.push_back({f, corner});
+            pts.push_back({f, mid});
+        }
+        double a = u(rng), b = u(rng);
+        if (a + b > 1) {
+            a = 1 - a;
+            b = 1 - b;
+        }
+        pts.push_back({f, Eigen::Vector3d(1 - a - b, a, b)});
+    }
+    tracking::MapWarnings there_warnings, back_warnings;
+    const auto there = map.to_output(pts, &there_warnings);
+    CHECK(there_warnings.total() == 0);
+    size_t with_term = 0;
+    std::vector<SurfacePoint> rounded = there;
+    for (SurfacePoint& p : rounded) {
+        with_term += (p.lo.array() != 0).any();
+        p.lo.setZero();
+    }
+    const auto back = map.to_input(there, &back_warnings);
+    const auto back_rounded = map.to_input(rounded);
+    CHECK(back_warnings.total() == 0);
+    double off = 0, off_rounded = 0;
+    for (size_t i = 0; i < pts.size(); ++i) {
+        REQUIRE(back[i].face != std::numeric_limits<uint64_t>::max());
+        const Exact start = exact(pts[i].face, {pts[i].bary});
+        off = std::max(off, difference(start, exact(back[i].face, {back[i].bary, back[i].lo})).norm());
+        off_rounded = std::max(
+            off_rounded,
+            difference(start, exact(back_rounded[i].face, {back_rounded[i].bary, back_rounded[i].lo}))
+                .norm());
+    }
+    WARN(
+        "certified round trip: " << pts.size() << " points, " << with_term
+                                 << " with a further term; off by " << off / diagonal
+                                 << " of the diagonal, " << off_rounded / diagonal
+                                 << " without the further terms");
+    CHECK(with_term > pts.size() / 2);
+    CHECK(off <= 0x1p-62 * diagonal);
+    CHECK(off_rounded > 0x1p-62 * diagonal);
+
+    // The input's edges as curves: every point of their images, mapped back with its terms, is
+    // on its edge, to within the same.
+    std::vector<SurfaceCurve> edges;
+    for (uint64_t f = 0; f < F.size(); f += 3) {
+        if (!map.input_face_alive()[f]) continue;
+        Eigen::Vector3d a = Eigen::Vector3d::Zero(), b = Eigen::Vector3d::Zero();
+        a[0] = b[1] = 1;
+        edges.push_back({SurfaceSegment{f, {a, b}}});
+    }
+    tracking::MapWarnings curve_warnings;
+    const auto images = map.curves_to_output(edges, &curve_warnings);
+    CHECK(curve_warnings.total() == 0);
+    std::vector<SurfacePoint> nodes;
+    std::vector<size_t> edge_of;
+    size_t with_tail = 0;
+    for (size_t c = 0; c < images.size(); ++c) {
+        REQUIRE(images[c].size() == 1);
+        for (const SurfaceSegment& s : images[c][0]) {
+            with_tail += s.tail != nullptr;
+            for (int e = 0; e < 2; ++e) {
+                SurfacePoint p{s.face, s.bary[e]};
+                if (s.tail) {
+                    for (const auto& t : (*s.tail)[e]) p.lo += t;
+                }
+                nodes.push_back(p);
+                edge_of.push_back(c);
+            }
+        }
+    }
+    const auto nodes_back = map.to_input(nodes);
+    double off_edge = 0;
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        REQUIRE(nodes_back[i].face != std::numeric_limits<uint64_t>::max());
+        const SurfaceSegment& edge = edges[edge_of[i]][0];
+        const Exact a = exact(edge.face, {edge.bary[0]}), b = exact(edge.face, {edge.bary[1]});
+        const Exact q = exact(nodes_back[i].face, {nodes_back[i].bary, nodes_back[i].lo});
+        // Distance to the line through the edge, exactly up to one rounding: |U x W| / |W| / (sa sq)
+        // with U = (q - a) sa sq and W = (b - a) sa sb.
+        std::array<tracking::exact::Dyadic, 3> U, W;
+        for (int d = 0; d < 3; ++d) {
+            U[d] = q.x[d] * a.sum - a.x[d] * q.sum;
+            W[d] = b.x[d] * a.sum - a.x[d] * b.sum;
+        }
+        const Eigen::Vector3d c(
+            (U[1] * W[2] - U[2] * W[1]).to_double(),
+            (U[2] * W[0] - U[0] * W[2]).to_double(),
+            (U[0] * W[1] - U[1] * W[0]).to_double());
+        const Eigen::Vector3d w(W[0].to_double(), W[1].to_double(), W[2].to_double());
+        off_edge = std::max(off_edge, c.norm() / w.norm() / (a.sum.to_double() * q.sum.to_double()));
+    }
+    WARN("certified curves: " << nodes.size() << " points of " << edges.size() << " edges, "
+                              << with_tail << " segments with further terms; mapped back off "
+                              << "their edge by " << off_edge / diagonal << " of the diagonal");
+    CHECK(with_tail > 0);
+    CHECK(off_edge <= 0x1p-62 * diagonal);
 }

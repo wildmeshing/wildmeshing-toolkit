@@ -256,6 +256,88 @@ constexpr double kPointAccuracy = 0x1p-44;
 /// is so kept to two or more terms.
 constexpr double kCurveSafety = 0x1p-20;
 constexpr size_t kNoNode = std::numeric_limits<size_t>::max();
+/// A point carried from step to step in double-doubles is computed, at each step, this much more
+/// precisely than it is stored at the end: hundreds of steps add up to less than the storing.
+constexpr double kStepShare = 0x1p-16;
+
+/// The sensitivity of a point: how far the point of the starting mesh it stands for moves, at
+/// most, per unit of error in its coordinates (relative to their sum). K takes a change of the
+/// point's coordinates, scaled to sum 1, to the displacement in space of the point it came from;
+/// such a change sums to zero, so only K's columns about their mean count, and an error e in each
+/// coordinate changes the scaled coordinates by at most 4 e each.
+double sensitivity(const Eigen::Matrix3d& K)
+{
+    const Eigen::Vector3d m = (K.col(0) + K.col(1) + K.col(2)) / 3;
+    double s = 0;
+    for (int k = 0; k < 3; ++k) s += (K.col(k) - m).norm();
+    return std::isfinite(s) ? 4 * s : std::numeric_limits<double>::infinity();
+}
+/// The error (relative to the coordinates' sum) a point of sensitivity `s` may have for the point
+/// of the starting mesh to be within `allowed` (a distance) of where it is.
+double source_tolerance(const double s, const double allowed)
+{
+    return s > 0 ? allowed / s : std::numeric_limits<double>::infinity();
+}
+/// The corners of face f, as columns: coordinates on the face to a point in space.
+Eigen::Matrix3d corner_matrix(
+    const std::vector<Eigen::Vector3d>& vertices,
+    const std::vector<std::array<uint64_t, 3>>& faces,
+    const uint64_t f)
+{
+    Eigen::Matrix3d P;
+    for (int k = 0; k < 3; ++k) P.col(k) = vertices[faces[f][k]];
+    return P;
+}
+/// The bounding box diagonal of the vertices of the live faces.
+double diagonal_of(
+    const std::vector<Eigen::Vector3d>& vertices,
+    const std::vector<std::array<uint64_t, 3>>& faces,
+    const std::vector<uint8_t>& alive)
+{
+    Eigen::Vector3d lo = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+    Eigen::Vector3d hi = -lo;
+    for (size_t f = 0; f < faces.size(); ++f) {
+        if (f >= alive.size() || !alive[f]) continue;
+        for (const uint64_t v : faces[f]) {
+            lo = lo.cwiseMin(vertices[v]);
+            hi = hi.cwiseMax(vertices[v]);
+        }
+    }
+    const double d = (hi - lo).norm();
+    return std::isfinite(d) ? d : 0.;
+}
+/// The linear part of barycentric3 on triangle t: a displacement in space to the change of the
+/// coordinates on t of the point it moves. barycentric3 is affine, so differences give it.
+Eigen::Matrix3d barycentric_gradient(const std::array<Eigen::Vector3d, 3>& t)
+{
+    const Eigen::Vector3d c = (t[0] + t[1] + t[2]) / 3;
+    const double h = std::max({(t[1] - t[0]).norm(), (t[2] - t[0]).norm(), (t[2] - t[1]).norm()});
+    const Eigen::Vector3d at = barycentric3(c, t);
+    Eigen::Matrix3d G = Eigen::Matrix3d::Zero();
+    if (!(h > 0)) return G;
+    for (int j = 0; j < 3; ++j) {
+        G.col(j) = (barycentric3(c + h * Eigen::Vector3d::Unit(j), t) - at) / h;
+    }
+    return G;
+}
+
+/// h with its exact coordinates, if any, as double-doubles and the rest of them in the bound: what
+/// exact::normalized divides by its sum at double-double precision (exact coordinates it only
+/// scales by a power of two, which leaves points of different sums incomparable).
+Hom as_double_double(const Hom& h)
+{
+    if (!h.x) return h;
+    Hom in = h;
+    for (int k = 0; k < 3; ++k) {
+        const Dyadic& c = (*h.x)[k];
+        in.v[k] = c.to_double();
+        const Dyadic r = c - Dyadic(in.v[k]);
+        in.lo[k] = r.to_double();
+        in.e[k] = std::abs((r - Dyadic(in.lo[k])).to_double()) * (1 + 0x1p-50) + 0x1p-1000;
+    }
+    in.x.reset();
+    return in;
+}
 
 /// A lower bound on the distance between two points of a face: the largest difference of their
 /// coordinates scaled to sum 1. From the coordinates scaled in double-doubles and their bounds, or
@@ -266,8 +348,8 @@ double distance_below(const Hom& a, const Hom& b)
     Hom na, nb;
     {
         const exact::Precision dd(exact::kDoubleDouble);
-        na = exact::normalized(a);
-        nb = exact::normalized(b);
+        na = exact::normalized(as_double_double(a));
+        nb = exact::normalized(as_double_double(b));
     }
     const bool scaled = !exact::undecided();
     if (!was_undecided) exact::clear_undecided();
@@ -310,18 +392,7 @@ struct Flat
 };
 Flat flat(const Hom& h)
 {
-    Hom in = h;
-    if (h.x) {
-        // The exact coordinates as double-doubles, the rest of them in the bound.
-        for (int k = 0; k < 3; ++k) {
-            const Dyadic& c = (*h.x)[k];
-            in.v[k] = c.to_double();
-            const Dyadic r = c - Dyadic(in.v[k]);
-            in.lo[k] = r.to_double();
-            in.e[k] = std::abs((r - Dyadic(in.lo[k])).to_double()) * (1 + 0x1p-50) + 0x1p-1000;
-        }
-        in.x.reset();
-    }
+    const Hom in = as_double_double(h);
     const bool was_undecided = exact::undecided();
     Hom n;
     {
@@ -484,6 +555,33 @@ struct CellGeometry
     const std::vector<SurfaceMap::Face>& to;
     bool forward;
     std::vector<TriangleH> from_uv, to_uv;
+    /// back() of the pairs asked for so far.
+    mutable std::unordered_map<uint64_t, Eigen::Matrix3d> backs;
+
+    /// The linear map taking a change of a point's coordinates in the face of piece `tau`
+    /// (after) to the change of its coordinates in the face of piece `sigma` (before), both
+    /// scaled to sum 1, for a point the cell maps from sigma to tau: face to piece, piece to
+    /// domain, domain to piece, piece to face, backwards. In doubles: it sets how precisely the
+    /// point is kept (sensitivity()), nothing else. Not finite where a piece is flat in doubles.
+    const Eigen::Matrix3d& back(const size_t sigma, const size_t tau) const
+    {
+        const auto [slot, fresh] = backs.try_emplace(uint64_t(sigma) * 65536 + tau);
+        if (fresh) {
+            const auto lifted = [](const SurfaceMap::Face& f) {
+                Eigen::Matrix3d T;
+                for (int k = 0; k < 3; ++k) T.col(k) << f.uv[k].x(), f.uv[k].y(), 1.;
+                return T;
+            };
+            const auto pieces = [](const SurfaceMap::Face& f) {
+                Eigen::Matrix3d S;
+                for (int k = 0; k < 3; ++k) S.col(k) = f.sub[k];
+                return S;
+            };
+            slot->second = pieces(from[sigma]) * lifted(from[sigma]).inverse() * lifted(to[tau]) *
+                           pieces(to[tau]).inverse();
+        }
+        return slot->second;
+    }
 
     CellGeometry(const SurfaceMap::Cell& c, const bool fw)
         : cell(c)
@@ -1663,6 +1761,15 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
     m_out_faces = r.faces();
     m_out_face_alive = r.face_alive();
     m_out_features = r.features();
+    // An embed maps through space: a bijection only as far as the faces before and after are
+    // coplanar, and computed in doubles. A point through one need not come back to where it
+    // started, whatever its precision, so there is nothing to certify it against.
+    m_source_accuracy = options.source_accuracy;
+    m_certify = options.certify && std::none_of(m_steps.begin(), m_steps.end(), [](const Step& s) {
+        return s.kind == EditKind::embed;
+    });
+    m_in_scale = diagonal_of(m_in_vertices, m_in_faces, m_in_face_alive);
+    m_out_scale = diagonal_of(m_out_vertices, m_out_faces, m_out_face_alive);
 }
 
 std::vector<SurfacePoint> SurfaceMap::to_input(
@@ -1679,8 +1786,20 @@ std::vector<SurfacePoint> SurfaceMap::to_output(
     return map(std::move(points), true, warnings);
 }
 
-std::vector<SurfacePoint>
-SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* warnings) const
+/// Points mapped, before they are stored: each scaled to sum 1 as a double-double (bary + lo) if
+/// it was computed at all, with its sensitivity matrix (see sensitivity()).
+struct SurfaceMap::Raw
+{
+    std::vector<SurfacePoint> pts;
+    std::vector<char> computed;
+    std::vector<Eigen::Matrix3d> K;
+};
+
+SurfaceMap::Raw SurfaceMap::map_raw(
+    std::vector<SurfacePoint> pts,
+    const bool forward,
+    MapWarnings* warnings,
+    const std::vector<double>* share) const
 {
     // Counted for this call alone: the map itself is never written, so several threads may map
     // through it at once.
@@ -1708,6 +1827,16 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
     // Whether a point was computed anew (not only carried as it was): such a point is scaled to
     // sum 1 at the end; one never computed keeps its doubles.
     std::vector<char> computed(pts.size(), 0);
+    // Each point's sensitivity matrix (see sensitivity()): a change of its coordinates to the
+    // displacement of the point of the starting mesh it stands for. The corners of its face at
+    // first; each step multiplies it by the step's local map, backwards.
+    const auto& start_vertices = forward ? m_in_vertices : m_out_vertices;
+    const auto& start_faces = forward ? m_in_faces : m_out_faces;
+    const double scale = forward ? m_in_scale : m_out_scale;
+    std::vector<Eigen::Matrix3d> K(pts.size(), Eigen::Matrix3d::Zero());
+    for (size_t i = 0; i < pts.size(); ++i) {
+        if (pts[i].face != kNone) K[i] = corner_matrix(start_vertices, start_faces, pts[i].face);
+    }
 
     const auto visit = [&](const Step& s) {
         if (s.kind == EditKind::consolidate) {
@@ -1755,6 +1884,11 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
                     best_l = best_l.cwiseMax(0.);
                     best_l = best_l.sum() > 0 ? Eigen::Vector3d(best_l / best_l.sum())
                                               : Eigen::Vector3d(1. / 3, 1. / 3, 1. / 3);
+                    // The point keeps its place in space: coordinates after, to space, to
+                    // coordinates before.
+                    Eigen::Matrix3d after;
+                    for (int k = 0; k < 3; ++k) after.col(k) = to[best_g][k];
+                    K[i] = K[i] * barycentric_gradient(c) * after;
                     pts[i] = {best_g, best_l};
                     lo[i].setZero();
                     computed[i] = 1;
@@ -1783,11 +1917,18 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
                         const BaryTail tail = {lo[i]};
                         const Hom b = stored_of(pts[i].bary, (lo[i].array() != 0).any() ? &tail : nullptr);
                         bool inside = true, fresh = false;
-                        // The point after, as a double-double, if its bound is within kPointAccuracy.
+                        Eigen::Matrix3d Kn = K[i];
+                        // The point after, as a double-double, if its bound is within kPointAccuracy
+                        // and within its share of what the point it stands for allows.
                         const auto image = [&]() -> std::optional<std::pair<SurfacePoint, Eigen::Vector3d>> {
                             const auto [piece, l] = g->piece_of(b, first, last);
                             const HWalkPoint at = g->land(piece, l, inside);
                             const Hom h = in_face(to[at.tri], at.bary);
+                            Kn = K[i] * g->back(piece, at.tri);
+                            const double tol = std::min(
+                                kPointAccuracy,
+                                (share ? (*share)[i] : 1.) * kStepShare *
+                                    source_tolerance(sensitivity(Kn), m_source_accuracy * scale));
                             Eigen::Vector3d v = h.v, low = h.lo;
                             fresh = !h.stored;
                             if (h.x) {
@@ -1795,7 +1936,7 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
                                     v[k] = (*h.x)[k].to_double();
                                     low[k] = ((*h.x)[k] - Dyadic(v[k])).to_double();
                                 }
-                            } else if (!(h.e.maxCoeff() <= kPointAccuracy * h.v.sum())) {
+                            } else if (!(h.e.maxCoeff() <= tol * h.v.sum())) {
                                 return std::nullopt;
                             }
                             return std::pair{SurfacePoint{to[at.tri].fid, v}, low};
@@ -1812,6 +1953,7 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
                         if (!inside) ++w.unlocated;
                         pts[i] = p->first;
                         lo[i] = p->second;
+                        K[i] = Kn;
                         computed[i] = computed[i] || fresh;
                         landed.emplace_back(p->first.face, i);
                     }
@@ -1835,26 +1977,181 @@ SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* 
     } else {
         for (auto it = m_steps.rbegin(); it != m_steps.rend(); ++it) visit(*it);
     }
-    // Rounded to doubles once, scaled to sum 1: (bary + lo) / sum, the sum in double-doubles.
+    // Scaled to sum 1, in double-doubles.
     for (size_t i = 0; i < pts.size(); ++i) {
         if (pts[i].face == kNone) continue;
         if (!computed[i]) {
-            // Never computed: as given (a further term given folded into the doubles).
-            if ((lo[i].array() != 0).any()) pts[i].bary += lo[i];
+            // Never computed: as given.
+            pts[i].lo = lo[i];
             continue;
         }
-        const Eigen::Vector3d x = pts[i].bary + lo[i];
-        const double sum = (pts[i].bary.sum() + lo[i].sum());
-        if (sum > 0 && sum != 1) {
+        Hom h = Hom::of(pts[i].bary);
+        h.lo = lo[i];
+        const bool was_undecided = exact::undecided();
+        Hom n;
+        {
+            const exact::Precision dd(exact::kDoubleDouble);
+            n = exact::normalized(h);
+        }
+        const bool scaled = !exact::undecided();
+        if (!was_undecided) exact::clear_undecided();
+        if (scaled) {
             for (int k = 0; k < 3; ++k) {
-                pts[i].bary[k] = pts[i].bary[k] == 0 ? 0. : (pts[i].bary[k] / sum + lo[i][k] / sum);
+                if (pts[i].bary[k] == 0) n.v[k] = n.lo[k] = 0;
             }
-        } else {
-            pts[i].bary = x;
+            pts[i].bary = n.v;
+            pts[i].lo = n.lo;
+            continue;
+        }
+        const double sum = (pts[i].bary.sum() + lo[i].sum());
+        for (int k = 0; k < 3; ++k) {
+            pts[i].bary[k] = pts[i].bary[k] == 0 ? 0. : (pts[i].bary[k] / sum + lo[i][k] / sum);
         }
     }
     if (warnings) *warnings = w;
-    return pts;
+    return Raw{std::move(pts), std::move(computed), std::move(K)};
+}
+
+namespace {
+
+/// A point of a mesh in space, exactly, times the sum of its coordinates: sum_k (bary + lo)_k p_k
+/// and that sum.
+struct ExactPosition
+{
+    std::array<Dyadic, 3> x;
+    Dyadic sum;
+};
+ExactPosition exact_position(
+    const std::vector<Eigen::Vector3d>& vertices,
+    const std::array<uint64_t, 3>& face,
+    const Eigen::Vector3d& bary,
+    const Eigen::Vector3d& lo)
+{
+    ExactPosition out;
+    for (int k = 0; k < 3; ++k) {
+        if (bary[k] == 0 && lo[k] == 0) continue;
+        const Dyadic c = Dyadic(bary[k]) + Dyadic(lo[k]);
+        out.sum = out.sum + c;
+        for (int d = 0; d < 3; ++d) out.x[d] = out.x[d] + c * Dyadic(vertices[face[k]][d]);
+    }
+    return out;
+}
+/// b - a for two points: the differences exact, then rounded once each, so the result is as
+/// accurate as doubles are however close the points.
+Eigen::Vector3d exact_difference(const ExactPosition& a, const ExactPosition& b)
+{
+    const double scale = a.sum.to_double() * b.sum.to_double();
+    Eigen::Vector3d out;
+    for (int d = 0; d < 3; ++d) out[d] = (b.x[d] * a.sum - a.x[d] * b.sum).to_double() / scale;
+    return out;
+}
+/// The distance from q to the segment from a to b, to a few units in its own last place however
+/// small it is: which part of the segment is nearest, and the cross product, exactly.
+double exact_distance(const ExactPosition& q, const ExactPosition& a, const ExactPosition& b)
+{
+    // U = (q - a) sa sq and W = (b - a) sa sb, exactly.
+    std::array<Dyadic, 3> U, W;
+    for (int d = 0; d < 3; ++d) {
+        U[d] = q.x[d] * a.sum - a.x[d] * q.sum;
+        W[d] = b.x[d] * a.sum - a.x[d] * b.sum;
+    }
+    const Dyadic dot = U[0] * W[0] + U[1] * W[1] + U[2] * W[2];
+    const Dyadic ww = W[0] * W[0] + W[1] * W[1] + W[2] * W[2];
+    if (ww.sign() == 0 || dot.sign() <= 0) return exact_difference(a, q).norm();
+    if ((dot - ww).sign() >= 0) return exact_difference(b, q).norm();
+    // |U x W| / |W| = dist sa sq.
+    const Dyadic c0 = U[1] * W[2] - U[2] * W[1], c1 = U[2] * W[0] - U[0] * W[2],
+                 c2 = U[0] * W[1] - U[1] * W[0];
+    const double cross = Eigen::Vector3d(c0.to_double(), c1.to_double(), c2.to_double()).norm();
+    const double w = Eigen::Vector3d(W[0].to_double(), W[1].to_double(), W[2].to_double()).norm();
+    return cross / w / (a.sum.to_double() * q.sum.to_double());
+}
+
+/// The rounds of raising precision a point or a curve gets before it is given up on.
+constexpr int kCertifyRounds = 6;
+
+} // namespace
+
+std::vector<SurfacePoint>
+SurfaceMap::map(std::vector<SurfacePoint> pts, const bool forward, MapWarnings* warnings) const
+{
+    MapWarnings w;
+    const std::vector<SurfacePoint> given = pts;
+    Raw raw = map_raw(std::move(pts), forward, &w, nullptr);
+    const size_t n = given.size();
+    const double scale = forward ? m_in_scale : m_out_scale;
+    const double allowed = m_source_accuracy * scale;
+    // A point is stored in doubles where they tell the point of the starting mesh it stands for
+    // to within `allowed`, and with its low part as a further term (lo) where they do not.
+    // First by its sensitivity: an estimate, right on the pieces of the local maps the point
+    // went through but not on their neighbours (a vertex of the starting mesh lands inside a face:
+    // around its image are the images of all the faces around it, each with a sensitivity of its
+    // own). So what is stored is then mapped back and compared with the point it started as.
+    std::vector<SurfacePoint> out = raw.pts;
+    std::vector<size_t> check;
+    for (size_t i = 0; i < n; ++i) {
+        if (out[i].face == kNone || !raw.computed[i]) continue;
+        const double tol = source_tolerance(sensitivity(raw.K[i]), allowed) / 4;
+        if (out[i].lo.cwiseAbs().maxCoeff() <= tol * out[i].bary.sum()) out[i].lo.setZero();
+        check.push_back(i);
+    }
+    if (!m_certify || !(allowed > 0)) {
+        if (warnings) *warnings = w;
+        return out;
+    }
+    const auto& vertices = forward ? m_in_vertices : m_out_vertices;
+    const auto& faces = forward ? m_in_faces : m_out_faces;
+    std::vector<double> share(n, 1.);
+    for (int round = 0; !check.empty(); ++round) {
+        std::vector<SurfacePoint> stored;
+        for (const size_t i : check) stored.push_back(out[i]);
+        const Raw back = map_raw(std::move(stored), !forward, nullptr, nullptr);
+        std::vector<size_t> failed;
+        for (size_t j = 0; j < check.size(); ++j) {
+            const size_t i = check[j];
+            const SurfacePoint& b = back.pts[j];
+            bool ok = b.face != kNone;
+            if (ok) {
+                const ExactPosition x =
+                    exact_position(vertices, faces[given[i].face], given[i].bary, given[i].lo);
+                const ExactPosition y = exact_position(vertices, faces[b.face], b.bary, b.lo);
+                ok = exact_difference(x, y).norm() <= allowed;
+            }
+            if (!ok) failed.push_back(i);
+        }
+        if (failed.empty()) break;
+        if (round + 1 == kCertifyRounds) {
+            w.imprecise += failed.size();
+            break;
+        }
+        // With its further term, if it was stored without; else computed again, each step more
+        // precisely.
+        std::vector<size_t> again;
+        for (const size_t i : failed) {
+            if ((out[i].lo.array() == 0).all() && (raw.pts[i].lo.array() != 0).any()) {
+                out[i].lo = raw.pts[i].lo;
+            } else {
+                share[i] *= 0x1p-24;
+                again.push_back(i);
+            }
+        }
+        if (!again.empty()) {
+            std::vector<SurfacePoint> start;
+            std::vector<double> shares;
+            for (const size_t i : again) {
+                start.push_back(given[i]);
+                shares.push_back(share[i]);
+            }
+            const Raw redone = map_raw(std::move(start), forward, nullptr, &shares);
+            for (size_t j = 0; j < again.size(); ++j) {
+                raw.pts[again[j]] = redone.pts[j];
+                out[again[j]] = redone.pts[j];
+            }
+        }
+        check = std::move(failed);
+    }
+    if (warnings) *warnings = w;
+    return out;
 }
 
 std::vector<std::vector<SurfaceCurve>> SurfaceMap::curves_to_output(
@@ -1876,13 +2173,109 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves(
     const bool forward,
     MapWarnings* warnings) const
 {
+    // The segments given, numbered through the curves.
+    std::vector<const SurfaceSegment*> given;
+    for (const SurfaceCurve& c : curves) {
+        for (const SurfaceSegment& seg : c) given.push_back(&seg);
+    }
+    const double scale = forward ? m_in_scale : m_out_scale;
+    const double allowed = m_source_accuracy * scale;
+    const auto& vertices = forward ? m_in_vertices : m_out_vertices;
+    const auto& faces = forward ? m_in_faces : m_out_faces;
+    const auto position = [&](const SurfaceSegment& seg, const int end) {
+        ExactPosition x = exact_position(vertices, faces[seg.face], seg.bary[end], Eigen::Vector3d::Zero());
+        if (seg.tail) {
+            for (const Eigen::Vector3d& t : (*seg.tail)[end]) {
+                const ExactPosition more = exact_position(vertices, faces[seg.face], t, Eigen::Vector3d::Zero());
+                x.sum = x.sum + more.sum;
+                for (int d = 0; d < 3; ++d) x.x[d] = x.x[d] + more.x[d];
+            }
+        }
+        return x;
+    };
+    // Each given segment's share of the accuracy its points are kept to: 1 at first, less for
+    // one whose image, mapped back, does not return to it.
+    std::vector<double> accuracy(given.size(), 1.);
+    for (int round = 0;; ++round) {
+        MapWarnings w;
+        std::vector<std::vector<std::vector<size_t>>> origins;
+        auto out = map_curves_once(curves, forward, &w, accuracy, &origins);
+        if (!m_certify || !(allowed > 0)) {
+            if (warnings) *warnings = w;
+            return out;
+        }
+        // Every point of the image is mapped back as a point, and must be on the segment it came
+        // from, to within `allowed`. The estimate behind what a point is kept to cannot
+        // promise that -- a curve along an edge has another face on its other side, mapped
+        // otherwise -- so it is checked, and the segments that fail are mapped again, their points
+        // kept more precisely.
+        std::vector<SurfacePoint> pts;
+        std::vector<size_t> of;
+        const auto point = [&](const SurfaceSegment& seg, const int end, const size_t origin) {
+            SurfacePoint p{seg.face, seg.bary[end]};
+            if (seg.tail) {
+                for (const Eigen::Vector3d& t : (*seg.tail)[end]) p.lo += t;
+            }
+            pts.push_back(p);
+            of.push_back(origin);
+        };
+        for (size_t c = 0; c < out.size(); ++c) {
+            for (size_t part = 0; part < out[c].size(); ++part) {
+                const SurfaceCurve& pieces = out[c][part];
+                for (size_t k = 0; k < pieces.size(); ++k) {
+                    point(pieces[k], 0, origins[c][part][k]);
+                    if (k + 1 == pieces.size()) point(pieces[k], 1, origins[c][part][k]);
+                }
+            }
+        }
+        const Raw back = map_raw(std::move(pts), !forward, nullptr, nullptr);
+        std::unordered_map<size_t, std::pair<ExactPosition, ExactPosition>> ends;
+        std::unordered_map<size_t, double> worst; // per failing segment, how far off (of allowed)
+        size_t failing = 0;
+        for (size_t j = 0; j < of.size(); ++j) {
+            const SurfacePoint& b = back.pts[j];
+            double off = std::numeric_limits<double>::infinity();
+            if (b.face != kNone) {
+                const auto [slot, fresh] = ends.try_emplace(of[j]);
+                if (fresh) slot->second = {position(*given[of[j]], 0), position(*given[of[j]], 1)};
+                off = exact_distance(
+                          exact_position(vertices, faces[b.face], b.bary, b.lo),
+                          slot->second.first,
+                          slot->second.second) /
+                      allowed;
+            }
+            if (off <= 1) continue;
+            ++failing;
+            double& worse = worst[of[j]];
+            worse = std::max(worse, off);
+        }
+        if (failing == 0 || round + 1 == kCertifyRounds) {
+            w.imprecise += failing;
+            if (warnings) *warnings = w;
+            return out;
+        }
+        for (const auto& [origin, off] : worst) {
+            accuracy[origin] *= std::isfinite(off) ? std::min(0x1p-8, 1 / (8 * off)) : 0x1p-24;
+        }
+    }
+}
+
+std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves_once(
+    const std::vector<SurfaceCurve>& curves,
+    const bool forward,
+    MapWarnings* warnings,
+    const std::vector<double>& accuracy,
+    std::vector<std::vector<std::vector<size_t>>>* origins) const
+{
     MapWarnings w;
     // The curves as linked lists of segments, since a step replaces one by several anywhere. A
-    // segment with no image stays in its list, with no face, to mark where a part ends.
+    // segment with no image stays in its list, with no face, to mark where a part ends. Each
+    // knows the segment given it is a piece of the image of.
     struct Link
     {
         SurfaceSegment s;
         size_t next;
+        size_t origin;
     };
     constexpr size_t kEnd = std::numeric_limits<size_t>::max();
     std::vector<Link> links;
@@ -1893,7 +2286,7 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves(
         heads.push_back(c.empty() ? kEnd : links.size());
         for (size_t i = 0; i < c.size(); ++i) {
             const size_t id = links.size();
-            links.push_back({c[i], i + 1 < c.size() ? id + 1 : kEnd});
+            links.push_back({c[i], i + 1 < c.size() ? id + 1 : kEnd, id});
             if (c[i].face < alive.size() && alive[c[i].face]) {
                 on_face[c[i].face].push_back(id);
             } else {
@@ -1915,7 +2308,7 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves(
         links[id].s = pieces.front();
         landed.emplace_back(pieces.front().face, id);
         for (size_t k = 1; k < pieces.size(); ++k) {
-            links.push_back({pieces[k], next});
+            links.push_back({pieces[k], next, links[id].origin});
             links[last].next = links.size() - 1;
             last = links.size() - 1;
             landed.emplace_back(pieces[k].face, last);
@@ -2161,12 +2554,18 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves(
                 }
                 return slot->second;
             };
-            std::vector<double> shortest;
+            std::vector<double> shortest, share;
             const auto tolerance = [&](const size_t n) {
-                return std::min(kCurveSafety * shortest[n], kPointAccuracy);
+                return std::min(kCurveSafety * shortest[n], kPointAccuracy * share[n]);
             };
             for (int round = 0;; ++round) {
                 shortest.assign(nodes.size(), std::numeric_limits<double>::infinity());
+                // A point is kept as precisely as the segments it is on ask (`accuracy`).
+                share.assign(nodes.size(), 1.);
+                for (const Chain& ch : chains) {
+                    const double a = accuracy[links[ch.id].origin];
+                    for (const size_t n : ch.nodes) share[n] = std::min(share[n], a);
+                }
                 // The pieces a point ends, and those of every curve near it in the same triangle
                 // (other curves may run within a few units in the last place of it, and a point is
                 // kept so as not to touch them either).
@@ -2344,12 +2743,30 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves(
             }
 
             for (const Chain& ch : chains) {
+                // At least as precisely as a double-double: the doubles of a point are within a
+                // unit in their last place of it, but a later step may amplify that a millionfold
+                // (a needle squeezed into a sliver of its domain), so a point computed more
+                // precisely keeps its next term too. Points are carried so from step to step, as
+                // SurfaceMap::map carries them, and stored so at the end.
                 const auto terms = [&](const size_t n, const size_t t) {
                     const Hom& h = version_of(n, t);
-                    if (auto out = terms_of(h, tolerance(n))) return std::move(*out);
-                    // Not reached once every segment is exact; else as precise as it is.
-                    if ((h.lo.array() != 0).any()) return std::pair{h.v, BaryTail{h.lo}};
-                    return std::pair{h.v, BaryTail{}};
+                    auto out = terms_of(h, tolerance(n));
+                    if (!out) {
+                        // Not reached once every segment is exact; else as precise as it is.
+                        out = std::pair{h.v, BaryTail{}};
+                    }
+                    if (!h.stored && out->second.empty() && h.zeros() < 2) {
+                        Eigen::Vector3d next = Eigen::Vector3d::Zero();
+                        if (h.x) {
+                            for (int k = 0; k < 3; ++k) {
+                                if (out->first[k] != 0) next[k] = ((*h.x)[k] - Dyadic(out->first[k])).to_double();
+                            }
+                        } else if (out->first == h.v) {
+                            next = h.lo;
+                        }
+                        if ((next.array() != 0).any()) out->second.push_back(next);
+                    }
+                    return std::move(*out);
                 };
                 const auto segment = [&](const size_t t, const size_t a, const size_t b) {
                     auto ta = terms(a, t), tb = terms(b, t);
@@ -2388,17 +2805,26 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves(
     }
 
     std::vector<std::vector<SurfaceCurve>> out(curves.size());
+    if (origins) origins->assign(curves.size(), {});
     for (size_t c = 0; c < curves.size(); ++c) {
         SurfaceCurve part;
+        std::vector<size_t> from;
+        const auto close = [&]() {
+            if (part.empty()) return;
+            out[c].push_back(std::move(part));
+            if (origins) (*origins)[c].push_back(std::move(from));
+            part.clear();
+            from.clear();
+        };
         for (size_t id = heads[c]; id != kEnd; id = links[id].next) {
             if (links[id].s.face == kNone) {
-                if (!part.empty()) out[c].push_back(std::move(part));
-                part.clear();
+                close();
             } else {
                 part.push_back(links[id].s);
+                from.push_back(links[id].origin);
             }
         }
-        if (!part.empty()) out[c].push_back(std::move(part));
+        close();
     }
     if (warnings) *warnings = w;
     return out;

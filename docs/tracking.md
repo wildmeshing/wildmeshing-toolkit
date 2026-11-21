@@ -696,11 +696,19 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   - `map`: user points;
   - `map_curves` (surfaces): user polylines. Every local map is piecewise linear, so a segment's
     image is a polyline: `SurfaceMap::curves_to_output` cuts it at each local map's edges with
-    `walk_segment` (`segment_walk.{hpp,cpp}`, exact `orient2d` on the ends and corners), first
-    at the pieces of a face a virtual vertex split. Ends land as points do, sharing `map()`'s
-    code, so a curve's image agrees with the point map up to rounding. Nothing is straightened:
-    curves grow with the bends of the map, about linearly in the edits. A segment with no image
-    breaks the curve into parts (`MapWarnings::broken_segments`);
+    `walk_segment` (`segment_walk.{hpp,cpp}`), first at the pieces of a face a virtual vertex
+    split. Ends land as points do, sharing `map()`'s code, so a curve's image agrees with the
+    point map. Nothing is straightened: curves grow with the bends of the map, about linearly in
+    the edits. A segment with no image breaks the curve into parts
+    (`MapWarnings::broken_segments`). Files:
+    - `points`: one segment per line, `curve face a0 a1 a2 b0 b1 b2`, a curve's segments in
+      order, end to end;
+    - `output_points`: `curve part face a0 a1 a2 b0 b1 b2`. The coordinates are homogeneous:
+      divide each end by the sum of its three numbers (they are not divided here, as dividing
+      would round them);
+    - `<file>.tail`, beside either: further terms of segment ends, one line `row end n t...`
+      per end that has them, adding n terms of three numbers each to end `end` (0 or 1) of the
+      segment on line `row` (from 0). See *Precision* below;
   - `features` (curves): the input's feature points and the output vertices they became.
 
   The file says whether it holds a surface or curves (`history::face_size`); the app picks.
@@ -708,10 +716,46 @@ triangle id is a triangle of their own file. The stages before the mesh go into 
   Without `input`, `transfer` reads the input files from the history's metadata.
 
   On the memory route (`tracking(options, meshes)`) `history` is the bytes of a history,
-  never a file name; `info`, `transfer`, `features` and `volume` run, `map` and `map_volume`
-  are refused. `transfer` needs `input`, a key of `meshes`, and returns the output surface as
-  `mesh` (`mesh_from_surface`), and with `tet_mesh`, another key, that mesh with the fields as
-  `tet_mesh` (`add_surface`).
+  never a file name; `info`, `transfer`, `features` and `volume` run, `map`, `map_curves` and
+  `map_volume` are refused. `transfer` needs `input`, a key of `meshes`, and returns the output
+  surface as `mesh` (`mesh_from_surface`), and with `tet_mesh`, another key, that mesh with the
+  fields as `tet_mesh` (`add_surface`).
+
+### Precision
+
+Mapping points and curves uses no tolerance that moves a point: no snapping onto edges or
+corners, no "small enough to ignore". Only how precisely a value is computed and stored adapts.
+
+- **Three precisions, with error bounds.** Values are carried as doubles, as double-doubles
+  (about 106 bits) or exactly (`dyadic.hpp`: a GMP integer times a power of two; nothing here
+  divides, so every value is exact this way). A sign -- which side of an edge, where a segment
+  leaves a face -- is taken from the cheapest precision whose error bound decides it. A segment
+  is traced in double-doubles first and again exactly if one of its signs cannot be told.
+- **Homogeneous coordinates.** Curve points are not divided by their coordinate sum; they are
+  scaled by powers of two, which is exact. Consumers divide.
+- **Further terms.** A point is a sum of doubles (`SurfaceSegment::bary` plus `tail`; `lo` for
+  `SurfacePoint`), with as many terms as it needs. Each step keeps a curve point's error below
+  2^-20 of the shortest piece it ends and of its distance to the nearest other curve in the face,
+  and below 2^-44 absolute, so no piece turns over, vanishes or swaps with a neighbour. Between
+  steps a point is carried as a double-double.
+- **Certified (`certify`, default on).** Every mapped point, and every node of a mapped curve,
+  is mapped back and compared exactly with where it started: it must return to within
+  `source_accuracy` (default 2^-50) of the starting mesh's bounding-box diagonal. One that does
+  not is computed again with a smaller share of the accuracy, for up to six rounds; one still
+  off counts as `MapWarnings::imprecise`. The estimate of how precisely to keep a point is right
+  on the local maps it went through but not on their neighbours (a curve along an edge has another
+  face on its other side, mapped otherwise), which is why it is checked.
+- **Across a split edge** a point maps by the edge's parameters alone, exactly, so both faces of
+  the edge give it the same terms; a corner is always (1, 0, 0).
+
+Measured on 42 Thingi10K models and the bunny, isotropic remeshing, both directions (the
+`correctness.py` checks of the BijectiveRemesh scripts: every input edge mapped as a curve, plane
+sections, random points): no curve images touching where they should not, no joint between
+consecutive segments that is not bitwise equal, no change in the order in which plane sections
+cross, vertex order around every vertex kept (180,318 stars); point round trips within 1.8e-15 and
+curve round trips within 2.7e-15 of the diagonal. Mapping curves costs about 2.2 times what it
+costs with the estimate alone (`certify: false`); the estimate alone cost 2.8 times what an
+earlier version with snapping did.
 
 ## Volumes
 
@@ -1149,6 +1193,7 @@ iteration counts, and other load moves them too. Compare instruction counts.
 | read provenance | `src/wmtk/io/read_triangle_mesh.{hpp,cpp}` |
 | insertion sources | `src/wmtk/utils/EmbedTriangles.{hpp,cpp}` (`facet_triangles`) |
 | map, transfer, tracking, app | `components/tracking/wmtk/components/tracking/` |
+| curves on a surface map: segment tracing, precision | `components/tracking/.../segment_walk.{hpp,cpp}`, `dyadic.hpp`, `SurfaceMap.cpp` (`map_curves`, `map_raw`) |
 | isotropic recording | `components/isotropic_remeshing/.../isotropic_remeshing.cpp` |
 | tetwild recording | `components/tetwild/.../tetwild.cpp`, `VolumemesherInsertion.cpp` |
 | simwild recording | `components/simwild/.../simwild.cpp`, `EmbedSurface.cpp`, `read_image_msh.cpp`, `SimWildMesh.cpp` |
@@ -1156,4 +1201,4 @@ iteration counts, and other load moves them too. Compare instruction counts.
 | volume history, recorder, shared binary encoding | `src/wmtk/history/VolumeHistory.{hpp,cpp}`, `BinaryIO.hpp`; TetMesh's `start_volume_history` and captures in `TetMesh.cpp` |
 | volume map, its patches and geometry, VolumeTracking | `components/tracking/.../VolumeMap.{hpp,cpp}`, `volume_complex.{hpp,cpp}`, `volume_geometry.{hpp,cpp}`, `volume_io.{hpp,cpp}`, `tracking.hpp`; the app's `volume_app.cpp` |
 | Python classes | `python/src/tracking_bindings.cpp`; tests in `tests/python/test_tracking.py` |
-| tests | `tests/test_history.cpp`; `test_surface_map.cpp`, `test_curve_map.cpp`, `test_tracking.cpp`, `test_volume_map.cpp`, `test_volume_ops.cpp`; `test_remeshing_history.cpp`; `test_tetwild_history.cpp`, `test_tetwild_tracking.cpp`; `test_simwild_history.cpp`, `test_simwild_tracking.cpp`; `test_triwild_tracking.cpp`; curves on a TetMesh: `tests/test_tracked_curves.cpp`, tetwild's `test_feature_tags.cpp` |
+| tests | `tests/test_history.cpp`; `test_surface_map.cpp`, `test_surface_curves.cpp`, `test_curve_map.cpp`, `test_tracking.cpp`, `test_volume_map.cpp`, `test_volume_ops.cpp`; `test_remeshing_history.cpp`; `test_tetwild_history.cpp`, `test_tetwild_tracking.cpp`; `test_simwild_history.cpp`, `test_simwild_tracking.cpp`; `test_triwild_tracking.cpp`; curves on a TetMesh: `tests/test_tracked_curves.cpp`, tetwild's `test_feature_tags.cpp` |
