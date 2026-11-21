@@ -108,10 +108,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// (TopoOffsetTriMesh / TopoOffsetTetMesh::label_growth()). With optimize_offset false the
     /// grown band is the result.
     bool label_growth = false;
-    /// EXPERIMENTAL_label_growth_conv_rel (see the spec, 2026-11-20): label growth's tolerance as a
-    /// fraction of the target distance, in place of front_conv_rel; <= 0 (the default) is
-    /// front_conv_rel. The optimization keeps front_conv.
-    double label_growth_conv_rel = -1.;
     // Half-width of the envelope that holds the held surfaces (3D: every region boundary, the
     // input complex's included, and the domain wall; see the spec doc).
     // Absolute; if <= 0, computed from envelope_size_rel (relative to the bbox diagonal) by
@@ -476,7 +472,6 @@ struct Parameters : public wmtk::OptimizerParameters
         throw_on_unreachable_level_set = json_params["throw_on_unreachable_level_set"];
         optimize_offset = json_params["optimize_offset"];
         label_growth = json_params["label_growth"];
-        label_growth_conv_rel = json_params["EXPERIMENTAL_label_growth_conv_rel"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
         per_input_envelopes = json_params["per_input_envelopes"];

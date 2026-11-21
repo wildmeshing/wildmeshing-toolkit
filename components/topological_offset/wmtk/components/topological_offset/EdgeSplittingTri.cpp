@@ -10,10 +10,8 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
 {
     // A correspondence carried from an earlier offset is the edge from its offset vertex to the
     // input vertex it names; cutting that edge loses it, whichever step cuts (the simplicial
-    // embedding, the march). As in 3D (TopoOffsetTetMesh::split_edge_before()), whose message
-    // also says to protect the earlier band: 3D's march cuts no edge of a protected cell, 2D's
-    // still does (marching_tris(); 3D's rule dates from 2026-11-05), so here protecting does not
-    // help.
+    // embedding, the march). As in 3D (TopoOffsetTetMesh::split_edge_before()): both marches cut
+    // protected cells' edges (3D again since 2026-11-20), so protecting does not help.
     {
         const size_t a = t.vid(*this);
         const size_t b = t.switch_vertex(*this).vid(*this);

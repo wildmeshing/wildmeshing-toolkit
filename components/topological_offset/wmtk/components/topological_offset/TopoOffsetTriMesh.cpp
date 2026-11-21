@@ -1623,6 +1623,10 @@ void TopoOffsetTriMesh::construct_offset(const std::filesystem::path& output_fil
     // changes the order later passes enumerate operations in, which changes the run.
     consolidate_mesh();
     set_offset_tri_tags();
+    // The band's triangles carry its tags now: a covered edge's edge tags and curve group give way
+    // unless protected, and a region boundary it covered no longer bounds anything. As 3D.
+    release_covered_edge_tags();
+    untrack_covered_boundaries();
     consolidate_mesh();
     if (m_offset_params.debug_output) {
         write_debug_frame("offset_tagged");
@@ -2114,7 +2118,7 @@ void TopoOffsetTriMesh::marching_tris()
     // (on_offset_side()) is on the side no band grows on: it is not marched, and no face around
     // it joins the band. So an In band takes only the selection's faces: after the simplicial
     // embedding every face outside the selection at a boundary vertex has a vertex off the
-    // boundary, and so such an edge. As in 3D, where a protected cell's edges are blocked too.
+    // boundary, and so such an edge. As in 3D.
     std::set<std::array<size_t, 2>> blocked;
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
@@ -2533,6 +2537,89 @@ void TopoOffsetTriMesh::set_offset_tri_tags()
     }
 }
 
+
+void TopoOffsetTriMesh::release_covered_edge_tags()
+{
+    // See the declaration. 3D's release_covered_face_tags(), one dimension down: 3D's face tags
+    // and surface group are 2D's edge tags and curve group (on_curve). The edges the band covers
+    // -- both triangles band triangles -- not of the input complex (label 1): an edge tag gives
+    // way unless protected_tags keeps it (Parameters::protected_kept()), and so does the curve
+    // group, as the triangles' other tags do (set_offset_tri_tags()).
+    for (const Tuple& e : get_edges()) {
+        const size_t eid = e.eid(*this);
+        if (m_edge_extra[eid].label == 1) continue;
+        const std::optional<Tuple> opp = e.switch_face(*this);
+        if (!opp || m_face_extra[e.fid(*this)].label != 2 ||
+            m_face_extra[opp->fid(*this)].label != 2) {
+            continue;
+        }
+        CellTag own;
+        for (const auto& [id, bit] : m_edge_tag_bit) {
+            if (edge_has_tag(eid, bit)) own.insert(id);
+        }
+        if (m_curve_tag >= 0 && m_edge_extra[eid].on_curve) own.insert(m_curve_tag);
+        if (own.empty()) continue;
+        const CellTag kept = m_offset_params.protected_kept(own);
+        LabelIds& labels = m_edge_attribute[eid].labels_mut();
+        for (const auto& [id, bit] : m_edge_tag_bit) {
+            if (edge_has_tag(eid, bit) && !kept.count(id)) labels.erase(LabelId(bit));
+        }
+        if (m_curve_tag >= 0 && !kept.count(m_curve_tag)) m_edge_extra[eid].on_curve = false;
+    }
+}
+
+void TopoOffsetTriMesh::untrack_covered_boundaries()
+{
+    // See the declaration. 3D's untrack_covered_boundaries(), one dimension down: a tracked edge
+    // with the band on both sides, not of the input complex (label 1), whose two triangles carry
+    // one tag set and which carries no edge tag and is not on the curve group any more
+    // (release_covered_edge_tags()), bounds nothing: untracked, as init_surfaces_and_boundaries()
+    // would not have tracked it. Its corners' flags are re-derived: on a region boundary iff a
+    // tracked region edge with a second triangle holds it (init_surfaces_and_boundaries()'s rule,
+    // the front's edges excluded: label growth calls this after every flip pass, when they are
+    // tracked too), on the surface iff any tracked edge does. Until 2026-11-20 2D kept every edge
+    // of the input partition tracked for good, so a region boundary the band covered stayed held
+    // inside the band (Uday, 2026-11-20: as in 3D).
+    size_t n = 0;
+    std::vector<size_t> corners;
+    for (const Tuple& e : get_edges()) {
+        const size_t eid = e.eid(*this);
+        EdgeAttributes& attr = m_edge_attribute[eid];
+        if (!attr.m_is_surface_fs || m_edge_extra[eid].label == 1 || edge_is_offset(eid)) continue;
+        const std::optional<Tuple> opp = e.switch_face(*this);
+        if (!opp || m_face_extra[e.fid(*this)].label != 2 ||
+            m_face_extra[opp->fid(*this)].label != 2) {
+            continue;
+        }
+        if (m_face_attribute[e.fid(*this)].tags != m_face_attribute[opp->fid(*this)].tags ||
+            m_edge_extra[eid].on_curve || edge_has_any_tag(eid)) {
+            continue;
+        }
+        attr.reset();
+        ++n;
+        corners.push_back(e.vid(*this));
+        corners.push_back(e.switch_vertex(*this).vid(*this));
+    }
+    wmtk::vector_unique(corners);
+    size_t n_off = 0;
+    for (const size_t v : corners) {
+        bool on = false, on_region = false;
+        for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
+            const size_t eid = e.eid(*this);
+            if (!m_edge_attribute[eid].m_is_surface_fs) continue;
+            on = true;
+            on_region = on_region || (edge_is_region(eid) && e.switch_face(*this).has_value());
+        }
+        if (!on_region && m_vertex_extra[v].m_is_on_region) ++n_off;
+        m_vertex_extra[v].m_is_on_region = on_region;
+        m_vertex_attribute[v].m_is_on_surface = on;
+    }
+    logger().info(
+        "\t[tracked edges] {} edges the band covered no longer bound regions (one tag set on both "
+        "sides after its retagging): untracked; {} of their corners on no region boundary now",
+        n,
+        n_off);
+}
 
 bool TopoOffsetTriMesh::offset_is_manifold()
 {

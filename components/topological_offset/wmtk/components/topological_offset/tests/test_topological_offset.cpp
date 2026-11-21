@@ -7481,6 +7481,9 @@ std::unique_ptr<TopoOffsetTriMesh> point_grid_2d(
         {},
         MatrixSi(),
         point_vids);
+    // protected_tags names tags of this mesh (the curve group "curve" among them): parsed here, as
+    // topological_offset.cpp parses it once the mesh is read.
+    mesh->m_offset_params.parse_protected_tags(mesh->m_tag_name_to_id);
     mesh->m_vertex_extra[size_t(vid(p[0], p[1]))].label = 1;
     mesh->mark_input_complex_vertices();
     mesh->init_input_complex_bvh();
@@ -7663,14 +7666,16 @@ TEST_CASE("label-cleanup-held-curves-2d", "[offset][2d]")
     //   a curve out of the band as constructed, 0.25 from p at its nearest (y = 0.25, x in
     //     [-0.5, 0.5]), part of it inside the level set: no band triangle touches it;
     //   a curve through p (the x axis, x in [-0.75, 0.75]), crossed by the front at the march's
-    //     0.125 on each side: the crossing is never lost, and the clean-up slides it along the
-    //     curve (THE CROSSING SLIDE: the two triangles across the curve's next edge take the band
-    //     together, each wholly inside the level set), so it never moves back and stays inside
-    //     the level set, and the band touches a run of the curve from p to the crossing and
-    //     nothing beyond it. MEASURED (2026-11-12): on x < 0 it slides to 0.25; on x > 0 it stays
-    //     at 0.125, the far triangle across (0.125, 0)-(0.25, 0) having the corner (0.25, 0.25)
-    //     0.354 from p, outside the level set. Until then eligibility refused every corner on a
-    //     held boundary and the front, and both crossings stayed at 0.125.
+    //     0.125 on each side: the crossing is never lost, never moves back and stays inside the
+    //     level set, and the band touches a run of the curve from p to the crossing and nothing
+    //     beyond it. Since 2026-11-20 the construction releases the curve group where the band
+    //     covers it and untracks it there (release_covered_edge_tags(),
+    //     untrack_covered_boundaries(), as 3D), so the curve ends at the two crossings, and THE
+    //     CROSSING SLIDE, which moves a crossing along a held edge behind it, has none: MEASURED,
+    //     both crossings stay at 0.125. From 2026-11-12 to then, with the curve held inside the
+    //     band, the slide moved the one on x < 0 to 0.25 (on x > 0 the far triangle across
+    //     (0.125, 0)-(0.25, 0) had the corner (0.25, 0.25) 0.354 from p, outside the level set);
+    //     before 2026-11-12 eligibility refused every corner on a held boundary and the front.
     const bool through = GENERATE(false, true);
     INFO("curve " << (through ? "through p" : "off the band"));
     Parameters param = cleanup_params_2d(0.3);
@@ -7708,11 +7713,9 @@ TEST_CASE("label-cleanup-held-curves-2d", "[offset][2d]")
         while (n_touched < vs.size() && vs[n_touched].second) ++n_touched;
         for (size_t k = n_touched; k < vs.size(); ++k) CHECK(!vs[k].second);
         REQUIRE(n_touched > 0);
-        // The crossing: never behind where the march put it, inside the level set, and on x < 0
-        // slid (both triangles across the curve's next edge inside the level set).
+        // The crossing: never behind where the march put it, and inside the level set.
         CHECK(vs[n_touched - 1].first >= 0.125);
         CHECK(vs[n_touched - 1].first < 0.3);
-        if (side < 0) CHECK(vs[n_touched - 1].first > 0.125);
     }
     CHECK(mesh->held_topology_signature() == signature0);
 }
@@ -8534,12 +8537,17 @@ TEST_CASE("held-segment-split-2d", "[offset][2d]")
     // split at turns 2 and 4 and the front resolved at turn 5; with it off (the list cleared
     // before the split), the front not resolved in 8 turns. throw_on_unreachable_level_set false:
     // the reach check throws at turn 2 here (a non-band cell next to the bend, wholly inside the
-    // level set, kept out of the band), though the run goes on to resolve the front.
+    // level set, kept out of the band), though the run goes on to resolve the front. The curve
+    // group is protected: since 2026-11-20 the construction releases and untracks an unprotected
+    // one where the band covers it, so the curve ends at the crossing, with no held segment behind
+    // the front vertex to refuse its move or be split; MEASURED unprotected: no split, the
+    // crossing vertex stops at x = 0.2487 short of the bend, the bend vertex becomes the crossing,
+    // and the front resolves at turn 9 instead of 5.
     std::string log;
     std::unique_ptr<TopoOffsetTriMesh> mesh;
     const std::string what = run_loop_2d(
         0.3,
-        {{"max_rounds", 8}, {"throw_on_unreachable_level_set", false}},
+        {{"max_rounds", 8}, {"throw_on_unreachable_level_set", false}, {"protected_tags", "curve"}},
         log,
         {{4, 4}},
         {{{4, 4}}, {{5, 4}}, {{5, 6}}},
@@ -12274,8 +12282,8 @@ TEST_CASE("label-growth-held-point-2d", "[offset][2d]")
 {
     // A held point inside the level set keeps the status the construction gave it: q, 0.25 from
     // p, the outer end of a marched edge and untouched by the band as constructed, stays
-    // untouched under label_growth at delta 0.3 and 0.5 (the held objects' test refuses every
-    // flip that would make the band touch it), and no front vertex is beyond the level set.
+    // untouched under label_growth at delta 0.3 and 0.5 (growth flips no triangle at an input
+    // point: the region test cannot see a point), and no front vertex is beyond the level set.
     const double delta = GENERATE(0.3, 0.5);
     INFO("delta " << delta);
     const nlohmann::json j = {
@@ -12304,6 +12312,49 @@ TEST_CASE("label-growth-held-point-2d", "[offset][2d]")
     for (const auto& e : result_front_2d(out)) {
         for (const Vector2d& x : e) CHECK((x - p).norm() < delta);
     }
+}
+
+TEST_CASE("label-growth-held-crossing-2d", "[offset][2d]")
+{
+    // 3D's label-growth-held-crossing-3d one dimension down: p, the grid's centre, on the line
+    // x = 0 between regions A (x < 0) and B (x > 0), offset to delta by label growth alone, B held
+    // or protected. The band crosses the line as constructed, and the crossings move along it as
+    // the front grows (the region test, 2026-11-20; until then the clean-up's tests and its
+    // crossing slide). Every front vertex inside the level set and within 10% of it, on both
+    // sides of the line and at the crossings.
+    const double delta = GENERATE(0.3, 0.5);
+    const bool protect = GENERATE(false, true);
+    INFO("delta " << delta << (protect ? ", B protected" : ""));
+    MeshData input = grid_2d({{"p", {{4, 4}}}});
+    auto& tris = input.cells.at(CellType::Triangle);
+    DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tris.connectivity.rows(), 2);
+    for (Eigen::Index r = 0; r < tris.connectivity.rows(); ++r) {
+        double x = 0.;
+        for (int c = 0; c < 3; ++c) x += input.V(tris.connectivity(r, c), 0) / 3.;
+        tags(r, x > 0. ? 1 : 0) = 1;
+    }
+    tris.attributes["tags"] = {tags, {"A", "B"}};
+    nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", delta}}})},
+        {"label_growth", true},
+        {"optimize_offset", false},
+        {"num_threads", 1}};
+    if (protect) j["protected_tags"] = "B";
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const auto front = result_front_2d(res.first.at("mesh"));
+    REQUIRE(!front.empty());
+    const Vector2d p = grid_point_2d({{4, 4}});
+    size_t on_line = 0;
+    for (const auto& e : front) {
+        for (const Vector2d& x : e) {
+            CHECK((x - p).norm() < delta);
+            CHECK((x - p).norm() > 0.9 * delta);
+            on_line += std::abs(x[0]) < 1e-12 ? 1 : 0;
+        }
+    }
+    CHECK(on_line > 0); // the front still crosses the line
 }
 
 namespace {
@@ -12413,8 +12464,11 @@ TEST_CASE("label-growth-held-crossing-3d", "[offset][3d]")
     // topology test, held objects' test and eligibility): on the double_sphere the front stayed
     // at the march's distance along the crossing. Every front vertex inside the level set and
     // within front_conv of it, on both sides of the plane and at the crossing.
+    // With B protected (since 2026-11-20 the band takes its cells and they keep B), B's surface
+    // stays held inside the band, and each side of it has to follow the other along it.
     const double delta = GENERATE(0.3, 0.5);
-    INFO("delta " << delta);
+    const bool protect = GENERATE(false, true);
+    INFO("delta " << delta << (protect ? ", B protected" : ""));
     MeshData input = point_grid({{"p", {{4, 4, 4}}}});
     auto& tets = input.cells.at(CellType::Tetrahedron);
     DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tets.connectivity.rows(), 2);
@@ -12424,12 +12478,13 @@ TEST_CASE("label-growth-held-crossing-3d", "[offset][3d]")
         tags(r, x > 0. ? 1 : 0) = 1;
     }
     tets.attributes["tags"] = {tags, {"A", "B"}};
-    const nlohmann::json j = {
+    nlohmann::json j = {
         {"input", "m"},
         {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", delta}}})},
         {"label_growth", true},
         {"optimize_offset", false},
         {"num_threads", 1}};
+    if (protect) j["protected_tags"] = "B";
     ComponentResult res;
     REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
     const auto front = result_front_vertices_3d(res.first.at("mesh"));

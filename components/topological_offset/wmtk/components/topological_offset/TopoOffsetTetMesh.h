@@ -104,6 +104,10 @@ public:
     /// Assigned at each split, never OR'd -- a recycled slot carries a dead vertex's epoch.
     uint32_t m_born_epoch = 0;
 
+    /// Placed by a label growth split (growth_splits()): at the level set to the last double, so
+    /// never split again. Read by growth only.
+    bool m_growth_split_point = false;
+
     /// How much the vertex's latest front solve changed its own error,
     /// |r(after) - r(before)| / front_conv_frac() (r = relative_residual()), in bars -- 0 for a
     /// move that was refused and rolled back -- and the operation group that solve ran in
@@ -510,14 +514,6 @@ public:
         return m_offset_params.front_conv_rel *
                m_offset_params.offsets[size_t(m_region_offset[size_t(r)])].target_distance;
     }
-    /// Label growth's tolerance at a place of piece r: EXPERIMENTAL_label_growth_conv_rel of its
-    /// entry's target_distance when that key is > 0, else front_conv_of(r). front_conv_of(r) is
-    /// front_conv_rel of the same target in both of its branches, so the ratio rescales it.
-    double growth_conv_of(const int r) const
-    {
-        const double g = m_offset_params.label_growth_conv_rel;
-        return g > 0. ? front_conv_of(r) * (g / m_offset_params.front_conv_rel) : front_conv_of(r);
-    }
     /// The bar as a fraction of piece r's current target (front_conv_frac() with one entry): the
     /// unit of a relative residual read on piece r's field.
     double front_conv_frac_of(const int r) const
@@ -866,25 +862,21 @@ public:
      */
     void label_growth();
     /**
-     * @brief Label growth's splits: every edge from a front vertex u with d(u) <= delta -
-     * front_conv to a vertex w beyond, in any non-band cell at u, split at a point x with
-     * delta - front_conv < d(x) < delta (bisection_on_edge()), delta and front_conv the cell's
-     * piece's. Serial. Returns {splits, edges the shared split refused}. As 2D.
+     * @brief Label growth's splits: every edge from a front vertex u inside the level set, not
+     * itself a growth split point, to a vertex w beyond, in any non-band cell at u, split at the
+     * last point x inside the level set the doubles resolve (bisection_on_edge()), delta the
+     * cell's piece's; an edge whose crossing rounds onto u is not split. Serial. Returns {splits,
+     * edges the shared split refused, edges not split for their crossing at u}. As 2D.
      */
-    std::array<size_t, 2> growth_splits(const std::string& where);
+    std::array<size_t, 3> growth_splits(const std::string& where);
     /**
      * @brief The bisection of growth_splits(): x(s) = u + s (w - u) exact (growth_point()), d
-     * read at its rounding, keeping d(x(lo)) < delta <= d(x(hi)); returns the first lo with
-     * d > delta - front_conv, which d being 1-Lipschitz guarantees once the bracket is shorter
-     * than front_conv. s is a dyadic fraction k / 2^n, n <= 52, exact in a double; throws if 52
-     * halvings do not reach the bound. As 2D.
+     * read at its rounding, keeping d(x(lo)) < delta <= d(x(hi)) until the bracket's two points
+     * round to neighbouring doubles, nothing between them to read; returns that lo, the last
+     * point inside the level set the doubles resolve (0: the crossing rounds onto u). s is a
+     * dyadic fraction k / 2^n, n <= 52, exact in a double. No tolerance (Uday, 2026-11-20). As 2D.
      */
-    double bisection_on_edge(
-        size_t u,
-        size_t w,
-        const ExactBandIntegral& be,
-        double delta,
-        double front_conv) const;
+    double bisection_on_edge(size_t u, size_t w, const ExactBandIntegral& be, double delta) const;
     /// The exact point u + s (w - u) of the edge (u, w), from the endpoints' exact positions.
     Vector3r growth_point(size_t u, size_t w, double s) const
     {
@@ -899,6 +891,7 @@ public:
         size_t u = 0;
         double s = 0.5;
         bool active = false;
+        size_t new_vertex = size_t(-1); ///< set by split_adjust_position()
     };
     GrowthSplit m_growth_split;
     /**

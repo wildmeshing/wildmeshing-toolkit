@@ -89,6 +89,10 @@ public:
     /// created by an optimization split. Read only by the needle diagnostics' per-vertex lines.
     /// Assigned at each split, never OR'd -- a recycled slot carries a dead vertex's epoch.
     uint32_t m_born_epoch = 0;
+
+    /// Placed by a label growth split (growth_splits()): at the level set to the last double, so
+    /// never split again. Read by growth only. As 3D.
+    bool m_growth_split_point = false;
 };
 
 
@@ -505,14 +509,6 @@ public:
         return m_offset_params.front_conv_rel *
                m_offset_params.offsets[size_t(m_region_offset[size_t(r)])].target_distance;
     }
-    /// Label growth's tolerance at a place of piece r: EXPERIMENTAL_label_growth_conv_rel of its
-    /// entry's target_distance when that key is > 0, else front_conv_of(r). front_conv_of(r) is
-    /// front_conv_rel of the same target in both of its branches, so the ratio rescales it. As in 3D.
-    double growth_conv_of(const int r) const
-    {
-        const double g = m_offset_params.label_growth_conv_rel;
-        return g > 0. ? front_conv_of(r) * (g / m_offset_params.front_conv_rel) : front_conv_of(r);
-    }
     /// The bar as a fraction of piece r's current target (front_conv_frac() with one entry): the
     /// unit of a relative residual read on piece r's field. As in 3D.
     double front_conv_frac_of(const int r) const
@@ -776,31 +772,27 @@ public:
      * @brief label_growth (see the spec, 2026-11-20): after construction, before the
      * optimization, grow the band toward the level set: label_cleanup() under the corner rule,
      * then rounds of level-set splits (growth_splits()) each followed by the corner rule's flips,
-     * until a round splits nothing. Calls prepare_front() first. Each split point is within
-     * front_conv of the level set, so no edge from it is split again, every edge is split at most
-     * once, and the rounds end.
+     * until a round splits nothing. Calls prepare_front() first. A split point is never split again
+     * (VertexExtra2d::m_growth_split_point), so every edge is split at most once and the rounds
+     * end.
      */
     void label_growth();
     /**
-     * @brief Label growth's splits: every edge from a front vertex u with d(u) <= delta -
-     * front_conv to a vertex w beyond, in any non-band triangle at u, split at a
-     * point x with delta - front_conv < d(x) < delta (bisection_on_edge()), delta and front_conv
-     * the triangle's piece's. Serial. Returns {splits, edges the shared split refused}.
+     * @brief Label growth's splits: every edge from a front vertex u inside the level set, not
+     * itself a growth split point, to a vertex w beyond, in any non-band triangle at u, split at
+     * the last point x inside the level set the doubles resolve (bisection_on_edge()), delta the
+     * triangle's piece's; an edge whose crossing rounds onto u is not split. Serial. Returns
+     * {splits, edges the shared split refused, edges not split for their crossing at u}. As 3D.
      */
-    std::array<size_t, 2> growth_splits(const std::string& where);
+    std::array<size_t, 3> growth_splits(const std::string& where);
     /**
      * @brief The bisection of growth_splits(): x(s) = u + s (w - u) exact (growth_point()), d
-     * read at its rounding, keeping d(x(lo)) < delta <= d(x(hi)); returns the first lo with
-     * d > delta - front_conv, which d being 1-Lipschitz guarantees once the bracket is shorter
-     * than front_conv. s is a dyadic fraction k / 2^n, n <= 52, so a double holds it exactly;
-     * throws if 52 halvings do not reach the bound.
+     * read at its rounding, keeping d(x(lo)) < delta <= d(x(hi)) until the bracket's two points
+     * round to neighbouring doubles, nothing between them to read; returns that lo, the last
+     * point inside the level set the doubles resolve (0: the crossing rounds onto u). s is a
+     * dyadic fraction k / 2^n, n <= 52, exact in a double. No tolerance (Uday, 2026-11-20). As 3D.
      */
-    double bisection_on_edge(
-        size_t u,
-        size_t w,
-        const ExactBandIntegral2D& be,
-        double delta,
-        double front_conv) const;
+    double bisection_on_edge(size_t u, size_t w, const ExactBandIntegral2D& be, double delta) const;
     /// The exact point u + s (w - u) of the edge (u, w), from the endpoints' exact positions.
     Vector2r growth_point(size_t u, size_t w, double s) const
     {
@@ -815,6 +807,7 @@ public:
         size_t u = 0;
         double s = 0.5;
         bool active = false;
+        size_t new_vertex = size_t(-1); ///< set by split_adjust_position()
     };
     GrowthSplit m_growth_split;
     /**
@@ -3643,6 +3636,15 @@ public:
      * the given offset tag values in m_offset_params.offset_tag_value
      */
     void set_offset_tri_tags();
+    /// The edges the band covers (band triangles on both sides), not of the input complex: their
+    /// edge tags and the curve group give way unless protected_tags keeps them. Run after
+    /// set_offset_tri_tags() and by label growth after each flip pass. 3D's
+    /// release_covered_face_tags(), one dimension down.
+    void release_covered_edge_tags();
+    /// A tracked edge with the band on both sides, one tag set across it, no edge tag and not on
+    /// the curve group, no longer bounds anything: untracked, its corners' region and surface
+    /// flags re-derived. Run after release_covered_edge_tags(). 3D's untrack_covered_boundaries().
+    void untrack_covered_boundaries();
 
     /**
      * @brief verify that the closed offset region (simplices labelled 1 or 2) form a manifold

@@ -3038,9 +3038,11 @@ void TopoOffsetTetMesh::marching_tets()
         // marchable distance up gives the same offset -- unless the repulsion passes or rounds,
         // which push the outer ends out by target_distance before the march, ran. MEASURED
         // (2026-11-06, a pipeline of two construction-only offsets at 0.05 and 0.1): bit-identical
-        // results, with no word in the log but the info line above.
+        // results, with no word in the log but the info line above. label_growth carries the front
+        // to the target after the march, so it reads target_distance (it warned on every
+        // growth-alone run until 2026-11-20).
         if (!reachable[k] && n_marched[k] > 0 && !m_offset_params.optimize_offset &&
-            m_offset_params.repulsion_smoothing_passes == 0 &&
+            !m_offset_params.label_growth && m_offset_params.repulsion_smoothing_passes == 0 &&
             m_offset_params.repulsion_rounds == 0) {
             logger().warn(
                 "\t[construction] {}optimize_offset false: target_distance {:.6g} has no effect -- "

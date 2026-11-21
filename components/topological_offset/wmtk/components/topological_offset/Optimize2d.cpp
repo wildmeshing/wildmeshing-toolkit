@@ -34,11 +34,11 @@ bool TopoOffsetTriMesh::edge_is_on_surface(const std::array<size_t, 2>& vids) co
     if (eid == static_cast<size_t>(-1) || !t.is_valid(*this)) {
         return false;
     }
-    // The edge's own tracking record, never a comparison of the incident faces' tag sets: the
-    // band replaces the tags of every face it grows through, so a region boundary the band
-    // swallowed has identical tags on both sides and a tag comparison would call it untracked.
-    // m_is_surface_fs cannot go quiet that way -- it is assigned once from the input partition
-    // and propagated by split, collapse and swap alike.
+    // The edge's own tracking record, never a comparison of the incident faces' tag sets: it is
+    // assigned from the input partition, propagated by split, collapse and swap alike, and
+    // cleared only where the band covers a region boundary and no tag set differs across it any
+    // more (untrack_covered_boundaries(), since 2026-11-20), while a comparison would also call
+    // untracked an edge that still carries an edge tag or the curve group.
     //
     // Spelled out rather than delegating to is_edge_on_surface(vids) so the tuple lookup the
     // guard above already paid for is reused.
@@ -811,6 +811,7 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
     // bisection read d at. Before the base's containment check, which then tests the two halves
     // of the split edge as placed.
     if (m_growth_split.active) {
+        m_growth_split.new_vertex = v_id;
         const auto& sc = split_cache.local();
         const size_t u = m_growth_split.u;
         if (u != sc.v1_id && u != sc.v2_id) {
@@ -5283,8 +5284,9 @@ void TopoOffsetTriMesh::held_topology_check(const std::string& pass)
 {
     // See the declaration; the 2D twin of TopoOffsetTetMesh::held_topology_check(), without its
     // stale order-2 tags: 2D has no order-2 edge tags (an order-2 simplex of a curve is a vertex,
-    // anchored by hold_curves_and_points()) and its construction untracks nothing (3D's
-    // untrack_covered_boundaries()), so no anchor can go stale.
+    // anchored by hold_curves_and_points()). Since 2026-11-20 its construction and label growth
+    // untrack covered region edges (untrack_covered_boundaries()), so an anchor where such edges
+    // met can go stale; nothing drops it yet.
     if (!m_offset_params.debug_held_topology) return;
     std::map<std::array<double, 2>, std::array<bool, 2>> touch;
     std::array<std::array<int64_t, 4>, 4> by_kind{};
@@ -5554,15 +5556,26 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
         }
         return false;
     };
+    // Label growth (corners) decides region contact by THE REGION TEST below, which sees every
+    // tag's triangles, the input complex's too, so it reads neither the front-to-region clause
+    // nor the input-complex neighbours; an input point is no region boundary and the region test
+    // cannot see it, so a triangle at one is left. As 3D.
+    const auto input_point = [&](const size_t v) {
+        if (!m_points_held) return !m_vertex_extra[v].point_inputs.none();
+        if (!m_track_feature_points) return false;
+        const size_t fp = m_feature_point_attribute[v].m_feature_point_id;
+        return fp < m_feature_point_inputs.size() && !m_feature_point_inputs[fp].none();
+    };
     const auto eligible = [&](const size_t fid) {
         for (const size_t v : oriented_tri_vids(fid)) {
-            if (vertex_is_on_region(v) && m_vertex_extra[v].m_is_on_offset &&
+            if (corners && input_point(v)) return false;
+            if (!corners && vertex_is_on_region(v) && m_vertex_extra[v].m_is_on_offset &&
                 front_edge_to_region(v)) {
                 return false;
             }
             for (const size_t s : get_one_ring_fids_for_vertex(v)) {
                 const int l = label_of(s);
-                if ((l != 0 && l != 2) || face_is_plastic(s)) return false;
+                if ((!corners && l != 0 && l != 2) || face_is_plastic(s)) return false;
             }
         }
         return true;
@@ -5642,18 +5655,39 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
     // band triangles at t's corners (two pieces' bands, of two tag sets, refuse). The non-band:
     // that of t's non-band edge neighbours across edges that are not held (a held edge's far side
     // is another region); they must agree, and there must be one. As in 3D.
+    // A protected tag stays with the triangle (protected_tags, Uday 2026-11-20): joining the band,
+    // t takes the band's tags -- its triangles' tags without their protected ones, which must
+    // agree -- beside its own protected tags; leaving it, a triangle with protected tags keeps
+    // those alone. As 3D.
+    const auto without_protected = [&](const CellTag& g) {
+        const CellTag kept = m_offset_params.protected_kept(g);
+        CellTag base;
+        for (const int64_t x : g)
+            if (!kept.count(x)) base.insert(x);
+        return base;
+    };
     const auto joined_tag = [&](const size_t fid, CellTag& tag) {
         const int o = label_of(fid) == 2 ? 0 : 2;
+        const CellTag own_kept = m_offset_params.protected_kept(m_face_attribute[fid].tags);
+        if (o == 0 && !own_kept.empty()) {
+            tag = own_kept;
+            return true;
+        }
         const CellTag* found = nullptr;
         if (o == 2) {
+            std::optional<CellTag> base;
             for (const size_t v : oriented_tri_vids(fid)) {
                 for (const size_t s : get_one_ring_fids_for_vertex(v)) {
                     if (label_of(s) != 2) continue;
-                    const CellTag& tg = m_face_attribute[s].tags;
-                    if (found && *found != tg) return false;
-                    found = &tg;
+                    const CellTag b = without_protected(m_face_attribute[s].tags);
+                    if (base && *base != b) return false;
+                    base = b;
                 }
             }
+            if (!base) return false;
+            tag = *base;
+            tag.insert(own_kept.begin(), own_kept.end());
+            return true;
         } else {
             for (int k = 0; k < 3; ++k) {
                 const Tuple e = tuple_from_edge(fid, size_t(k));
@@ -5667,6 +5701,101 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
         }
         if (!found) return false;
         tag = *found;
+        return true;
+    };
+    // THE REGION TEST (label growth, 2026-11-20), 3D's one dimension down. The objects whose
+    // topology a flip must keep are the triangles of each tag, whose boundaries are the held
+    // curves, and the band, whose boundary is the front; the outside of the mesh carries no tag
+    // and sides with the non-band. For every tag the flip moves t into or out of, and for the
+    // band, with S the side t joins, t meets S, and meets the rest, in one closed arc of its
+    // boundary: f edges with their neighbour in S, f = 1 or 2 -- f = 1: the corner opposite the
+    // edge not touched by S; f = 2: the two edges' common corner not touched by the rest (3D's
+    // f = 3). It replaces growth's topology test, held objects' test and crossing slide. Held
+    // curves are re-derived from the tags after each flip pass (untrack_covered_boundaries()).
+    size_t n_refused_region = 0;
+    const auto region_test = [&](const size_t fid) {
+        CellTag join;
+        if (!joined_tag(fid, join)) return false;
+        const CellTag& own = m_face_attribute[fid].tags;
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        std::vector<size_t> nb;
+        for (const size_t v : vs) {
+            for (const size_t c : get_one_ring_fids_for_vertex(v)) {
+                if (c != fid) nb.push_back(c);
+            }
+        }
+        wmtk::vector_unique(nb);
+        const auto local = [&](const size_t v) {
+            for (int a = 0; a < 3; ++a) {
+                if (vs[size_t(a)] == v) return a;
+            }
+            return -1;
+        };
+        // t's corners on the mesh boundary (on an edge with no second triangle).
+        std::array<bool, 3> bvert{};
+        std::vector<size_t> around = nb;
+        around.push_back(fid);
+        for (const size_t c : around) {
+            for (int j = 0; j < 3; ++j) {
+                const Tuple e = tuple_from_edge(c, size_t(j));
+                if (e.switch_face(*this)) continue;
+                for (const size_t v : get_edge_vids(e)) {
+                    const int a = local(v);
+                    if (a >= 0) bvert[size_t(a)] = true;
+                }
+            }
+        }
+        const bool has_void = bvert[0] || bvert[1] || bvert[2];
+        // The triangle across the edge opposite corner i (none: the mesh boundary).
+        std::array<long, 3> across{{-1, -1, -1}};
+        for (int j = 0; j < 3; ++j) {
+            const Tuple e = tuple_from_edge(fid, size_t(j));
+            const std::array<size_t, 2> ev = get_edge_vids(e);
+            int i = 0;
+            while (vs[size_t(i)] == ev[0] || vs[size_t(i)] == ev[1]) ++i;
+            const std::optional<Tuple> o = e.switch_face(*this);
+            if (o) across[size_t(i)] = long(o->fid(*this));
+        }
+        struct Grouping
+        {
+            int64_t tag;
+            bool tag_in_s;
+            bool by_label;
+        };
+        std::vector<Grouping> groupings{{0, false, true}};
+        for (const int64_t x : join)
+            if (!own.count(x)) groupings.push_back({x, true, false});
+        for (const int64_t x : own)
+            if (!join.count(x)) groupings.push_back({x, false, false});
+        const bool joins_band = label_of(fid) != 2;
+        for (const Grouping& gr : groupings) {
+            const bool void_in = gr.by_label ? !joins_band : !gr.tag_in_s;
+            const auto in_s = [&](const size_t c) {
+                if (gr.by_label) return (label_of(c) == 2) == joins_band;
+                return (m_face_attribute[c].tags.count(gr.tag) > 0) == gr.tag_in_s;
+            };
+            // Whether corner a of t is touched by S (side true) or by the rest (side false), t
+            // itself left out.
+            const auto touched = [&](const int a, const bool side) {
+                for (const size_t c : nb) {
+                    const auto cv = oriented_tri_vids(c);
+                    if (std::find(cv.begin(), cv.end(), vs[size_t(a)]) != cv.end() &&
+                        in_s(c) == side) {
+                        return true;
+                    }
+                }
+                return has_void && void_in == side && bvert[size_t(a)];
+            };
+            std::vector<int> s_edges, rest; // the corner opposite each edge in S, and not
+            for (int i = 0; i < 3; ++i) {
+                const bool in = across[size_t(i)] < 0 ? void_in : in_s(size_t(across[size_t(i)]));
+                (in ? s_edges : rest).push_back(i);
+            }
+            const size_t f = s_edges.size();
+            if (f == 0 || f == 3) return false;
+            if (f == 1 && touched(s_edges[0], true)) return false;
+            if (f == 2 && touched(rest[0], false)) return false;
+        }
         return true;
     };
     const auto edge_has = [](const std::array<size_t, 2>& ev, const size_t x) {
@@ -6004,6 +6133,7 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
         n_skip = 0;
         n_refused_held = 0;
         n_refused_tag = 0;
+        n_refused_region = 0;
         n_unreachable = 0;
         unreachable_where.clear();
         n_refused.fill(0);
@@ -6028,14 +6158,22 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
                 continue;
             }
             bool allow = false, odd = false;
-            const int f = topology(fid, allow, odd);
-            if (!allow) {
-                ++n_refused[size_t(f)];
-                continue;
-            }
-            if (!held_allows(fid)) {
-                refuse_held(fid);
-                continue;
+            int f = 0;
+            if (corners) {
+                if (!region_test(fid)) {
+                    ++n_refused_region;
+                    continue;
+                }
+            } else {
+                f = topology(fid, allow, odd);
+                if (!allow) {
+                    ++n_refused[size_t(f)];
+                    continue;
+                }
+                if (!held_allows(fid)) {
+                    refuse_held(fid);
+                    continue;
+                }
             }
             CellTag tag;
             if (!joined_tag(fid, tag)) {
@@ -6046,7 +6184,8 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
             // two labels passes every test t passed, read with t's label and tag set (eligibility
             // before, as for t: its corners' front flags are not re-derived for the read).
             std::vector<std::pair<size_t, CellTag>> ts{{fid, tag}};
-            const std::vector<size_t> far = held_edges_made_front(fid);
+            const std::vector<size_t> far =
+                corners ? std::vector<size_t>() : held_edges_made_front(fid);
             if (!far.empty()) {
                 const size_t n = far[0];
                 bool ok = far.size() == 1 && !flipped[n] && eligible(n);
@@ -6125,7 +6264,8 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
         "not tested) | left after the last pass: {} triangles with a front edge, {} on the other "
         "side by the side test, of which {} skipped for eligibility, refused by topology f=0 {}, "
         "f=1 {}, f=3 {}, by the held objects {} ({} wholly inside the level set), for no single "
-        "tag {} | crossing slides (two triangles across a held edge) {}, one-triangle flips "
+        "tag {}, by the region test {} | crossing slides (two triangles across a held edge) {}, "
+        "one-triangle flips "
         "making a held edge front {} | E {:.9g} -> {:.9g} | components (edge adjacency) "
         "band {} -> {}, non-band {} -> {} | non-manifold front vertices (on more than two front "
         "edges) {} -> {}",
@@ -6144,6 +6284,7 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
         n_refused_held,
         n_unreachable,
         n_refused_tag,
+        n_refused_region,
         n_slides,
         n_single_held,
         e0,
@@ -6188,34 +6329,30 @@ double TopoOffsetTriMesh::bisection_on_edge(
     const size_t u,
     const size_t w,
     const ExactBandIntegral2D& be,
-    const double delta,
-    const double front_conv) const
+    const double delta) const
 {
     // d(x(lo)) < delta <= d(x(hi)) throughout, x(s) read at the rounding of its exact point, the
     // position the split gives the vertex (split_adjust_position()). Each midpoint of two dyadic
-    // fractions k / 2^n is one with n + 1, so after 52 halvings s is still a double exactly.
+    // fractions k / 2^n is one with n + 1, so after 52 halvings s is still a double exactly; the
+    // bracket stops earlier where its midpoint rounds onto an end.
     double lo = 0., hi = 1.;
+    Vector2d p_lo = to_double(growth_point(u, w, lo)), p_hi = to_double(growth_point(u, w, hi));
     for (int n = 0; n < 52; ++n) {
         const double mid = 0.5 * (lo + hi);
-        const double d = be.distance(to_double(growth_point(u, w, mid)));
-        if (d < delta) {
+        const Vector2d p = to_double(growth_point(u, w, mid));
+        if (p == p_lo || p == p_hi) break;
+        if (be.distance(p) < delta) {
             lo = mid;
-            if (d > delta - front_conv) return lo;
+            p_lo = p;
         } else {
             hi = mid;
+            p_hi = p;
         }
     }
-    log_and_throw_error(
-        "[label growth] the bisection of edge ({}, {}) found no point with {} < d < {} in 52 "
-        "halvings: front_conv {} is below what the edge's length resolves",
-        u,
-        w,
-        delta - front_conv,
-        delta,
-        front_conv);
+    return lo;
 }
 
-std::array<size_t, 2> TopoOffsetTriMesh::growth_splits(const std::string& where)
+std::array<size_t, 3> TopoOffsetTriMesh::growth_splits(const std::string& where)
 {
     // The edges first, each once, then the splits: a split replaces the two triangles at its edge,
     // not the other listed edges. An edge runs from a front vertex u to a vertex beyond, in any
@@ -6246,17 +6383,22 @@ std::array<size_t, 2> TopoOffsetTriMesh::growth_splits(const std::string& where)
                 where,
                 fid);
         }
-        const double delta = region_delta(piece), eps = growth_conv_of(piece);
+        const double delta = region_delta(piece);
         std::array<double, 3> d;
         for (int k = 0; k < 3; ++k)
             d[size_t(k)] = be->distance(m_vertex_attribute[vs[size_t(k)]].m_posf);
+        // A front vertex inside, not itself a growth split point (at the level set to the last
+        // double already, so the rounds end), and a vertex beyond. As 3D.
+        const auto from = [&](const size_t k) {
+            return on_front(k) && d[k] < delta && !m_vertex_extra[vs[k]].m_growth_split_point;
+        };
         for (int k = 0; k < 3; ++k) {
             const size_t a = size_t(k), b = size_t((k + 1) % 3);
             size_t u = 0, w = 0;
-            if (on_front(a) && d[a] <= delta - eps && d[b] >= delta) {
+            if (from(a) && d[b] >= delta) {
                 u = vs[a];
                 w = vs[b];
-            } else if (on_front(b) && d[b] <= delta - eps && d[a] >= delta) {
+            } else if (from(b) && d[a] >= delta) {
                 u = vs[b];
                 w = vs[a];
             } else {
@@ -6267,14 +6409,16 @@ std::array<size_t, 2> TopoOffsetTriMesh::growth_splits(const std::string& where)
             todo.push_back({u, w, piece});
         }
     }
-    size_t n_split = 0, n_refused = 0;
+    size_t n_split = 0, n_refused = 0, n_at_u = 0;
     for (const Pending& p : todo) {
-        const double s = bisection_on_edge(
-            p.u,
-            p.w,
-            *band_exact_for(p.piece),
-            region_delta(p.piece),
-            growth_conv_of(p.piece));
+        const double s =
+            bisection_on_edge(p.u, p.w, *band_exact_for(p.piece), region_delta(p.piece));
+        // The crossing rounds onto u: u is at the level set as far as the doubles tell, and a
+        // split there would make an edge of length 0. As 3D.
+        if (s == 0.) {
+            ++n_at_u;
+            continue;
+        }
         m_growth_split = {p.u, s, true};
         std::vector<Tuple> new_edges;
         const Tuple t = get_tuple_from_edge(simplex::Edge(p.u, p.w));
@@ -6285,9 +6429,10 @@ std::array<size_t, 2> TopoOffsetTriMesh::growth_splits(const std::string& where)
         reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
         const bool ok = split_edge(t, new_edges);
         m_growth_split.active = false;
+        if (ok) m_vertex_extra[m_growth_split.new_vertex].m_growth_split_point = true;
         ++(ok ? n_split : n_refused);
     }
-    return {{n_split, n_refused}};
+    return {{n_split, n_refused, n_at_u}};
 }
 
 void TopoOffsetTriMesh::label_growth()
@@ -6311,39 +6456,49 @@ void TopoOffsetTriMesh::label_growth()
     // 94 front vertices more than front_conv inside after round 2, every unflipped triangle at
     // them with every corner inside a piece of that round's splits.
     size_t flips = label_cleanup("label growth round 0", FlipSide::Corners), splits = 0,
-           refused = 0;
-    held_topology_check("label_growth flips");
+           refused = 0, at_u = 0;
+    // After every flip pass the held curves are re-derived from the tags, as the construction does
+    // (release_covered_edge_tags(), untrack_covered_boundaries()): an edge with the band on both
+    // sides and one tag set across it bounds nothing and is no longer held, so the stretch where
+    // the band passes a held curve grows as the front moves along it. No DEBUG_held_topology
+    // check: it compares what the labels touch on a fixed set of held simplices, which growth
+    // changes by design. As 3D.
+    release_covered_edge_tags();
+    untrack_covered_boundaries();
     logger().info("\t[label growth] round 0: {} flips", flips);
     if (m_offset_params.debug_output) write_debug_frame("label_growth_0_flips");
     int round = 0;
     for (;;) {
         ++round;
         const std::string where = fmt::format("label growth round {}", round);
-        const std::array<size_t, 2> sp = growth_splits(where);
-        held_topology_check("label_growth splits");
+        const std::array<size_t, 3> sp = growth_splits(where);
         if (m_offset_params.debug_output) {
             write_debug_frame(fmt::format("label_growth_{}_splits", round));
         }
         const size_t f = label_cleanup(where, FlipSide::Corners);
-        held_topology_check("label_growth flips");
+        release_covered_edge_tags();
+        untrack_covered_boundaries();
         if (m_offset_params.debug_output) {
             write_debug_frame(fmt::format("label_growth_{}_flips", round));
         }
         flips += f;
         splits += sp[0];
         refused += sp[1];
+        at_u += sp[2];
         logger().info(
-            "\t[label growth] round {}: {} splits ({} refused by the split), then {} flips",
+            "\t[label growth] round {}: {} splits ({} refused by the split; {} edges not split, "
+            "their crossing rounding onto the front vertex), then {} flips",
             round,
             sp[0],
             sp[1],
+            sp[2],
             f);
         if (sp[0] == 0 && f == 0) break;
     }
     consolidate_mesh();
 
     // What the growth left: the front vertices' distance to the level set, d - delta, over their
-    // piece's growth tolerance (growth_conv_of()).
+    // piece's front_conv (the loop's bar, a scale only: growth has no tolerance).
     // And the front edges on a held object: a one-triangle flip whose crossing slide was refused
     // leaves the front along a held edge (both held and front; label_cleanup(), flip()).
     std::set<size_t> front;
@@ -6359,7 +6514,7 @@ void TopoOffsetTriMesh::label_growth()
         const int piece = place_piece(&v, 1);
         const double r =
             (band_exact_for(piece)->distance(m_vertex_attribute[v].m_posf) - region_delta(piece)) /
-            growth_conv_of(piece);
+            front_conv_of(piece);
         ++(r < 0. ? n_inside : n_beyond);
         n_off += std::abs(r) > 1. ? 1 : 0;
         mean += r / double(front.size());
@@ -6370,13 +6525,15 @@ void TopoOffsetTriMesh::label_growth()
     }
     const Vector2d& x = m_vertex_attribute[worst_v].m_posf;
     logger().info(
-        "\t[label growth] {} round(s): {} flips, {} splits ({} refused) | front vertices {}: {} "
-        "inside, {} beyond, {} more than growth_conv from the level set; (d - delta) / growth_conv "
-        "mean {:.4g}, worst {:.4g} at ({:.4g}, {:.4g}) | front edges on a held object {}",
+        "\t[label growth] {} round(s): {} flips, {} splits ({} refused; {} edges not split, "
+        "their crossing at the front vertex) | front vertices {}: {} inside, {} beyond, {} more "
+        "than front_conv from the level set; (d - delta) / front_conv mean {:.4g}, worst {:.4g} "
+        "at ({:.4g}, {:.4g}) | front edges on a held object {}",
         round,
         flips,
         splits,
         refused,
+        at_u,
         front.size(),
         n_inside,
         n_beyond,

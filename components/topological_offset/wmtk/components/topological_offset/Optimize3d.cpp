@@ -2115,6 +2115,7 @@ bool TopoOffsetTetMesh::split_adjust_position(const size_t v_id, const std::vect
     // base keeps its exact midpoint. m_posf is the rounding of this exact point, the point the
     // bisection read d at. As 2D.
     if (m_growth_split.active) {
+        m_growth_split.new_vertex = v_id;
         const auto& sc = split_cache.local();
         const size_t u = m_growth_split.u;
         if (u != sc.v1_id && u != sc.v2_id) {
@@ -7267,6 +7268,7 @@ size_t TopoOffsetTetMesh::label_cleanup(const std::string& where, const FlipSide
         n_skip = 0;
         n_refused_held = 0;
         n_refused_tag = 0;
+        n_refused_region = 0;
         n_unreachable = 0;
         unreachable_where.clear();
         n_refused.fill(0);
@@ -8576,34 +8578,30 @@ double TopoOffsetTetMesh::bisection_on_edge(
     const size_t u,
     const size_t w,
     const ExactBandIntegral& be,
-    const double delta,
-    const double front_conv) const
+    const double delta) const
 {
     // d(x(lo)) < delta <= d(x(hi)) throughout, x(s) read at the rounding of its exact point, the
     // position the split gives the vertex (split_adjust_position()). Each midpoint of two dyadic
-    // fractions k / 2^n is one with n + 1, so after 52 halvings s is still a double exactly. As 2D.
+    // fractions k / 2^n is one with n + 1, so after 52 halvings s is still a double exactly; the
+    // bracket stops earlier where its midpoint rounds onto an end. As 2D.
     double lo = 0., hi = 1.;
+    Vector3d p_lo = to_double(growth_point(u, w, lo)), p_hi = to_double(growth_point(u, w, hi));
     for (int n = 0; n < 52; ++n) {
         const double mid = 0.5 * (lo + hi);
-        const double d = be.distance(to_double(growth_point(u, w, mid)));
-        if (d < delta) {
+        const Vector3d p = to_double(growth_point(u, w, mid));
+        if (p == p_lo || p == p_hi) break;
+        if (be.distance(p) < delta) {
             lo = mid;
-            if (d > delta - front_conv) return lo;
+            p_lo = p;
         } else {
             hi = mid;
+            p_hi = p;
         }
     }
-    log_and_throw_error(
-        "[label growth] the bisection of edge ({}, {}) found no point with {} < d < {} in 52 "
-        "halvings: front_conv {} is below what the edge's length resolves",
-        u,
-        w,
-        delta - front_conv,
-        delta,
-        front_conv);
+    return lo;
 }
 
-std::array<size_t, 2> TopoOffsetTetMesh::growth_splits(const std::string& where)
+std::array<size_t, 3> TopoOffsetTetMesh::growth_splits(const std::string& where)
 {
     // The edges first, each once, then the splits: a split replaces the cells at its edge, not
     // the other listed edges. An edge runs from a front vertex u to a vertex beyond, in any
@@ -8631,17 +8629,22 @@ std::array<size_t, 2> TopoOffsetTetMesh::growth_splits(const std::string& where)
                 where,
                 tid);
         }
-        const double delta = region_delta(piece), eps = growth_conv_of(piece);
+        const double delta = region_delta(piece);
         std::array<double, 4> d;
         for (int k = 0; k < 4; ++k)
             d[size_t(k)] = be->distance(m_vertex_attribute[vs[size_t(k)]].m_posf);
+        // A front vertex inside, not itself a growth split point (at the level set to the last
+        // double already, so the rounds end), and a vertex beyond.
+        const auto from = [&](const size_t k) {
+            return on_front(k) && d[k] < delta && !m_vertex_extra[vs[k]].m_growth_split_point;
+        };
         for (size_t a = 0; a < 4; ++a) {
             for (size_t b = a + 1; b < 4; ++b) {
                 size_t u = 0, w = 0;
-                if (on_front(a) && d[a] <= delta - eps && d[b] >= delta) {
+                if (from(a) && d[b] >= delta) {
                     u = vs[a];
                     w = vs[b];
-                } else if (on_front(b) && d[b] <= delta - eps && d[a] >= delta) {
+                } else if (from(b) && d[a] >= delta) {
                     u = vs[b];
                     w = vs[a];
                 } else {
@@ -8653,14 +8656,16 @@ std::array<size_t, 2> TopoOffsetTetMesh::growth_splits(const std::string& where)
             }
         }
     }
-    size_t n_split = 0, n_refused = 0;
+    size_t n_split = 0, n_refused = 0, n_at_u = 0;
     for (const Pending& p : todo) {
-        const double s = bisection_on_edge(
-            p.u,
-            p.w,
-            *band_exact_for(p.piece),
-            region_delta(p.piece),
-            growth_conv_of(p.piece));
+        const double s =
+            bisection_on_edge(p.u, p.w, *band_exact_for(p.piece), region_delta(p.piece));
+        // The crossing rounds onto u: u is at the level set as far as the doubles tell, and a
+        // split there would make an edge of length 0.
+        if (s == 0.) {
+            ++n_at_u;
+            continue;
+        }
         m_growth_split = {p.u, s, true};
         std::vector<Tuple> new_tets;
         const Tuple t = tuple_from_edge({{p.u, p.w}});
@@ -8669,9 +8674,10 @@ std::array<size_t, 2> TopoOffsetTetMesh::growth_splits(const std::string& where)
         reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
         const bool ok = split_edge(t, new_tets);
         m_growth_split.active = false;
+        if (ok) m_vertex_extra[m_growth_split.new_vertex].m_growth_split_point = true;
         ++(ok ? n_split : n_refused);
     }
-    return {{n_split, n_refused}};
+    return {{n_split, n_refused, n_at_u}};
 }
 
 void TopoOffsetTetMesh::label_growth()
@@ -8688,7 +8694,7 @@ void TopoOffsetTetMesh::label_growth()
     // no longer held, so the patch where the band passes a held surface grows as the front moves
     // along it. THE REGION TEST (label_cleanup()) reads tags only, so it needs nothing else.
     size_t flips = label_cleanup("label growth round 0", FlipSide::Corners), splits = 0,
-           refused = 0;
+           refused = 0, at_u = 0;
     release_covered_face_tags();
     untrack_covered_boundaries();
     // No DEBUG_held_topology check here: it compares what the labels touch on a fixed set of
@@ -8702,7 +8708,7 @@ void TopoOffsetTetMesh::label_growth()
     for (;;) {
         ++round;
         const std::string where = fmt::format("label growth round {}", round);
-        const std::array<size_t, 2> sp = growth_splits(where);
+        const std::array<size_t, 3> sp = growth_splits(where);
         if (stage_frames()) write_debug_frame(fmt::format("label_growth_{}_splits", round));
         const size_t f = label_cleanup(where, FlipSide::Corners);
         release_covered_face_tags();
@@ -8711,19 +8717,22 @@ void TopoOffsetTetMesh::label_growth()
         flips += f;
         splits += sp[0];
         refused += sp[1];
+        at_u += sp[2];
         logger().info(
-            "\t[label growth] round {}: {} splits ({} refused by the split), then {} flips",
+            "\t[label growth] round {}: {} splits ({} refused by the split; {} edges not split, "
+            "their crossing rounding onto the front vertex), then {} flips",
             round,
             sp[0],
             sp[1],
+            sp[2],
             f);
         if (sp[0] == 0 && f == 0) break;
     }
     consolidate_mesh();
 
     // What the growth left: the front vertices' distance to the level set, d - delta, over their
-    // piece's growth tolerance (growth_conv_of()); and the front faces on a held object (both held
-    // and front).
+    // piece's front_conv (the loop's bar, a scale only: growth has no tolerance); and the front
+    // faces on a held object (both held and front).
     std::set<size_t> front;
     size_t n_held_front = 0;
     for (const std::array<size_t, 3>& f : offset_surface_faces()) {
@@ -8737,7 +8746,7 @@ void TopoOffsetTetMesh::label_growth()
         const int piece = place_piece(&v, 1);
         const double r =
             (band_exact_for(piece)->distance(m_vertex_attribute[v].m_posf) - region_delta(piece)) /
-            growth_conv_of(piece);
+            front_conv_of(piece);
         ++(r < 0. ? n_inside : n_beyond);
         n_off += std::abs(r) > 1. ? 1 : 0;
         mean += r / double(front.size());
@@ -8748,13 +8757,15 @@ void TopoOffsetTetMesh::label_growth()
     }
     const Vector3d& x = m_vertex_attribute[worst_v].m_posf;
     logger().info(
-        "\t[label growth] {} round(s): {} flips, {} splits ({} refused) | front vertices {}: {} "
-        "inside, {} beyond, {} more than growth_conv from the level set; (d - delta) / growth_conv "
-        "mean {:.4g}, worst {:.4g} at ({:.4g}, {:.4g}, {:.4g}) | front faces on a held object {}",
+        "\t[label growth] {} round(s): {} flips, {} splits ({} refused; {} edges not split, "
+        "their crossing at the front vertex) | front vertices {}: {} inside, {} beyond, {} more "
+        "than front_conv from the level set; (d - delta) / front_conv mean {:.4g}, worst {:.4g} "
+        "at ({:.4g}, {:.4g}, {:.4g}) | front faces on a held object {}",
         round,
         flips,
         splits,
         refused,
+        at_u,
         front.size(),
         n_inside,
         n_beyond,
