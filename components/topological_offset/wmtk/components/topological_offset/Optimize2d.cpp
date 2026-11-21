@@ -6246,7 +6246,7 @@ std::array<size_t, 2> TopoOffsetTriMesh::growth_splits(const std::string& where)
                 where,
                 fid);
         }
-        const double delta = region_delta(piece), eps = front_conv_of(piece);
+        const double delta = region_delta(piece), eps = growth_conv_of(piece);
         std::array<double, 3> d;
         for (int k = 0; k < 3; ++k)
             d[size_t(k)] = be->distance(m_vertex_attribute[vs[size_t(k)]].m_posf);
@@ -6274,7 +6274,7 @@ std::array<size_t, 2> TopoOffsetTriMesh::growth_splits(const std::string& where)
             p.w,
             *band_exact_for(p.piece),
             region_delta(p.piece),
-            front_conv_of(p.piece));
+            growth_conv_of(p.piece));
         m_growth_split = {p.u, s, true};
         std::vector<Tuple> new_edges;
         const Tuple t = get_tuple_from_edge(simplex::Edge(p.u, p.w));
@@ -6343,7 +6343,7 @@ void TopoOffsetTriMesh::label_growth()
     consolidate_mesh();
 
     // What the growth left: the front vertices' distance to the level set, d - delta, over their
-    // piece's front_conv.
+    // piece's growth tolerance (growth_conv_of()).
     // And the front edges on a held object: a one-triangle flip whose crossing slide was refused
     // leaves the front along a held edge (both held and front; label_cleanup(), flip()).
     std::set<size_t> front;
@@ -6359,7 +6359,7 @@ void TopoOffsetTriMesh::label_growth()
         const int piece = place_piece(&v, 1);
         const double r =
             (band_exact_for(piece)->distance(m_vertex_attribute[v].m_posf) - region_delta(piece)) /
-            front_conv_of(piece);
+            growth_conv_of(piece);
         ++(r < 0. ? n_inside : n_beyond);
         n_off += std::abs(r) > 1. ? 1 : 0;
         mean += r / double(front.size());
@@ -6371,7 +6371,7 @@ void TopoOffsetTriMesh::label_growth()
     const Vector2d& x = m_vertex_attribute[worst_v].m_posf;
     logger().info(
         "\t[label growth] {} round(s): {} flips, {} splits ({} refused) | front vertices {}: {} "
-        "inside, {} beyond, {} more than front_conv from the level set; (d - delta) / front_conv "
+        "inside, {} beyond, {} more than growth_conv from the level set; (d - delta) / growth_conv "
         "mean {:.4g}, worst {:.4g} at ({:.4g}, {:.4g}) | front edges on a held object {}",
         round,
         flips,

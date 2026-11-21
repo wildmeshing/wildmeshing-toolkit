@@ -505,6 +505,14 @@ public:
         return m_offset_params.front_conv_rel *
                m_offset_params.offsets[size_t(m_region_offset[size_t(r)])].target_distance;
     }
+    /// Label growth's tolerance at a place of piece r: EXPERIMENTAL_label_growth_conv_rel of its
+    /// entry's target_distance when that key is > 0, else front_conv_of(r). front_conv_of(r) is
+    /// front_conv_rel of the same target in both of its branches, so the ratio rescales it. As in 3D.
+    double growth_conv_of(const int r) const
+    {
+        const double g = m_offset_params.label_growth_conv_rel;
+        return g > 0. ? front_conv_of(r) * (g / m_offset_params.front_conv_rel) : front_conv_of(r);
+    }
     /// The bar as a fraction of piece r's current target (front_conv_frac() with one entry): the
     /// unit of a relative residual read on piece r's field. As in 3D.
     double front_conv_frac_of(const int r) const

@@ -108,9 +108,13 @@ bool TopoOffsetTetMesh::is_edge_on_offset(const Tuple& loc)
     }
     wmtk::vector_unique(n_vids);
 
+    // By its class, or, for a region face the front lies along (both held and front, which keeps
+    // its region class), by the labels. As 2D's split_adjust_position().
     for (size_t vid : n_vids) {
-        auto [_, fid] = tuple_from_face({{v1_id, v2_id, vid}});
-        if (face_is_offset(fid)) return true;
+        auto [ft, fid] = tuple_from_face({{v1_id, v2_id, vid}});
+        if (face_is_offset(fid) ||
+            (m_offset_params.label_growth && face_is_offset_surface_live(ft)))
+            return true;
     }
 
     return false;
@@ -142,7 +146,7 @@ void TopoOffsetTetMesh::label_offset_boundary()
         m_tet_attribute[t.tid(*this)].m_quality = get_quality(t);
     }
 
-    size_t n_off = 0, n_wall_band = 0;
+    size_t n_off = 0, n_wall_band = 0, n_both = 0;
     for (const Tuple& f : get_faces()) {
         const size_t fid = f.fid(*this);
         if (m_face_extra[fid].label != 2) {
@@ -160,8 +164,17 @@ void TopoOffsetTetMesh::label_offset_boundary()
             continue; // face not between different labels, skip
         }
 
-        m_face_attribute[fid].m_is_surface_fs = true;
-        m_face_attribute[fid].m_surface_class = OFFSET_SURFACE_CLASS;
+        // BOTH HELD AND FRONT: a region face the front lies along keeps its region class, and so
+        // its tube; it is front by the labels (face_is_offset_surface_live()). As 2D's
+        // label_offset_boundary() since 2026-11-17; until 2026-11-20 it took the offset class
+        // here and with it lost its hold, and the held objects' test could not see it.
+        // Under label_growth only (2026-11-20; the loop alone keeps main's rule until agreed).
+        if (m_offset_params.label_growth && face_is_region(fid)) {
+            ++n_both;
+        } else {
+            m_face_attribute[fid].m_is_surface_fs = true;
+            m_face_attribute[fid].m_surface_class = OFFSET_SURFACE_CLASS;
+        }
         ++n_off;
 
         for (const size_t vid : get_face_vids(f)) {
@@ -178,9 +191,10 @@ void TopoOffsetTetMesh::label_offset_boundary()
         n_box += (m_face_attribute[fid].m_is_bbox_fs >= 0);
     }
     logger().info(
-        "\ttracked faces: {} offset surface, {} region boundary (input complex included), {} "
-        "bbox | {} band faces lying ON the wall",
+        "\ttracked faces: {} offset surface ({} of them region faces, both held and front), {} "
+        "region boundary (input complex included), {} bbox | {} band faces lying ON the wall",
         n_off,
+        n_both,
         n_reg,
         n_box,
         n_wall_band);
@@ -2093,8 +2107,40 @@ void TopoOffsetTetMesh::split_after_vertex(const size_t v_id, const bool is_edge
     }
 }
 
-bool TopoOffsetTetMesh::split_adjust_position(const size_t v_id, const std::vector<Tuple>&)
+bool TopoOffsetTetMesh::split_adjust_position(const size_t v_id, const std::vector<Tuple>& children)
 {
+    // Label growth's split (growth_splits()): the new vertex at the bisection's fraction s of the
+    // edge from u, exactly. On the edge, no child inverts: a child's signed volume is s or 1 - s
+    // times its parent's. Rounded where the rounding inverts no child, else kept exact, as the
+    // base keeps its exact midpoint. m_posf is the rounding of this exact point, the point the
+    // bisection read d at. As 2D.
+    if (m_growth_split.active) {
+        const auto& sc = split_cache.local();
+        const size_t u = m_growth_split.u;
+        if (u != sc.v1_id && u != sc.v2_id) {
+            log_and_throw_error(
+                "[label growth] the pending split's vertex {} is not an end of the split edge "
+                "({}, {})",
+                u,
+                sc.v1_id,
+                sc.v2_id);
+        }
+        const Vector3r x = growth_point(u, u == sc.v1_id ? sc.v2_id : sc.v1_id, m_growth_split.s);
+        auto& va = m_vertex_attribute[v_id];
+        va.m_posf = to_double(x);
+        va.set_pos_to_posf();
+        va.m_is_rounded = true;
+        for (const Tuple& t : children) {
+            if (is_inverted(t)) {
+                va.m_is_rounded = false;
+                break;
+            }
+        }
+        if (!va.m_is_rounded) {
+            va.set_pos(x);
+            m_all_rounded.store(false, std::memory_order_relaxed);
+        }
+    }
     // The new vertex's tracked-surface membership must be written before the shared split's own
     // containment check, which reads m_is_on_region for all three vertices of each new triangle;
     // an unrecognised triangle yields a null envelope and the check is silently skipped rather
@@ -6409,16 +6455,19 @@ void TopoOffsetTetMesh::check_level_set_reachable(const std::string& when)
     logger().warn("\t{}", msg);
 }
 
-void TopoOffsetTetMesh::label_cleanup(const std::string& where)
+size_t TopoOffsetTetMesh::label_cleanup(const std::string& where, const FlipSide side)
 {
     // EXPERIMENTAL_label_cleanup (see the spec and the declaration). MEASURED before it (cube_in,
     // target 0.45, 5% tolerance, 30-run batches): some runs end with thin non-band cells left
     // beyond the level set -- one with 117 such cells reaching 5.6 tolerances out -- where E is
     // 1.2e-7 above its optimum against a settle bar of 3.5e-5, so nothing removes them.
-    const std::string& mode = m_offset_params.label_cleanup;
-    if (mode == "off" || m_tetwild_pass) return;
-    const bool tips = mode == "one_sided_tips";
-    const bool at_target = mode == "one_sided_at_target";
+    // Label growth (FlipSide::Corners, label_growth()) runs whatever the key says, under its own
+    // side rule; the key picks the clean-up's. As 2D.
+    const bool growth_rule = side == FlipSide::Corners;
+    const std::string mode = growth_rule ? "label_growth" : m_offset_params.label_cleanup;
+    if (!growth_rule && (mode == "off" || m_tetwild_pass)) return 0;
+    const bool tips = !growth_rule && mode == "one_sided_tips";
+    const bool at_target = !growth_rule && mode == "one_sided_at_target";
     // "energy_decrease" (2026-10-28, Spencer: "if adding/removing the tet from/into the band is
     // topologically allowed, and doing so decreases the global offset surface energy ... do so.
     // Do not require the corners to be at target already"): under EXPERIMENTAL_band_volume_rule
@@ -6426,7 +6475,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     // with a front face whose flip strictly lowers the face term of its four faces (see
     // wants_flip()), eligible and topologically allowed, flips; a cell may flip again in a later
     // pass, every flip strictly lowering E.
-    const bool energy_decrease = mode == "energy_decrease";
+    const bool energy_decrease = !growth_rule && mode == "energy_decrease";
     // one_sided reads d through the exact integral's searches (init_offset_potential() builds it).
     if (!m_band_exact && !energy_decrease) {
         log_and_throw_error(
@@ -6486,6 +6535,10 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     //     two faces on the other label (one with one, at turn 25). At turn 30 the one-sided test
     //     read L 14 to 16 front_conv short of delta, the topology test allowed both cells, and the
     //     tip rule refused them for having two faces, not three.
+    //   label growth (FlipSide::Corners): non-band -> band iff every corner is inside, d < delta;
+    //     band -> non-band iff every corner is beyond, d >= delta. The two exclude each other.
+    //     Read at the corners alone, it does not say the whole cell is on that side: d is not
+    //     linear on t. The optimization removes that. As 2D.
     // The face term's change if t flips (EXPERIMENTAL_band_volume_rule "surface"): a face of t
     // shared with a cell of t's own label becomes a front face, one shared with a cell of the
     // other label stops being one; an input-complex neighbour or none makes no front face either
@@ -6516,6 +6569,15 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         const ExactBandIntegral& band_exact = *band_exact_for(piece);
         std::array<Vector3d, 4> p;
         for (int k = 0; k < 4; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
+        if (growth_rule) {
+            bool all_inside = true, all_beyond = true;
+            for (const Vector3d& q : p) {
+                const bool inside = band_exact.distance(q) < delta;
+                all_inside = all_inside && inside;
+                all_beyond = all_beyond && !inside;
+            }
+            return band ? all_beyond : all_inside;
+        }
         if (!band && band_exact.distance_bound(p) < delta) return true;
         if (band) {
             const Vector3d c = (p[0] + p[1] + p[2] + p[3]) / 4.;
@@ -6562,10 +6624,29 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     // reads.
     const auto eligible = [&](const size_t tid) {
         for (const size_t v : oriented_tet_vids(tid)) {
-            if (vertex_is_on_region(v) && m_vertex_extra[v].m_is_on_offset) return false;
+            if (!growth_rule && vertex_is_on_region(v) && m_vertex_extra[v].m_is_on_offset) {
+                return false;
+            }
+            // Label growth decides region contact by THE REGION TEST below, which sees regions
+            // only: a held feature curve or point is no region boundary, so a cell at one is left
+            // (none in the cases measured).
+            if (growth_rule && m_track_feature_points &&
+                m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT) {
+                return false;
+            }
             for (const size_t s : get_one_ring_tids_for_vertex(v)) {
                 const int l = label_of(s);
-                if ((l != 0 && l != 2) || cell_is_plastic(s)) return false;
+                // Label growth: the region test sees the input complex's cells as a region too,
+                // so they need not be kept away from t.
+                if ((!growth_rule && l != 0 && l != 2) || cell_is_plastic(s)) return false;
+            }
+        }
+        if (growth_rule && m_track_feature_edges) {
+            for (int j = 0; j < 6; ++j) {
+                if (m_feature_edge_attribute[tuple_from_edge(tid, j).eid(*this)].has(
+                        FeatureEdgeAttributes::feature)) {
+                    return false;
+                }
             }
         }
         return true;
@@ -6658,18 +6739,38 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     // non-band face neighbours across faces that are not held (a held face's far side is another
     // region); they must agree, and there must be one. Until 2026-11-10 both labels' tags were
     // read over every cell at t's corners, which next to a region boundary sees both regions.
+    // A protected tag stays with the cell (protected_tags, Uday 2026-11-20): joining the band, t
+    // takes the band's tags -- its cells' tags without their protected ones, which must agree --
+    // beside its own protected tags; leaving it, a cell with protected tags keeps those alone.
+    const auto without_protected = [&](const CellTag& g) {
+        const CellTag kept = m_offset_params.protected_kept(g);
+        CellTag base;
+        for (const int64_t x : g)
+            if (!kept.count(x)) base.insert(x);
+        return base;
+    };
     const auto joined_tag = [&](const size_t tid, CellTag& tag) {
         const int o = label_of(tid) == 2 ? 0 : 2;
+        const CellTag own_kept = m_offset_params.protected_kept(m_tet_attribute[tid].tag);
+        if (o == 0 && !own_kept.empty()) {
+            tag = own_kept;
+            return true;
+        }
         const CellTag* found = nullptr;
         if (o == 2) {
+            std::optional<CellTag> base;
             for (const size_t v : oriented_tet_vids(tid)) {
                 for (const size_t s : get_one_ring_tids_for_vertex(v)) {
                     if (label_of(s) != 2) continue;
-                    const CellTag& tg = m_tet_attribute[s].tag;
-                    if (found && *found != tg) return false;
-                    found = &tg;
+                    const CellTag b = without_protected(m_tet_attribute[s].tag);
+                    if (base && *base != b) return false;
+                    base = b;
                 }
             }
+            if (!base) return false;
+            tag = *base;
+            tag.insert(own_kept.begin(), own_kept.end());
+            return true;
         } else {
             for (int k = 0; k < 4; ++k) {
                 const Tuple f = tuple_from_face(tid, k);
@@ -6683,6 +6784,156 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         }
         if (!found) return false;
         tag = *found;
+        return true;
+    };
+
+    // THE REGION TEST (label growth, 2026-11-20). The objects whose topology a flip must keep
+    // are the cells of each tag, whose boundaries are the held surfaces, and the band, whose
+    // boundary is the front; the outside of the mesh carries no tag and sides with the non-band.
+    // A flip moves t into or out of the cells of every tag in which its own tag set and the one
+    // it joins differ, and from one label to the other. For each such object, with S the side t
+    // joins, t meets S, and meets the rest, in a closed disk of its boundary, which keeps the
+    // object and its complement, the surface between them a manifold: f faces with their
+    // neighbour in S, f = 1, 2 or 3, and no other contact either way -- f = 1: the corner
+    // opposite the face not touched by S; f = 2: the edge on neither face not touched by S, the
+    // edge both share not touched by the rest; f = 3: their common corner and its three edges not
+    // touched by the rest. Held surfaces are re-derived from the tags after the flips
+    // (untrack_covered_boundaries()). It replaces the topology test, the held objects' test and
+    // the eligibility's region clause, which a crossing of the front with a held surface
+    // defeats: MEASURED (double_sphere, tag_0 offset to 0.1 across the held tag_1, growth alone,
+    // front_conv_rel 0.1), with them the front stayed at the march's distance along the crossing,
+    // 565 cells inside the level set refused there. Until 2026-11-20 it tested every union of
+    // regions, mixed ones too (the non-band with the band's part inside tag_1), which no held
+    // object is: with tag_1 protected, where the band's cells inside tag_1 keep it and tag_1's
+    // surface stays held inside the band, each flip on one side of that surface changed such a
+    // union for one step and was refused: MEASURED (growth tolerance 1e-3), 165 front vertices
+    // short along tag_1's surface; with this rule 0, the same flips and splits as with tag_1 not
+    // protected, tag_1's surface one sphere at every step.
+    size_t n_refused_region = 0;
+    const auto region_test = [&](const size_t tid) {
+        CellTag join;
+        if (!joined_tag(tid, join)) return false;
+        const CellTag& own = m_tet_attribute[tid].tag;
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        std::vector<size_t> nb;
+        for (const size_t v : vs) {
+            for (const size_t c : get_one_ring_tids_for_vertex(v)) {
+                if (c != tid) nb.push_back(c);
+            }
+        }
+        wmtk::vector_unique(nb);
+        // t's corners and edges on the mesh boundary (on a face with no second cell).
+        std::array<bool, 4> bvert{};
+        std::array<std::array<bool, 4>, 4> bedge{};
+        const auto local = [&](const size_t v) {
+            for (int a = 0; a < 4; ++a) {
+                if (vs[size_t(a)] == v) return a;
+            }
+            return -1;
+        };
+        std::vector<size_t> around = nb;
+        around.push_back(tid);
+        for (const size_t c : around) {
+            for (int j = 0; j < 4; ++j) {
+                const Tuple g = tuple_from_face(c, j);
+                if (g.switch_tetrahedron(*this)) continue;
+                const auto fv = get_face_vids(g);
+                std::array<int, 3> l{{local(fv[0]), local(fv[1]), local(fv[2])}};
+                for (int a = 0; a < 3; ++a) {
+                    if (l[size_t(a)] < 0) continue;
+                    bvert[size_t(l[size_t(a)])] = true;
+                    for (int b2 = a + 1; b2 < 3; ++b2) {
+                        if (l[size_t(b2)] < 0) continue;
+                        bedge[size_t(l[size_t(a)])][size_t(l[size_t(b2)])] = true;
+                        bedge[size_t(l[size_t(b2)])][size_t(l[size_t(a)])] = true;
+                    }
+                }
+            }
+        }
+        const bool has_void = std::any_of(bvert.begin(), bvert.end(), [](bool b) { return b; });
+        // The cell across the face opposite corner i (none: the mesh boundary).
+        std::array<long, 4> across{{-1, -1, -1, -1}};
+        for (int i = 0; i < 4; ++i) {
+            for (const size_t c : nb) {
+                const auto cv = oriented_tet_vids(c);
+                int shared = 0;
+                for (int a = 0; a < 4; ++a) {
+                    if (a == i) continue;
+                    shared += std::find(cv.begin(), cv.end(), vs[size_t(a)]) != cv.end();
+                }
+                if (shared == 3) {
+                    across[size_t(i)] = long(c);
+                    break;
+                }
+            }
+        }
+        // THE GROUPINGS: the cells of each tag t's flip moves it into or out of (own and join
+        // differ in it), whose boundary is a held surface, and the band, whose boundary is the
+        // front. S is the side t joins: for a tag of join, the cells carrying it; for a tag of own,
+        // the cells without it and the outside of the mesh, which carries no tag; for the band,
+        // the cells of the label t joins, the outside of the mesh with the non-band.
+        struct Grouping
+        {
+            int64_t tag;
+            bool tag_in_s;
+            bool by_label;
+        };
+        std::vector<Grouping> groupings{{0, false, true}};
+        for (const int64_t x : join)
+            if (!own.count(x)) groupings.push_back({x, true, false});
+        for (const int64_t x : own)
+            if (!join.count(x)) groupings.push_back({x, false, false});
+        const bool joins_band = label_of(tid) != 2;
+        for (const Grouping& gr : groupings) {
+            const bool void_in = gr.by_label ? !joins_band : !gr.tag_in_s;
+            const auto in_s = [&](const size_t c) {
+                if (gr.by_label) return (label_of(c) == 2) == joins_band;
+                return (m_tet_attribute[c].tag.count(gr.tag) > 0) == gr.tag_in_s;
+            };
+            // Whether the simplex of t's corners `sig` (local indices) is touched by S (side
+            // true) or by the rest (side false), t itself left out.
+            const auto touched = [&](const std::vector<int>& sig, const bool side) {
+                for (const size_t c : nb) {
+                    const auto cv = oriented_tet_vids(c);
+                    bool all = true;
+                    for (const int a : sig)
+                        all = all && std::find(cv.begin(), cv.end(), vs[size_t(a)]) != cv.end();
+                    if (all && in_s(c) == side) return true;
+                }
+                if (has_void && void_in == side) {
+                    if (sig.size() == 1 && bvert[size_t(sig[0])]) return true;
+                    if (sig.size() == 2 && bedge[size_t(sig[0])][size_t(sig[1])]) return true;
+                }
+                return false;
+            };
+            std::vector<int> s_faces; // the corner opposite each face in S
+            for (int i = 0; i < 4; ++i) {
+                const bool in = across[size_t(i)] < 0 ? void_in : in_s(size_t(across[size_t(i)]));
+                if (in) s_faces.push_back(i);
+            }
+            const size_t f = s_faces.size();
+            if (f == 0 || f == 4) return false;
+            std::vector<int> rest;
+            for (int i = 0; i < 4; ++i) {
+                if (std::find(s_faces.begin(), s_faces.end(), i) == s_faces.end())
+                    rest.push_back(i);
+            }
+            if (f == 1) {
+                if (touched({s_faces[0]}, true)) return false;
+            } else if (f == 2) {
+                // the faces opposite s_faces share the edge of the two other corners (rest); the
+                // edge on neither face joins the two opposite corners (s_faces).
+                if (touched({s_faces[0], s_faces[1]}, true)) return false;
+                if (touched({rest[0], rest[1]}, false)) return false;
+            } else {
+                // f = 3: the three faces share the corner opposite the fourth (rest[0]).
+                const int w = rest[0];
+                if (touched({w}, false)) return false;
+                for (int a = 0; a < 4; ++a) {
+                    if (a != w && touched({w, a}, false)) return false;
+                }
+            }
+        }
         return true;
     };
     const auto face_has = [&](const std::array<size_t, 3>& fv, const size_t x) {
@@ -6889,9 +7140,14 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             return cell_is_offset_band(s);
         });
     };
+    // A held face of t becoming front is BOTH HELD AND FRONT: it keeps its region class, and so
+    // its tube, and is front by the labels. The held objects' test allows such a flip (a
+    // crossing's contact with the held surface grows from a curve to a strip of faces, homotopy
+    // equivalent on each side). Until 2026-11-20 it threw, the face's one class having no way to
+    // say both; and the eligibility test refused every corner where a held surface and the front
+    // meet, so a crossing never moved. As 2D since 2026-11-17. Counted (n_single_held).
+    size_t n_single_held = 0;
     const auto flip = [&](const size_t tid, const CellTag& tag) {
-        // A held face of t becoming front would be contact with a held surface the held objects'
-        // test forbids, and its class rewritten below: a bug, so it throws.
         std::array<bool, 4> front_before{};
         for (int j = 0; j < 4; ++j) {
             front_before[size_t(j)] = face_is_offset_surface_live(tuple_from_face(tid, j));
@@ -6902,12 +7158,16 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             const Tuple f = tuple_from_face(tid, j);
             const size_t fid = f.fid(*this);
             if (!front_before[size_t(j)] && held_face(f) && face_is_offset_surface_live(f)) {
-                log_and_throw_error(
-                    "[label cleanup] {}: cell {} makes held face {} front, which the held objects' "
-                    "test forbids",
-                    where,
-                    tid,
-                    fid);
+                // Without label_growth, main's rule: such a flip is a bug, and throws.
+                if (!m_offset_params.label_growth) {
+                    log_and_throw_error(
+                        "[label cleanup] {}: cell {} makes held face {} front, which the held "
+                        "objects' test forbids",
+                        where,
+                        tid,
+                        fid);
+                }
+                ++n_single_held;
             }
             std::vector<size_t> sides{tid};
             if (const std::optional<Tuple> o = f.switch_tetrahedron(*this)) {
@@ -6915,7 +7175,9 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             }
             int& lf = m_face_extra[fid].label;
             if (lf != 1) lf = any_band(sides) ? 2 : 0;
-            if (face_is_offset_surface_live(f)) {
+            if (m_offset_params.label_growth && face_is_region(fid)) {
+                // held: keeps its class whether or not it is front now
+            } else if (face_is_offset_surface_live(f)) {
                 m_face_attribute[fid].m_is_surface_fs = true;
                 m_face_attribute[fid].m_surface_class = OFFSET_SURFACE_CLASS;
             } else if (m_face_attribute[fid].m_surface_class == OFFSET_SURFACE_CLASS) {
@@ -7024,12 +7286,20 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
                 continue;
             }
             bool allow = false, odd = false;
-            const int f = topology(tid, allow, odd);
-            if (!allow) {
-                ++n_refused[size_t(f)];
-                continue;
+            int f = 0;
+            if (growth_rule) {
+                if (!region_test(tid)) {
+                    ++n_refused_region;
+                    continue;
+                }
+            } else {
+                f = topology(tid, allow, odd);
+                if (!allow) {
+                    ++n_refused[size_t(f)];
+                    continue;
+                }
             }
-            if (!held_allows(tid)) {
+            if (!growth_rule && !held_allows(tid)) {
                 ++n_refused_held;
                 if (!cell_is_offset_band(tid) && inside_level_set(tid)) {
                     const auto [depth, where] = held_depth(tid);
@@ -7113,8 +7383,8 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         "more than two front faces or a front vertex, not tested) | left after the last pass: {} "
         "cells with a front face, {} on the other side by the side test, of which {} skipped for "
         "eligibility, refused by topology f=0 {}, f=1 {}, f=2 {}, f=4 {}, by the held objects {} "
-        "({} wholly inside the level set), for no single tag {} | "
-        "E {:.9g} -> {:.9g} | "
+        "({} wholly inside the level set), for no single tag {}, by the region test {} | one-cell "
+        "flips making a held face front {} | E {:.9g} -> {:.9g} | "
         "components (face adjacency) band {} -> {}, non-band {} -> {} | non-manifold front edges "
         "(on more than two front faces) {} -> {}",
         where,
@@ -7133,6 +7403,8 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         n_refused_held,
         n_unreachable,
         n_refused_tag,
+        n_refused_region,
+        n_single_held,
         e0,
         e1,
         band0,
@@ -7153,6 +7425,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             non1,
             n_odd);
     }
+    return to_band + to_non;
 }
 
 bool TopoOffsetTetMesh::optimize_offset_loop(
@@ -8263,10 +8536,10 @@ void TopoOffsetTetMesh::smart_growth()
     }
 }
 
-void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file)
+void TopoOffsetTetMesh::prepare_front()
 {
-    logger().info("Optimizing offset (3D)...");
-
+    if (m_front_prepared) return;
+    m_front_prepared = true;
     // From here on every edge split is an optimization split, run by the shared engine.
     m_edge_split_mode = EdgeSplitMode::Optimization;
 
@@ -8297,6 +8570,210 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     } else {
         logger().info("[plastic] use_rest_pose false: equilateral AMIPS for every cell");
     }
+}
+
+double TopoOffsetTetMesh::bisection_on_edge(
+    const size_t u,
+    const size_t w,
+    const ExactBandIntegral& be,
+    const double delta,
+    const double front_conv) const
+{
+    // d(x(lo)) < delta <= d(x(hi)) throughout, x(s) read at the rounding of its exact point, the
+    // position the split gives the vertex (split_adjust_position()). Each midpoint of two dyadic
+    // fractions k / 2^n is one with n + 1, so after 52 halvings s is still a double exactly. As 2D.
+    double lo = 0., hi = 1.;
+    for (int n = 0; n < 52; ++n) {
+        const double mid = 0.5 * (lo + hi);
+        const double d = be.distance(to_double(growth_point(u, w, mid)));
+        if (d < delta) {
+            lo = mid;
+            if (d > delta - front_conv) return lo;
+        } else {
+            hi = mid;
+        }
+    }
+    log_and_throw_error(
+        "[label growth] the bisection of edge ({}, {}) found no point with {} < d < {} in 52 "
+        "halvings: front_conv {} is below what the edge's length resolves",
+        u,
+        w,
+        delta - front_conv,
+        delta,
+        front_conv);
+}
+
+std::array<size_t, 2> TopoOffsetTetMesh::growth_splits(const std::string& where)
+{
+    // The edges first, each once, then the splits: a split replaces the cells at its edge, not
+    // the other listed edges. An edge runs from a front vertex u to a vertex beyond, in any
+    // non-band cell at u: the march's own rule, from the front. It is listed by the first such
+    // cell, with that cell's piece's distance, target and front_conv. As 2D, whose measurement
+    // motivates the front vertex (rather than a front face) as the condition.
+    struct Pending
+    {
+        size_t u, w;
+        int piece;
+    };
+    std::vector<Pending> todo;
+    std::set<std::array<size_t, 2>> seen;
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        if (m_tet_attribute[tid].label != 0) continue;
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const auto on_front = [&](const size_t k) { return m_vertex_extra[vs[k]].m_is_on_offset; };
+        if (!on_front(0) && !on_front(1) && !on_front(2) && !on_front(3)) continue;
+        const int piece = place_piece(vs.data(), 4);
+        const std::shared_ptr<const ExactBandIntegral>& be = band_exact_for(piece);
+        if (!be) {
+            log_and_throw_error(
+                "[label growth] {}: cell {} has no exact band integral to read d from",
+                where,
+                tid);
+        }
+        const double delta = region_delta(piece), eps = growth_conv_of(piece);
+        std::array<double, 4> d;
+        for (int k = 0; k < 4; ++k)
+            d[size_t(k)] = be->distance(m_vertex_attribute[vs[size_t(k)]].m_posf);
+        for (size_t a = 0; a < 4; ++a) {
+            for (size_t b = a + 1; b < 4; ++b) {
+                size_t u = 0, w = 0;
+                if (on_front(a) && d[a] <= delta - eps && d[b] >= delta) {
+                    u = vs[a];
+                    w = vs[b];
+                } else if (on_front(b) && d[b] <= delta - eps && d[a] >= delta) {
+                    u = vs[b];
+                    w = vs[a];
+                } else {
+                    continue;
+                }
+                const std::array<size_t, 2> key{{std::min(u, w), std::max(u, w)}};
+                if (!seen.insert(key).second) continue;
+                todo.push_back({u, w, piece});
+            }
+        }
+    }
+    size_t n_split = 0, n_refused = 0;
+    for (const Pending& p : todo) {
+        const double s = bisection_on_edge(
+            p.u,
+            p.w,
+            *band_exact_for(p.piece),
+            region_delta(p.piece),
+            growth_conv_of(p.piece));
+        m_growth_split = {p.u, s, true};
+        std::vector<Tuple> new_tets;
+        const Tuple t = tuple_from_edge({{p.u, p.w}});
+        // As the march: the mesh's slots are not reserved before the optimization, and a split
+        // without free cell slots is refused (MEASURED in 2D, see its twin).
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+        const bool ok = split_edge(t, new_tets);
+        m_growth_split.active = false;
+        ++(ok ? n_split : n_refused);
+    }
+    return {{n_split, n_refused}};
+}
+
+void TopoOffsetTetMesh::label_growth()
+{
+    // Euclidean only, as the 3D offset is (the driver refuses offset_field "smooth" in 3D). As 2D.
+    logger().info("Label growth (3D)...");
+    prepare_front();
+    // Round 0 flips; every later round splits, then flips, so the flips take in the pieces its
+    // splits made. A round that splits nothing flips nothing: the flips before it ran until
+    // nothing flipped, and nothing has changed since. One frame after each step under
+    // DEBUG_output. As 2D, whose measurement motivates the order.
+    // After each flip pass the held faces are re-derived from the tags, as the construction does
+    // (untrack_covered_boundaries()): a face with the band on both sides bounds no region and is
+    // no longer held, so the patch where the band passes a held surface grows as the front moves
+    // along it. THE REGION TEST (label_cleanup()) reads tags only, so it needs nothing else.
+    size_t flips = label_cleanup("label growth round 0", FlipSide::Corners), splits = 0,
+           refused = 0;
+    release_covered_face_tags();
+    untrack_covered_boundaries();
+    // No DEBUG_held_topology check here: it compares what the labels touch on a fixed set of
+    // held faces, and growth untracks the faces the band covers, so the set changes by design
+    // (MEASURED, double_sphere at 0.1: its non-band Euler characteristic 4 -> -11 -> 3 while
+    // every region and every surface between two regions kept its number of pieces and its
+    // Euler characteristic at every frame). The clean-up's component check still runs.
+    logger().info("\t[label growth] round 0: {} flips", flips);
+    if (stage_frames()) write_debug_frame("label_growth_0_flips");
+    int round = 0;
+    for (;;) {
+        ++round;
+        const std::string where = fmt::format("label growth round {}", round);
+        const std::array<size_t, 2> sp = growth_splits(where);
+        if (stage_frames()) write_debug_frame(fmt::format("label_growth_{}_splits", round));
+        const size_t f = label_cleanup(where, FlipSide::Corners);
+        release_covered_face_tags();
+        untrack_covered_boundaries();
+        if (stage_frames()) write_debug_frame(fmt::format("label_growth_{}_flips", round));
+        flips += f;
+        splits += sp[0];
+        refused += sp[1];
+        logger().info(
+            "\t[label growth] round {}: {} splits ({} refused by the split), then {} flips",
+            round,
+            sp[0],
+            sp[1],
+            f);
+        if (sp[0] == 0 && f == 0) break;
+    }
+    consolidate_mesh();
+
+    // What the growth left: the front vertices' distance to the level set, d - delta, over their
+    // piece's growth tolerance (growth_conv_of()); and the front faces on a held object (both held
+    // and front).
+    std::set<size_t> front;
+    size_t n_held_front = 0;
+    for (const std::array<size_t, 3>& f : offset_surface_faces()) {
+        front.insert({f[0], f[1], f[2]});
+        n_held_front += held_object_face(std::get<0>(tuple_from_face(f))) ? 1 : 0;
+    }
+    size_t n_inside = 0, n_beyond = 0, n_off = 0;
+    double worst = 0., mean = 0.;
+    size_t worst_v = 0;
+    for (const size_t v : front) {
+        const int piece = place_piece(&v, 1);
+        const double r =
+            (band_exact_for(piece)->distance(m_vertex_attribute[v].m_posf) - region_delta(piece)) /
+            growth_conv_of(piece);
+        ++(r < 0. ? n_inside : n_beyond);
+        n_off += std::abs(r) > 1. ? 1 : 0;
+        mean += r / double(front.size());
+        if (std::abs(r) > std::abs(worst)) {
+            worst = r;
+            worst_v = v;
+        }
+    }
+    const Vector3d& x = m_vertex_attribute[worst_v].m_posf;
+    logger().info(
+        "\t[label growth] {} round(s): {} flips, {} splits ({} refused) | front vertices {}: {} "
+        "inside, {} beyond, {} more than growth_conv from the level set; (d - delta) / growth_conv "
+        "mean {:.4g}, worst {:.4g} at ({:.4g}, {:.4g}, {:.4g}) | front faces on a held object {}",
+        round,
+        flips,
+        splits,
+        refused,
+        front.size(),
+        n_inside,
+        n_beyond,
+        n_off,
+        mean,
+        worst,
+        x[0],
+        x[1],
+        x[2],
+        n_held_front);
+}
+
+void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file)
+{
+    logger().info("Optimizing offset (3D)...");
+
+    // The optimization split mode, the front face classes, the baselines, the vertex order and
+    // the plastic medium; label_growth() may have run them already.
+    prepare_front();
 
     // The front as constructed must already be inside the potential's support.
     check_offset_within_support("Offset as constructed");

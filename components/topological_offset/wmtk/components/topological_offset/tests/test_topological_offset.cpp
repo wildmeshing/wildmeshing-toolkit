@@ -3345,12 +3345,13 @@ TEST_CASE("offset-carries-an-earlier-correspondence", "[offset][3d][corresponden
         const auto first = offset_sheet(two_sheet_grid(0.25), "yellow", "band_yellow");
         REQUIRE_THROWS_WITH(
             offset_sheet(first, "yellow", "band_yellow_2"),
-            Catch::Matchers::ContainsSubstring("protect the earlier band"));
+            Catch::Matchers::ContainsSubstring("a chain of offsets that keeps an earlier band"));
     }
-    SECTION("sheets one cube apart, yellow's band protected: blue's march leaves it")
+    SECTION("sheets one cube apart, yellow's band protected: every carried value survives")
     {
-        // A protected cell is split by no march and taken by no band (marching_tets()), so
-        // every carried value survives.
+        // A protected cell is marched like any other and keeps its protected tags (since
+        // 2026-11-20, marching_tets()); one cube apart, blue's march cuts none of yellow's
+        // carried edges, so every carried value survives.
         const auto first = offset_sheet(two_sheet_grid(0.75), "yellow", "band_yellow");
         const auto second = offset_sheet(first, "blue", "band_blue", "band_yellow");
         const auto carried = correspondence_pairs(first);
@@ -3558,8 +3559,9 @@ TEST_CASE("band-covered-region-boundaries", "[offset][3d][envelope]")
     // complex, so near the shared face tag_1's four side squares lie between two band cells
     // (COVERED), and farther out between two cells the band did not take (BEYOND). A covered face
     // bounds nothing once the band's cells carry its tags: untracked, so not held
-    // (untrack_covered_boundaries()). With tag_1 protected the band takes none of its cells
-    // (marching_tets()), so none of its faces is covered. Beyond, tracked and held either way.
+    // (untrack_covered_boundaries()). With tag_1 protected the band's cells taken from tag_1 keep
+    // tag_1 (set_offset_tet_tags(), since 2026-11-20), so a covered face still separates two tag
+    // sets: tracked and held. Beyond, tracked and held either way.
     const GridInput g = grid_input(5);
     MatrixSi tags(g.Tm.rows(), 2);
     for (Eigen::Index t = 0; t < g.Tm.rows(); ++t) {
@@ -3604,14 +3606,14 @@ TEST_CASE("band-covered-region-boundaries", "[offset][3d][envelope]")
                 Eigen::Vector3d(0.5, -0.5, -0.5),
                 Eigen::Vector3d(1.5, 0.5, 0.5));
             for (const auto& f : s.covered) {
-                CHECK(!tracked(f));
-                CHECK(!held(f));
+                CHECK(tracked(f) == protect);
+                CHECK(held(f) == protect);
             }
             for (const auto& f : s.beyond) CHECK(held(f));
             n_covered += s.covered.size();
             n_beyond += s.beyond.size();
         }
-        CHECK((n_covered == 0) == protect);
+        CHECK(n_covered > 0);
         REQUIRE(n_beyond > 0);
         REQUIRE_NOTHROW(mesh->audit_surface_containment("construction"));
     }
@@ -3644,8 +3646,10 @@ TEST_CASE("protected-tags-expression", "[offset][3d]")
     CHECK_THROWS(rule("a | ambient"));
 
     // In the march: the grid of band-covered-region-boundaries, tag_1 the cube next to the
-    // complex along +x and tag_2 the same cells. A protected tag_1 cell is never the band's, so
-    // none of the cube's side faces is covered; an unprotected cube is entered.
+    // complex along +x and tag_2 the same cells. The band enters the cube either way; a
+    // protected cube's cells keep the tags the expression names (since 2026-11-20), so the side
+    // faces the band covers still separate two tag sets and stay tracked; an unprotected cube's
+    // tags give way and those faces are untracked.
     const GridInput g = grid_input(5);
     MatrixSi tags(g.Tm.rows(), 3);
     for (Eigen::Index t = 0; t < g.Tm.rows(); ++t) {
@@ -3680,18 +3684,22 @@ TEST_CASE("protected-tags-expression", "[offset][3d]")
             "tag_0",
             param,
             std::filesystem::temp_directory_path() / "wmtk_offset_protected_expression");
-        size_t n_covered = 0;
+        size_t n_covered = 0, n_tracked = 0;
         for (const auto& [axis, value] :
              std::vector<std::pair<int, double>>{{1, 0.5}, {1, -0.5}, {2, 0.5}, {2, -0.5}}) {
-            n_covered += square_faces(
-                             *mesh,
-                             axis,
-                             value,
-                             Eigen::Vector3d(0.5, -0.5, -0.5),
-                             Eigen::Vector3d(1.5, 0.5, 0.5))
-                             .covered.size();
+            const SquareFaces s = square_faces(
+                *mesh,
+                axis,
+                value,
+                Eigen::Vector3d(0.5, -0.5, -0.5),
+                Eigen::Vector3d(1.5, 0.5, 0.5));
+            for (const auto& f : s.covered) {
+                ++n_covered;
+                n_tracked += mesh->m_face_attribute[f.fid(*mesh)].m_is_surface_fs ? 1 : 0;
+            }
         }
-        CHECK((n_covered == 0) == cube_protected);
+        CHECK(n_covered > 0);
+        CHECK(n_tracked == (cube_protected ? n_covered : 0));
     }
 }
 
@@ -12296,4 +12304,191 @@ TEST_CASE("label-growth-held-point-2d", "[offset][2d]")
     for (const auto& e : result_front_2d(out)) {
         for (const Vector2d& x : e) CHECK((x - p).norm() < delta);
     }
+}
+
+namespace {
+/// The result's front as vertex positions: every corner of a triangle shared by a band tet and a
+/// tet outside the band. The 3D twin of result_front_2d()'s ends.
+std::vector<Vector3d> result_front_vertices_3d(
+    const MeshData& out,
+    const std::string& band_tag = "newtag")
+{
+    const auto& tets = out.cells.at(CellType::Tetrahedron);
+    const auto& tags = tets.attributes.at("tags");
+    const auto it = std::find(tags.labels.begin(), tags.labels.end(), band_tag);
+    REQUIRE(it != tags.labels.end());
+    const Eigen::Index col = Eigen::Index(it - tags.labels.begin());
+    const auto member = tags.integers();
+    std::map<std::array<int64_t, 3>, std::vector<bool>> sides;
+    for (Eigen::Index r = 0; r < tets.connectivity.rows(); ++r) {
+        for (int skip = 0; skip < 4; ++skip) {
+            std::array<int64_t, 3> f;
+            int k = 0;
+            for (int c = 0; c < 4; ++c) {
+                if (c != skip) f[size_t(k++)] = tets.connectivity(r, c);
+            }
+            std::sort(f.begin(), f.end());
+            sides[f].push_back(member(r, col) != 0);
+        }
+    }
+    std::set<int64_t> vs;
+    for (const auto& [f, s] : sides) {
+        if (s.size() == 2 && s[0] != s[1]) vs.insert(f.begin(), f.end());
+    }
+    std::vector<Vector3d> x;
+    for (const int64_t v : vs) x.push_back(out.V.row(Eigen::Index(v)).head<3>().transpose());
+    return x;
+}
+} // namespace
+
+TEST_CASE("label-growth-3d", "[offset][3d]")
+{
+    // The 3D twin of label-growth-2d: p, the grid's centre, offset to delta past the march's
+    // reach, growth alone; over front_conv_rel's whole range every front vertex inside the level
+    // set and within front_conv of it, and the run's own checks hold.
+    const double delta = GENERATE(0.3, 0.5);
+    const double rel = GENERATE(0.01, 0.1, 0.5, 1.0);
+    INFO("delta " << delta << ", front_conv_rel " << rel);
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", delta}}})},
+        {"label_growth", true},
+        {"optimize_offset", false},
+        {"front_conv_rel", rel},
+        {"envelope_size", 1e-4}, // under front_conv at every rel (startup refuses a wider one)
+        {"num_threads", 1}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", point_grid({{"p", {{4, 4, 4}}}})}}));
+    const auto front = result_front_vertices_3d(res.first.at("mesh"));
+    REQUIRE(!front.empty());
+    const Vector3d p = grid_point({{4, 4, 4}});
+    for (const Vector3d& x : front) {
+        CHECK((x - p).norm() < delta);
+        CHECK((x - p).norm() > delta - rel * delta);
+    }
+}
+
+TEST_CASE("label-growth-held-point-3d", "[offset][3d]")
+{
+    // The 3D twin of label-growth-held-point-2d: q, 0.25 from p, untouched by the band as
+    // constructed, stays untouched under label_growth at delta 0.3 and 0.5, and no front vertex
+    // is beyond the level set.
+    const double delta = GENERATE(0.3, 0.5);
+    INFO("delta " << delta);
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", delta}}})},
+        {"label_growth", true},
+        {"optimize_offset", false},
+        {"num_threads", 1}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(
+        res = components::topological_offset::topological_offset(
+            j,
+            {{"m", point_grid({{"p", {{4, 4, 4}}}, {"q", {{5, 4, 4}}}})}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto touched = band_touched(out);
+    const Vector3d q = result_points(out).at("q").at(0);
+    Eigen::Index qv = 0;
+    for (Eigen::Index v = 1; v < out.V.rows(); ++v) {
+        if ((out.V.row(v).head<3>().transpose() - q).norm() <
+            (out.V.row(qv).head<3>().transpose() - q).norm())
+            qv = v;
+    }
+    REQUIRE((out.V.row(qv).head<3>().transpose() - q).norm() == 0.);
+    CHECK(touched[size_t(qv)] == 0);
+    const Vector3d p = grid_point({{4, 4, 4}});
+    for (const Vector3d& x : result_front_vertices_3d(out)) CHECK((x - p).norm() < delta);
+}
+
+TEST_CASE("label-growth-held-crossing-3d", "[offset][3d]")
+{
+    // A front that crosses a held surface (the double_sphere's crossing, on the grid): p, the
+    // grid's centre, on the plane x = 0 between regions A (x < 0) and B (x > 0), offset to delta
+    // by label growth alone. The band crosses the plane as constructed, and the crossing has to
+    // move along it as the front grows. MEASURED before the region test (with the clean-up's
+    // topology test, held objects' test and eligibility): on the double_sphere the front stayed
+    // at the march's distance along the crossing. Every front vertex inside the level set and
+    // within front_conv of it, on both sides of the plane and at the crossing.
+    const double delta = GENERATE(0.3, 0.5);
+    INFO("delta " << delta);
+    MeshData input = point_grid({{"p", {{4, 4, 4}}}});
+    auto& tets = input.cells.at(CellType::Tetrahedron);
+    DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tets.connectivity.rows(), 2);
+    for (Eigen::Index r = 0; r < tets.connectivity.rows(); ++r) {
+        double x = 0.;
+        for (int c = 0; c < 4; ++c) x += input.V(tets.connectivity(r, c), 0) / 4.;
+        tags(r, x > 0. ? 1 : 0) = 1;
+    }
+    tets.attributes["tags"] = {tags, {"A", "B"}};
+    const nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", delta}}})},
+        {"label_growth", true},
+        {"optimize_offset", false},
+        {"num_threads", 1}};
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const auto front = result_front_vertices_3d(res.first.at("mesh"));
+    REQUIRE(!front.empty());
+    const Vector3d p = grid_point({{4, 4, 4}});
+    size_t on_plane = 0;
+    for (const Vector3d& x : front) {
+        CHECK((x - p).norm() < delta);
+        CHECK((x - p).norm() > 0.9 * delta);
+        on_plane += std::abs(x[0]) < 1e-12 ? 1 : 0;
+    }
+    CHECK(on_plane > 0); // the front still crosses the plane
+}
+
+TEST_CASE("label-growth-two-bands-3d", "[offset][3d]")
+{
+    // Two offsets whose level sets overlap: boxes a and b 0.5 apart, each offset to delta by label
+    // growth alone. Each band is a region of its own, so the region test keeps them apart as the
+    // march made them (a cell touching both has no single tag to join): no vertex in both bands,
+    // and every corner of a band within its own level set, up to the march's placement tolerance
+    // (sphere_trace_target_rel_tol, 1%) where the march traced to delta itself (delta 0.2: the
+    // level sets do not meet; 0.3 and 0.4: they overlap). MEASURED: where they overlap each front
+    // stops a cell short of the other band (66 and 96 front vertices more than front_conv short
+    // at 0.3 and 0.4, every refused cell there touching both bands), not asserted here.
+    const double delta = GENERATE(0.2, 0.3, 0.4);
+    INFO("delta " << delta);
+    const std::array<int, 6> a = {{2, 2, 3, 4, 3, 4}}, b = {{5, 5, 3, 4, 3, 4}};
+    MeshData out;
+    REQUIRE_NOTHROW(
+        out = components::topological_offset::topological_offset(
+                  {{"input", "m"},
+                   {"offsets",
+                    nlohmann::json::array(
+                        {{{"selection", "a"},
+                          {"output_tags", {"a_band"}},
+                          {"target_distance", delta}},
+                         {{"selection", "b"},
+                          {"output_tags", {"b_band"}},
+                          {"target_distance", delta}}})},
+                   {"label_growth", true},
+                   {"optimize_offset", false},
+                   {"num_threads", 1}},
+                  {{"m", box_grid({{"a", a}, {"b", b}})}})
+                  .first.at("mesh"));
+    std::set<std::array<double, 3>> corners_a;
+    for (const CellCorners& c : cells_tagged(out, "a_band")) {
+        for (const auto& q : c) {
+            corners_a.insert(q);
+            CHECK(box_distance(Vector3d(q[0], q[1], q[2]), a) < 1.01 * delta);
+        }
+    }
+    size_t n_b = 0;
+    for (const CellCorners& c : cells_tagged(out, "b_band")) {
+        ++n_b;
+        for (const auto& q : c) {
+            CHECK(corners_a.count(q) == 0);
+            CHECK(box_distance(Vector3d(q[0], q[1], q[2]), b) < 1.01 * delta);
+        }
+    }
+    CHECK(!corners_a.empty());
+    CHECK(n_b > 0);
 }

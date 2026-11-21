@@ -510,6 +510,14 @@ public:
         return m_offset_params.front_conv_rel *
                m_offset_params.offsets[size_t(m_region_offset[size_t(r)])].target_distance;
     }
+    /// Label growth's tolerance at a place of piece r: EXPERIMENTAL_label_growth_conv_rel of its
+    /// entry's target_distance when that key is > 0, else front_conv_of(r). front_conv_of(r) is
+    /// front_conv_rel of the same target in both of its branches, so the ratio rescales it.
+    double growth_conv_of(const int r) const
+    {
+        const double g = m_offset_params.label_growth_conv_rel;
+        return g > 0. ? front_conv_of(r) * (g / m_offset_params.front_conv_rel) : front_conv_of(r);
+    }
     /// The bar as a fraction of piece r's current target (front_conv_frac() with one entry): the
     /// unit of a relative residual read on piece r's field.
     double front_conv_frac_of(const int r) const
@@ -842,7 +850,66 @@ public:
      * vertex order and the band-region map. One [label cleanup] line. Called by loop_group()
      * after the operation passes; a no-op with the key "off".
      */
-    void label_cleanup(const std::string& where);
+    /// `side`: the key's mode (Cleanup), or label growth's corner rule (Corners, label_growth()):
+    /// a non-band cell joins the band iff every corner is inside the level set, a band cell leaves
+    /// it iff every corner is beyond; every other test is the same for both. Returns the flips.
+    /// As TopoOffsetTriMesh::label_cleanup().
+    enum class FlipSide { Cleanup, Corners };
+    size_t label_cleanup(const std::string& where, FlipSide side = FlipSide::Cleanup);
+
+    /**
+     * @brief label_growth (see the spec; 2D 2026-11-20, 3D the same rules one dimension up):
+     * after construction, before the optimization, grow the band toward the level set:
+     * label_cleanup() under the corner rule, then rounds of level-set splits (growth_splits())
+     * each followed by the corner rule's flips, until a round splits nothing. Calls
+     * prepare_front() first. As TopoOffsetTriMesh::label_growth().
+     */
+    void label_growth();
+    /**
+     * @brief Label growth's splits: every edge from a front vertex u with d(u) <= delta -
+     * front_conv to a vertex w beyond, in any non-band cell at u, split at a point x with
+     * delta - front_conv < d(x) < delta (bisection_on_edge()), delta and front_conv the cell's
+     * piece's. Serial. Returns {splits, edges the shared split refused}. As 2D.
+     */
+    std::array<size_t, 2> growth_splits(const std::string& where);
+    /**
+     * @brief The bisection of growth_splits(): x(s) = u + s (w - u) exact (growth_point()), d
+     * read at its rounding, keeping d(x(lo)) < delta <= d(x(hi)); returns the first lo with
+     * d > delta - front_conv, which d being 1-Lipschitz guarantees once the bracket is shorter
+     * than front_conv. s is a dyadic fraction k / 2^n, n <= 52, exact in a double; throws if 52
+     * halvings do not reach the bound. As 2D.
+     */
+    double bisection_on_edge(
+        size_t u,
+        size_t w,
+        const ExactBandIntegral& be,
+        double delta,
+        double front_conv) const;
+    /// The exact point u + s (w - u) of the edge (u, w), from the endpoints' exact positions.
+    Vector3r growth_point(size_t u, size_t w, double s) const
+    {
+        const Vector3r pu = m_vertex_attribute[u].pos();
+        const Vector3r pw = m_vertex_attribute[w].pos();
+        return pu + (pw - pu) * Rational(s);
+    }
+    /// A pending growth split: the shared split's position hook (split_adjust_position()) puts
+    /// the new vertex at growth_point(u, w, s). Unset outside growth_splits().
+    struct GrowthSplit
+    {
+        size_t u = 0;
+        double s = 0.5;
+        bool active = false;
+    };
+    GrowthSplit m_growth_split;
+    /**
+     * @brief The optimization's setup that label growth also reads, run once by whichever of
+     * label_growth() and optimize_offset() comes first: the optimization split mode, the front
+     * face classes (label_offset_boundary()), the membership and DEBUG_held_topology's baselines,
+     * the vertex order (the clean-up re-derives it at the flipped cells' corners) and the plastic
+     * medium (the clean-up's eligibility reads it).
+     */
+    void prepare_front();
+    bool m_front_prepared = false;
     /**
      * @name The level set out of reach (2026-11-10)
      * The last clean-up's non-band cells wholly inside the level set (the one-sided side test)
@@ -3671,6 +3738,11 @@ public:
      * rebuilds its tubes from the tags (build_boundary_envelopes()).
      */
     void untrack_covered_boundaries();
+    /// The faces the band covers (band cells on both sides), not of the input complex: their face
+    /// tags and the sheet group give way unless protected_tags keeps them. set_offset_tet_tags()'s
+    /// rule, also run by label growth after each flip pass, before untrack_covered_boundaries(),
+    /// since a flip covers faces as the construction does.
+    void release_covered_face_tags();
 
     /// verify that the closed offset region (simplices labelled 1 or 2) form a manifold region.
     bool offset_is_manifold();

@@ -458,20 +458,31 @@ void TopoOffsetTetMesh::untrack_covered_boundaries()
             }
         }
     }
+    // A corner is on a region boundary iff a region face (a tracked face not of the offset
+    // surface's class) holds it, and on the surface iff any tracked face does. At construction,
+    // before label_offset_boundary() classifies the front, the two are the same; label growth
+    // calls this after every flip pass, when the front's faces are tracked too, and a corner on
+    // the front alone would otherwise take the region flag. MEASURED before (double_sphere,
+    // tag_0 offset to 0.2 across the held tag_1, growth alone): a vertex the front then passed was
+    // left flagged on a region with no tracked face, and compute_vertex_order() threw ("Vertex
+    // must have incindent surface faces").
     size_t n_off = 0;
     for (const size_t v : corners) {
-        bool on = false;
+        bool on = false, on_region = false;
         for (const size_t tid : get_one_ring_tids_for_vertex(v)) {
-            for (int j = 0; j < 4 && !on; ++j) {
+            for (int j = 0; j < 4; ++j) {
                 const Tuple g = tuple_from_face(tid, j);
-                if (!m_face_attribute[g.fid(*this)].m_is_surface_fs) continue;
+                const size_t gid = g.fid(*this);
+                if (!m_face_attribute[gid].m_is_surface_fs) continue;
                 const auto vs = get_face_vids(g);
-                on = vs[0] == v || vs[1] == v || vs[2] == v;
+                if (vs[0] != v && vs[1] != v && vs[2] != v) continue;
+                on = true;
+                on_region = on_region || face_is_region(gid);
             }
-            if (on) break;
+            if (on_region) break;
         }
-        if (!on && m_vertex_extra[v].m_is_on_region) ++n_off;
-        m_vertex_extra[v].m_is_on_region = on;
+        if (!on_region && m_vertex_extra[v].m_is_on_region) ++n_off;
+        m_vertex_extra[v].m_is_on_region = on_region;
         m_vertex_attribute[v].m_is_on_surface = on;
     }
     logger().info(
@@ -2886,25 +2897,21 @@ void TopoOffsetTetMesh::marching_tets()
     m_marching_midpoint_splits = 0;
     m_marching_trace_steps = 0;
     m_marching_trace_steps_max = 0;
-    // A protected cell (its tet tags satisfy protected_tags) is not the offset's: the march splits
-    // no edge of it and the band takes none of it, so an earlier offset's band, protected, keeps
-    // its cells, and the stars of its offset vertices there, as they are. An edge out of the
-    // complex in a protected cell stays unsplit (blocked), and no cell around it joins the band: in
-    // that direction the offset is not made. Until 2026-11-05 the band took protected cells too,
-    // and they kept the protected tags beside its own, so a chain of offsets could not keep an
-    // earlier band: feature demo 4's wire, offset after the sheet it runs in, changed the stars of
-    // 482 of the sheet's offset vertices, which prismatic_mesh builds prisms from.
-    const auto is_protected = [&](const size_t tid) {
-        return m_offset_params.is_protected(m_tet_attribute[tid].tag);
-    };
+    // A protected cell (its tet tags satisfy protected_tags) is marched and taken by the band like
+    // any other, and keeps the protected tags beside the band's own (set_offset_tet_tags()), as
+    // in 2D (Uday, 2026-11-20). From 2026-11-05 to 2026-11-20 the march split no edge of a
+    // protected cell and the band took none, so an earlier band of a chain kept its cells; with
+    // a held region protected, the band then stopped at it with no thickness where the region
+    // meets the input complex (double_sphere, tag_1 protected: 28 vertices on both the input and
+    // the front, the non-band region touching the input along that curve).
     const auto key = [](size_t a, size_t b) {
         return std::array<size_t, 2>{{std::min(a, b), std::max(a, b)}};
     };
     // An edge out of an In entry's complex, its boundary, that leads away from its selection
-    // (on_offset_side()) is on the side no band grows on: it is not marched either, and no cell
-    // around it joins the band, as for a protected cell. So an In band takes only the
-    // selection's cells: after the simplicial embedding every cell outside the selection at a
-    // boundary vertex has a vertex off the boundary, and so such an edge.
+    // (on_offset_side()) is on the side no band grows on: it is not marched, and no cell around
+    // it joins the band. So an In band takes only the selection's cells: after the simplicial
+    // embedding every cell outside the selection at a boundary vertex has a vertex off the
+    // boundary, and so such an edge.
     std::set<std::array<size_t, 2>> blocked;
     size_t n_far_side = 0;
     // mark edges to split
@@ -2916,11 +2923,7 @@ void TopoOffsetTetMesh::marching_tets()
 
         // if one background and other in input/offset
         if ((m_vertex_extra[v1].label == 0) != (m_vertex_extra[v2].label == 0)) {
-            bool in_protected = false;
-            for (const size_t t : get_incident_tids_for_edge(e)) in_protected |= is_protected(t);
-            if (in_protected) {
-                blocked.insert(key(v1, v2));
-            } else if (!is_marched_edge(v1, v2)) {
+            if (!is_marched_edge(v1, v2)) {
                 blocked.insert(key(v1, v2));
                 ++n_far_side;
             } else {
@@ -2929,18 +2932,12 @@ void TopoOffsetTetMesh::marching_tets()
         }
     }
     const auto takes = [&](const size_t tid) {
-        if (is_protected(tid)) return false;
         const auto vs = oriented_tet_vids(tid);
         for (int i = 0; i < 4; ++i)
             for (int j = i + 1; j < 4; ++j)
                 if (blocked.count(key(vs[i], vs[j]))) return false;
         return true;
     };
-    if (blocked.size() > n_far_side) {
-        logger().info(
-            "\t[construction] {} edges out of the complex lie in protected cells: not marched",
-            blocked.size() - n_far_side);
-    }
     if (n_far_side > 0) {
         logger().info(
             "\t[construction] {} edges out of an inward offset's boundary lead out of its "
@@ -3321,17 +3318,17 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
         if (m_tet_attribute[t_id].label == 2) {
-            // A band cell is never a protected one (marching_tets()), so it has no tag to keep.
-            // It takes the output tags of its entry of offsets (band_cell_entry(): the entry of
-            // its vertices on the complex -- every band cell has one, the frontier vertex it was
-            // taken around -- or, at a vertex two In entries share, the one whose selection holds
-            // it).
+            // A band cell keeps the protected tags it had, those protected_tags names
+            // (Parameters::protected_kept()), and takes the output tags of its entry of offsets
+            // (band_cell_entry(): the entry of its vertices on the complex -- every band cell has
+            // one, the frontier vertex it was taken around -- or, at a vertex two In entries share,
+            // the one whose selection holds it).
             const size_t k = band_cell_entry(t_id);
             // No entry (a Parameters built by hand, the unit tests): ambient.
             const CellTag ids = k < output_ids.size() ? output_ids[k] : CellTag();
-            CellTag new_tag;
+            CellTag new_tag = m_offset_params.protected_kept(m_tet_attribute[t_id].tag);
             if (ids.size() == 0) {
-                new_tag.insert(0); // write ambient
+                if (new_tag.empty()) new_tag.insert(0); // no protected tag: write ambient
             } else {
                 for (const int64_t& tag : ids) {
                     new_tag.insert(tag);
@@ -3353,7 +3350,12 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
         if (n > 1) m_band_tags_entry.erase(written);
     }
 
-    // The faces the band covers -- both tets band cells, the cells rewritten above -- by the same
+    release_covered_face_tags();
+}
+
+void TopoOffsetTetMesh::release_covered_face_tags()
+{
+    // The faces the band covers -- both tets band cells -- by the same
     // rule: a face tag gives way unless protected, and so does the sheet group (on_sheet, and the
     // label bit assign_face_labels() gave it for the sheet). Never on a face of the input complex
     // (label 1): a face-tag or sheet selection has band cells on both sides of its own faces, and

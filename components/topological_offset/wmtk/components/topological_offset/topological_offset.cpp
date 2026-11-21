@@ -456,9 +456,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 "euclidean distance to the input, and this field has no band term yet",
                 params.offset_field);
         }
-        if (params.label_growth) {
-            log_and_throw_error("label_growth has no 3D port yet (2D only)");
-        }
         // initialize mesh. A labelled reference is held to (below), not the envelope surface
         // group: its triangles are the first component's input, not a sheet of this mesh.
         const bool reference = input_data.envelope_reference.has_value();
@@ -598,8 +595,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         timer.start();
         mesh.construct_offset(output_filename);
 
-        // checks
-        {
+        // checks, on the offset as constructed and, under label_growth, as grown. As in 2D.
+        const auto offset_checks = [&]() {
             // Did conservative growth run out of room? Reported here, not inside the
             // optimization, because it is a property of the offset as constructed: the
             // optimization cannot move vertices off the bounding box, so a band clipped here
@@ -627,6 +624,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                     "connected components check passed. (# components={})",
                     initial_num_comps);
             }
+        };
+        offset_checks();
+
+        // label_growth (json, default false; see the spec), as in 2D: the band grown toward the
+        // level set before the optimization, then the checks again on the grown band.
+        if (mesh.m_offset_params.label_growth) {
+            mesh.init_offset_potential();
+            mesh.label_growth();
+            offset_checks();
         }
 
         // optimize_offset (json, default true), as in 2D. Conservative growth leaves the band
@@ -635,8 +641,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // mesh's resolution; false is for inspecting the constructed offset.
         if (mesh.m_offset_params.optimize_offset) {
             // The potential, against the constructed offset. Only the optimization reads it, so
-            // a construction-only run builds none.
-            mesh.init_offset_potential();
+            // a construction-only run builds none. label_growth built it already.
+            if (!mesh.m_offset_params.label_growth) mesh.init_offset_potential();
             mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
 
             mesh.optimize_offset(output_filename);
