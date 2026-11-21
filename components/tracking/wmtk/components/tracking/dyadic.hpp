@@ -111,11 +111,11 @@ private:
         }
         int ex = 0;
         const double f = std::frexp(d, &ex); // d = f 2^ex, 1/2 <= |f| < 1
-        long long mant = static_cast<long long>(std::ldexp(f, 53)); // an integer, exactly
-        const int tz = __builtin_ctzll(static_cast<unsigned long long>(mant < 0 ? -mant : mant));
-        mant /= (1ll << tz); // exact: odd mantissa
-        mpz_set_si(m_m, long(mant));
-        m_e = long(ex) - 53 + tz;
+        // f 2^53 is an integer below 2^53, so a double holds it and mpz_set_d takes it exactly
+        // (mpz_set_si would not: long is 32 bits on Windows).
+        mpz_set_d(m_m, std::ldexp(f, 53));
+        m_e = long(ex) - 53;
+        canonical(); // odd mantissa
     }
 
     /// m odd (or zero, with e = 0): one representation per value.

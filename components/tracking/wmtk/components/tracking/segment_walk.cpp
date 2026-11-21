@@ -13,8 +13,10 @@ using exact::Dyadic;
 
 TriangleH lift(const Triangle2& t)
 {
-    return {{Vector3d(t[0].x(), t[0].y(), 1), Vector3d(t[1].x(), t[1].y(), 1),
-             Vector3d(t[2].x(), t[2].y(), 1)}};
+    return {
+        {Vector3d(t[0].x(), t[0].y(), 1),
+         Vector3d(t[1].x(), t[1].y(), 1),
+         Vector3d(t[2].x(), t[2].y(), 1)}};
 }
 
 namespace exact {
@@ -353,7 +355,10 @@ Hom Hom::of(const Eigen::Vector3d& v)
 Exact3 Hom::value() const
 {
     if (x) return *x;
-    return {Dyadic(v[0]) + Dyadic(lo[0]), Dyadic(v[1]) + Dyadic(lo[1]), Dyadic(v[2]) + Dyadic(lo[2])};
+    return {
+        Dyadic(v[0]) + Dyadic(lo[0]),
+        Dyadic(v[1]) + Dyadic(lo[1]),
+        Dyadic(v[2]) + Dyadic(lo[2])};
 }
 
 Dyadic Value::value() const
@@ -452,7 +457,8 @@ Hom normalized(const Hom& h)
             const DD q = div(DD{h.v[k], h.lo[k]}, s);
             out.v[k] = q.hi;
             out.lo[k] = q.lo;
-            out.e[k] = up((h.e[k] + magnitude(q) * (E + 8 * kU2 * s.hi)) / S + 32 * kU2 * magnitude(q));
+            out.e[k] =
+                up((h.e[k] + magnitude(q) * (E + 8 * kU2 * s.hi)) / S + 32 * kU2 * magnitude(q));
         }
         return out;
     }
@@ -469,9 +475,9 @@ Hom normalized(const Hom& h)
     for (int k = 0; k < 3; ++k) {
         if (h.v[k] == 0) continue;
         out.v[k] = h.v[k] / s;
-        out.e[k] = up(
-            (h.e[k] + std::abs(h.lo[k]) + std::abs(out.v[k]) * (El + 2 * kU * s)) / S +
-            kU * std::abs(out.v[k]));
+        out.e[k] =
+            up((h.e[k] + std::abs(h.lo[k]) + std::abs(out.v[k]) * (El + 2 * kU * s)) / S +
+               kU * std::abs(out.v[k]));
     }
     return out;
 }
@@ -534,16 +540,17 @@ Value lin2(const Value& a, const double b, const Value& c, const double d)
         if (!std::isfinite(r)) return Value{};
         // Error: at most u |s1| + u |s2| from the differences and u |r| from the sum, and that of
         // the inputs (their low parts included).
-        const double bound = up(4 * kU * (std::abs(s1) + std::abs(s2)) +
-                                std::abs(b) * (a.e + std::abs(a.lo)) +
-                                std::abs(d) * (c.e + std::abs(c.lo)));
+        const double bound =
+            up(4 * kU * (std::abs(s1) + std::abs(s2)) + std::abs(b) * (a.e + std::abs(a.lo)) +
+               std::abs(d) * (c.e + std::abs(c.lo)));
         if (std::abs(r) > bound) return Value{r, 0, bound, nullptr};
     }
     if (level <= kDoubleDouble) {
         const DD r = add(mul(DD{a.v, a.lo}, b), neg(mul(DD{c.v, c.lo}, d)));
-        const double bound = up(std::abs(b) * a.e + std::abs(d) * c.e +
-                                8 * kU2 * (magnitude(DD{a.v, a.lo}) * std::abs(b) +
-                                           magnitude(DD{c.v, c.lo}) * std::abs(d)));
+        const double bound = up(
+            std::abs(b) * a.e + std::abs(d) * c.e +
+            8 * kU2 *
+                (magnitude(DD{a.v, a.lo}) * std::abs(b) + magnitude(DD{c.v, c.lo}) * std::abs(d)));
         if (std::isfinite(r.hi) && std::abs(r.hi) > bound + std::abs(r.lo)) {
             return Value{r.hi, r.lo, bound, nullptr};
         }
@@ -566,8 +573,9 @@ Value muladd(const Value& a, const Value& b, const double c)
     if (level == kDouble) {
         const double p = b.v * c;
         const double r = a.v + p;
-        const double bound = up(kU * std::abs(p) + kU * std::abs(r) + a.e + std::abs(a.lo) +
-                                std::abs(c) * (b.e + std::abs(b.lo)));
+        const double bound =
+            up(kU * std::abs(p) + kU * std::abs(r) + a.e + std::abs(a.lo) +
+               std::abs(c) * (b.e + std::abs(b.lo)));
         if (std::isfinite(r) && r != 0 && (std::abs(r) > bound || one_sign)) {
             return Value{r, 0, bound, nullptr};
         }
@@ -577,7 +585,8 @@ Value muladd(const Value& a, const Value& b, const double c)
         const DD r = add(DD{a.v, a.lo}, p);
         const double bound =
             up(a.e + std::abs(c) * b.e + 8 * kU2 * (magnitude(DD{a.v, a.lo}) + magnitude(p)));
-        if (std::isfinite(r.hi) && r.hi != 0 && (std::abs(r.hi) > bound + std::abs(r.lo) || one_sign)) {
+        if (std::isfinite(r.hi) && r.hi != 0 &&
+            (std::abs(r.hi) > bound + std::abs(r.lo) || one_sign)) {
             return Value{r.hi, r.lo, bound, nullptr};
         }
     }

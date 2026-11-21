@@ -23,10 +23,10 @@
 
 namespace wmtk::components::tracking {
 
+using exact::Dyadic;
 using history::Edit;
 using history::EditKind;
 using history::Replay;
-using exact::Dyadic;
 
 namespace {
 
@@ -650,7 +650,8 @@ struct CellGeometry
     std::optional<HWalkPoint> by_split(const TriangleH& tf, const Hom& l) const
     {
         const auto& S = *cell.split;
-        const Eigen::Vector3d A(S.a.x(), S.a.y(), 1), B(S.b.x(), S.b.y(), 1), W(S.w.x(), S.w.y(), 1);
+        const Eigen::Vector3d A(S.a.x(), S.a.y(), 1), B(S.b.x(), S.b.y(), 1),
+            W(S.w.x(), S.w.y(), 1);
         int ia = -1, ib = -1, iw = -1;
         for (int k = 0; k < 3; ++k) {
             if (l.v[k] == 0) continue;
@@ -672,7 +673,7 @@ struct CellGeometry
         const exact::Exact3 x = l.value();
         const Dyadic zero(0.);
         const Dyadic ca = ia >= 0 ? x[ia] : zero, cb = ib >= 0 ? x[ib] : zero,
-                       cw = iw >= 0 ? x[iw] : zero;
+                     cw = iw >= 0 ? x[iw] : zero;
         // The weights on (A, B, W) the point has after.
         Dyadic wa = zero, wb = zero, ww = zero;
         if (forward) {
@@ -694,9 +695,11 @@ struct CellGeometry
         for (size_t m = 0; m < to_uv.size(); ++m) {
             exact::Exact3 out;
             bool ok = true;
-            for (const auto& [c, w] : {std::pair{&A, &wa}, std::pair{&B, &wb}, std::pair{&W, &ww}}) {
+            for (const auto& [c, w] :
+                 {std::pair{&A, &wa}, std::pair{&B, &wb}, std::pair{&W, &ww}}) {
                 if (w->sign() == 0) continue;
-                const int k = int(std::find(to_uv[m].begin(), to_uv[m].end(), *c) - to_uv[m].begin());
+                const int k =
+                    int(std::find(to_uv[m].begin(), to_uv[m].end(), *c) - to_uv[m].begin());
                 if (k == 3) {
                     ok = false;
                     break;
@@ -792,8 +795,10 @@ PointKey key_of(const TriangleH& corners, const Eigen::Vector3d& b, const BaryTa
     int n = 0;
     for (int k = 0; k < 3; ++k) {
         if (b[k] == 0) continue;
-        e[n] = {std::bit_cast<uint64_t>(corners[k][0]), std::bit_cast<uint64_t>(corners[k][1]),
-                std::bit_cast<uint64_t>(b[k])};
+        e[n] = {
+            std::bit_cast<uint64_t>(corners[k][0]),
+            std::bit_cast<uint64_t>(corners[k][1]),
+            std::bit_cast<uint64_t>(b[k])};
         which[n++] = k;
     }
     std::array<int, 3> order = {0, 1, 2};
@@ -1766,8 +1771,8 @@ SurfaceMap::SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions
     // started, whatever its precision, so there is nothing to certify it against.
     m_source_accuracy = options.source_accuracy;
     m_certify = options.certify && std::none_of(m_steps.begin(), m_steps.end(), [](const Step& s) {
-        return s.kind == EditKind::embed;
-    });
+                    return s.kind == EditKind::embed;
+                });
     m_in_scale = diagonal_of(m_in_vertices, m_in_faces, m_in_face_alive);
     m_out_scale = diagonal_of(m_out_vertices, m_out_faces, m_out_face_alive);
 }
@@ -1915,12 +1920,15 @@ SurfaceMap::Raw SurfaceMap::map_raw(
                         // coordinates there to within kPointAccuracy -- in doubles if their bound
                         // allows, exactly otherwise.
                         const BaryTail tail = {lo[i]};
-                        const Hom b = stored_of(pts[i].bary, (lo[i].array() != 0).any() ? &tail : nullptr);
+                        const Hom b =
+                            stored_of(pts[i].bary, (lo[i].array() != 0).any() ? &tail : nullptr);
                         bool inside = true, fresh = false;
                         Eigen::Matrix3d Kn = K[i];
-                        // The point after, as a double-double, if its bound is within kPointAccuracy
-                        // and within its share of what the point it stands for allows.
-                        const auto image = [&]() -> std::optional<std::pair<SurfacePoint, Eigen::Vector3d>> {
+                        // The point after, as a double-double, if its bound is within
+                        // kPointAccuracy and within its share of what the point it stands for
+                        // allows.
+                        const auto image =
+                            [&]() -> std::optional<std::pair<SurfacePoint, Eigen::Vector3d>> {
                             const auto [piece, l] = g->piece_of(b, first, last);
                             const HWalkPoint at = g->land(piece, l, inside);
                             const Hom h = in_face(to[at.tri], at.bary);
@@ -1943,7 +1951,8 @@ SurfaceMap::Raw SurfaceMap::map_raw(
                         };
                         // In double-doubles, else exactly.
                         std::optional<std::pair<SurfacePoint, Eigen::Vector3d>> p;
-                        for (int level = exact::kDoubleDouble; level <= exact::kExact && !p; ++level) {
+                        for (int level = exact::kDoubleDouble; level <= exact::kExact && !p;
+                             ++level) {
                             exact::clear_undecided();
                             const exact::Precision precision{exact::Level(level)};
                             const auto q = image();
@@ -2183,10 +2192,12 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves(
     const auto& vertices = forward ? m_in_vertices : m_out_vertices;
     const auto& faces = forward ? m_in_faces : m_out_faces;
     const auto position = [&](const SurfaceSegment& seg, const int end) {
-        ExactPosition x = exact_position(vertices, faces[seg.face], seg.bary[end], Eigen::Vector3d::Zero());
+        ExactPosition x =
+            exact_position(vertices, faces[seg.face], seg.bary[end], Eigen::Vector3d::Zero());
         if (seg.tail) {
             for (const Eigen::Vector3d& t : (*seg.tail)[end]) {
-                const ExactPosition more = exact_position(vertices, faces[seg.face], t, Eigen::Vector3d::Zero());
+                const ExactPosition more =
+                    exact_position(vertices, faces[seg.face], t, Eigen::Vector3d::Zero());
                 x.sum = x.sum + more.sum;
                 for (int d = 0; d < 3; ++d) x.x[d] = x.x[d] + more.x[d];
             }
@@ -2465,7 +2476,8 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves_once(
                     for (size_t k = first; k < last; ++k) sub_tris.push_back(from[k].sub);
                     const auto [a, la] = g->piece_of(b0, first, last);
                     const auto [b, lb] = g->piece_of(b1, first, last);
-                    const auto cut = walk(sub_tris, HWalkPoint{a - first, la}, HWalkPoint{b - first, lb});
+                    const auto cut =
+                        walk(sub_tris, HWalkPoint{a - first, la}, HWalkPoint{b - first, lb});
                     if (!cut || exact::undecided()) return std::nullopt;
                     parts = *cut;
                 }
@@ -2480,7 +2492,8 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves_once(
                         if (stop == kNoNode) return std::nullopt;
                     } else {
                         bool inside = true;
-                        const HWalkPoint at = g->land(first + parts[p].tri, parts[p].bary[1], inside);
+                        const HWalkPoint at =
+                            g->land(first + parts[p].tri, parts[p].bary[1], inside);
                         if (exact::undecided()) return std::nullopt;
                         if (!inside) ++unlocated;
                         nodes.push_back({at.tri, at.bary, exact::precision()});
@@ -2494,7 +2507,8 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves_once(
                     for (size_t q = 0; q < walked->size(); ++q) {
                         ch.tris.push_back((*walked)[q].tri);
                         if (q + 1 < walked->size()) {
-                            nodes.push_back({(*walked)[q].tri, (*walked)[q].bary[1], exact::precision()});
+                            nodes.push_back(
+                                {(*walked)[q].tri, (*walked)[q].bary[1], exact::precision()});
                             ch.nodes.push_back(nodes.size() - 1);
                         }
                     }
@@ -2506,7 +2520,9 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves_once(
             };
             // At the lowest precision from `from` on that can decide; none if the segment has no
             // image.
-            const auto trace_any = [&](const size_t id, const size_t first, const size_t last,
+            const auto trace_any = [&](const size_t id,
+                                       const size_t first,
+                                       const size_t last,
                                        const int from) -> std::optional<Chain> {
                 for (int level = from; level <= exact::kExact; ++level) {
                     exact::clear_undecided();
@@ -2578,7 +2594,8 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves_once(
                 for (const Chain& ch : chains) {
                     for (size_t i = 0; i < ch.tris.size(); ++i) {
                         const size_t a = ch.nodes[i], b = ch.nodes[i + 1];
-                        const double d = distance_below(version_of(a, ch.tris[i]), version_of(b, ch.tris[i]));
+                        const double d =
+                            distance_below(version_of(a, ch.tris[i]), version_of(b, ch.tris[i]));
                         shortest[a] = std::min(shortest[a], d);
                         shortest[b] = std::min(shortest[b], d);
                         all.push_back({to[ch.tris[i]].fid, ch.tris[i], a, b});
@@ -2586,14 +2603,17 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves_once(
                 }
                 // By face: the pieces of a face after are in its coordinates, whichever of its
                 // pieces (a face may be split virtually) they were walked in.
-                std::sort(all.begin(), all.end(), [](const PieceRef& p, const PieceRef& q) { return p.face < q.face; });
+                std::sort(all.begin(), all.end(), [](const PieceRef& p, const PieceRef& q) {
+                    return p.face < q.face;
+                });
                 struct Box
                 {
                     double x0, x1, y0, y1;
                     size_t k;
                 };
                 std::vector<Box> boxes;
-                std::vector<Eigen::Vector2d> ends2; // per piece in the group: its two ends, in doubles
+                std::vector<Eigen::Vector2d>
+                    ends2; // per piece in the group: its two ends, in doubles
                 std::vector<std::optional<Flat>> flats;
                 for (size_t g0 = 0; g0 < all.size();) {
                     size_t g1 = g0 + 1;
@@ -2608,15 +2628,22 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves_once(
                     boxes.clear();
                     for (size_t i = 0; i < k; ++i) {
                         for (int e = 0; e < 2; ++e) {
-                            const Hom& h = version_of(e == 0 ? all[g0 + i].a : all[g0 + i].b, all[g0 + i].t);
+                            const Hom& h =
+                                version_of(e == 0 ? all[g0 + i].a : all[g0 + i].b, all[g0 + i].t);
                             const double sum = h.v.sum();
                             ends2[2 * i + e] = Eigen::Vector2d(h.v[1] / sum, h.v[2] / sum);
                         }
                         const Eigen::Vector2d &a = ends2[2 * i], &b = ends2[2 * i + 1];
-                        boxes.push_back({std::min(a.x(), b.x()) - kNear, std::max(a.x(), b.x()) + kNear,
-                                         std::min(a.y(), b.y()) - kNear, std::max(a.y(), b.y()) + kNear, i});
+                        boxes.push_back(
+                            {std::min(a.x(), b.x()) - kNear,
+                             std::max(a.x(), b.x()) + kNear,
+                             std::min(a.y(), b.y()) - kNear,
+                             std::max(a.y(), b.y()) + kNear,
+                             i});
                     }
-                    std::sort(boxes.begin(), boxes.end(), [](const Box& p, const Box& q) { return p.x0 < q.x0; });
+                    std::sort(boxes.begin(), boxes.end(), [](const Box& p, const Box& q) {
+                        return p.x0 < q.x0;
+                    });
                     const auto flat_at = [&](const size_t slot) -> const Flat& {
                         if (!flats[slot]) {
                             const PieceRef& r = all[g0 + slot / 2];
@@ -2630,12 +2657,14 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves_once(
                         const PieceRef& q = all[g0 + j];
                         if (n == q.a || n == q.b) return;
                         // In doubles first: a point farther than 2 kNear needs nothing more.
-                        const Eigen::Vector2d &p = ends2[2 * i + e], &a = ends2[2 * j], &b = ends2[2 * j + 1];
+                        const Eigen::Vector2d &p = ends2[2 * i + e], &a = ends2[2 * j],
+                                              &b = ends2[2 * j + 1];
                         const Eigen::Vector2d ab = b - a, ap = p - a;
                         const double l2 = ab.squaredNorm();
                         const double tt = l2 > 0 ? std::clamp(ab.dot(ap) / l2, 0., 1.) : 0.;
                         if ((ap - tt * ab).norm() > 2 * kNear) return;
-                        const Flat &fp = flat_at(2 * i + e), &fa = flat_at(2 * j), &fb = flat_at(2 * j + 1);
+                        const Flat &fp = flat_at(2 * i + e), &fa = flat_at(2 * j),
+                                   &fb = flat_at(2 * j + 1);
                         const double d = fp.ok && fa.ok && fb.ok ? point_segment(fp, fa, fb) : 0.;
                         // Each point is within 2 e of where its value says (scaled to sum 1).
                         const double err = 2 * (fp.e + fa.e + fb.e);
@@ -2644,50 +2673,66 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves_once(
                             // is kept to within a fraction of it.
                             const double below = d - err;
                             if (!(below < kNear)) return;
-                            for (const size_t m : {n, q.a, q.b}) shortest[m] = std::min(shortest[m], std::max(below, 0.));
+                            for (const size_t m : {n, q.a, q.b})
+                                shortest[m] = std::min(shortest[m], std::max(below, 0.));
                             return;
                         }
-                        // Not known from the values. If all three points are known exactly, exactly:
-                        // a point on the piece is the same point as one of the piece's (two curves
-                        // crossing there), which asks nothing of their precision; off it, its
+                        // Not known from the values. If all three points are known exactly,
+                        // exactly: a point on the piece is the same point as one of the piece's
+                        // (two curves crossing there), which asks nothing of their precision; off
+                        // it, its
                         // distance is |det[p; a; b]| / (sums |a - b|), the determinant exact.
-                        const Hom &hp = version_of(n, all[g0 + i].t), &ha = version_of(q.a, q.t), &hb = version_of(q.b, q.t);
+                        const Hom &hp = version_of(n, all[g0 + i].t), &ha = version_of(q.a, q.t),
+                                  &hb = version_of(q.b, q.t);
                         if (hp.known() && ha.known() && hb.known()) {
                             const exact::Exact3 x = hp.value(), y = ha.value(), z = hb.value();
-                            const Dyadic D = x[0] * (y[1] * z[2] - y[2] * z[1]) - x[1] * (y[0] * z[2] - y[2] * z[0]) +
+                            const Dyadic D = x[0] * (y[1] * z[2] - y[2] * z[1]) -
+                                             x[1] * (y[0] * z[2] - y[2] * z[0]) +
                                              x[2] * (y[0] * z[1] - y[1] * z[0]);
                             if (D.sign() == 0) {
                                 // On the line through the piece: on the piece itself, or as far
                                 // as the nearer of its ends.
-                                const double abx = difference(fb.x, fb.xl, fa.x, fa.xl), aby = difference(fb.y, fb.yl, fa.y, fa.yl);
-                                const double apx = difference(fp.x, fp.xl, fa.x, fa.xl), apy = difference(fp.y, fp.yl, fa.y, fa.yl);
-                                const double along = abx * apx + aby * apy, l2 = abx * abx + aby * aby;
+                                const double abx = difference(fb.x, fb.xl, fa.x, fa.xl),
+                                             aby = difference(fb.y, fb.yl, fa.y, fa.yl);
+                                const double apx = difference(fp.x, fp.xl, fa.x, fa.xl),
+                                             apy = difference(fp.y, fp.yl, fa.y, fa.yl);
+                                const double along = abx * apx + aby * apy,
+                                             l2 = abx * abx + aby * aby;
                                 if (along > 0 && along < l2) return;
-                                const double ends = std::min(distance_below(hp, ha), distance_below(hp, hb));
+                                const double ends =
+                                    std::min(distance_below(hp, ha), distance_below(hp, hb));
                                 if (ends < kNear) {
-                                    for (const size_t m : {n, q.a, q.b}) shortest[m] = std::min(shortest[m], ends);
+                                    for (const size_t m : {n, q.a, q.b})
+                                        shortest[m] = std::min(shortest[m], ends);
                                 }
                                 return;
                             }
-                            const double sums = (x[0] + x[1] + x[2]).to_double() * (y[0] + y[1] + y[2]).to_double() *
+                            const double sums = (x[0] + x[1] + x[2]).to_double() *
+                                                (y[0] + y[1] + y[2]).to_double() *
                                                 (z[0] + z[1] + z[2]).to_double();
-                            const double ab = std::hypot(difference(fb.x, fb.xl, fa.x, fa.xl), difference(fb.y, fb.yl, fa.y, fa.yl));
-                            const double exact_d = std::abs(D.to_double()) / (sums * std::max(ab, 0x1p-1000)) * (1 - 0x1p-40);
+                            const double ab = std::hypot(
+                                difference(fb.x, fb.xl, fa.x, fa.xl),
+                                difference(fb.y, fb.yl, fa.y, fa.yl));
+                            const double exact_d = std::abs(D.to_double()) /
+                                                   (sums * std::max(ab, 0x1p-1000)) * (1 - 0x1p-40);
                             if (exact_d < kNear) {
-                                for (const size_t m : {n, q.a, q.b}) shortest[m] = std::min(shortest[m], exact_d);
+                                for (const size_t m : {n, q.a, q.b})
+                                    shortest[m] = std::min(shortest[m], exact_d);
                             }
                             return;
                         }
                         // Otherwise the points whose error makes it unknown are computed more
                         // precisely first (their distance to nothing is known: 0), and asked again.
                         const double emax = std::max({fp.e, fa.e, fb.e});
-                        const std::array<std::pair<size_t, double>, 3> who = {{{n, fp.e}, {q.a, fa.e}, {q.b, fb.e}}};
+                        const std::array<std::pair<size_t, double>, 3> who = {
+                            {{n, fp.e}, {q.a, fa.e}, {q.b, fb.e}}};
                         for (const auto& [m, em] : who) {
                             if (em >= emax / 4) shortest[m] = 0;
                         }
                     };
                     for (size_t i = 0; i < boxes.size(); ++i) {
-                        for (size_t j = i + 1; j < boxes.size() && boxes[j].x0 <= boxes[i].x1; ++j) {
+                        for (size_t j = i + 1; j < boxes.size() && boxes[j].x0 <= boxes[i].x1;
+                             ++j) {
                             if (boxes[j].y0 > boxes[i].y1 || boxes[i].y0 > boxes[j].y1) continue;
                             const size_t P = boxes[i].k, Q = boxes[j].k;
                             for (int e = 0; e < 2; ++e) {
@@ -2713,8 +2758,10 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves_once(
                             Hom& h = version_of(n, t);
                             if (h.x || h.e.maxCoeff() <= tol * h.v.sum()) continue;
                             if (nodes[n].h.known()) {
-                                const auto l = carry(g->to_uv[nodes[n].tri], nodes[n].h, g->to_uv[t]);
-                                for (const exact::Level level : {exact::kDoubleDouble, exact::kExact}) {
+                                const auto l =
+                                    carry(g->to_uv[nodes[n].tri], nodes[n].h, g->to_uv[t]);
+                                for (const exact::Level level :
+                                     {exact::kDoubleDouble, exact::kExact}) {
                                     const exact::Precision precision{level};
                                     h = in_face(to[t], l ? *l : nodes[n].h);
                                     if (h.x || h.e.maxCoeff() <= tol * h.v.sum()) break;
@@ -2759,7 +2806,8 @@ std::vector<std::vector<SurfaceCurve>> SurfaceMap::map_curves_once(
                         Eigen::Vector3d next = Eigen::Vector3d::Zero();
                         if (h.x) {
                             for (int k = 0; k < 3; ++k) {
-                                if (out->first[k] != 0) next[k] = ((*h.x)[k] - Dyadic(out->first[k])).to_double();
+                                if (out->first[k] != 0)
+                                    next[k] = ((*h.x)[k] - Dyadic(out->first[k])).to_double();
                             }
                         } else if (out->first == h.v) {
                             next = h.lo;

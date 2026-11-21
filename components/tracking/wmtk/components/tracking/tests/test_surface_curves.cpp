@@ -504,7 +504,9 @@ TEST_CASE("surface-map-agrees-across-a-feature-curve", "[tracking][surfaces]" + 
     for (size_t i = 0; i < a.size(); ++i) {
         gap = std::max(
             gap,
-            (position(a[i].face, a[i].bary + a[i].lo, V, G) - position(b[i].face, b[i].bary + b[i].lo, V, G)).norm());
+            (position(a[i].face, a[i].bary + a[i].lo, V, G) -
+             position(b[i].face, b[i].bary + b[i].lo, V, G))
+                .norm());
     }
     WARN("an edge point through its two faces: images " << gap << " apart");
     CHECK(gap < 1e-14);
@@ -547,7 +549,8 @@ TEST_CASE("surface-map-certified-precision", "[tracking][surfaces]" + release_on
                 if (t[k] == 0) continue;
                 const tracking::exact::Dyadic c(t[k]);
                 e.sum = e.sum + c;
-                for (int d = 0; d < 3; ++d) e.x[d] = e.x[d] + c * tracking::exact::Dyadic(V[F[face][k]][d]);
+                for (int d = 0; d < 3; ++d)
+                    e.x[d] = e.x[d] + c * tracking::exact::Dyadic(V[F[face][k]][d]);
             }
         }
         return e;
@@ -595,10 +598,14 @@ TEST_CASE("surface-map-certified-precision", "[tracking][surfaces]" + release_on
     for (size_t i = 0; i < pts.size(); ++i) {
         REQUIRE(back[i].face != std::numeric_limits<uint64_t>::max());
         const Exact start = exact(pts[i].face, {pts[i].bary});
-        off = std::max(off, difference(start, exact(back[i].face, {back[i].bary, back[i].lo})).norm());
+        off = std::max(
+            off,
+            difference(start, exact(back[i].face, {back[i].bary, back[i].lo})).norm());
         off_rounded = std::max(
             off_rounded,
-            difference(start, exact(back_rounded[i].face, {back_rounded[i].bary, back_rounded[i].lo}))
+            difference(
+                start,
+                exact(back_rounded[i].face, {back_rounded[i].bary, back_rounded[i].lo}))
                 .norm());
     }
     WARN(
@@ -658,11 +665,13 @@ TEST_CASE("surface-map-certified-precision", "[tracking][surfaces]" + release_on
             (U[2] * W[0] - U[0] * W[2]).to_double(),
             (U[0] * W[1] - U[1] * W[0]).to_double());
         const Eigen::Vector3d w(W[0].to_double(), W[1].to_double(), W[2].to_double());
-        off_edge = std::max(off_edge, c.norm() / w.norm() / (a.sum.to_double() * q.sum.to_double()));
+        off_edge =
+            std::max(off_edge, c.norm() / w.norm() / (a.sum.to_double() * q.sum.to_double()));
     }
-    WARN("certified curves: " << nodes.size() << " points of " << edges.size() << " edges, "
-                              << with_tail << " segments with further terms; mapped back off "
-                              << "their edge by " << off_edge / diagonal << " of the diagonal");
+    WARN(
+        "certified curves: " << nodes.size() << " points of " << edges.size() << " edges, "
+                             << with_tail << " segments with further terms; mapped back off "
+                             << "their edge by " << off_edge / diagonal << " of the diagonal");
     CHECK(with_tail > 0);
     CHECK(off_edge <= 0x1p-62 * diagonal);
 }
