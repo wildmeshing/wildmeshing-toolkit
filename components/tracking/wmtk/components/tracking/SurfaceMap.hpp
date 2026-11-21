@@ -6,6 +6,8 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -17,7 +19,34 @@ struct SurfacePoint
 {
     uint64_t face;
     Eigen::Vector3d bary;
+    /// A further term of the coordinates (bary + lo), for a point given more precisely than
+    /// doubles hold (a node of a mapped curve, say). A mapped point comes back with lo = 0 where
+    /// its doubles tell which point of the other mesh it stands for, and with a further term
+    /// where the map is too ill-conditioned for that (see SurfaceMap::to_output); bary alone is
+    /// then still the point to within a unit in the last place.
+    Eigen::Vector3d lo = Eigen::Vector3d::Zero();
 };
+
+/// Further terms of a point's coordinates, past the doubles of its `bary`: coordinate k is
+/// bary[k] + sum_i terms[i][k], exactly -- a floating-point expansion, each term below the last
+/// place of the one before.
+using BaryTail = std::vector<Eigen::Vector3d>;
+
+/// A straight piece of a curve: one face, and the barycentric coordinates of its two ends. The
+/// coordinates are homogeneous -- the point is the one they give scaled to sum 1, and a mapped curve
+/// keeps them as computed, exactly or rounded, without dividing by their sum -- and an end may have
+/// further terms (`tail`); most have none.
+struct SurfaceSegment
+{
+    uint64_t face;
+    std::array<Eigen::Vector3d, 2> bary;
+    /// The further terms of each end, or null if neither has any.
+    std::shared_ptr<const std::array<BaryTail, 2>> tail = nullptr;
+};
+
+/// A curve on a triangle complex: segments end to end, each on one face. Where a curve goes from
+/// one face to another, it does so on their shared edge or corner.
+using SurfaceCurve = std::vector<SurfaceSegment>;
 
 /// Where a map stops being a bijection. Counted, never fatal: the map still answers.
 struct MapWarnings
@@ -38,10 +67,18 @@ struct MapWarnings
     /// Faces a change no operation describes removed or added (history::EditKind::replace_faces):
     /// points there have nowhere to go.
     size_t replaced = 0;
+    /// Segments of a curve that have no image: on a face with nowhere to go, or across a local map
+    /// that could not be walked. The curve goes on in another part after them.
+    size_t broken_segments = 0;
+    /// Points, or points of curves, that mapped back do not return to where they started within
+    /// the accuracy of SurfaceMapOptions::certify, even computed and stored at the highest
+    /// precision there is for them (double-doubles for points).
+    size_t imprecise = 0;
 
     size_t total() const
     {
-        return not_a_disk + flat_triangle + inverted + merged_faces + unlocated + replaced;
+        return not_a_disk + flat_triangle + inverted + merged_faces + unlocated + replaced +
+               broken_segments + imprecise;
     }
 };
 
@@ -91,6 +128,23 @@ struct SurfaceMapOptions
     Smoothing smoothing = Smoothing::flatten;
     Scaffold scaffold = Scaffold::box;
     CollapsePatch collapse_patch = CollapsePatch::both_stars;
+    /// Every mapped point and every point of a mapped curve is stored precisely enough to say
+    /// which point of the mesh it came from it stands for, and that is checked: the stored value
+    /// is mapped back and must return to where it started, to within `source_accuracy` of that
+    /// mesh's bounding box diagonal; one that does not is computed and stored more precisely (a
+    /// further term, see SurfacePoint::lo and SurfaceSegment::tail) until it does. Mapping then
+    /// costs about twice as much. Off: stored by the estimate alone, which can miss where the map
+    /// is ill-conditioned.
+    /// Off as well for a history with an embed, which maps through space and is a bijection only
+    /// as far as the faces before and after it are coplanar.
+    bool certify = true;
+    /// What certify checks, and what each point is kept to (with certify off as well), as a
+    /// fraction of the bounding box diagonal of the mesh the points come from. An accuracy: it
+    /// decides how precisely values are computed and stored, never where a point goes. Where the
+    /// map is ill-conditioned -- a needle of the input squeezed into a sliver of a local map's
+    /// domain, a unit in the last place of a coordinate after a million of them before -- the
+    /// doubles of a point no longer tell its preimage to this, and the point gets a further term.
+    double source_accuracy = 0x1p-50;
 };
 
 /**
@@ -107,14 +161,68 @@ class SurfaceMap
 public:
     explicit SurfaceMap(const history::SurfaceHistory& h, const SurfaceMapOptions& options = {});
 
-    /// Points on the last state, mapped onto the first. `warnings`, if given, gets what this call
-    /// found. The map is not changed: any number of threads may map through it at once.
+    /// Points on the last state, mapped onto the first. Each step is computed in double-doubles
+    /// (exactly where their bound is too large) and a point is kept in double-doubles from step
+    /// to step, so rounding does not pile up; it is stored once, at the end, scaled to sum 1 if it
+    /// was computed at all.
+    ///
+    /// How precisely is set in the mesh the points come from, not the one they land on: each
+    /// point carries the linear map from a change of its coordinates to the displacement of the
+    /// point it started as (the product of the local maps it went through, backwards), and is
+    /// computed and stored so that this point is determined to within
+    /// SurfaceMapOptions::source_accuracy (2^-50) of that mesh's bounding box diagonal, which the
+    /// map then checks by mapping the stored point back (SurfaceMapOptions::certify). Almost
+    /// always the doubles of `bary` do; where the map is ill-conditioned (a needle squeezed into a
+    /// sliver of a local map's domain: a unit in the last place after is a million before) the
+    /// point comes back with a further term, `lo`, and mapping it back with that term returns the
+    /// point it started as. `warnings`, if given, gets
+    /// what this call found. The map is not changed: any number of threads may map through it at
+    /// once.
     std::vector<SurfacePoint> to_input(
         std::vector<SurfacePoint> points,
         MapWarnings* warnings = nullptr) const;
     /// Points on the first state, mapped onto the last; see to_input.
     std::vector<SurfacePoint> to_output(
         std::vector<SurfacePoint> points,
+        MapWarnings* warnings = nullptr) const;
+
+    /**
+     * @brief Curves on the first state, mapped onto the last, each to the parts it became.
+     *
+     * The image of a curve under the map, not an approximation of it: every local map is piecewise
+     * linear, so the image of a segment is a polyline that bends where the local map does. Each
+     * segment is cut at the local map's edges and nothing is straightened, so a point of a curve
+     * and its point under to_output() agree up to rounding, and curves grow where the map bends.
+     *
+     * Exact, with as much precision as each point needs. Every decision -- which piece or
+     * triangle holds a point, whether it is on an edge or a corner, which edge or corner a segment
+     * leaves through -- is taken by exact predicates (segment_walk.hpp), so the images are embedded
+     * as the curves are: they cross where the curves cross and nowhere else. Each segment's image
+     * is computed in doubles, double-doubles or exactly, the lowest that decides every sign and
+     * gives every point the accuracy it needs, and each point is kept to as many terms
+     * (SurfaceSegment::tail) as that takes: its error below 2^-20 of its local feature size -- the
+     * shortest piece it ends, and the nearest piece of any curve in the same face that it does not
+     * end -- and below 2^-44 of the face -- and at least as precisely as a double-double: a later
+     * step may amplify a unit in the last place a millionfold, so a point computed more precisely
+     * than doubles hold keeps its next term (most points have two; the exact ones more). Then the
+     * image is checked as points are (SurfaceMapOptions::certify): each of its points, mapped back,
+     * must lie on the segment it came from, to within source_accuracy of that mesh's diagonal; the
+     * segments whose points do not are mapped again, their points kept more precisely, until they
+     * do (else MapWarnings::imprecise). Nothing is moved onto an
+     * edge or a corner that is not exactly on it, and no tolerance decides where a point goes.
+     * Within one step each point lands once, so every copy of it -- the end of one segment and the
+     * start of the next, in the face on either side of an edge -- gets the same terms; a point on
+     * the outline of a local map keeps its terms as they are; a point on a split edge is exact (a
+     * short expansion), so both faces of the edge agree.
+     * One part unless a segment has no image (MapWarnings::broken_segments). `warnings`, as in
+     * to_output(); the map is not changed.
+     */
+    std::vector<std::vector<SurfaceCurve>> curves_to_output(
+        const std::vector<SurfaceCurve>& curves,
+        MapWarnings* warnings = nullptr) const;
+    /// Curves on the last state, mapped onto the first; see curves_to_output.
+    std::vector<std::vector<SurfaceCurve>> curves_to_input(
+        const std::vector<SurfaceCurve>& curves,
         MapWarnings* warnings = nullptr) const;
 
     /// What building the map found.
@@ -135,6 +243,15 @@ public:
     struct Cell
     {
         std::vector<Face> before, after;
+        /// An edge split's cell: the ends a, b of the edge as laid out, and the new vertex
+        /// w = t0 a + t1 b on it, exactly (t0 + t1 = 1, both doubles). A point on the edge maps
+        /// by these numbers alone, so the two faces of the edge map it alike, bit for bit.
+        struct EdgeSplit
+        {
+            Eigen::Vector2d a, b, w;
+            double t0, t1;
+        };
+        std::optional<EdgeSplit> split;
     };
     /// The local maps of history edit `edit`, one cell per patch flattened (a collapse or a move
     /// has one per side of the curves through it); none for an edit that needed none. A cell
@@ -193,6 +310,25 @@ private:
 
     std::vector<SurfacePoint>
     map(std::vector<SurfacePoint> points, bool forward, MapWarnings* warnings) const;
+    struct Raw;
+    /// map(), before the points are stored and certified. `share`, if given, scales each point's
+    /// accuracy at every step.
+    Raw map_raw(
+        std::vector<SurfacePoint> points,
+        bool forward,
+        MapWarnings* warnings,
+        const std::vector<double>* share) const;
+    std::vector<std::vector<SurfaceCurve>>
+    map_curves(const std::vector<SurfaceCurve>& curves, bool forward, MapWarnings* warnings) const;
+    /// map_curves(), once, before it is certified: `accuracy` scales, per segment given (numbered
+    /// through the curves), how precisely the points of its image are kept; `origins` gets, per
+    /// piece of the image, the segment it came from.
+    std::vector<std::vector<SurfaceCurve>> map_curves_once(
+        const std::vector<SurfaceCurve>& curves,
+        bool forward,
+        MapWarnings* warnings,
+        const std::vector<double>& accuracy,
+        std::vector<std::vector<std::vector<size_t>>>* origins) const;
 
     std::vector<Step> m_steps;
     MapWarnings m_build_warnings;
@@ -202,6 +338,10 @@ private:
     size_t m_kept_moves = 0;
     size_t m_folded_cells = 0;
 
+    /// The bounding box diagonals of the first and the last state.
+    double m_in_scale = 0, m_out_scale = 0;
+    bool m_certify = true;
+    double m_source_accuracy = 0x1p-50;
     std::vector<Eigen::Vector3d> m_in_vertices, m_out_vertices;
     std::vector<std::array<uint64_t, 3>> m_in_faces, m_out_faces;
     std::vector<uint8_t> m_in_face_alive, m_out_face_alive;
