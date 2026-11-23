@@ -11,7 +11,7 @@ include(CPM)
 CPMAddPackage(
     NAME paraviewo
     GITHUB_REPOSITORY polyfem/paraviewo
-    GIT_TAG 0a56a08e54ce733ee1d43a4ce87365b2c17ac87c
+    GIT_TAG 1c01aae7ad37020f751eb598c62ae4ae74a3ada7 # polyfem's pin
     OPTIONS
     "PARAVIEWO_WITH_HDF5 OFF"
 )
