@@ -33,11 +33,9 @@ set(SRC_FILES
     jacobian_smoothing.cpp
     thickness_smoothing.hpp
     thickness_smoothing.cpp
-    bad_quality_relocation.hpp
-    bad_quality_relocation.cpp
-    relocation_projection.hpp
-    surface_domain.hpp
-    surface_domain.cpp
+    quality_improvement.hpp
+    quality_improvement.cpp
+    write_improved_mesh.cpp
     target_positions.cpp
     background_remeshing.hpp
     background_remeshing.cpp
