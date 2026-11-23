@@ -78,7 +78,7 @@ def test_build_run_edit_and_draw(tmp_path, monkeypatch):
     assert b._chained("topological_offset") == {"input": {"from": "simplify", "output": "mesh"}}
     assert entry["built"] and entry["error"] is None
     b.log_stage = "remesh"
-    assert b._log_text()
+    assert b._log_lines()
 
     b.set_option("simplify", "target_rel", 0.8)
     assert b.status["simplify"] == "edited" and b.status["map"] == "run"
@@ -402,6 +402,91 @@ def test_a_crash_fails_only_its_stage(tmp_path):
     assert b.status["slow"] == "failed" and b.log_stage == "slow"
     with open(b.logs["slow"]) as f:
         assert "without a result" in f.read()
+
+
+def test_the_log_window_colours_clears_and_follows(tmp_path, monkeypatch):
+    # The spdlog level's colour; else the ANSI colour; else none, the theme's.
+    assert gui._colored("[12:16:05.031] [wmtk] [warning] w") == (
+        "[12:16:05.031] [wmtk] [warning] w", gui.LEVELS["warning"])
+    assert gui._colored("[12:16:05.031] [wmtk] [info] i")[1] is None
+    assert gui._colored("[t] [wmtk] [\x1b[31merror\x1b[m] e") == ("[t] [wmtk] [error] e",
+                                                                   gui.LEVELS["error"])
+    assert gui._colored("\x1b[1;32mgreen\x1b[0m") == ("green", gui.SGR[32])
+    assert gui._colored("========it 0========") == ("========it 0========", None)
+
+    log = tmp_path / "s.log"
+    log.write_text("one\n[t] [wmtk] [error] two\n")
+    b = gui.Gui(Pipeline([], str(tmp_path)))
+    b.logs["s"], b.log_stage, b.unfold_log = str(log), "s", True
+    imgui = pytest.importorskip("polyscope.imgui")
+    scroll, colored, button = imgui.SetScrollHereY, imgui.TextColored, imgui.Button
+    scrolls, red, clicks = [], [], set()
+    monkeypatch.setattr(imgui, "SetScrollHereY", lambda r: (scrolls.append(r), scroll(r))[1])
+    monkeypatch.setattr(imgui, "TextColored", lambda c, t: (red.append(t), colored(c, t))[1])
+    monkeypatch.setattr(imgui, "Button", lambda label: (
+        button(label), label in clicks and not clicks.discard(label))[1])
+
+    def frame():  # a show() after run_window's starts the log window folded again
+        b.unfold_log = True
+        polyscope.show(1)
+
+    def grow(line):
+        with open(log, "a") as f:
+            f.write(line + "\n")
+        frame()
+    gui.run_window(b, "mock")
+    assert [t for t, _ in b._log_lines()] == ["one", "[t] [wmtk] [error] two"]
+    assert red[-1] == "[t] [wmtk] [error] two"
+    assert len(scrolls) == 1  # to the end once it was read, not every frame
+    grow("three")
+    assert len(scrolls) == 2  # it grew
+    b.autoscroll = False
+    grow("four")
+    assert len(scrolls) == 2
+    clicks.add("clear")
+    frame()
+    assert b._log_lines() == []  # the file keeps its lines
+    grow("five")
+    assert [t for t, _ in b._log_lines()] == ["five"]
+    log.write_text("new\n")  # written again, shorter than where "clear" left it
+    assert [t for t, _ in b._log_lines()] == ["new"]
+
+
+def test_the_log_plot_reads_each_operation_of_a_simwild_log(tmp_path, monkeypatch):
+    p = "[2026-11-23 13:43:25.567] [wmtk] [info] "
+    lines = [
+        p + "Quality by tag (10 cells, 5 above target, max rel = 3, avg rel = 1):",  # no operation
+        "========it 0========",
+        p + "==splitting 0==",
+        p + "#V = 9, #T = 20 after split",
+        p + "Quality by tag (20 cells, 4 above target, max rel = 2.5e+01, avg rel = 1):",
+        p + "Quality by tag (20 cells, 4 above target, max rel = 2.5e+01, avg rel = 1):",  # again
+        p + "==smoothing 0==",
+        p + "Quality by tag (20 cells, 0 above target, max rel = 0.9, avg rel = 0.5):",
+        p + ">>>>stuck-refine (maxE 54.2826 stalled)...",
+        "========it 1========",
+        "\x1b[32m" + p + "==collapsing 1==\x1b[0m",
+        p + "Quality by tag (15 cells, 0 above target, max rel = 0.8, avg rel = 0.4):"]
+    assert gui._operations(lines) == {
+        "ops": [("splitting", 20, 4, 25.0), ("smoothing", 20, 0, 0.9), ("collapsing", 15, 0, 0.8)],
+        "iterations": [0, 2], "refines": [2]}
+
+    log = tmp_path / "s.log"
+    log.write_text("\n".join(lines) + "\n")
+    b = gui.Gui(Pipeline([], str(tmp_path)))
+    b.logs["s"], b.log_stage, b.unfold_log, b.plotting = str(log), "s", True, True
+    implot = pytest.importorskip("polyscope.implot")
+    line, setup = implot.PlotLine, implot.SetupAxes
+    drawn, fits = {}, []
+    monkeypatch.setattr(implot, "PlotLine", lambda label, xs, ys: (
+        drawn.__setitem__(label, list(ys)), line(label, xs, ys))[1])
+    monkeypatch.setattr(implot, "SetupAxes", lambda x, y, x_flags, y_flags: (
+        fits.append(y_flags), setup(x, y, x_flags, y_flags))[1])
+    gui.run_window(b, "mock")
+    assert drawn == {"##cells": [20, 20, 15], "##cells above target": [4, 0, 0],
+                     "##max relative quality": [25, 0.9, 0.8]}
+    # Fit to the data on the frame it was read, then left as zoomed.
+    assert fits[:3] == [implot.ImPlotAxisFlags_AutoFit] * 3 and set(fits[3:]) == {0}
 
 
 def test_a_failed_stage_is_marked_and_its_log_chosen(tmp_path, monkeypatch):

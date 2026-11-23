@@ -30,10 +30,13 @@ thread -- the stages above it from memory or the cache unless they changed; the 
 the GIL, so the window keeps drawing -- and each stage it runs appears in the "view" window,
 shown alone. Each component runs in a process of its own: a crash fails only its stage, and
 "stop" ends the running one, the stages after it not run. The "log" window holds a stage's log,
-live while it runs. Editing is off while a run goes on. "save" writes the pipeline file, asking
-first over a file this window has not read, or one changed since it read or wrote it; its paths
-stay relative to the folder the pipeline was loaded from (the current folder for a new one). An
-exception drawing the window shows as its message, and the window stays.
+live while it runs, each line in its spdlog level's colour (else its ANSI colour); "clear" hides
+the lines so far, "autoscroll" keeps the newest in view; "plot" shows a simwild log's cells,
+cells above target and max relative quality after each operation. Editing is off while a run goes on.
+"save" writes the pipeline file, asking first over a file this window has not read, or one
+changed since it read or wrote it; its paths stay relative to the folder the pipeline was loaded
+from (the current folder for a new one). An exception drawing the window shows as its message,
+and the window stays.
 
 Needs polyscope (pip install -e ".[viewer]").
 """
@@ -43,11 +46,14 @@ import hashlib
 import json
 import os
 import queue
+import re
 import subprocess
 import sys
 import textwrap
 import threading
 import traceback
+
+import numpy as np
 
 import wildmeshing as wm
 
@@ -60,6 +66,26 @@ ZERO = {"bool": False, "int": 0, "float": 0.0, "string": "", "list": [], "object
 SCALARS = ("bool", "int", "float", "string")
 RED = (0.9, 0.3, 0.3, 1.0)
 MARGIN = 10  # between windows, as polyscope's own
+LOG_LINES = 400  # the log window shows the last ones
+# A log line's colour (_colored): its spdlog level's, else its ANSI foreground colour's (the
+# xterm codes), else the theme's text colour.
+LEVELS = {"critical": (1.0, 0.3, 0.3, 1.0), "error": (1.0, 0.42, 0.42, 1.0),
+          "warning": (1.0, 0.85, 0.35, 1.0), "debug": (0.55, 0.55, 0.6, 1.0),
+          "trace": (0.55, 0.55, 0.6, 1.0)}
+SGR = {30: (0.55, 0.55, 0.55, 1.0), 31: (0.95, 0.4, 0.4, 1.0), 32: (0.45, 0.85, 0.5, 1.0),
+       33: (0.95, 0.8, 0.35, 1.0), 34: (0.5, 0.65, 1.0, 1.0), 35: (0.9, 0.5, 0.9, 1.0),
+       36: (0.4, 0.85, 0.9, 1.0), 37: (0.85, 0.85, 0.85, 1.0), 90: (0.55, 0.55, 0.58, 1.0),
+       91: (1.0, 0.45, 0.45, 1.0), 92: (0.5, 0.9, 0.55, 1.0), 93: (1.0, 0.88, 0.4, 1.0),
+       94: (0.55, 0.7, 1.0, 1.0), 95: (1.0, 0.55, 1.0, 1.0), 96: (0.45, 0.9, 1.0, 1.0),
+       97: (1.0, 1.0, 1.0, 1.0)}
+ANSI = re.compile(r"\x1b\[([0-9;]*)m")
+SPDLOG = re.compile(r"^\[[^\]]*\] \[[^\]]*\] \[(\w+)\]")  # [time] [logger] [level]
+# A simwild log's lines the plot reads (_operations), each without its spdlog prefix.
+OPERATION = re.compile(r"^==(splitting|collapsing|swapping|smoothing) *\d*==$")
+ITERATION = re.compile(r"^=+it \w+=+$")
+QUALITY = re.compile(r"^Quality by tag \((\d+) cells, (\d+) above target, max rel = ([^,]+),")
+REFINE = re.compile(r"^>+stuck-refine \(maxE")
+MARKERS = {"splitting": "Up", "collapsing": "Down", "swapping": "Square", "smoothing": "Circle"}
 LEFT = 305  # the width of polyscope's own windows, at ui scale 1
 # The system's file dialog, in a process of its own: tkinter in this one would share macOS's one
 # application object with polyscope's window.
@@ -94,6 +120,41 @@ def _one_line(rules, pointer):
     rule = rules.get(pointer, {})
     return rule.get("type") == "list" and "max" in rule \
         and rules.get(pointer + "/*", {}).get("type") in SCALARS
+
+
+def _colored(raw):
+    """A log line without its ANSI codes, and its colour (LEVELS, SGR; None: the theme's)."""
+    text = ANSI.sub("", raw)
+    level = SPDLOG.match(text)
+    if level:
+        return text, LEVELS.get(level.group(1))
+    colour = None
+    for m in ANSI.finditer(raw):
+        for code in m.group(1).split(";"):
+            if code.isdigit() and int(code) in SGR:
+                colour = SGR[int(code)]
+    return text, colour
+
+
+def _operations(lines):
+    """The plot's data from a simwild log: each operation (a split, collapse, swap or smoothing
+    pass), in order, as (kind, cells, cells above target, max relative quality) after it -- the
+    first "Quality by tag" line after its header; and the operations each iteration and each
+    stuck-refine came before."""
+    ops, iterations, refines, kind = [], [], [], None
+    for raw in lines:
+        line = SPDLOG.sub("", ANSI.sub("", raw)).strip()
+        quality = QUALITY.match(line)
+        if ITERATION.match(line):
+            iterations.append(len(ops))
+        elif REFINE.match(line):
+            refines.append(len(ops))
+        elif OPERATION.match(line):
+            kind = OPERATION.match(line).group(1)
+        elif kind and quality:
+            ops.append((kind, int(quality[1]), int(quality[2]), float(quality[3])))
+            kind = None
+    return {"ops": ops, "iterations": iterations, "refines": refines}
 
 
 def _stamp(path):
@@ -156,7 +217,13 @@ class Gui:
         self.log_stage = None
         self.checkpoints = {}  # stage -> the .msh its "save checkpoint" field names
         self.unfold_log = False  # "log" clicked: the log window opens on the next frame
-        self.log = {"path": None, "size": -1, "text": ""}
+        self.log = {"read": None, "lines": []}  # the shown log as last read: (path, size, start)
+        self.cleared = {}  # log path -> the size it had at "clear": shown from there on
+        self.autoscroll = True
+        self.scrolled = None  # the read the log window last scrolled to the end of
+        self.plotting = False  # the log window shows the plot, not the text
+        self.counts = {"read": None}  # _operations() of the shown log as last read: (path, size)
+        self.refit = False  # the plot fits its axes to the data again: the log grew
         self.new = {"kind": 0, "name": ""}  # the stage being added
         self.new_input = {"name": "", "file": ""}
         self.text = {}  # the JSON text of a field being edited
@@ -511,18 +578,79 @@ class Gui:
             else:
                 self.message = value
 
-    def _log_text(self):
-        """The log of the running stage, else of the chosen one, read again when it grows."""
+    def _log_path(self):
         running = self.pipeline.running
-        path = running[1] if running else self.logs.get(self.log_stage)
+        return running[1] if running else self.logs.get(self.log_stage)
+
+    def _counts(self):
+        """_operations() of the shown log, all of it, read again when it grows."""
+        path = self._log_path()
         if not path or not os.path.exists(path):
-            return ""
-        size = os.path.getsize(path)
-        if (path, size) != (self.log["path"], self.log["size"]):
+            return None
+        read = (path, os.path.getsize(path))
+        if read != self.counts["read"]:
             with open(path, errors="replace") as f:
-                lines = f.read().splitlines()
-            self.log = {"path": path, "size": size, "text": "\n".join(lines[-400:])}
-        return self.log["text"]
+                self.counts = {"read": read, **_operations(f.read().splitlines())}
+            self.refit = True
+        return self.counts
+
+    def _plot(self):
+        """The shown log's operations as three plots on one operation axis -- cells, cells
+        above target, max relative quality -- a marker per kind of operation, a line where each
+        iteration starts and where each stuck-refine came; a log axis for a series all above 0
+        that spans a factor of 20 (tools/plot_stage_log.py's rule). Fit to the data again when
+        the log grows."""
+        psim, implot = self.psim, self.implot
+        counts = self._counts()
+        if not counts or not counts["ops"]:
+            psim.TextUnformatted("no simwild operations in this log to plot")
+            return
+        ops = counts["ops"]
+        x = np.arange(len(ops), dtype=float)
+        kinds = np.array([op[0] for op in ops])
+        fit = implot.ImPlotAxisFlags_AutoFit if self.refit else 0
+        self.refit = False
+        lines = {name: np.array(at, dtype=float) - 0.5
+                 for name, at in (("iteration", counts["iterations"]),
+                                  ("stuck-refine", counts["refines"])) if at}
+        if not implot.BeginSubplots("##operations", 3, 1, (-1, -1),
+                                    implot.ImPlotSubplotFlags_LinkAllX):
+            return
+        for j, title in enumerate(("cells", "cells above target", "max relative quality")):
+            ys = np.array([op[j + 1] for op in ops], dtype=float)
+            if not implot.BeginPlot(title):
+                continue
+            implot.SetupAxes("", "", fit, fit)
+            if ys.min() > 0 and ys.max() / ys.min() >= 20:
+                implot.SetupAxisScale(implot.ImAxis_Y1, implot.ImPlotScale_Log10)
+            implot.PlotLine(f"##{title}", x, ys)
+            for kind, marker in MARKERS.items():
+                at = kinds == kind
+                if at.any():
+                    implot.SetNextMarkerStyle(getattr(implot, f"ImPlotMarker_{marker}"))
+                    implot.PlotScatter(kind, x[at], ys[at])
+            for name, xs in lines.items():
+                implot.PlotInfLines(name, xs)
+            implot.EndPlot()
+        implot.EndSubplots()
+
+    def _log_lines(self):
+        """The shown log -- the running stage's, else the chosen one's -- from where "clear" left
+        it: its last LOG_LINES lines, each (text, colour), read again when it grows."""
+        path = self._log_path()
+        if not path or not os.path.exists(path):
+            return []
+        size = os.path.getsize(path)
+        start = self.cleared.get(path, 0)
+        if start > size:  # written again since
+            start = 0
+        if (path, size, start) != self.log["read"]:
+            with open(path, "rb") as f:
+                f.seek(start)
+                text = f.read(size - start).decode(errors="replace")
+            self.log = {"read": (path, size, start),
+                        "lines": [_colored(line) for line in text.splitlines()[-LOG_LINES:]]}
+        return self.log["lines"]
 
     # The window.
 
@@ -1147,11 +1275,37 @@ class Gui:
         if expanded:
             if not shown:
                 psim.TextUnformatted("no log chosen: a stage's \"log\" button")
-            psim.BeginChild("log text")
-            psim.TextUnformatted(self._log_text())
-            if running:
-                psim.SetScrollHereY(1.0)
-            psim.EndChild()
+            if psim.RadioButton("text", not self.plotting):
+                self.plotting = False
+            psim.SameLine()
+            if psim.RadioButton("plot", self.plotting):
+                self.plotting = True
+            if psim.IsItemHovered():
+                psim.SetTooltip("simwild's cells, cells above target and max relative quality\n"
+                                "after each operation.")
+            if self.plotting:
+                self._plot()
+            else:
+                psim.SameLine()
+                path = self._log_path()
+                if psim.Button("clear") and path and os.path.exists(path):
+                    self.cleared[path] = os.path.getsize(path)
+                if psim.IsItemHovered():
+                    psim.SetTooltip("Hide the lines so far; the log file keeps them.")
+                psim.SameLine()
+                _, self.autoscroll = psim.Checkbox("autoscroll", self.autoscroll)
+                if psim.IsItemHovered():
+                    psim.SetTooltip("Keep the newest line in view as the log grows.")
+                psim.BeginChild("log text")
+                for text, colour in self._log_lines():
+                    if colour:
+                        psim.TextColored(colour, text)
+                    else:
+                        psim.TextUnformatted(text)
+                if self.autoscroll and self.log["read"] != self.scrolled:
+                    psim.SetScrollHereY(1.0)
+                self.scrolled = self.log["read"]
+                psim.EndChild()
         psim.End()
 
 
@@ -1160,10 +1314,11 @@ def run_window(gui, screenshots=None):
     without one, as a self-test."""
     import polyscope as ps
     import polyscope.imgui as psim
+    import polyscope.implot as implot
 
     mode = _viewer.start(ps, screenshots)
     ps.set_open_imgui_window_for_user_callback(False)  # the GUI places its own windows
-    gui.ps, gui.psim = ps, psim
+    gui.ps, gui.psim, gui.implot = ps, psim, implot
     if gui.viewer is None:
         gui.viewer = _viewer.Viewer(ps, psim)
     ps.set_user_callback(gui.panel)
