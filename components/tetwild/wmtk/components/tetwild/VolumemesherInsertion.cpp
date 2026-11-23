@@ -54,7 +54,7 @@ void TetWildMesh::insertion_by_volumeremesher(
     const std::vector<Vector3d>& feature_points, // optional feature points
     utils::EmbedFeaturesResult* features_out, // out: where the features ended up
     const std::vector<int>* face_input, // optional: per input face, the input it came from
-    std::vector<InputSet>* facet_input_set, // out, with face_input: per facet, its inputs
+    std::vector<LabelIds>* facet_input_set, // out, with face_input: per facet, its inputs
     std::vector<std::vector<uint32_t>>* facet_sources, // out, optional: input triangles per facet
     std::vector<InputOrientations>* facet_input_orientation) // out, with face_input: per facet
 {
@@ -182,16 +182,18 @@ void TetWildMesh::insertion_by_volumeremesher(
     // outside an envelope of their set, and the first split pass did not end. Several inputs
     // only where they overlap.
     if (want_inputs) {
-        const auto several = [](InputSet s) { return (s & (s - 1)) != 0; };
-        facet_input_set->assign(polygon_faces.size(), 0);
+        const auto several = [](const LabelIds& s) { return s.count() > 1; };
+        facet_input_set->assign(polygon_faces.size(), LabelIds{});
         for (size_t f = 0; f < polygon_faces.size(); ++f) {
             for (const uint32_t t : provenance.face_triangles[f]) {
                 const int in = t < face_input->size() ? (*face_input)[t] : -1;
-                if (in >= 0) (*facet_input_set)[f] |= InputSet(1) << in;
+                if (in >= 0) (*facet_input_set)[f].insert(LabelId(in));
             }
         }
-        const size_t n_tracked = facet_input_set->size() -
-                                 std::count(facet_input_set->begin(), facet_input_set->end(), 0);
+        const size_t n_tracked =
+            std::count_if(facet_input_set->begin(), facet_input_set->end(), [](const LabelIds& s) {
+                return !s.none();
+            });
         const size_t n_multi_facets =
             std::count_if(facet_input_set->begin(), facet_input_set->end(), several);
         logger().info(
@@ -224,7 +226,7 @@ void TetWildMesh::init_from_Volumeremesher(
     const std::vector<bool>& tet_face_on_input_surface,
     const std::vector<int8_t>* tet_face_orientation,
     const utils::EmbedFeaturesResult* features,
-    const std::vector<InputSet>* facet_input_set,
+    const std::vector<LabelIds>* facet_input_set,
     const utils::FeatureInputs* feature_input,
     const std::vector<InputOrientations>* facet_input_orientation)
 {
@@ -264,13 +266,13 @@ void TetWildMesh::init_from_Volumeremesher(
     std::vector<size_t> facet_of; // per slot, the facet of a tracked face, with facet_input_set
     if (facet_input_set == nullptr) {
         for (size_t i = 0; i < tet_face_on_input_surface.size(); i++) {
-            if (tet_face_on_input_surface[i]) m_face_attribute[i].set_input_set(1);
+            if (tet_face_on_input_surface[i]) m_face_attribute[i].labels_mut() = LabelIds{0};
         }
     } else {
         assert(facet_input_set->size() == facets.size());
         std::vector<std::pair<std::array<size_t, 3>, size_t>> facet_named;
         for (size_t f = 0; f < facets.size(); ++f) {
-            if ((*facet_input_set)[f] == 0) continue;
+            if ((*facet_input_set)[f].none()) continue;
             std::array<size_t, 3> key = facets[f];
             std::sort(key.begin(), key.end());
             facet_named.emplace_back(key, f);
@@ -289,7 +291,7 @@ void TetWildMesh::init_from_Volumeremesher(
                 log_and_throw_error("tracked face {} has no input set: no facet names it", key);
             }
             facet_of[i] = it->second;
-            m_face_attribute[i].set_input_set((*facet_input_set)[it->second]);
+            m_face_attribute[i].labels_mut() = (*facet_input_set)[it->second];
         }
     }
     // The input's orientation on the tracked faces: every slot holds the value for its face,
@@ -307,7 +309,7 @@ void TetWildMesh::init_from_Volumeremesher(
         for (size_t i = 0; i < tet_face_orientation->size(); i++) {
             auto& attr = m_face_attribute[i];
             if (!per_input) {
-                attr.set_orientation(attr.input_set(), (*tet_face_orientation)[i]);
+                attr.set_orientation(attr.labels(), (*tet_face_orientation)[i]);
                 continue;
             }
 #ifdef WMTK_PER_INPUT_ORIENTATION
@@ -448,7 +450,7 @@ void TetWildMesh::init_from_tagged_mesh(const TaggedMesh& mesh)
     struct Row
     {
         std::array<size_t, 3> key;
-        InputSet set;
+        LabelIds set;
         int parity;
         size_t row;
     };
@@ -462,16 +464,16 @@ void TetWildMesh::init_from_tagged_mesh(const TaggedMesh& mesh)
     }
     std::sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) { return a.key < b.key; });
     std::vector<std::array<size_t, 3>> facets;
-    std::vector<InputSet> facet_sets;
+    std::vector<LabelIds> facet_sets;
     std::vector<int8_t> facet_orientation;
     std::vector<InputOrientations> facet_input_orientation;
     const bool counted = mesh.F_orientation.rows() > 0;
     for (size_t r = 0; r < rows.size();) {
         bool up = false, down = false;
-        InputSet set = 0;
+        LabelIds set;
         size_t s = r;
         for (; s < rows.size() && rows[s].key == rows[r].key; ++s) {
-            set |= rows[s].set;
+            set.merge(rows[s].set);
             (rows[s].parity > 0 ? up : down) = true;
         }
         facets.push_back(rows[r].key);
@@ -479,12 +481,11 @@ void TetWildMesh::init_from_tagged_mesh(const TaggedMesh& mesh)
         facet_orientation.push_back(int8_t(int(up) - int(down)));
         if (SurfaceTagAttributes::per_input_orientation) {
             auto& per = facet_input_orientation.emplace_back();
-            for (int j = 0; j < SurfaceTagAttributes::max_inputs; ++j) {
-                if (((set >> j) & 1) == 0) continue;
+            for (const LabelId j : set) {
                 int count = 0;
                 bool up_j = false, down_j = false;
                 for (size_t q = r; q < s; ++q) {
-                    if (((rows[q].set >> j) & 1) == 0) continue;
+                    if (!rows[q].set.contains(LabelId(j))) continue;
                     if (counted) {
                         count += rows[q].parity * int(mesh.F_orientation(rows[q].row, j));
                     } else {

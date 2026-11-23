@@ -24,6 +24,7 @@ wm.topological_offset({
     "input": str(DATA / "127891.msh"),
     "output": "127891_offset",
     "offsets": [{"selection": "127891", "output_tags": ["offset"], "target_distance": 0.4}],
+    "envelope_size_rel": 4e-4,
     "optimize_offset": False,
 })
 # --8<-- [end:file]
@@ -33,7 +34,7 @@ bar = wm.read_mesh(str(DATA / "127891.msh"))
 outputs, report = wm.topological_offset(
     {"input": "bar",
      "offsets": [{"selection": "127891", "output_tags": ["offset"], "target_distance": 0.4}],
-     "optimize_offset": False},
+     "envelope_size_rel": 4e-4, "optimize_offset": False},
     {"bar": bar},
 )
 offset = outputs["mesh"]
@@ -42,14 +43,14 @@ print(report["before #t"], "->", report["after #t"], "tets,", count(offset, "off
 
 # --8<-- [start:sides]
 # Outward (the default), inward, and both: the band is the cells tagged "offset".
-for side in [{"offset_out": True}, {"offset_in": True, "offset_out": False},
-             {"offset_in": True, "offset_out": True}]:
+for direction in ["out", "in", "both"]:
     out, _ = wm.topological_offset(
         {"input": "bar",
-         "offsets": [{"selection": "127891", "output_tags": ["offset"], "target_distance": 0.4}],
-         "optimize_offset": False, **side},
+         "offsets": [{"selection": "127891", "direction": direction,
+                      "output_tags": ["offset"], "target_distance": 0.4}],
+         "envelope_size_rel": 4e-4, "optimize_offset": False},
         {"bar": bar})
-    print(side, count(out["mesh"], "offset"), "band tets")
+    print(direction, count(out["mesh"], "offset"), "band tets")
 # --8<-- [end:sides]
 
 # --8<-- [start:expressions]
@@ -82,7 +83,7 @@ for protected in ["", "tag_1"]:
 outputs, report = wm.topological_offset(
     {"input": "bar",
      "offsets": [{"selection": "127891", "output_tags": ["offset"], "target_distance": 0.4}],
-     "front_conv_rel": 0.2, "max_rounds": 5, "num_threads": 4},
+     "envelope_size_rel": 4e-4, "front_conv_rel": 0.2, "max_rounds": 5, "num_threads": 4},
     {"bar": bar},
 )
 metrics = report["optimization_metrics"]

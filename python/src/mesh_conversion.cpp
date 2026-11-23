@@ -3,10 +3,13 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
+#include <pybind11/warnings.h>
+#include <wmtk/RationalPositions.h>
 #include <pybind11_json/pybind11_json.hpp>
 #include <wmtk/history/History.hpp>
 #include <wmtk/io/mesh_io.hpp>
 
+#include <algorithm>
 #include <cstring>
 #include <limits>
 #include <set>
@@ -61,6 +64,41 @@ DataMatrix<int64_t> integers(const py::array& value, const bool allow_vector)
 }
 
 namespace {
+// mesh["V_rational"]: rows, an integer vector, and values, one rational per coordinate of each
+// row -- fractions.Fraction, or anything Fraction() takes exactly (an integer, a float, a "p/q"
+// string) -- as MeshData::V_exact holds them, GMP's base-10 "p/q".
+ExactVertices exact_vertices(const py::dict& input, const Eigen::Index cols)
+{
+    check_keys(input, {"rows", "values"});
+    if (!input.contains("rows") || !input.contains("values"))
+        throw py::value_error("V_rational needs rows and values");
+    ExactVertices result;
+    const auto rows = integers(array(input["rows"]), true);
+    if (rows.cols() != 1) throw py::value_error("V_rational rows must be a vector");
+    result.rows.assign(rows.data(), rows.data() + rows.size());
+    const auto values =
+        py::module_::import("numpy").attr("asarray")(input["values"], "dtype"_a = "object");
+    const auto shape = values.attr("shape").cast<std::vector<Eigen::Index>>();
+    if (shape.size() != 2 || shape[0] != Eigen::Index(result.rows.size()) || shape[1] != cols)
+        throw py::value_error("V_rational values must have one row per row and V's columns");
+    const auto fraction = py::module_::import("fractions").attr("Fraction");
+    for (const auto row : values.attr("tolist")())
+        for (const auto value : row) result.values.push_back(py::str(fraction(value)));
+    return result;
+}
+py::dict exact_vertices(const ExactVertices& input, const Eigen::Index cols)
+{
+    const auto fraction = py::module_::import("fractions").attr("Fraction");
+    const size_t n = input.rows.size();
+    py::array_t<int64_t> rows(static_cast<py::ssize_t>(n));
+    std::copy(input.rows.begin(), input.rows.end(), rows.mutable_data());
+    py::object values =
+        py::module_::import("numpy").attr("empty")(py::make_tuple(n, cols), "dtype"_a = "object");
+    for (size_t i = 0; i < n; ++i)
+        for (Eigen::Index k = 0; k < cols; ++k)
+            values[py::make_tuple(i, k)] = fraction(input.values[i * cols + k]);
+    return py::dict("rows"_a = rows, "values"_a = values);
+}
 MeshAttributes attributes(const py::dict& input)
 {
     MeshAttributes result;
@@ -94,7 +132,7 @@ MeshAttributes attributes(const py::dict& input)
 
 MeshData mesh_data(const py::dict& input)
 {
-    check_keys(input, {"V", "cells", "vertex_attributes"});
+    check_keys(input, {"V", "V_rational", "cells", "vertex_attributes"});
     MeshData result;
     const auto vertices = array(input["V"]);
     if (vertices.dtype().kind() == 'f' && vertices.dtype().itemsize() <= 8)
@@ -104,6 +142,9 @@ MeshData mesh_data(const py::dict& input)
         coordinates.values = integers(vertices);
         result.V = coordinates.doubles();
     }
+    if (input.contains("V_rational"))
+        result.V_exact =
+            exact_vertices(dictionary(input["V_rational"], "V_rational"), result.V.cols());
     if (input.contains("vertex_attributes"))
         result.vertex_attributes =
             attributes(dictionary(input["vertex_attributes"], "vertex_attributes"));
@@ -146,10 +187,14 @@ py::dict mesh_data(const MeshData& input)
                 "connectivity"_a = numpy(it->second.connectivity),
                 "attributes"_a = attributes(it->second.attributes));
     }
-    return py::dict(
+    py::dict result(
         "V"_a = numpy(input.V),
         "vertex_attributes"_a = attributes(input.vertex_attributes),
         "cells"_a = cells);
+    // Only with vertices that could not be rounded: every other mesh is exactly its V.
+    if (!input.V_exact.empty())
+        result["V_rational"] = exact_vertices(input.V_exact, input.V.cols());
+    return result;
 }
 
 nlohmann::json options(const py::handle& value)
@@ -209,9 +254,11 @@ py::tuple call_component(MemoryComponent component, nlohmann::json options, cons
           "envelope",
           "tet_mesh",
           "output_tet_mesh",
-          "features"}) {
+          "features",
+          "sizing_mesh"}) {
         const auto it = options.find(role);
         if (it == options.end() || it->is_null()) continue;
+        if (it->is_string() && it->get<std::string>().empty()) continue; // "": none
         if (it->is_array())
             for (const auto& name : *it) select(name);
         else
@@ -226,8 +273,43 @@ py::tuple call_component(MemoryComponent component, nlohmann::json options, cons
     for (const auto& [name, data] : result.first) outputs[py::str(name)] = mesh_data(data);
     return py::make_tuple(outputs, report(result.second));
 }
+namespace {
+// UnroundedVerticesWarning, made by bind_mesh_io(); the module holds it for good.
+PyObject* unrounded_warning = PyExc_RuntimeWarning;
+void warn_unrounded(const std::string& message)
+{
+    // Stack level 1: the line of the call into the module.
+    py::warnings::warn(message.c_str(), unrounded_warning, 1);
+}
+} // namespace
+
+void clear_unrounded_output()
+{
+    take_unrounded_output();
+}
+void warn_unrounded_output(const bool memory)
+{
+    const auto found = take_unrounded_output();
+    if (found.unrounded == 0) return;
+    warn_unrounded(
+        found.component + ": " + std::to_string(found.unrounded) +
+        " vertices could not be rounded. " +
+        (memory ? "Their exact positions are in the output's V_rational and its V holds their "
+                  "rounding only, in which cells can be degenerate or inverted: remesh from "
+                  "memory, passing the mesh with its V_rational, before using V or writing a file."
+                : "The written mesh holds their rounding only, in which cells can be degenerate "
+                  "or inverted: run it in memory and remesh the result to keep their exact "
+                  "positions."));
+}
+
 void bind_mesh_io(py::module_& module)
 {
+    unrounded_warning =
+        py::warnings::new_warning_type(module, "UnroundedVerticesWarning").release().ptr();
+    module.attr("UnroundedVerticesWarning").attr("__doc__") =
+        "A result has vertices that could not be rounded: in memory their exact positions are "
+        "in the mesh's V_rational, and its V (and any file written from it) holds their rounding "
+        "only, in which cells can be degenerate or inverted.";
     module.def(
         "read_mesh",
         [](const std::filesystem::path& path) {
@@ -244,6 +326,11 @@ void bind_mesh_io(py::module_& module)
         "write_mesh",
         [](const std::filesystem::path& path, const py::dict& input) {
             const auto data = mesh_data(input);
+            if (!data.V_exact.empty())
+                warn_unrounded(
+                    "write_mesh: " + std::to_string(data.V_exact.rows.size()) +
+                    " vertices' exact positions (V_rational) are not written: the file holds "
+                    "their rounding only, in which cells can be degenerate or inverted.");
             py::gil_scoped_release release;
             io::write_mesh(path, data);
         },

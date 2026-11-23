@@ -62,6 +62,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     const std::string input_path = component_io.path(root, json_params["input"]);
     const std::string output = json_params["output"];
     const double env_rel = json_params["eps_rel"];
+    const double env_abs = json_params["eps"];
     const double boundary_env_rel = json_params["boundary_eps_rel"];
     const double target_rel = json_params["target_rel"];
     const int num_thread = json_params["num_threads"];
@@ -96,7 +97,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
 
     const double diag = (box_minmax.first - box_minmax.second).norm();
-    const double envelope_size = env_rel * diag;
+    // A positive eps wins over eps_rel, as in OptimizerParameters::init_lengths_from_diagonal.
+    const double envelope_size = env_abs > 0 ? env_abs : env_rel * diag;
     const double boundary_envelope_size = boundary_env_rel > 0 ? boundary_env_rel * diag : 0;
     if (boundary_envelope_size > 0) {
         logger().info("boundary envelope eps {:.6}", boundary_envelope_size);
@@ -150,6 +152,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         report["vertices"] = m.vert_capacity();
         report["triangles"] = m.tri_capacity();
         report["time_sec"] = runtime;
+        report["eps"] = std::max(envelope_size, 0.); // 0: no envelope
         component_io.result.second = report;
         if (!component_io.memory()) {
             std::ofstream fout(report_file);

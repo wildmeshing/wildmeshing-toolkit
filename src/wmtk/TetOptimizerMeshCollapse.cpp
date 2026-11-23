@@ -123,9 +123,16 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     // an edge that is already at target only makes its neighbours longer, so this is where
     // "as few elements as hold the max energy" has to be traded against "elements the size
     // the user asked for". Deliberately NOT scaled by the sizing field: see
-    // OptimizerParameters::coarsen_unbounded. Cheap, so it goes before any ring work.
+    // OptimizerParameters::coarsen_unbounded. Cheap, so it goes before any ring work. With a
+    // sizing mesh the target is the length it asks for at the edge's ends.
     if (m_coarsen_mode && !m_params.coarsen_unbounded) {
-        if (cache.edge_length * cache.edge_length > m_params.collapsing_l2) {
+        if (m_sizing_mesh) {
+            const double t =
+                0.8 * 0.5 * (coarsen_target_length(v1_id) + coarsen_target_length(v2_id));
+            if (cache.edge_length > t) {
+                return collapse_reject(CollapseReject::coarsen_length);
+            }
+        } else if (cache.edge_length * cache.edge_length > m_params.collapsing_l2) {
             return collapse_reject(CollapseReject::coarsen_length);
         }
     }
@@ -171,6 +178,10 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     // The application counts its own reasons (CollapseReject::app_*).
     if (!collapse_before_vertex(v1_id, v2_id, cache.edge_length)) {
         return false;
+    }
+
+    if (m_params.limit_collapse_length && collapse_leaves_long_edge(v1_id, v2_id)) {
+        return collapse_reject(CollapseReject::limit_length);
     }
 
 
@@ -459,12 +470,25 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
     // surface
     // and open boundary
     if (cache.edge_length > 0) {
+        // surface envelope: every new surface face inside its containment envelope
+        // (surface_triangle_is_outside, asked in Envelope::any_outside's order)
+        thread_local std::vector<Envelope::TriangleQuery> queries;
+        thread_local std::vector<std::shared_ptr<Envelope>> envelopes; // keeps them alive
+        queries.clear();
+        envelopes.clear();
+        const auto& VA = m_vertex_attribute;
         for (const auto& [vids, attr] : cache.surface_faces) {
-            // surface envelope
-            if (surface_triangle_is_outside(vids[0], vids[1], vids[2], attr)) {
-                return collapse_reject(CollapseReject::after_envelope);
-            }
+            std::shared_ptr<Envelope> env = surface_envelope_for_face(vids, attr);
+            if (!env) continue;
+            queries.emplace_back(
+                env.get(),
+                std::array<Eigen::Vector3d, 3>{
+                    {VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[2]].m_posf}});
+            envelopes.push_back(std::move(env));
         }
+        const bool outside = Envelope::any_outside(queries);
+        envelopes.clear();
+        if (outside) return collapse_reject(CollapseReject::after_envelope);
         // The order-2 chord gate: every cached order-2 edge (v1,x), remapped to (v2,x) at
         // caching time, must still BE order-2 substructure -- flags and containment in the
         // order-2 envelope included. Without it a sheet erodes IN-PLANE from its open
@@ -599,6 +623,7 @@ const char* TetOptimizerMesh::collapse_reject_name(const CollapseReject r)
     case CollapseReject::feature_leaves_tube: return "feature_leaves_tube";
     case CollapseReject::order2_leaves_tube: return "order2_leaves_tube";
     case CollapseReject::feature_point: return "feature_point";
+    case CollapseReject::limit_length: return "limit_length";
     case CollapseReject::app_both_surfaces: return "app_both_surfaces";
     case CollapseReject::app_front_unlimited: return "app_front_unlimited";
     case CollapseReject::app_leaves_input: return "app_leaves_input";

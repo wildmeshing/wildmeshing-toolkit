@@ -1,5 +1,7 @@
 #include "MeshData.hpp"
 
+#include <gmp.h>
+
 #include <cmath>
 #include <limits>
 #include <set>
@@ -108,6 +110,21 @@ void MeshData::validate() const
 {
     require(V.cols() == 3 && V.allFinite(), "V must have three finite coordinate columns");
     validate_attributes(vertex_attributes, V.rows());
+    require(
+        V_exact.values.size() == V_exact.rows.size() * size_t(V.cols()),
+        "V_exact must have one value per coordinate of each of its rows");
+    std::set<int64_t> exact_rows;
+    for (const int64_t r : V_exact.rows) {
+        require(r >= 0 && r < V.rows(), "V_exact row out of range");
+        require(exact_rows.insert(r).second, "duplicate V_exact row");
+    }
+    for (const auto& value : V_exact.values) {
+        mpq_t q;
+        mpq_init(q);
+        const bool ok = mpq_set_str(q, value.c_str(), 10) == 0 && mpz_sgn(mpq_denref(q)) != 0;
+        mpq_clear(q);
+        require(ok, "V_exact value is not a rational: " + value);
+    }
     for (const auto& [type, block] : cells) {
         const auto& c = block.connectivity;
         require(c.cols() == cell_size(type), "incorrect connectivity width");

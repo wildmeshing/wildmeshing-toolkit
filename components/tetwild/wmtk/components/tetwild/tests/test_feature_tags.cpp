@@ -187,8 +187,8 @@ void require_tags_on_curve(FeatureScene& sc)
                 on_some_segment = true;
                 const auto& attr =
                     sc.mesh->m_feature_edge_attribute[sc.mesh->tuple_from_edge(e).eid(*sc.mesh)];
-                const InputSet set = attr.inputs(TetWildMesh::FeatureEdgeAttributes::feature);
-                REQUIRE(set == InputSet(1) << s);
+                const LabelIds& set = attr.labels(TetWildMesh::FeatureEdgeAttributes::feature);
+                REQUIRE(set == LabelIds{LabelId(s)});
                 break;
             }
         }
@@ -210,11 +210,12 @@ void require_tags_in_tube(FeatureScene& sc)
             {m.m_vertex_attribute[e[0]].m_posf, m.m_vertex_attribute[e[1]].m_posf}};
         REQUIRE(!sc.mesh->m_feature_envelope->is_outside(seg));
         // The file set survives the collapses: never empty, and every file's own tube holds it.
-        const InputSet set = m.m_feature_edge_attribute[m.tuple_from_edge(e).eid(m)].inputs(
+        const LabelIds& set = m.m_feature_edge_attribute[m.tuple_from_edge(e).eid(m)].labels(
             TetWildMesh::FeatureEdgeAttributes::feature);
-        REQUIRE(set != 0);
+        REQUIRE(!set.none());
         for (size_t i = 0; i < 2; ++i) {
-            if ((set >> i) & 1) REQUIRE(!m.m_feature_input_envelopes.member(i)->is_outside(seg));
+            if (set.contains(LabelId(i)))
+                REQUIRE(!m.m_feature_input_envelopes.member(i)->is_outside(seg));
         }
         REQUIRE(m.vertex_has_feature_edge(e[0]));
         REQUIRE(m.vertex_has_feature_edge(e[1]));
@@ -466,7 +467,7 @@ TEST_CASE(
                 &tet_face_orientation);
         }
         TetWildMesh mesh(params, env, 0);
-        if (around_input) mesh.set_input_curves(v_in, f_in, {1, 1}, nullptr);
+        if (around_input) mesh.set_input_curves(v_in, f_in, {LabelIds{0}, LabelIds{0}}, nullptr);
         mesh.init_from_Volumeremesher(
             v_rational,
             facets,
@@ -551,7 +552,7 @@ TEST_CASE(
         std::vector<std::array<size_t, 4>> tets;
         std::vector<bool> tet_face_on_input_surface;
         std::vector<int8_t> tet_face_orientation;
-        std::vector<InputSet> facet_input_set;
+        std::vector<LabelIds> facet_input_set;
         {
             TetWildMesh mesh_insertion(params, env, 0);
             mesh_insertion.insertion_by_volumeremesher(
@@ -571,7 +572,12 @@ TEST_CASE(
                 &facet_input_set);
         }
         HoldsNonManifold mesh(params, env, 0);
-        if (around_input) mesh.set_input_curves(v, f, {1, 1, 2, 2}, nullptr);
+        if (around_input)
+            mesh.set_input_curves(
+                v,
+                f,
+                {LabelIds{0}, LabelIds{0}, LabelIds{1}, LabelIds{1}},
+                nullptr);
         mesh.init_from_Volumeremesher(
             v_rational,
             facets,
@@ -622,14 +628,14 @@ TEST_CASE("feature-curves-held-to-their-own-tubes", "[tetwild_operation][feature
     };
     size_t n_tagged = 0;
     for (const auto& e : tagged_edges(m)) {
-        const InputSet set = m.m_feature_edge_attribute[m.tuple_from_edge(e).eid(m)].inputs(
+        const LabelIds& set = m.m_feature_edge_attribute[m.tuple_from_edge(e).eid(m)].labels(
             TetWildMesh::FeatureEdgeAttributes::feature);
-        REQUIRE(set != 0);
+        REQUIRE(!set.none());
         ++n_tagged;
         const Vector3d& a = m.m_vertex_attribute[e[0]].m_posf;
         const Vector3d& b = m.m_vertex_attribute[e[1]].m_posf;
         for (size_t file = 0; file < 2; ++file) {
-            if (((set >> file) & 1) == 0) continue;
+            if (!set.contains(LabelId(file))) continue;
             const auto& seg = sc.fe[file];
             double worst = 0;
             for (int k = 0; k <= 20; ++k) {

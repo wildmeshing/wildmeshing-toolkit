@@ -290,8 +290,7 @@ bool TetOptimizerMesh::prepare_surface_flip(
             // sets, and the containment check in the after-hook holds them to every input in it.
             // A flip across two inputs' faces is therefore taken only where the new faces lie
             // within eps of both; nothing else refuses it.
-            cache.sf_face_attr.set_input_set(
-                cache.sf_face_attr.input_set() | m_face_attribute[fid].input_set());
+            cache.sf_face_attr.labels_mut().merge(m_face_attribute[fid].labels());
             // The flip replaces k[a,b,c] + k[b,a,d] by k[c,a,d] + k[d,b,c], which bounds the
             // same loop when the two faces carry the same k, i.e. are oriented alike across
             // (a,b). When they do not (a fold, or unequal multiplicities) no flip of this

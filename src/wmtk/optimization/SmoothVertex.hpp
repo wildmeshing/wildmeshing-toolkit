@@ -217,13 +217,15 @@ struct SmoothVertexOptions
      * projected candidate that does not invert and strictly lowers the worst incident
      * element, else do not move. The vertex lands exactly on the input; no weights exist.
      *
-     * Exact: minimize w_amips * AMIPS + w_envelope * (d/eps)^2 with the TRUE Hessian of the
-     * distance to the piecewise-linear input (ExactDistanceEnergy2D/3D): sliding is free
-     * exactly where the input is flat, blocked isotropically at corners and vertices,
-     * constrained to the direction of a 3D edge or curve segment. The vertex rests a
-     * w_amips-proportional distance off the input; the accept checks below apply either way.
+     * Penalty: no projection; minimize w_amips * AMIPS + w_envelope * (d/eps)^2, a quadratic
+     * penalty on the distance d, with the TRUE Hessian of the distance to the piecewise-linear
+     * input (ExactDistanceEnergy2D/3D): sliding is free exactly where the input is flat,
+     * blocked isotropically at corners and vertices, constrained to the direction of a 3D edge
+     * or curve segment. The vertex rests a w_amips-proportional distance off the input; the
+     * accept checks below apply either way. Named "exact" until 2026-11, after the Hessian;
+     * but what sets the two modes apart is the penalty term against the projection.
      */
-    enum class SmoothingMode { Projected, Exact };
+    enum class SmoothingMode { Projected, Penalty };
     SmoothingMode smoothing_mode = SmoothingMode::Projected;
 
     /// Backtracking steps tried before the move is abandoned: t = 1, 1/2, ..., 2^-(n-1).
@@ -532,26 +534,16 @@ bool smooth_vertex_3d(
         return false;
     }
 
-    // Containment: every surface triangle at this vertex must still be inside -- each in the
-    // envelope smoothing_containment_envelope() gives that face, by default its own input set's,
-    // which is not necessarily the one the vertex was pulled to.
-    if (VA[vid].m_is_on_surface) {
-        const auto& FA_read = std::as_const(m.m_face_attribute);
-        const simplex::SimplexCollection surf = m.get_surface_faces_for_vertex(vid);
-        for (const simplex::Face& f : surf.faces()) {
-            const auto& fv = f.vertices();
-            const size_t fid = std::get<1>(m.tuple_from_face(fv));
-            const std::shared_ptr<Envelope> check_env =
-                m.smoothing_containment_envelope(vid, fv, FA_read[fid]);
-            if (!check_env) continue;
-            const std::array<Eigen::Vector3d, 3> face = {
-                {VA_read[fv[0]].m_posf, VA_read[fv[1]].m_posf, VA_read[fv[2]].m_posf}};
-            if (check_env->is_outside(face)) {
-                if (counters) ++counters->envelope;
-                return false;
-            }
-        }
-    }
+    // The one-ring checks (inversion, the quality veto) run before containment, the costly test.
+    // Each check only refuses, and a refused move rolls back the qualities stored below, so the
+    // order decides what a refused move costs, never which moves are accepted. Containment used
+    // to run first, and the veto then refused moves it had already paid for. Measured on the 14
+    // TetWild [challenging] models, serial, smoothing_mode "penalty": 2.34M of 3.66M passed
+    // containment tests were then vetoed; with the veto first, containment tests 5.78M -> 2.74M
+    // and smoothing time 969 s -> 654 s, every output mesh byte-identical. A projected candidate
+    // has already passed both checks -- its line search refuses an inverted candidate and, with
+    // the default smoothing_ring_energy(), asks the ring's worst element to strictly improve --
+    // so the projected step's counts do not change.
 
     // The rational position must be current before the exact inversion test.
     VA[vid].set_pos_to_posf();
@@ -577,6 +569,38 @@ bool smooth_vertex_3d(
         }
     }
 
+    // Containment: every surface triangle at this vertex must still be inside -- each in the
+    // envelope smoothing_containment_envelope() gives that face, by default its own input set's,
+    // which is not necessarily the one the vertex was pulled to.
+    if (VA[vid].m_is_on_surface) {
+        const auto& FA_read = std::as_const(m.m_face_attribute);
+        const simplex::SimplexCollection surf = m.get_surface_faces_for_vertex(vid);
+        // Every face around the vertex inside its containment envelope, asked in
+        // Envelope::any_outside's order.
+        thread_local std::vector<Envelope::TriangleQuery> queries;
+        thread_local std::vector<std::shared_ptr<Envelope>> envelopes; // keeps them alive
+        queries.clear();
+        envelopes.clear();
+        for (const simplex::Face& f : surf.faces()) {
+            const auto& fv = f.vertices();
+            const size_t fid = std::get<1>(m.tuple_from_face(fv));
+            std::shared_ptr<Envelope> check_env =
+                m.smoothing_containment_envelope(vid, fv, FA_read[fid]);
+            if (!check_env) continue;
+            queries.emplace_back(
+                check_env.get(),
+                std::array<Eigen::Vector3d, 3>{
+                    {VA_read[fv[0]].m_posf, VA_read[fv[1]].m_posf, VA_read[fv[2]].m_posf}});
+            envelopes.push_back(std::move(check_env));
+        }
+        const bool outside = Envelope::any_outside(queries);
+        envelopes.clear();
+        if (outside) {
+            if (counters) ++counters->envelope;
+            return false;
+        }
+    }
+
     if (counters) ++counters->accepted;
     return true;
 }
@@ -594,8 +618,10 @@ bool smooth_vertex_3d(
  * `Mesh` must provide, on top of what wmtk::TriMesh already gives:
  *   - m_vertex_attribute[vid].m_is_on_surface, m_face_attribute[fid].m_quality
  *   - is_inverted_f(size_t fid), is_inverted(size_t fid), get_quality(size_t fid)
- *   - smoothing_cell_energy(fid, quality): what the projected step and the quality veto
- *     compare per face (TriOptimizerMesh: the quality itself unless an application overrides)
+ *   - smoothing_cell_energy(fid, quality): what the quality veto compares per face
+ *     (TriOptimizerMesh: the quality itself unless an application overrides)
+ *   - smoothing_ring_energy(ring, stored): what the projected step compares for the whole
+ *     one-ring (TriOptimizerMesh: the max of smoothing_cell_energy() unless overridden)
  *   - Vector2d smoothing_position(size_t vid) const
  *   - void set_smoothing_position(size_t vid, const Vector2d& p)
  *       writes the working position and its exact/rational copy together
@@ -714,13 +740,17 @@ bool smooth_vertex_2d(
     const std::shared_ptr<Envelope> envelope = m.smoothing_energy_envelope(vid);
 
     if (envelope && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
+        // As the 3D path: the ring's value before the move is read here, before the solve moves
+        // the vertex (see smoothing_ring_energy()); by default it is max_quality.
         const Vector2d x_orig = m.smoothing_position(vid);
+        const double ring_before = m.smoothing_ring_energy(locs, true);
         total_energy = base_energy;
         solve();
         const Vector2d x_new = m.smoothing_position(vid);
 
-        // set_smoothing_position keeps the rational position in step, which the exact
-        // is_inverted below depends on.
+        // Place a candidate and report the ring's value there (smoothing_ring_energy()), or
+        // infinity if it inverts. set_smoothing_position keeps the rational position in step,
+        // which the exact is_inverted below depends on.
         const auto worst_at = [&](const Vector2d& p) {
             m.set_smoothing_position(vid, p);
             for (const size_t fid : locs) {
@@ -728,11 +758,7 @@ bool smooth_vertex_2d(
                     return std::numeric_limits<double>::infinity();
                 }
             }
-            double mq = 0.;
-            for (const size_t fid : locs) {
-                mq = std::max(mq, m.smoothing_cell_energy(fid, m.get_quality(fid)));
-            }
-            return mq;
+            return m.smoothing_ring_energy(locs, false);
         };
 
         bool accepted = false;
@@ -745,7 +771,7 @@ bool smooth_vertex_2d(
             envelope->nearest_point(p, q);
             interp.push_back(p);
             proj.push_back(q);
-            if (worst_at(q) < max_quality) {
+            if (worst_at(q) < ring_before) {
                 accepted = true;
                 break;
             }
@@ -766,7 +792,7 @@ bool smooth_vertex_2d(
                 for (int j = 0; j < opts.project_line_search_nested_steps; ++j) {
                     const double mid = 0.5 * (lo + hi);
                     const Vector2d cand = interp[k] + mid * (proj[k] - interp[k]);
-                    if (worst_at(cand) < max_quality) {
+                    if (worst_at(cand) < ring_before) {
                         lo = mid;
                         best = cand;
                         found = true;
@@ -819,24 +845,10 @@ bool smooth_vertex_2d(
         return false;
     }
 
-    // Containment, edge by edge rather than face by face as in 3D -- each segment against its
-    // own CONTAINMENT envelope, which is not necessarily the one the vertex was pulled to.
-    {
-        const auto& EA_read = std::as_const(m.m_edge_attribute);
-        const Vector2d p = m.smoothing_position(vid);
-        for (size_t i = 0; i < surf_neighbors.size(); ++i) {
-            const size_t eid = std::get<1>(m.tuple_from_edge(surf_edges[i]));
-            const std::shared_ptr<Envelope> hold_env =
-                m.smoothing_containment_envelope(vid, surf_edges[i], EA_read[eid]);
-            if (!hold_env) continue;
-            const std::array<Eigen::Vector2d, 2> edge = {{p, surf_neighbors[i]}};
-            if (hold_env->is_outside(edge)) {
-                if (counters) ++counters->envelope;
-                return false;
-            }
-        }
-    }
-
+    // The one-ring checks (inversion, the quality veto) before containment, as in
+    // smooth_vertex_3d() and for its reason: the order decides what a refused move costs, never
+    // which moves are accepted. Measured on the 16 TriWild [challenging] models, serial,
+    // smoothing_mode "penalty": smoothing time 272 s -> 162 s, every output mesh byte-identical.
     for (const size_t fid : locs) {
         if (m.is_inverted(fid)) {
             if (counters) ++counters->inverted;
@@ -854,6 +866,24 @@ bool smooth_vertex_2d(
         if (max_after_quality > max_quality) {
             if (counters) ++counters->quality;
             return false;
+        }
+    }
+
+    // Containment, edge by edge rather than face by face as in 3D -- each segment against its
+    // own CONTAINMENT envelope, which is not necessarily the one the vertex was pulled to.
+    {
+        const auto& EA_read = std::as_const(m.m_edge_attribute);
+        const Vector2d p = m.smoothing_position(vid);
+        for (size_t i = 0; i < surf_neighbors.size(); ++i) {
+            const size_t eid = std::get<1>(m.tuple_from_edge(surf_edges[i]));
+            const std::shared_ptr<Envelope> hold_env =
+                m.smoothing_containment_envelope(vid, surf_edges[i], EA_read[eid]);
+            if (!hold_env) continue;
+            const std::array<Eigen::Vector2d, 2> edge = {{p, surf_neighbors[i]}};
+            if (hold_env->is_outside(edge)) {
+                if (counters) ++counters->envelope;
+                return false;
+            }
         }
     }
 

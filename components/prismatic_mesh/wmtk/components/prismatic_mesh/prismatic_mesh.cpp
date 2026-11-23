@@ -2,11 +2,13 @@
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
 #include "junction_protection.hpp"
+#include "quality_improvement.hpp"
 #include "rod_mesh.hpp"
 #include "thickness_smoothing.hpp"
 
 #include <jse/jse.h>
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <prismatic_mesh_spec.hpp>
@@ -26,6 +28,29 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
 
     json_params = spec_engine.inject_defaults(json_params, spec);
+    const bool quality_improvement = json_params["quality_improvement"].get<bool>();
+    QualityImprovementOptions quality_options;
+    if (quality_improvement) {
+        if (!json_params["prism_dominant"].get<bool>())
+            log_and_throw_error("Quality improvement requires prism_dominant.");
+        if (json_params["rod_mode"].get<bool>())
+            log_and_throw_error("Region quality improvement does not preserve rod frames.");
+        if (json_params["min_tet_volume"].get<double>() != 0 ||
+            json_params["relative_tet_volume_floor"].get<double>() != 0)
+            log_and_throw_error(
+                "Region quality improvement requires min_tet_volume=0 and "
+                "relative_tet_volume_floor=0; it enforces strictly positive actual cells.");
+        quality_options =
+            QualityImprovementOptions::from_json(json_params["quality_improvement_options"]);
+        // Region remeshing starts at the original hybrid build. Its mixed
+        // smoothing replaces the separate optional quality stages.
+        for (const char* name :
+             {"jacobian_smoothing_iterations",
+              "transition_smoothing_iterations",
+              "thickness_smoothing_iterations"})
+            json_params[name] = 0;
+        json_params["background_remeshing"] = false;
+    }
     const auto path = std::filesystem::path(component_io.path(
         json_params["input_dir"].get<std::string>(),
         json_params["input"].get<std::string>()));
@@ -130,13 +155,31 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             thickness_iterations);
     }
     if (hybrid) hybrid->report["ignore_background_mesh"] = ignore_background;
+    std::optional<ImprovedHybridMesh> improved;
+    if (quality_improvement) {
+        improved = improve_prismatic_mesh_quality(input, *hybrid, quality_options);
+        improved->report["construction"] = hybrid->report;
+    }
+    const auto write_result = [&](const std::filesystem::path& destination,
+                                  bool background,
+                                  MeshMap* raw = nullptr,
+                                  nlohmann::json* report = nullptr) {
+        if (improved)
+            write_improved_prismatic_mesh(*improved, destination, background, raw, report);
+        else
+            write_prismatic_mesh(
+                input,
+                destination,
+                hybrid ? &*hybrid : nullptr,
+                background,
+                raw,
+                report);
+    };
     if (component_io.memory()) {
         MeshMap raw;
         nlohmann::json hybrid_report;
-        write_prismatic_mesh(
-            input,
+        write_result(
             "mesh.vtu",
-            hybrid ? &*hybrid : nullptr,
             !rod_mode || optimization.keep_background_mesh,
             &raw,
             &hybrid_report);
@@ -147,11 +190,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (hybrid) component_io.result.second["hybrid"] = std::move(hybrid_report);
         if (rod_mode) component_io.result.second["rod"] = input.rod_state->report;
     } else {
-        write_prismatic_mesh(
-            input,
-            output_path,
-            hybrid ? &*hybrid : nullptr,
-            !rod_mode || optimization.keep_background_mesh);
+        write_result(output_path, !rod_mode || optimization.keep_background_mesh);
         if (rod_mode) {
             auto report_path =
                 output_path.parent_path() / (output_path.stem().string() + "_rod.json");
@@ -166,13 +205,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             if (!component_io.result.first.count("input_and_shell")) {
                 MeshMap raw;
                 nlohmann::json hybrid_report;
-                write_prismatic_mesh(
-                    input,
-                    "mesh.vtu",
-                    hybrid ? &*hybrid : nullptr,
-                    false,
-                    &raw,
-                    &hybrid_report);
+                write_result("mesh.vtu", false, &raw, &hybrid_report);
                 auto keys = io::default_output_keys();
                 keys["mesh.vtu"] = "input_and_shell";
                 keys["mesh_offset_faces.vtu"] = "input_and_shell_offset";
@@ -181,7 +214,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                     component_io.result.second["input_and_shell_hybrid"] = std::move(hybrid_report);
             }
         } else
-            write_prismatic_mesh(input, out, hybrid ? &*hybrid : nullptr, false);
+            write_result(out, false);
         logger().info("Wrote input + shell mesh: {}", out.string());
     }
 }

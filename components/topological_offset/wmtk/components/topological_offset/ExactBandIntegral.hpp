@@ -126,8 +126,9 @@ public:
     /// With the offset side (class doc): face_side[f] = +1 if row f's normal (b - a) x (c - a)
     /// points out of the solid the triangles bound, -1 if into it, 0 for a triangle that bounds no
     /// solid; sigma = +1 for the band outside that solid, -1 inside it, 0 no clip (as the
-    /// two-argument constructor). TopoOffsetTetMesh's solid is its label-1 cells, which the band
-    /// is outside of for offset_out and offset_in alike, so it passes +1.
+    /// two-argument constructor). TopoOffsetTetMesh passes +1 for an Out offset (the solid is its
+    /// label-1 cells), -1 for an In offset (the solid is its selection, whose boundary is the
+    /// complex) and 0 for Both.
     /// value_slots > 0: value() keeps a table of its results of at least that many slots (the
     /// value table, value()).
     /// envelope: the triangles' box queries, for U and the candidate query -- a Triangles3d

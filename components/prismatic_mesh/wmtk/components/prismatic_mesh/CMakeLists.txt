@@ -33,6 +33,9 @@ set(SRC_FILES
     jacobian_smoothing.cpp
     thickness_smoothing.hpp
     thickness_smoothing.cpp
+    quality_improvement.hpp
+    quality_improvement.cpp
+    write_improved_mesh.cpp
     target_positions.cpp
     background_remeshing.hpp
     background_remeshing.cpp

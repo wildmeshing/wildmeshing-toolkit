@@ -17,6 +17,7 @@ set(SRC_FILES
     test_orientation_2d.cpp
     test_colored_smoothing.cpp
     test_input_sets_2d.cpp
+    test_sizing_field.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

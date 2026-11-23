@@ -472,13 +472,13 @@ void TetWildMesh::compute_winding_number(
     const Eigen::MatrixXd& barycenters,
     const std::vector<Vector3d>& vertices,
     const std::vector<std::array<size_t, 3>>& faces,
-    const InputSet bounding)
+    const std::optional<LabelIds>& bounding)
 {
     // With filter_inputs, the tracked faces of those inputs only; all of them otherwise, by the
     // code that ran before the key.
-    const bool all_inputs = bounding == ~InputSet(0);
+    const bool all_inputs = !bounding;
     const auto bounds = [&](const FaceAttributes& f) {
-        return all_inputs || (f.input_set() & bounding) != 0;
+        return all_inputs || f.labels().intersects(*bounding);
     };
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
@@ -520,8 +520,9 @@ void TetWildMesh::compute_winding_number(
             size_t n_shared = 0;
             for (const auto& f : get_faces()) {
                 const auto& attr = m_face_attribute[f.fid(*this)];
-                const InputSet set = attr.input_set();
-                if (attr.m_is_surface_fs && (set & bounding) != 0 && (set & (set - 1)) != 0) {
+                const LabelIds& set = attr.labels();
+                if (attr.m_is_surface_fs && (!bounding || set.intersects(*bounding)) &&
+                    set.count() > 1) {
                     ++n_shared;
                 }
             }
@@ -536,7 +537,7 @@ void TetWildMesh::compute_winding_number(
 #endif
             for (const auto& f : get_faces()) {
                 const auto& attr = m_face_attribute[f.fid(*this)];
-                const int o = attr.orientation_of(bounding);
+                const int o = attr.orientation_of(bounding ? *bounding : attr.labels());
                 if (!attr.m_is_surface_fs || o == 0 || !bounds(attr)) continue;
                 std::array<size_t, 3> v = get_face_vids(f);
                 std::sort(v.begin(), v.end());
@@ -607,7 +608,7 @@ void TetWildMesh::compute_input_winding_numbers(
     const std::vector<std::array<size_t, 3>>& faces,
     const std::vector<int>& face_input,
     const int n_inputs,
-    const InputSet bounding)
+    const std::optional<LabelIds>& bounding)
 {
     assert(faces.size() == face_input.size());
     Eigen::MatrixXd V(vertices.size(), 3);
@@ -629,12 +630,12 @@ void TetWildMesh::compute_input_winding_numbers(
         NUM_THREADS);
     // With filter_inputs, the sum over those inputs only: the others do not bound the domain.
     Eigen::VectorXd W;
-    if (bounding == ~InputSet(0)) {
+    if (!bounding) {
         W = W_per_input.rowwise().sum();
     } else {
         W = Eigen::VectorXd::Zero(W_per_input.rows());
         for (int p = 0; p < n_inputs; ++p) {
-            if (p < SurfaceTagAttributes::max_inputs && ((bounding >> p) & 1)) {
+            if (p < max_labels && bounding->contains(LabelId(p))) {
                 W += W_per_input.col(p);
             }
         }
@@ -778,13 +779,13 @@ void TetWildMesh::init_vertex_order()
         NUM_THREADS);
 }
 
-int TetWildMesh::flood_fill(const InputSet bounding)
+int TetWildMesh::flood_fill(const std::optional<LabelIds>& bounding)
 {
     // A face the fill crosses: not tracked, or, with filter_inputs, tracked for other inputs only.
-    const bool all_inputs = bounding == ~InputSet(0);
+    const bool all_inputs = !bounding;
     const auto crossed = [&](const Tuple& f) {
         const auto& attr = m_face_attribute[f.fid(*this)];
-        return !attr.m_is_surface_fs || (!all_inputs && (attr.input_set() & bounding) == 0);
+        return !attr.m_is_surface_fs || (!all_inputs && !attr.labels().intersects(*bounding));
     };
     int current_id = 0;
     auto tets = get_tets();
@@ -1002,8 +1003,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5, Me
     writer->add_field("order", v_order);
 
 
-    logger().info("Write {}", out_path);
-    writer->write_mesh(out_path, V, T, paraviewo::CellType::Tetrahedron);
+    writer->write_mesh_and_log(out_path, V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
     {
@@ -1016,8 +1016,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5, Me
         surf_writer->add_field("on_open_boundary", v_is_on_open_boundary);
         surf_writer->add_field("order", v_order);
 
-        logger().info("Write {}", surf_out_path);
-        surf_writer->write_mesh(surf_out_path, V, F, paraviewo::CellType::Triangle);
+        surf_writer->write_mesh_and_log(surf_out_path, V, F, paraviewo::CellType::Triangle);
     }
 }
 

@@ -90,6 +90,10 @@ With an envelope of 0.2%, it barely gets past the first run's tenth. Inside the 
 QSlim stops at roughly two thirds of these counts (see [its table](qslim.md#the-envelope-eps_rel)):
 its collapses follow the shape, so fewer of them leave the envelope.
 
+To give the thickness in the input's units, set [`eps`](../reference/shortest_edge_collapse.md#eps):
+when positive it replaces `eps_rel`, and `eps_rel` times the diagonal of the mesh as read (after the
+weld) is the same run.
+
 ### The envelope test: `use_sample_envelope`
 
 The envelope test is exact by default, and it is most of the run time: in the sweep above, a run
@@ -157,8 +161,8 @@ runs sequentially and gives identical results.
 
 - The simplified mesh: `output` on the command line (default `out.obj`), `outputs["mesh"]` in
   memory.
-- In memory, the report holds the number of `vertices` and `triangles` of the result. There is no
-  report file.
+- In memory, the report holds the number of `vertices` and `triangles` of the result, and the
+  envelope's absolute thickness `eps` (0 without an envelope). There is no report file.
 - With [`throw_on_fail`](../reference/shortest_edge_collapse.md#throw_on_fail), the run fails when
   the target is not reached, instead of writing the mesh it got to.
 - With [`history_output`](../reference/shortest_edge_collapse.md#history_output), the history of

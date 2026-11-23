@@ -31,7 +31,9 @@
 // clang-format on
 
 //#include <paraviewo/HDF5VTUWriter.hpp>
+#include <algorithm>
 #include <bitset>
+#include <cstdint>
 #include <limits>
 #include <paraviewo/VTUWriter.hpp>
 #include <wmtk/utils/partition_utils.hpp>
@@ -50,7 +52,7 @@ void TriWildMesh::init_mesh(
     const std::vector<int>* E_orientation,
     const std::vector<size_t>& free_point_vids,
     const std::vector<int>* E_env_input,
-    const std::vector<InputSet>* E_input_set,
+    const std::vector<LabelIds>* E_input_set,
     const std::vector<InputOrientations>* E_input_orientation)
 {
     assert(V.cols() == 2);
@@ -186,9 +188,9 @@ void TriWildMesh::init_mesh(
         }
         m_edge_attribute[eid].m_is_surface_fs = true;
         auto& attr = m_edge_attribute[eid];
-        attr.set_input_set(E_input_set != nullptr ? (*E_input_set)[i] : 1);
+        attr.labels_mut() = E_input_set != nullptr ? (*E_input_set)[i] : LabelIds{0};
         if (E_orientation != nullptr)
-            attr.set_orientation_along(attr.input_set(), vids, (*E_orientation)[i]);
+            attr.set_orientation_along(attr.labels(), vids, (*E_orientation)[i]);
 #ifdef WMTK_PER_INPUT_ORIENTATION
         if (E_input_orientation != nullptr)
             attr.set_input_orientations_along(vids, (*E_input_orientation)[i]);
@@ -250,9 +252,9 @@ void TriWildMesh::init_mesh(
         // Input k is bit k. Every input with a tracked segment has rows here -- the tracked
         // segments' inputs come from the same curves -- so the base's fallback to the tracked
         // segments never builds one.
-        std::vector<InputSet> E_env_sets(E_env_input->size());
+        std::vector<LabelIds> E_env_sets(E_env_input->size());
         for (size_t i = 0; i < E_env_sets.size(); ++i) {
-            E_env_sets[i] = InputSet(1) << (*E_env_input)[i];
+            E_env_sets[i] = LabelIds{LabelId((*E_env_input)[i])};
         }
         init_input_envelopes(
             m_V_envelope,
@@ -475,20 +477,13 @@ void TriWildMesh::compute_winding_numbers(
     }
 }
 
-void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
+void TriWildMesh::compute_tracked_winding_number(const std::optional<LabelIds>& bounding)
 {
     if (!m_tracks_orientation) {
         log_and_throw_error(
             "compute_tracked_winding_number: the tracked curves carry no orientation");
     }
     const auto& faces = get_faces();
-    MatrixXd C = MatrixXd::Zero(faces.size(), 2);
-    for (size_t i = 0; i < faces.size(); i++) {
-        for (size_t v : oriented_tri_vids(faces[i])) {
-            C.row(i) += m_vertex_attribute[v].m_posf;
-        }
-        C.row(i) /= 3;
-    }
     MatrixXd V = MatrixXd::Zero(vert_capacity(), 2);
     for (const Tuple& v : get_vertices()) {
         V.row(v.vid(*this)) = m_vertex_attribute[v.vid(*this)].m_posf;
@@ -500,15 +495,16 @@ void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
     // a kept input coincides with another the kept inputs' own is not known, and it is refused
     // there rather than guessed, as in 3D; with the option each input has its own.
     std::vector<std::array<size_t, 2>> oriented;
-    if (bounding == ~InputSet(0)) {
+    if (!bounding) {
         oriented = oriented_tracked_edges();
     } else {
 #ifndef WMTK_PER_INPUT_ORIENTATION
         size_t n_shared = 0;
         for (const Tuple& e : get_edges()) {
             const auto& attr = m_edge_attribute[e.eid(*this)];
-            const InputSet set = attr.input_set();
-            if (attr.m_is_surface_fs && (set & bounding) != 0 && (set & (set - 1)) != 0) {
+            const LabelIds& set = attr.labels();
+            if (attr.m_is_surface_fs && (!bounding || set.intersects(*bounding)) &&
+                set.count() > 1) {
                 ++n_shared;
             }
         }
@@ -523,9 +519,9 @@ void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
 #endif
         for (const Tuple& e : get_edges()) {
             const auto& attr = m_edge_attribute[e.eid(*this)];
-            const int o = attr.orientation_of(bounding);
+            const int o = attr.orientation_of(bounding ? *bounding : attr.labels());
             if (!attr.m_is_surface_fs || o == 0) continue;
-            if ((attr.input_set() & bounding) == 0) continue;
+            if (bounding && !attr.labels().intersects(*bounding)) continue;
             size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
             if (a > b) std::swap(a, b);
             if (o < 0) std::swap(a, b);
@@ -538,8 +534,77 @@ void TriWildMesh::compute_tracked_winding_number(const InputSet bounding)
         E(i, 1) = int(oriented[i][1]);
     }
 
-    Eigen::VectorXd W;
-    utils::winding_number_2d(V, E, C, W, NUM_THREADS);
+    // When the curves E are closed (every vertex as often an edge's start as an end), their
+    // winding number is constant on every connected set of faces that no edge of E separates, so
+    // it is evaluated once per such region -- at the centroid of its first face in get_faces()
+    // order -- and given to all its faces, instead of once per face: each evaluation sums an
+    // atan2 over every edge of E, and per face that was a fifth of a TriWild run on small inputs.
+    // Only the inside test (winding_number_inside) reads the value, and it is the same: across a
+    // region the per-face values differed by round-off alone. Open curves have a winding number
+    // that varies continuously off them, so they are still evaluated face by face.
+    bool closed = true;
+    {
+        std::vector<int> balance(vert_capacity(), 0);
+        for (const auto& ab : oriented) {
+            ++balance[ab[0]];
+            --balance[ab[1]];
+        }
+        closed = std::all_of(balance.begin(), balance.end(), [](int d) { return d == 0; });
+    }
+    std::vector<uint64_t> curve_keys(oriented.size());
+    const auto edge_key = [](size_t a, size_t b) {
+        if (a > b) std::swap(a, b);
+        return (uint64_t(a) << 32) | uint64_t(b);
+    };
+    for (size_t i = 0; i < oriented.size(); ++i) {
+        curve_keys[i] = edge_key(oriented[i][0], oriented[i][1]);
+    }
+    std::sort(curve_keys.begin(), curve_keys.end());
+    curve_keys.erase(std::unique(curve_keys.begin(), curve_keys.end()), curve_keys.end());
+    const auto on_curve = [&](const Tuple& e) {
+        const uint64_t key = edge_key(e.vid(*this), e.switch_vertex(*this).vid(*this));
+        return std::binary_search(curve_keys.begin(), curve_keys.end(), key);
+    };
+    std::vector<int> region(tri_capacity(), -1);
+    std::vector<size_t> first_face; // per region, its first face's index in `faces`
+    std::vector<Tuple> stack;
+    for (size_t i = 0; i < faces.size(); ++i) {
+        if (region[faces[i].fid(*this)] >= 0) continue;
+        if (!closed) { // every face a region of its own
+            region[faces[i].fid(*this)] = int(first_face.size());
+            first_face.push_back(i);
+            continue;
+        }
+        const int r = int(first_face.size());
+        first_face.push_back(i);
+        region[faces[i].fid(*this)] = r;
+        stack.assign(1, faces[i]);
+        while (!stack.empty()) {
+            const Tuple f = stack.back();
+            stack.pop_back();
+            for (const Tuple& e :
+                 {f, f.switch_edge(*this), f.switch_vertex(*this).switch_edge(*this)}) {
+                if (on_curve(e)) continue;
+                const auto g = e.switch_face(*this);
+                if (g && region[g->fid(*this)] < 0) {
+                    region[g->fid(*this)] = r;
+                    stack.push_back(*g);
+                }
+            }
+        }
+    }
+    MatrixXd C = MatrixXd::Zero(first_face.size(), 2);
+    for (size_t r = 0; r < first_face.size(); ++r) {
+        for (size_t v : oriented_tri_vids(faces[first_face[r]])) {
+            C.row(r) += m_vertex_attribute[v].m_posf;
+        }
+        C.row(r) /= 3;
+    }
+    Eigen::VectorXd W_region;
+    utils::winding_number_2d(V, E, C, W_region, NUM_THREADS);
+    Eigen::VectorXd W(faces.size());
+    for (size_t i = 0; i < faces.size(); ++i) W(i) = W_region(region[faces[i].fid(*this)]);
+
     if (utils::orient_winding_number(W)) {
         logger().info("Correcting tracked winding number");
     }
@@ -564,15 +629,14 @@ void TriWildMesh::filter_with_tracked_winding_number()
     remove_tris_by_ids(rm_fids);
 }
 
-void TriWildMesh::filter_with_input_winding_number(const InputSet bounding)
+void TriWildMesh::filter_with_input_winding_number(const std::optional<LabelIds>& bounding)
 {
     // A face is inside when it is inside at least one input, i.e. when it carries a tag; with
     // filter_inputs, a tag of one of those inputs.
     const auto inside = [&](const size_t fid) {
-        if (bounding == ~InputSet(0)) return !m_face_attribute[fid].tags.empty();
+        if (!bounding) return !m_face_attribute[fid].tags.empty();
         for (const auto tag : m_face_attribute[fid].tags) {
-            if (tag >= 0 && tag < SurfaceTagAttributes::max_inputs && ((bounding >> tag) & 1))
-                return true;
+            if (tag >= 0 && tag < max_labels && bounding->contains(LabelId(tag))) return true;
         }
         return false;
     };
@@ -631,14 +695,14 @@ void TriWildMesh::filter_with_flood_fill()
     remove_tris_by_ids(rm_fids);
 }
 
-int TriWildMesh::flood_fill(const InputSet bounding)
+int TriWildMesh::flood_fill(const std::optional<LabelIds>& bounding)
 {
     // An edge the fill crosses: not tracked, or, with filter_inputs, tracked for other inputs
     // only.
-    const bool all_inputs = bounding == ~InputSet(0);
+    const bool all_inputs = !bounding;
     const auto crossed = [&](const Tuple& e) {
         const auto& attr = m_edge_attribute[e.eid(*this)];
-        return !attr.m_is_surface_fs || (!all_inputs && (attr.input_set() & bounding) == 0);
+        return !attr.m_is_surface_fs || (!all_inputs && !attr.labels().intersects(*bounding));
     };
     int current_id = 0;
     const auto faces = get_faces();

@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <utility>
 #include <vector>
 
 // clang-format off
@@ -15,6 +16,19 @@
 // clang-format on
 
 namespace wmtk {
+/**
+ * @brief Appends samples of the triangle `vs` to `ps` such that every point of the triangle is
+ * within sampling_dist / sqrt(3) of a sample: its vertices, and an equilateral lattice of spacing
+ * sampling_dist along its longest edge projected onto it (just the vertices when they already
+ * cover it). About area / sampling_dist^2 + perimeter / sampling_dist samples. The sampled
+ * triangle envelope's per-sample radius, eps2, is eps shrunk by exactly that covering radius.
+ * Throws unless sampling_dist > 0.
+ */
+void sampleTriangle(
+    const std::array<Eigen::Vector3d, 3>& vs,
+    std::vector<Eigen::Vector3d>& ps,
+    const double sampling_dist);
+
 class Envelope
 {
 public:
@@ -42,7 +56,7 @@ public:
     /**
      * Per-sample acceptance radius, squared, for POINT and TRIANGLE queries.
      *
-     * eps shrunk by the covering radius of sampleTriangle's lattice, sampling_dist/sqrt(3).
+     * eps shrunk by the covering radius of sampleTriangle's samples, sampling_dist/sqrt(3).
      * A point query needs no shrink at all and is therefore merely conservative here; it is
      * left as it is because every 3D operation goes through it and widening it would change
      * tetwild's behaviour everywhere, which belongs in its own change.
@@ -59,7 +73,7 @@ public:
      *
      *     r = eps - sampling_dist / 2      (= eps/2, since sampling_dist = eps)
      *
-     * The lattice constant eps - sampling_dist/sqrt(3) belongs to sampleTriangle and is
+     * The triangle constant eps - sampling_dist/sqrt(3) belongs to sampleTriangle and is
      * simply the wrong figure here: it is 0.4226*eps against the correct 0.5*eps, so using
      * it made the edge test 18% stricter than the geometry requires. That is safe on its own
      * -- but it also made the simplification's own guarantee (r_s + sampling_dist_s/2 = eps_s)
@@ -152,6 +166,22 @@ public:
     virtual bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const;
     virtual bool is_outside(const Eigen::Vector3d& pts) const;
     virtual bool is_outside(const Eigen::Vector2d& pts) const;
+
+    /// One containment question of an operation: is this triangle outside this envelope?
+    using TriangleQuery = std::pair<const Envelope*, std::array<Eigen::Vector3d, 3>>;
+    /**
+     * Whether the triangle of any of `queries` is outside its envelope: the answer of asking
+     * is_outside of each in turn, found with less work when it is "yes". A refused operation
+     * pays for every inside triangle it asks before the outside one, so
+     *  - on a sampled envelope, each triangle's first sample -- the one is_outside starts from --
+     *    is checked before any full query;
+     *  - on an exact one, the triangles are asked in decreasing distance of their centroid from
+     *    the input (one nearest-facet query each): a triangle far out is the likely one to leave.
+     * Only the order of pure queries changes, so the answer, and with it the operation, does not.
+     * Reorders `queries`.
+     */
+    static bool any_outside(std::vector<TriangleQuery>& queries);
+
     double nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const;
     double nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const;
 
@@ -325,6 +355,9 @@ private:
     bool m_exact_built = false;
 
     int m_max_threads = 1; ///< see set_max_threads()
+    /// Whether, on a sampled envelope, the first sample is_outside(tri) checks is outside (and so
+    /// is the triangle). False on an exact envelope.
+    bool first_sample_outside(const std::array<Eigen::Vector3d, 3>& tri) const;
     /// The sampled triangle query's loop over @p ps, split among idle workers.
     bool samples_outside_parallel(const std::vector<Eigen::Vector3d>& ps) const;
 };

@@ -178,6 +178,9 @@ nlohmann::json junction_protection_report(const PrismaticMeshInput& input)
         return ids;
     };
     const auto& state = *input.junction_protection;
+    bool positions_fixed = true;
+    for (const auto& [v, position] : state.offset_positions)
+        positions_fixed &= input.vertices.row(v).transpose() == position;
     return {
         {"rod_shell_source_vids", source_ids(state.rod_shell_vertices)},
         {"rod_end_source_vids", source_ids(state.rod_end_vertices)},
@@ -191,7 +194,7 @@ nlohmann::json junction_protection_report(const PrismaticMeshInput& input)
         {"protected_center_source_vids", source_ids(state.centers)},
         {"no_collapse_offset_source_vids", source_ids(state.offset_vertices)},
         {"protected_one_ring_cells", state.original_band_cells.size()},
-        {"offset_positions_fixed", true},
+        {"offset_positions_fixed", positions_fixed},
         {"collapse_connectivity_verified", state.collapse_connectivity_verified}};
 }
 

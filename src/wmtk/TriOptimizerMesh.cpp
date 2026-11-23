@@ -6,6 +6,7 @@
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/history/History.hpp>
 #include <wmtk/history/TrackedRecorder.hpp>
+#include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -23,8 +24,10 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include <limits>
 #include <queue>
 #include <tuple>
+#include <utility>
 
 namespace wmtk {
 
@@ -57,6 +60,8 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
     logger().info("max energy {:.6} | stop {:.6}", pre_max_metric, optimization_stop_metric());
     int refine_cooldown = m_params.stuck_refine_cooldown;
 
+    // The first check of the sizing mesh's stop rule never stops on its progress test.
+    m_prev_long_edge_fraction = std::numeric_limits<double>::infinity();
     for (int it = 0; it < max_its; ++it) {
         m_iterations_used = it + 1;
         logger().info("\n========it {}========", it);
@@ -95,11 +100,14 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
         }
 
         if (max_metric < optimization_stop_metric()) {
-            if (cnt_round == cnt_verts) break;
-            logger().info(
-                "energy target reached, but {} of {} vertices are still un-rounded; continuing",
-                cnt_verts - cnt_round,
-                cnt_verts);
+            if (cnt_round < cnt_verts) {
+                logger().info(
+                    "energy target reached, but {} of {} vertices are still un-rounded; continuing",
+                    cnt_verts - cnt_round,
+                    cnt_verts);
+            } else if (sizing_mesh_allows_stop()) {
+                break;
+            }
         }
 
         consolidate_mesh();
@@ -171,6 +179,7 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
 
     sanity_checks();
     update_attributes();
+    apply_sizing_mesh(false);
     size_t retry_count = 0;
     for (int i = 0; i < ops.size(); ++i) {
         if (retry_count > 0) {
@@ -224,6 +233,7 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
             logger().info("{} max energy = {:.6} avg = {:.6}", names[i], max_metric, avg_metric);
             sanity_checks();
             update_attributes();
+            apply_sizing_mesh(false);
         }
 
         // A pass that ran out of preallocated slots abandoned operations for want of storage.
@@ -296,39 +306,22 @@ size_t TriOptimizerMesh::swap_all_edges()
     logger().info("edge swap prepare time: {:.4}s", timer.getElapsedTimeInSec());
 
     size_t total_success = 0;
+    // As 3D's (TetOptimizerMesh::swap_all_edges_32()): every edge is tried, longest first, and
+    // the acceptance rule alone decides (swap_edge_after(): swap_quality_allowed(), strictly
+    // lower). Until 2026-11-12 the pass ordered the edges by their flip's gain in max AMIPS and
+    // dropped any flip whose gain was not above 1e-5, a threshold with no recorded reason (it came
+    // with the 2D image simulation, 2026-02). The gain order also kept a flip that a derived
+    // class's own rule accepts but max AMIPS does not (topological_offset's energy) from ever
+    // reaching that rule.
     run_pass(*this, PassLock::EdgeRing, "", [&](auto& executor, auto& mesh) {
         executor.renew_neighbor_tuples = renew_swap_neighbors;
         executor.priority = [](const TriOptimizerMesh& m, std::string, const Tuple& e) {
-            return m.swap_weight(e);
-        };
-        executor.should_renew = [](auto val) { return val > 0; };
-        executor.is_weight_up_to_date = [](const TriOptimizerMesh& m, auto& ele) {
-            auto& [val, _, e] = ele;
-            const double w = m.swap_weight(e);
-            return (w > 1e-5) && ((w - val) * (w - val) < 1e-8);
+            return m.get_length2(e);
         };
         total_success = run_localized_to_convergence(mesh, executor, std::move(collect_all_ops));
     });
 
     return total_success;
-}
-
-double TriOptimizerMesh::swap_weight(const Tuple& t) const
-{
-    const SmartTuple tt(*this, t);
-    const auto t_opp = tt.switch_face();
-    if (!t_opp || is_edge_on_surface(t)) {
-        return std::numeric_limits<double>::lowest();
-    }
-
-    const size_t v0 = tt.vid();
-    const size_t v1 = tt.switch_vertex().vid();
-    const size_t v2 = tt.switch_edge().switch_vertex().vid();
-    const size_t v3 = t_opp.value().switch_edge().switch_vertex().vid();
-
-    const double q_before = std::max(get_quality({{v0, v1, v2}}), get_quality({{v0, v3, v1}}));
-    const double q_after = std::max(get_quality({{v0, v3, v2}}), get_quality({{v2, v3, v1}}));
-    return q_before - q_after;
 }
 
 bool TriOptimizerMesh::swap_edge_before(const Tuple& t)
@@ -816,7 +809,7 @@ void TriOptimizerMesh::set_input_curve_points(const MatrixXd& V, const MatrixXi&
     m_input_curve_points = std::move(points);
 }
 
-void TriOptimizerMesh::set_reference_points(const MatrixXd& P, const std::vector<InputSet>& labels)
+void TriOptimizerMesh::set_reference_points(const MatrixXd& P, const std::vector<LabelIds>& labels)
 {
     assert(labels.size() == size_t(P.rows()));
     ReferencePoints ref;
@@ -926,8 +919,8 @@ size_t TriOptimizerMesh::anchor_feature_points(
         const Vector2d* centre = nullptr;
         double best = feature_radius * feature_radius;
         for (size_t q = 0; q < m_reference_points->V.size(); ++q) {
-            if (label < 0 || label >= SurfaceTagAttributes::max_inputs ||
-                ((m_reference_points->labels[q] >> label) & 1) == 0) {
+            if (label < 0 || label > 0xFFFF ||
+                !m_reference_points->labels[q].contains(LabelId(label))) {
                 continue;
             }
             const double sq = (p - m_reference_points->V[q]).squaredNorm();
@@ -986,7 +979,7 @@ size_t TriOptimizerMesh::anchor_feature_points(
 
 void TriOptimizerMesh::label_feature_points(const std::vector<size_t>& input_point_vids)
 {
-    m_feature_point_inputs.assign(m_feature_points.size(), 0);
+    m_feature_point_inputs.assign(m_feature_points.size(), LabelIds{});
     if (m_input_point_labels.empty()) return;
     if (m_input_point_labels.size() != input_point_vids.size()) {
         log_and_throw_error(
@@ -996,9 +989,9 @@ void TriOptimizerMesh::label_feature_points(const std::vector<size_t>& input_poi
     }
     for (size_t k = 0; k < input_point_vids.size(); ++k) {
         const int label = m_input_point_labels[k];
-        if (label < 0 || label >= SurfaceTagAttributes::max_inputs) continue;
+        if (label < 0 || label > 0xFFFF) continue;
         const size_t f = m_feature_point_attribute[input_point_vids[k]].m_feature_point_id;
-        if (f < m_feature_point_inputs.size()) m_feature_point_inputs[f] |= InputSet(1) << label;
+        if (f < m_feature_point_inputs.size()) m_feature_point_inputs[f].insert(LabelId(label));
     }
 }
 
@@ -1098,23 +1091,23 @@ std::shared_ptr<Envelope> TriOptimizerMesh::smoothing_energy_envelope(const size
     if (m_input_envelopes.empty()) return m_envelope;
     // A vertex flagged on the surface with no tracked segment left (a stale flag) has no
     // inputs, and keeps the union's pull.
-    InputSet set = 0;
+    LabelIds set;
     const auto& EA = std::as_const(m_edge_attribute);
     // Named, not iterated as a temporary: edges() returns a reference into the collection, which
     // a range-for over get_surface_edges_for_vertex(vid).edges() destroys before the first
     // iteration (a segfault on Linux CI, GCC 13; macOS, Apple Clang, happened to survive it).
     const simplex::SimplexCollection surf = get_surface_edges_for_vertex(vid);
     for (const simplex::Edge& e : surf.edges()) {
-        set |= EA[std::get<1>(tuple_from_edge(e.vertices()))].input_set();
+        set.merge(EA[std::get<1>(tuple_from_edge(e.vertices()))].labels());
     }
-    if (set == 0) return m_envelope;
+    if (set.none()) return m_envelope;
     return m_input_envelopes.pull(set, m_vertex_attribute[vid].m_posf);
 }
 
 void TriOptimizerMesh::init_input_envelopes(
     const std::vector<Vector2d>& V,
     const std::vector<Vector2i>& E,
-    const std::vector<InputSet>& E_sets,
+    const std::vector<LabelIds>& E_sets,
     const double eps,
     const bool exact)
 {
@@ -1124,46 +1117,46 @@ void TriOptimizerMesh::init_input_envelopes(
     }
     // Each input from one source: its rows of (V, E) when E_sets says which and it has any,
     // else the tracked segments carrying it.
-    InputSet from_rows = 0;
+    LabelIds from_rows;
     if (E_sets.size() == E.size()) {
-        for (const InputSet s : E_sets) from_rows |= s;
+        for (const LabelIds& s : E_sets) from_rows.merge(s);
     }
     // The tracked segments carrying an input no row carries. Visited in place, each edge once
     // at its own slot, as init does, rather than through a list of every edge.
     std::vector<Vector2i> E_mesh;
-    std::vector<InputSet> E_mesh_sets;
+    std::vector<LabelIds> E_mesh_sets;
     for (size_t fid = 0; fid < tri_capacity(); ++fid) {
         if (!tuple_from_tri(fid).is_valid(*this)) continue;
         for (size_t j = 0; j < 3; ++j) {
             const Tuple e = tuple_from_edge(fid, j);
             if (e.eid(*this) != 3 * fid + j) continue;
             const EdgeAttributes& attr = m_edge_attribute[3 * fid + j];
-            const InputSet set = attr.input_set() & ~from_rows;
-            if (!attr.m_is_surface_fs || set == 0) continue;
+            LabelIds set = attr.labels();
+            set.erase_if([&](const LabelId l) { return from_rows.contains(l); });
+            if (!attr.m_is_surface_fs || set.none()) continue;
             const auto vids = get_edge_vids(e);
             E_mesh.emplace_back(int(vids[0]), int(vids[1]));
             E_mesh_sets.push_back(set);
         }
     }
-    InputSet from_mesh = 0;
-    for (const InputSet s : E_mesh_sets) from_mesh |= s;
+    LabelIds from_mesh;
+    for (const LabelIds& s : E_mesh_sets) from_mesh.merge(s);
     size_t n = 0;
-    for (size_t b = 0; b < size_t(SurfaceTagAttributes::max_inputs); ++b) {
-        if ((from_rows | from_mesh) & (InputSet(1) << b)) n = b + 1;
-    }
+    if (!from_rows.none()) n = std::max(n, size_t(*(from_rows.end() - 1)) + 1);
+    if (!from_mesh.none()) n = std::max(n, size_t(*(from_mesh.end() - 1)) + 1);
 
     // One input's segments over its own vertices only: an envelope keeps a copy of the
     // vertices it is given.
-    const auto build = [&](const InputSet bit,
+    const auto build = [&](const LabelId bit,
                            const std::vector<Vector2i>& edges,
-                           const std::vector<InputSet>& sets,
+                           const std::vector<LabelIds>& sets,
                            const auto& position,
                            const size_t n_vertices) {
         std::vector<int> local(n_vertices, -1);
         std::vector<Vector2d> V_b;
         std::vector<Vector2i> E_b;
         for (size_t i = 0; i < edges.size(); ++i) {
-            if (!(sets[i] & bit)) continue;
+            if (!sets[i].contains(bit)) continue;
             Vector2i e;
             for (int j = 0; j < 2; ++j) {
                 int& l = local[edges[i][j]];
@@ -1181,11 +1174,11 @@ void TriOptimizerMesh::init_input_envelopes(
     };
     std::vector<std::shared_ptr<Envelope>> members;
     for (size_t b = 0; b < n; ++b) {
-        const InputSet bit = InputSet(1) << b;
-        if (from_rows & bit) {
+        const LabelId bit = LabelId(b);
+        if (from_rows.contains(bit)) {
             members.push_back(
                 build(bit, E, E_sets, [&](int v) -> const Vector2d& { return V[v]; }, V.size()));
-        } else if (from_mesh & bit) {
+        } else if (from_mesh.contains(bit)) {
             members.push_back(build(
                 bit,
                 E_mesh,
@@ -1230,20 +1223,19 @@ std::string TriOptimizerMesh::label_name(const size_t bit) const
 }
 
 void TriOptimizerMesh::require_reference_edge_labels(
-    const std::vector<InputSet>& reference_labels) const
+    const std::vector<LabelIds>& reference_labels) const
 {
-    InputSet held = 0, given = 0;
+    LabelIds held, given;
     for (const Tuple& e : get_edges()) {
         const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
-        if (attr.m_is_surface_fs) held |= attr.input_set();
+        if (attr.m_is_surface_fs) held.merge(attr.labels());
     }
-    for (const InputSet s : reference_labels) given |= s;
-    const InputSet missing = held & ~given;
-    if (missing == 0) return;
+    for (const LabelIds& s : reference_labels) given.merge(s);
+    LabelIds missing = held;
+    missing.erase_if([&](const LabelId l) { return given.contains(l); });
+    if (missing.none()) return;
     std::string names;
-    for (size_t b = 0; b < size_t(SurfaceTagAttributes::max_inputs); ++b) {
-        if ((missing >> b) & 1) names += (names.empty() ? "" : ", ") + label_name(b);
-    }
+    for (const LabelId b : missing) names += (names.empty() ? "" : ", ") + label_name(b);
     log_and_throw_error(
         "envelope: no segment of it is labelled {}, which this mesh's edges carry; an envelope "
         "must carry every label of the mesh it comes with",
@@ -1254,8 +1246,7 @@ void TriOptimizerMesh::check_reference_containment() const
 {
     // Per label bit, the held edges outside its envelope; an edge outside any of its labels' is
     // one edge outside. Each member asked on its own: inside their intersection is inside each.
-    constexpr size_t max_bits = size_t(SurfaceTagAttributes::max_inputs);
-    std::vector<size_t> outside(max_bits, 0);
+    std::vector<size_t> outside; // per label id, grown to the highest counted
     size_t n = 0;
     for (const Tuple& e : get_edges()) {
         const EdgeAttributes& attr = m_edge_attribute[e.eid(*this)];
@@ -1264,12 +1255,12 @@ void TriOptimizerMesh::check_reference_containment() const
         const std::array<Vector2d, 2> segment = {
             {m_vertex_attribute[vids[0]].m_posf, m_vertex_attribute[vids[1]].m_posf}};
         bool out = false;
-        for (size_t b = 0; b < max_bits; ++b) {
-            if (((attr.input_set() >> b) & 1) == 0) continue;
+        for (const LabelId b : attr.labels()) {
             const Envelope* env = m_input_envelopes.empty()      ? m_envelope.get()
                                   : b < m_input_envelopes.size() ? m_input_envelopes.member(b).get()
                                                                  : nullptr;
             if (env && !env->is_outside(segment)) continue;
+            if (outside.size() <= b) outside.resize(size_t(b) + 1, 0);
             ++outside[b];
             out = true;
         }
@@ -1283,7 +1274,7 @@ void TriOptimizerMesh::check_reference_containment() const
         return;
     }
     std::string counts;
-    for (size_t b = 0; b < max_bits; ++b) {
+    for (size_t b = 0; b < outside.size(); ++b) {
         if (outside[b] == 0) continue;
         counts += fmt::format("{}{} ({})", counts.empty() ? "" : ", ", label_name(b), outside[b]);
     }
@@ -1296,5 +1287,89 @@ void TriOptimizerMesh::check_reference_containment() const
         counts);
 }
 
+
+double TriOptimizerMesh::long_edge_fraction() const
+{
+    const auto& VA = m_vertex_attribute;
+    size_t total = 0, long_edges = 0;
+    for (const Tuple& e : get_edges()) {
+        const size_t v1 = e.vid(*this), v2 = e.switch_vertex(*this).vid(*this);
+        const double s = 0.5 * (VA[v1].m_sizing_scalar + VA[v2].m_sizing_scalar);
+        ++total;
+        if ((VA[v1].m_posf - VA[v2].m_posf).squaredNorm() > m_params.splitting_l2 * s * s) {
+            ++long_edges;
+        }
+    }
+    return total > 0 ? double(long_edges) / total : 0;
+}
+
+bool TriOptimizerMesh::sizing_mesh_allows_stop()
+{
+    if (!m_sizing_mesh) return true;
+    const double fraction = long_edge_fraction();
+    const double prev = std::exchange(m_prev_long_edge_fraction, fraction);
+    if (fraction <= m_params.sizing_mesh_long_edge_tolerance || fraction > 0.9 * prev) {
+        return true;
+    }
+    logger().info(
+        "energy target reached, but {:.1f}% of the edges are longer than 4/3 of their target "
+        "(sizing mesh); continuing",
+        100 * fraction);
+    return false;
+}
+
+void TriOptimizerMesh::set_sizing_mesh(std::shared_ptr<const SizingMesh> sizing)
+{
+    m_sizing_mesh = std::move(sizing);
+    apply_sizing_mesh(true);
+}
+
+void TriOptimizerMesh::apply_sizing_mesh(bool overwrite)
+{
+    if (!m_sizing_mesh) return;
+    const auto apply = [&](size_t v) {
+        if (!tuple_from_vertex(v).is_valid(*this)) return;
+        auto& va = m_vertex_attribute[v];
+        const double length = (*m_sizing_mesh)(va.m_posf);
+        if (!(length > 0)) return; // not covered: the global length
+        const double s = length / m_params.l;
+        va.m_sizing_scalar = overwrite ? s : std::min(va.m_sizing_scalar, s);
+    };
+    if (NUM_THREADS == 0) {
+        for (size_t v = 0; v < vert_capacity(); ++v) apply(v);
+    } else {
+        threading::parallel_for(
+            threading::range(0, vert_capacity()),
+            [&](const threading::range& r) {
+                for (size_t v = r.begin(); v < r.end(); ++v) apply(v);
+            },
+            NUM_THREADS);
+    }
+}
+
+double TriOptimizerMesh::coarsen_target_length(size_t v) const
+{
+    const double t = sizing_mesh_length(m_vertex_attribute[v].m_posf);
+    return t > 0 ? t : m_params.l;
+}
+
+bool TriOptimizerMesh::collapse_leaves_long_edge(size_t v1_id, size_t v2_id) const
+{
+    const auto& VA = m_vertex_attribute;
+    // The target length at a vertex: in the coarsening pass the one asked for, elsewhere the
+    // sizing the split pass works to.
+    const auto target = [&](size_t v) {
+        return m_coarsen_mode ? coarsen_target_length(v) : m_params.l * VA[v].m_sizing_scalar;
+    };
+    // v1 goes; v2 stays where it is, with the smaller sizing of the two (collapse_edge_after).
+    const double t2 = m_coarsen_mode ? target(v2_id) : std::min(target(v1_id), target(v2_id));
+    const Vector2d& p2 = VA[v2_id].m_posf;
+    for (const size_t u : get_one_ring_vids_for_vertex_duplicate(v1_id)) {
+        if (u == v1_id || u == v2_id) continue;
+        const double t = 4. / 3. * 0.5 * (t2 + target(u));
+        if ((VA[u].m_posf - p2).squaredNorm() > t * t) return true;
+    }
+    return false;
+}
 
 } // namespace wmtk

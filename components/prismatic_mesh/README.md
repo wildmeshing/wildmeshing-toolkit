@@ -1,5 +1,111 @@
 # Prismatic mesh input
 
+## Region quality improvement after hybrid construction
+
+Enable the mixed-cell remeshing pipeline with `quality_improvement: true`:
+
+```json
+{
+  "application": "prismatic_mesh",
+  "input": "construction.msh",
+  "output": "improved.vtu",
+  "iterations": 5,
+  "prism_dominant": true,
+  "keep_background_mesh": true,
+  "export_input_and_shell": true,
+  "quality_improvement": true,
+  "quality_improvement_options": {
+    "cycles": 4,
+    "time_limit": 900,
+    "initial_sizing_factor": 0.25,
+    "quality_target": 20,
+    "smoothing_target": 18,
+    "mixed_smoothing_sweeps": 120,
+    "thickness_weight": 10
+  }
+}
+```
+
+The option defaults to **false**. Enable it for region remeshing and native
+AMIPS-plus-thickness smoothing after the hybrid build. When enabled, its mixed
+smoothing replaces the separate Jacobian/background quality stages and transition
+and thickness smoothing. Disabling it does not select another quality pipeline.
+The original collapse/target construction iterations and hybrid build still run.
+Rod mode is rejected because these operations do not maintain rod material frames.
+A finite positive nominal thickness is required.
+
+To run only the new native AMIPS/thickness smoothing, keep
+`quality_improvement: true` and set
+`quality_improvement_options.topology_enabled: false`. This skips post-build
+split/collapse/swap stages. The removed 20 + 20 relocation workflow and its
+configuration keys have been removed; delete them from older JSON files.
+This pipeline uses strict positivity of actual cells; nonzero `min_tet_volume`
+or `relative_tet_volume_floor` settings are rejected rather than silently ignored.
+
+Each outer cycle performs mixed gradient smoothing, compatible prism-column
+collapses/conforming splits/cap swaps, bulk tetrahedral split/collapse/swap/smoothing,
+and another mixed smoothing stage. All actual tetrahedra, including input-volume
+and background tets, enter the bulk optimizer. Its material and native interfaces
+are fixed during this stage; shared vertices can move in the mixed smoothing stages.
+Input faces between two shell tets are released. Other input patches preserve their
+planes and coverage; coplanar patch interiors can be retriangulated while geometric
+feature intersections constrain vertex motion. This exact patch policy can be
+more restrictive than an approximation envelope.
+
+The initial target edge length is `max(thickness, 0.25 * mean_offset_edge_length)`;
+the mean counts unique edges of the construction's tagged offset triangles.
+Before subsequent cycles, vertices of mixed cells above the quality target and
+their one-ring neighbors have their sizing halved, with a nominal-thickness floor
+and graded propagation to nearby vertices and paired columns.
+
+Mixed smoothing minimizes squared excess native AMIPS above `smoothing_target`,
+with a small log-AMIPS regularizer, plus `thickness_weight` times squared relative
+reference-height error. Analytic gradients, projected input freedom and halving
+Armijo line searches require lower local combined energy and positive cells;
+individual cell qualities may worsen. Projection uses a slab whose relative width
+is `max(0.25, current_error)`. The height direction is the original optimal normal,
+or the initial column direction if unavailable. It is not nearest-surface distance
+or every incident input face's normal thickness, and there is no spatial thickness
+regularizer. Activation and stopping use AMIPS, so good-quality but noisy regions
+need not move. Topology operations have their own validity/acceptance rules and
+can temporarily increase the mixed energy.
+
+Every completed stage checks positive actual cells, oriented conforming faces,
+region connectivity/adjacency and shell-background interface Euler signatures,
+input patch geometry, exterior preservation, and domain volume. Failed stages
+roll back. A non-box exterior keeps its exact initial triangulation and fixed
+vertices; this also fixes an exposed offset boundary if background was removed.
+The time limit is soft and checked between operations. Output selects the valid
+stage with the lowest global maximum AMIPS, not necessarily the last stage or the
+lowest thickness energy. Finite budgets do not guarantee AMIPS below the target,
+sizing convergence, or a global nonadjacent-cell intersection certificate.
+
+`quality_improvement.hpp` exposes `QualityImprovementOptions`,
+`improve_prismatic_mesh_quality`, and `write_improved_prismatic_mesh`. The returned
+`ImprovedHybridMesh` owns its new coordinates, native cells, material regions,
+source vertex IDs, geometric/discrete references, and quality report. The original
+`PrismaticMeshInput` and `PrismDominantMesh` remain construction/reference data.
+Remeshing changes cell ownership, so improved output omits construction-only
+`source_tet_ids` and `tet_decomposition` rather than reporting stale references.
+New vertices receive unique source IDs above the original range; existing IDs
+are retained. Geometric references without a discrete input vertex export
+`corr_input_vid = -1` and retain their `reference_base` field.
+
+VTU, MSH, filtered input-and-shell exports, and the in-memory component route all
+use the same final mesh. They include `AMIPS_native`, `cell_type` (10/13/14),
+`region` (1 input, 2 shell, 3 background), `tag_0`, `offset_tag`,
+`full_mesh_cell_id`, `vid`, `corr_input_vid`, `original_vertex_row`,
+`reference_base`, `reference_normal`, `target_normal_thickness`,
+`target_edge_length`, `projected_height`, and `reference_height_error_ratio`.
+`thickness_constrained` is 1 where the height constraint applies and 0 elsewhere;
+unconstrained points use zero target height, projection and error rather than NaN
+tokens, so the ASCII MSH reader can load the same fields reliably.
+Raw AMIPS has ideal value 3; prisms and pyramids use order-4 native integration,
+not a maximum over tetrahedral decompositions. Reports are stored under
+`quality_improvement` in `<output_stem>_hybrid.json` or the memory result's
+`hybrid` report. The original reference-mesh offset-face companion is not exported
+for this new row space.
+
 ## Rod rings in mixed volume/shell/rod meshes
 
 `rod_mode` uses original vertex correspondence to construct rods. The same
@@ -327,10 +433,13 @@ vertex belonging to those original cells; unlock and rod preprocessing cannot sp
 collapse a cell containing a protected center. A check after shared optimization verifies
 that every original protected tet's connectivity survives. This is a no-collapse rule,
 not a blanket freeze of all nonmanifold vertices or of all vertices with the same parent.
-The protected offset vertices retain their distinct original positions instead of following
-a shared component target that assumes they can collapse. Target smoothing and optional
-Jacobian smoothing skip these vertices; ordinary vertices continue to optimize. Existing
-rod-attachment/joint constraints still apply separately.
+During collapse and target smoothing, protected offset vertices retain their distinct original
+positions instead of following a shared component target that assumes they can collapse.
+Target smoothing and optional Jacobian smoothing skip these vertices; ordinary vertices
+continue to optimize. After hybrid reconstruction, the residual-edge AMIPS and surface
+AMIPS/thickness passes may relocate no-collapse junction offsets without changing connectivity
+or removing vertices. Their incident-cell validity and energy checks still apply. Existing
+rod-attachment/joint and fixed-background position constraints apply separately.
 The hybrid report's `junction_protection` records the two kinds of centers, original
 protected-cell count, no-collapse offset vertices and connectivity verification result.
 Output fields `connection_kind` (1 protected rod attachment/joint, 2 off-boundary shell-curve end, 3 both),
@@ -425,8 +534,9 @@ or reference geometry, not during this fixed-target optimization.
 
 `optimize_prismatic_mesh` runs `iterations` rounds (default 5), each in the order
 **collapse → unlock → smoothing**. Set
-`iterations` to 0 to export the input volume, initial band and target fields without
-moving/collapsing them.
+`iterations` to 0 to compute targets without the original collapse/smoothing stage.
+For a hybrid export without region quality improvement, set
+`quality_improvement` to `false`.
 For a positive iteration count, a final exhaustive collapse pass runs after the
 last smoothing sweep. This consumes edges that became admissible at the final
 positions before hybrid marking; otherwise they would seed unnecessary

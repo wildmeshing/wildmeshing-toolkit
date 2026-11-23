@@ -43,87 +43,123 @@ struct ReleaseIfLarge
 };
 } // namespace
 
-// From TetWild
+// Samples a triangle so that every point of it is within sampling_dist / sqrt(3) of a sample --
+// the covering radius the sampled envelope's shrunk radius (eps2) is built on.
+//
+// The samples are an equilateral lattice of spacing sampling_dist in the triangle's plane, laid
+// along its longest edge, projected onto the triangle. The lattice's covering radius is
+// r = sampling_dist / sqrt(3): every point p of the triangle T has a lattice point q with
+// |p - q| <= r, and q is within r of T, so it is among the points kept (those within r of T).
+// Projecting q onto T, a convex set, moves it no farther from p, which T's projection leaves in
+// place: |proj(q) - p| <= |q - p| <= r. A triangle already covered by its vertices within r is
+// just them.
+//
+// The count is about T's area over the lattice's cell area plus a band along its perimeter, so a
+// sliver takes a number of samples linear in its length, as TetWild's lattice sampler did. That
+// sampler did not have the covering radius the shrink assumed: it left gaps of up to 0.92
+// sampling_dist (in thin triangles, where it returned before sampling the short edges) and 0.71
+// sampling_dist elsewhere, so a triangle passing every sample could reach about 1.34 eps from the
+// input. A barycentric grid (the triangle scaled by 1/n) has the radius too, but takes a number
+// of samples quadratic in the longest edge, however thin the triangle.
+//
+// The three vertices come first, exactly; then the lattice row by row, every other row reversed,
+// so consecutive samples are neighbours (is_outside's BVH walk is hinted by the previous one) and
+// the middle one, where is_outside and first_sample_outside start, lies in a middle row.
 void sampleTriangle(
     const std::array<Vector3d, 3>& vs,
     std::vector<Vector3d>& ps,
     const double sampling_dist)
 {
-    double sqrt3_2 = std::sqrt(3) / 2;
+    if (!(sampling_dist > 0)) {
+        log_and_throw_error(
+            "sampleTriangle: sampling_dist must be positive, got {}",
+            sampling_dist);
+    }
+    for (int i = 0; i < 3; i++) ps.push_back(vs[i]);
 
-    std::array<double, 3> ls;
+    // The triangle in its plane: A = (0, 0), B = (L, 0), C = (cx, h), AB its longest edge, so C's
+    // foot lies on it (0 <= cx <= L) and the angles at A and B are not obtuse.
+    int k = 0;
+    double longest = -1;
     for (int i = 0; i < 3; i++) {
-        ls[i] = (vs[i] - vs[(i + 1) % 3]).squaredNorm();
-    }
-    auto min_max = std::minmax_element(ls.begin(), ls.end());
-    int min_i = min_max.first - ls.begin();
-    int max_i = min_max.second - ls.begin();
-    double N = sqrt(ls[max_i]) / sampling_dist;
-    if (N <= 1) {
-        for (int i = 0; i < 3; i++) ps.push_back(vs[i]);
-        return;
-    }
-    if (N == int(N)) N -= 1;
-
-    Vector3d v0 = vs[max_i];
-    Vector3d v1 = vs[(max_i + 1) % 3];
-    Vector3d v2 = vs[(max_i + 2) % 3];
-
-    Vector3d n_v0v1 = (v1 - v0).normalized();
-    for (int n = 0; n <= N; n++) {
-        ps.push_back(v0 + n_v0v1 * sampling_dist * n);
-    }
-    ps.push_back(v1);
-
-    double h = (((v2 - v0).dot(v1 - v0) * (v1 - v0) / ls[max_i] + v0) - v2).norm();
-    int M = h / (sqrt3_2 * sampling_dist);
-    if (M < 1) {
-        ps.push_back(v2);
-        return;
-    }
-
-    Vector3d n_v0v2 = (v2 - v0).normalized();
-    Vector3d n_v1v2 = (v2 - v1).normalized();
-    auto sin_v0 = (((v2 - v0).cross(v1 - v0))).norm() / ((v0 - v2).norm() * (v0 - v1).norm());
-    auto tan_v0 = (((v2 - v0).cross(v1 - v0))).norm() / ((v2 - v0).dot(v1 - v0));
-    auto tan_v1 = (((v2 - v1).cross(v0 - v1))).norm() / ((v2 - v1).dot(v0 - v1));
-    auto sin_v1 = (((v2 - v1).cross(v0 - v1))).norm() / ((v1 - v2).norm() * (v0 - v1).norm());
-
-    for (int m = 1; m <= M; m++) {
-        int n = sqrt3_2 / tan_v0 * m + 0.5;
-        int n1 = sqrt3_2 / tan_v0 * m;
-        if (m % 2 == 0 && n == n1) {
-            n += 1;
-        }
-        Vector3d v0_m = v0 + m * sqrt3_2 * sampling_dist / sin_v0 * n_v0v2;
-        Vector3d v1_m = v1 + m * sqrt3_2 * sampling_dist / sin_v1 * n_v1v2;
-        if ((v0_m - v1_m).norm() <= sampling_dist) break;
-
-        double delta_d = ((n + (m % 2) / 2.0) - m * sqrt3_2 / tan_v0) * sampling_dist;
-        Vector3d v = v0_m + delta_d * n_v0v1;
-        int N1 = (v - v1_m).norm() / sampling_dist;
-        for (int i = 0; i <= N1; i++) {
-            ps.push_back(v + i * n_v0v1 * sampling_dist);
+        const double l = (vs[(i + 1) % 3] - vs[i]).squaredNorm();
+        if (l > longest) {
+            longest = l;
+            k = i;
         }
     }
-    ps.push_back(v2);
+    const Vector3d& A = vs[k];
+    const Vector3d& B = vs[(k + 1) % 3];
+    const Vector3d& C = vs[(k + 2) % 3];
+    const double L = std::sqrt(longest);
+    if (!(L > 0)) return; // a point (or NaN coordinates): its vertices
+    const Vector3d ex = (B - A) / L;
+    const double cx = std::clamp((C - A).dot(ex), 0.0, L);
+    const Vector3d wy = (C - A) - (C - A).dot(ex) * ex;
+    const double h = wy.norm();
+    const Vector3d ey = h > 0 ? Vector3d(wy / h) : Vector3d::Zero();
 
-    // sample edges
-    N = sqrt(ls[(max_i + 1) % 3]) / sampling_dist;
-    if (N > 1) {
-        if (N == int(N)) N -= 1;
-        Vector3d n_v1v2 = (v2 - v1).normalized();
-        for (int n = 1; n <= N; n++) {
-            ps.push_back(v1 + n_v1v2 * sampling_dist * n);
-        }
-    }
+    // The covering radius by the vertices: the circumradius if the angle at C is acute (its
+    // centre (L/2, yc) is then inside), else at most L/2 (the farthest points lie on AB).
+    const double r = sampling_dist / std::sqrt(3.0);
+    const double acute = cx * (cx - L) + h * h; // > 0 iff (A - C).(B - C) > 0
+    const double cover = acute > 0 ? std::hypot(L / 2, acute / (2 * h)) : L / 2;
+    if (cover * (1 + 1e-12) <= r) return;
 
-    N = sqrt(ls[(max_i + 2) % 3]) / sampling_dist;
-    if (N > 1) {
-        if (N == int(N)) N -= 1;
-        Vector3d n_v2v0 = (v0 - v2).normalized();
-        for (int n = 1; n <= N; n++) {
-            ps.push_back(v2 + n_v2v0 * sampling_dist * n);
+    // The lattice, a hair finer than sampling_dist to absorb the rounding of the projection and
+    // of the mapping back. Row j at y = j dy holds x = (j odd ? a/2 : 0) + i a.
+    const double a = sampling_dist * (1 - 1e-9);
+    const double dy = a * std::sqrt(3.0) / 2;
+    const double rr = r * r;
+    const int j0 = int(std::floor(-r / dy));
+    const int j1 = int(std::ceil((h + r) / dy));
+
+    // The point of T nearest to (x, y), on the segment from (px, py) to (qx, qy).
+    const auto nearest_on = [](double x, double y, double px, double py, double qx, double qy) {
+        const double ux = qx - px, uy = qy - py;
+        const double uu = ux * ux + uy * uy;
+        const double t = uu > 0 ? std::clamp(((x - px) * ux + (y - py) * uy) / uu, 0.0, 1.0) : 0;
+        return std::array<double, 2>{{px + t * ux, py + t * uy}};
+    };
+
+    for (int j = j0; j <= j1; ++j) {
+        const double y = j * dy;
+        // Where T's points within r of this row can be: its rows from y - r up, whose x-range
+        // only shrinks with height (cx in [0, L]).
+        const double y0 = std::clamp(y - r, 0.0, h);
+        const double lo = (h > 0 ? cx * y0 / h : 0) - r;
+        const double hi = (h > 0 ? L - (L - cx) * y0 / h : L) + r;
+        const double offset = (j & 1) ? a / 2 : 0;
+        const int i0 = int(std::ceil((lo - offset) / a));
+        const int i1 = int(std::floor((hi - offset) / a));
+        const bool reversed = ((j - j0) & 1) != 0;
+        for (int ii = i0; ii <= i1; ++ii) {
+            const int i = reversed ? i0 + i1 - ii : ii;
+            const double x = offset + i * a;
+            // Inside T (counterclockwise A, B, C when h > 0), or its nearest point on an edge.
+            double px = x, py = y;
+            const bool inside = h > 0 && y >= 0 && // left of A -> B,
+                                (cx - L) * y - h * (x - L) >= 0 && // of B -> C
+                                h * (x - cx) - cx * (y - h) >= 0; // and of C -> A
+            if (!inside) {
+                std::array<double, 2> best = nearest_on(x, y, 0, 0, L, 0);
+                double bd = (best[0] - x) * (best[0] - x) + (best[1] - y) * (best[1] - y);
+                if (h > 0) {
+                    for (const auto& cand :
+                         {nearest_on(x, y, L, 0, cx, h), nearest_on(x, y, cx, h, 0, 0)}) {
+                        const double d =
+                            (cand[0] - x) * (cand[0] - x) + (cand[1] - y) * (cand[1] - y);
+                        if (d < bd) {
+                            bd = d;
+                            best = cand;
+                        }
+                    }
+                }
+                if (bd > rr) continue; // farther than r from T: no point of T needs it
+                px = best[0];
+                py = best[1];
+            }
+            ps.push_back(A + px * ex + py * ey);
         }
     }
 }
@@ -197,10 +233,10 @@ void Envelope::init(
         m_exact_built = true;
     }
 
-    // sampleTriangle lays samples on a triangular lattice of spacing `sampling_dist`, whose
-    // covering radius is sampling_dist / sqrt(3): every point of the triangle is within that
-    // distance of some sample. So for "every sample is inside" to imply "the whole triangle
-    // is inside the true eps-envelope", the per-sample test has to use the shrunk radius
+    // sampleTriangle places its samples so that every point of the triangle is within
+    // sampling_dist / sqrt(3) of one (their covering radius). So for "every sample is inside" to
+    // imply "the whole triangle is inside the true eps-envelope", the per-sample test has to use
+    // the shrunk radius
     //
     //     real_envelope = _eps - sampling_dist / sqrt(3)
     //
@@ -1170,6 +1206,55 @@ void Envelope::init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const do
             F.rows(),
             F.cols());
     }
+}
+
+bool Envelope::first_sample_outside(const std::array<Eigen::Vector3d, 3>& tri) const
+{
+    if (disabled || use_exact || empty() || !m_bvh) return false;
+    static thread_local std::vector<Vector3d> ps;
+    const ReleaseIfLarge release{ps};
+    ps.clear();
+    sampleTriangle(tri, ps, sampling_dist);
+    if (ps.empty()) return false;
+    // The same first step as is_outside's loop: the middle sample, without a hint.
+    double sq_dist = std::numeric_limits<double>::max();
+    Vector3d nearest;
+    int prev_facet = -1;
+    m_bvh->facet_in_envelope_with_hint(ps[ps.size() / 2], eps2, prev_facet, nearest, sq_dist);
+    return sq_dist > eps2;
+}
+
+bool Envelope::any_outside(std::vector<TriangleQuery>& queries)
+{
+    if (queries.size() > 1) {
+        for (const auto& [env, tri] : queries) {
+            if (env->first_sample_outside(tri)) return true;
+        }
+        // Farthest centroid first, on the exact envelopes; the others keep their place (key 0),
+        // as stable_sort leaves equal keys in order.
+        thread_local std::vector<std::pair<double, size_t>> keys;
+        keys.clear();
+        for (size_t i = 0; i < queries.size(); ++i) {
+            const auto& [env, tri] = queries[i];
+            const bool exact = env->use_exact && !env->disabled && !env->empty() && env->m_bvh &&
+                               env->m_kind == Kind::Triangles3d;
+            keys.emplace_back(
+                exact ? env->squared_distance(Eigen::Vector3d((tri[0] + tri[1] + tri[2]) / 3.0))
+                      : 0.0,
+                i);
+        }
+        std::stable_sort(keys.begin(), keys.end(), [](const auto& a, const auto& b) {
+            return a.first > b.first;
+        });
+        for (const auto& [key, i] : keys) {
+            if (queries[i].first->is_outside(queries[i].second)) return true;
+        }
+        return false;
+    }
+    for (const auto& [env, tri] : queries) {
+        if (env->is_outside(tri)) return true;
+    }
+    return false;
 }
 
 } // namespace wmtk

@@ -22,25 +22,6 @@ using namespace wmtk::components::simwild;
 
 
 namespace wmtk::components::topological_offset {
-namespace {
-/// The operation corridor (offset_envelope) may not be wider than the convergence epsilon.
-/// Same test in both dimensions; see the 2D call site for why. Both are absolute lengths
-/// resolved in init(), so the comparison needs no conversion.
-void check_envelope_leash(const Parameters& params)
-{
-    if (params.offset_envelope > params.front_conv) {
-        log_and_throw_error(
-            "offset_envelope {} ({} x the bbox diagonal) must be <= the convergence epsilon "
-            "front_conv {}: the operation corridor (the leash) cannot be wider than the "
-            "convergence accuracy, or the operations keep denting the front past the resolution "
-            "threshold and the loop chases the damage forever",
-            params.offset_envelope,
-            params.offset_envelope_rel,
-            params.front_conv);
-    }
-}
-
-} // namespace
 
 static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
@@ -156,23 +137,38 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
 
     if (input_data.T_input.cols() == 3) { // input is a 2d tri mesh
+        // The 3D branch below, one dimension down, step for step; where 2D differs the comment
+        // says why.
         logger().info("Input mesh (2D trimesh): {}", input_path);
-        // The 3D energy (TopoOffsetTetMesh::tet_energy()) has no 2D twin yet. The 2D pipeline
-        // below is kept, unrun, until it is brought into lock-step with 3D.
-        log_and_throw_error(
-            "2D input refused: the 2D offset is not up to date and is being brought into "
-            "lock-step with 3D");
-
-        // front_conv is the accuracy -- one bar for placement and resolution alike -- and
-        // offset_envelope_rel is only the leash on the operation passes.
-        // Accuracy finer than the leash is unreachable: operations licensed to dent the front by
-        // more than the threshold mint new refinable edges every turn. Hence a hard requirement.
-        // The leash is a fraction of target_distance and the epsilon is an absolute length, so
-        // the comparison is made in model units.
-        check_envelope_leash(params);
-
-        // initialize mesh
+        // Several entries of offsets and growth_mode run as in 3D, in the mesh's own steps below:
+        // each entry labelled alone (label_input_complex()), its march, field and integral its
+        // own, and the growth stages and attempts in optimize_offset() (linear_growth(),
+        // smart_growth(), which puts the mesh back after a failed attempt as 3D does).
+        // As in 3D: the energy's band term reads the euclidean distance to the input's segments
+        // (ExactBandIntegral2D), and the smooth field has no band term of its own yet.
+        if (params.offset_field != "euclidean") {
+            log_and_throw_error(
+                "offset_field \"{}\" is not available in 2D: the energy's band term reads the "
+                "euclidean distance to the input, and this field has no band term yet",
+                params.offset_field);
+        }
+        // A labelled reference: 3D holds to it (below). The 2D offset's envelopes are per-tag
+        // tubes around the mesh's own tracked edges (build_boundary_envelopes()), with no route
+        // to build them around a reference's segments, and its segments given to
+        // init_from_image() as the envelope would become the curve group, a curve to offset.
+        // Refused until the envelope-passing step of the 2D port, rather than run without it.
+        if (input_data.envelope_reference) {
+            log_and_throw_error(
+                "2D: the envelope given is a labelled reference, which the 2D offset does not hold "
+                "to yet (the envelope-passing step of the 2D lock-step port); give no envelope, or "
+                "one without labels");
+        }
         TopoOffsetTriMesh mesh(params, NUM_THREADS);
+        // Before init_from_image(): the input points' labels, as triwild and simwild set them,
+        // which it makes selectable and which the anchors keep
+        // (TopoOffsetTriMesh::hold_curves_and_points()). As in 3D.
+        mesh.m_point_names = input_data.point_names;
+        mesh.m_input_point_labels = input_data.input_point_labels;
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
@@ -180,7 +176,22 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.V_envelope,
             input_data.F_envelope,
             input_data.tag_names,
-            input_data.envelope_name);
+            input_data.envelope_name,
+            input_data.F_tagged,
+            input_data.F_tags,
+            input_data.face_tag_names,
+            input_data.F_orientation,
+            input_data.input_point_vids,
+            input_data.V_input_r);
+        // 3D refuses a mesh that does not fill its box here (require_box_boundary()), its wall
+        // never tracked (114b283134). The 2D offset still tracks its wall and holds it in the
+        // tube of its region's tag (init_surfaces_and_boundaries()), so every 2D boundary edge is
+        // tracked and the check would refuse every input: it comes with that port.
+
+        // The per-tag containment envelopes must be captured in init_from_image(), while the
+        // region tags are still the input's own: construct_offset() replaces the tags of every face
+        // the band grows through, and a tube built afterwards would pin the junction where a
+        // region meets the offset. See TopoOffsetTriMesh::init_surfaces_and_boundaries().
 
         // label input complex
         for (Parameters::Offset& o : mesh.m_offset_params.offsets)
@@ -188,9 +199,26 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         mesh.m_offset_params.parse_protected_tags(mesh.m_tag_name_to_id);
         mesh.label_input_complex();
 
+        // A correspondence handed on from an earlier offset is carried, as in 3D: its offset
+        // vertices keep their values (vertex i is V_input row i), and the march adds this run's.
+        // Construction only splits, so every vertex keeps its id, and it throws rather than cut a
+        // carried vertex's edge to its input vertex (split_edge_before()).
+        if (params.save_offset_correspondence) {
+            for (size_t v = 0; v < input_data.corr_input_vid.size(); ++v) {
+                if (input_data.corr_input_vid[v] < 0) continue;
+                mesh.m_vertex_extra[v].m_corr_input_vid = input_data.corr_input_vid[v];
+                mesh.m_vertex_extra[v].m_corr_carried = true;
+            }
+        }
+
         // check empty input
         if (mesh.empty_input_complex()) {
             logger().warn("Empty input complex. Output mesh is same as the input.");
+            check_unrounded_output(
+                "topological_offset",
+                mesh.count_unrounded(),
+                component_io.memory(),
+                json_params["throw_on_fail"]);
             topological_offset::collect_memory_output(mesh, component_io);
             if (!component_io.memory())
                 io::write_mesh(
@@ -200,27 +228,33 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             return;
         }
 
-        // check for inversions in input mesh
-        auto tris_before = mesh.get_faces();
-        if (!mesh.invariants(tris_before)) {
-            std::string bad_tris_str = "";
-            for (const TriMesh::Tuple& t : tris_before) {
-                std::vector<TriMesh::Tuple> tvec;
-                tvec.push_back(t);
-                if (!mesh.invariants(tvec)) {
-                    bad_tris_str += (std::to_string(t.fid(mesh)) + " ");
-                }
+        // Inverted or flat input triangles, checked in doubles as simwild checks its double input
+        // (SimWildMeshTri::init_from_image()): only without exact positions (V_rational). With
+        // them V is their rounding, in which a triangle that is valid exactly can be inverted or
+        // flat, and the input is taken as given.
+        if (input_data.V_input_r.size() == 0) {
+            const auto faces = mesh.get_faces();
+            const size_t n_inverted = std::count_if(faces.begin(), faces.end(), [&](const auto& t) {
+                return mesh.is_inverted_f(t.fid(mesh));
+            });
+            if (n_inverted > 0 && n_inverted == faces.size()) {
+                log_and_throw_error(
+                    "Input mesh is fully inverted! This should not happen... Might be a bug.");
+            } else if (n_inverted > 0) {
+                log_and_throw_error(
+                    "Faces with different orientations in the input! ({} of {} inverted or flat)",
+                    n_inverted,
+                    faces.size());
             }
-            log_and_throw_error("Inverted input element. Aborting. Bad tri ids: {}", bad_tris_str);
         }
-        tris_before.clear();
 
         // initial number of connected components
         size_t initial_num_comps = mesh.flood_fill();
 
         // The BVH is needed by construction; the potential is not -- construct_offset() and
         // everything it calls reference m_offset_potential zero times, since marching places
-        // vertices at plain edge midpoints. So the potential is built after the offset exists.
+        // vertices at plain edge midpoints. So the potential is built after the offset exists,
+        // and only when the optimization runs. As in 3D.
         mesh.init_input_complex_bvh();
         mesh.consolidate_mesh();
 
@@ -235,51 +269,29 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
 
-        // The per-tag containment envelopes must be captured in init_from_image(), while the
-        // region tags are still the input's own: construct_offset() replaces the tags of every face
-        // the band grows through, and a tube built afterwards would pin the junction where a
-        // region meets the offset. See TopoOffsetTriMesh::init_surfaces_and_boundaries().
-
         // execute offset
         igl::Timer timer;
         timer.start();
         mesh.construct_offset(output_filename);
 
-        // Now that the offset exists, the potential can be built against it.
-        mesh.init_offset_potential();
-        mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
+        // checks
+        {
+            // Did conservative growth run out of room? Reported here, not inside the
+            // optimization, because it is a property of the offset as constructed: the
+            // optimization cannot move vertices off the bounding box, so a band clipped here
+            // stays clipped.
+            mesh.warn_if_offset_reaches_domain_boundary();
 
-        // inversion check
-        auto tris = mesh.get_faces();
-        bool noninverted = mesh.invariants(tris);
-        if (!noninverted) {
-            std::string bad_tris_str = "";
-            for (const TriMesh::Tuple& t : tris) {
-                std::vector<TriMesh::Tuple> tvec;
-                tvec.push_back(t);
-                if (!mesh.invariants(tvec)) {
-                    bad_tris_str += (" " + std::to_string(t.fid(mesh)));
+            // offset region manifoldness check
+            if (check_manifoldness) {
+                if (mesh.offset_is_manifold()) {
+                    logger().info("Offset region manifold check passed.");
+                } else {
+                    log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
                 }
             }
-            log_and_throw_error("INVERSION DURING OFFSET! bad tri ids: {}", bad_tris_str);
-        }
 
-        // Did conservative growth run out of room? Reported here, not inside the optimization,
-        // because it is a property of the offset as constructed: the optimization cannot move
-        // vertices off the bounding box, so a band clipped here stays clipped.
-        mesh.warn_if_offset_reaches_domain_boundary();
-
-        // offset region manifoldness check
-        if (check_manifoldness) {
-            if (mesh.offset_is_manifold()) {
-                logger().info("Offset region manifold check passed.");
-            } else {
-                log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
-            }
-        }
-
-        // connected components check, as in 3D
-        {
+            // connected components check
             size_t final_num_comps = mesh.flood_fill();
             if (final_num_comps != initial_num_comps) {
                 log_and_throw_error(
@@ -298,7 +310,13 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // offset but one whose defining property is unmet at an error set by the input mesh's
         // resolution; false is for inspecting the constructed offset.
         if (mesh.m_offset_params.optimize_offset) {
+            // The potential, against the constructed offset. Only the optimization reads it, so
+            // a construction-only run builds none. As in 3D.
+            mesh.init_offset_potential();
+            mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
+
             mesh.optimize_offset(output_filename);
+            mesh.audit_input_curves();
 
             // As in 3D: the check above ran on the offset as constructed, and optimization
             // re-triangulates it, so the property has to be re-established afterwards.
@@ -313,7 +331,18 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             logger().info(
                 "optimize_offset false: the optimization is skipped, the offset as constructed "
                 "is the result");
+            if (mesh.m_offset_params.phi_grid_resolution >= 2) {
+                logger().warn(
+                    "phi_grid_resolution {} ignored: the offset potential is built only for the "
+                    "optimization",
+                    mesh.m_offset_params.phi_grid_resolution);
+            }
         }
+        // 3D waits here for its last debug frame, written in the background; 2D writes its
+        // frames in the foreground.
+
+        double time = timer.getElapsedTime();
+        wmtk::logger().info("total time {}s", time);
 
         // inversion check, after the optimization as well. As in 3D.
         {
@@ -331,10 +360,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             }
         }
 
-        double time = timer.getElapsedTime();
-        wmtk::logger().info("total time {}s", time);
-
         // report
+        // Un-rounded output vertices: logged as an error, thrown with throw_on_fail (after the
+        // report), their exact positions returned on the memory route (V_rational).
+        const size_t unrounded = mesh.count_unrounded();
         const std::string report_file = json_params["report"];
         if (component_io.memory() || !report_file.empty()) {
             nlohmann::json report;
@@ -381,16 +410,25 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }
+            report["all_rounded"] = unrounded == 0;
+            report["#unrounded"] = unrounded;
             component_io.result.second = report;
             if (!component_io.memory()) {
                 std::ofstream f_out(report_file);
                 f_out << std::setw(4) << report;
             }
         }
+        check_unrounded_output(
+            "topological_offset",
+            unrounded,
+            component_io.memory(),
+            json_params["throw_on_fail"]);
 
         topological_offset::collect_memory_output(mesh, component_io);
         if (!component_io.memory())
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
+        // No reference in 2D (refused above), so nothing to hand on with the band's boundary:
+        // 3D's offset_rows() has no 2D twin until the envelope-passing step.
         hand_on_envelope();
         if (mesh.m_offset_params.save_vtu) { // write .vtu: the result, as the .msh
             mesh.write_vtu(output_filename.string(), nullptr, /*result=*/true);
@@ -429,7 +467,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             input_data.F_orientation,
             input_data.feature_edge_names,
             &input_data.features,
-            &input_data.features_placed);
+            &input_data.features_placed,
+            input_data.V_input_r);
         // The domain is the mesh's box, its wall held by the box rule as in tetwild and simwild
         // and never tracked: a mesh that does not fill its box -- a filtered tetwild output, its
         // boundary its tracked faces -- is refused (require_box_boundary()).
@@ -484,6 +523,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // check empty input
         if (mesh.empty_input_complex()) {
             logger().warn("Empty input complex. Output mesh is same as the input.");
+            check_unrounded_output(
+                "topological_offset",
+                mesh.count_unrounded(),
+                component_io.memory(),
+                json_params["throw_on_fail"]);
             topological_offset::collect_memory_output(mesh, component_io);
             if (!component_io.memory())
                 io::write_mesh(
@@ -493,20 +537,25 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             return;
         }
 
-        // check for inversions in input mesh
-        auto tets_before = mesh.get_tets();
-        if (!mesh.invariants(tets_before)) {
-            std::string bad_tets_str = "";
-            for (const TetMesh::Tuple& t : tets_before) {
-                std::vector<TetMesh::Tuple> tvec;
-                tvec.push_back(t);
-                if (!mesh.invariants(tvec)) {
-                    bad_tets_str += (std::to_string(t.tid(mesh)) + " ");
-                }
+        // Inverted or flat input tets, checked in doubles as simwild checks its double input
+        // (SimWildMesh::init_from_image()): only without exact positions (V_rational). With them
+        // V is their rounding, in which a tet that is valid exactly can be inverted or flat, and
+        // the input is taken as given.
+        if (input_data.V_input_r.size() == 0) {
+            const auto tets = mesh.get_tets();
+            const size_t n_inverted = std::count_if(tets.begin(), tets.end(), [&](const auto& t) {
+                return mesh.is_inverted_f(t);
+            });
+            if (n_inverted > 0 && n_inverted == tets.size()) {
+                log_and_throw_error(
+                    "Input mesh is fully inverted! This should not happen... Might be a bug.");
+            } else if (n_inverted > 0) {
+                log_and_throw_error(
+                    "Tets with different orientations in the input! ({} of {} inverted or flat)",
+                    n_inverted,
+                    tets.size());
             }
-            log_and_throw_error("Inverted input element. Aborting. Bad tet ids: {}", bad_tets_str);
         }
-        tets_before.clear();
 
         // initial number of connected components
         size_t initial_num_comps = mesh.flood_fill();
@@ -537,21 +586,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 
         // checks
         {
-            // inversion check
-            auto tets = mesh.get_tets();
-            bool noninverted = mesh.invariants(tets);
-            if (!noninverted) {
-                std::string bad_tets_str = "";
-                for (const TetMesh::Tuple& t : tets) {
-                    std::vector<TetMesh::Tuple> tvec;
-                    tvec.push_back(t);
-                    if (!mesh.invariants(tvec)) {
-                        bad_tets_str += (" " + std::to_string(t.tid(mesh)));
-                    }
-                }
-                log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
-            }
-
             // Did conservative growth run out of room? Reported here, not inside the
             // optimization, because it is a property of the offset as constructed: the
             // optimization cannot move vertices off the bounding box, so a band clipped here
@@ -641,6 +675,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // report
+        // Un-rounded output vertices: logged as an error, thrown with throw_on_fail (after the
+        // report), their exact positions returned on the memory route (V_rational).
+        const size_t unrounded = mesh.count_unrounded();
         const std::string report_file = json_params["report"];
         if (component_io.memory() || !report_file.empty()) {
             nlohmann::json report;
@@ -686,12 +723,19 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }
+            report["all_rounded"] = unrounded == 0;
+            report["#unrounded"] = unrounded;
             component_io.result.second = report;
             if (!component_io.memory()) {
                 std::ofstream f_out(report_file);
                 f_out << std::setw(4) << report;
             }
         }
+        check_unrounded_output(
+            "topological_offset",
+            unrounded,
+            component_io.memory(),
+            json_params["throw_on_fail"]);
 
         // mesh.write_msh(output_filename.string()); // write .msh
         topological_offset::collect_memory_output(mesh, component_io);

@@ -58,5 +58,11 @@ nlohmann::json options(const pybind11::handle& value);
 pybind11::object report(const nlohmann::json& j);
 pybind11::tuple
 call_component(MemoryComponent component, nlohmann::json options, const pybind11::dict& meshes);
+/// Clear the record of un-rounded output vertices (wmtk::take_unrounded_output()) before a
+/// component call, and after it raise UnroundedVerticesWarning when the call left some: on the
+/// memory route their exact positions are in an output's V_rational, on the file route lost.
+void clear_unrounded_output();
+void warn_unrounded_output(bool memory);
+/// read_mesh, write_mesh, read_history, write_history, and UnroundedVerticesWarning.
 void bind_mesh_io(pybind11::module_& module);
 } // namespace wmtk::python

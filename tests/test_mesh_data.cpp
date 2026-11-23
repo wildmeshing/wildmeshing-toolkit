@@ -125,6 +125,52 @@ TEST_CASE("MeshData validates and rejects lossy I/O", "[mesh_data][io]")
         REQUIRE_THROWS(m.validate());
     }
 }
+TEST_CASE("MeshData exact positions are validated and follow their rows", "[mesh_data][io]")
+{
+    // Slot 0 is dead; the triangle uses slots 1-3, and slot 3 keeps an exact position.
+    MeshData m;
+    m.V.resize(4, 3);
+    m.V << 9, 9, 9, 0, 0, 0, 1, 0, 0, 1.0 / 3, 1, 0;
+    m.cells[CellType::Triangle].connectivity.resize(1, 3);
+    m.cells[CellType::Triangle].connectivity << 1, 2, 3;
+    m.V_exact.rows = {3};
+    m.V_exact.values = {"1/3", "1", "0"};
+    m.validate();
+    SECTION("compaction renumbers them with V")
+    {
+        io::compact_vertices(m, {1, 2, 3});
+        REQUIRE(m.V_exact.rows == std::vector<int64_t>{2});
+        REQUIRE(m.V_exact.values == std::vector<std::string>{"1/3", "1", "0"});
+    }
+    SECTION("an exact position of a dropped slot is an error")
+    {
+        m.V_exact.rows = {0};
+        REQUIRE_THROWS(io::compact_vertices(m, {1, 2, 3}));
+    }
+    SECTION("row out of range")
+    {
+        m.V_exact.rows = {4};
+        REQUIRE_THROWS(m.validate());
+    }
+    SECTION("duplicate row")
+    {
+        m.V_exact.rows = {3, 3};
+        m.V_exact.values = {"1/3", "1", "0", "1/3", "1", "0"};
+        REQUIRE_THROWS(m.validate());
+    }
+    SECTION("a value per coordinate")
+    {
+        m.V_exact.values = {"1/3", "1"};
+        REQUIRE_THROWS(m.validate());
+    }
+    SECTION("values are rationals")
+    {
+        m.V_exact.values = {"0.5", "1", "0"};
+        REQUIRE_THROWS(m.validate());
+        m.V_exact.values = {"1/0", "1", "0"};
+        REQUIRE_THROWS(m.validate());
+    }
+}
 TEST_CASE("MeshData keeps degenerate cells for component cleaning", "[mesh_data][io]")
 {
     auto m = example();

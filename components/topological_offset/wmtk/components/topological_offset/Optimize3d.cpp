@@ -427,24 +427,25 @@ double TopoOffsetTetMesh::band_swept_change(
 {
     // See EXACT SWEPT CHANGE.
     if (x0 == x1) return 0.;
-    std::vector<std::array<Vector3d, 2>> faces;
-    band_swept_faces(vid, x0, faces);
-    return band_swept_sum(place_piece(&vid, 1), x0, x1, faces, st);
+    std::vector<SweptFacesOfPiece> pieces;
+    band_swept_faces(vid, x0, pieces);
+    return band_swept_sum(x0, x1, pieces, st);
 }
 
 void TopoOffsetTetMesh::band_swept_faces(
     const size_t vid,
     const Vector3d& x0,
-    std::vector<std::array<Vector3d, 2>>& faces) const
+    std::vector<SweptFacesOfPiece>& pieces) const
 {
-    // Each boundary face of B through vid belongs to one band cell, the cell across it not a
-    // band cell (or none: the domain wall).
+    // Each boundary face of B_r through vid belongs to one cell of B_r, the cell across it not
+    // one (EXACT SWEPT CHANGE, several entries).
     using wmtk::utils::predicates::orient3d;
     using wmtk::utils::predicates::Orientation;
-    faces.clear();
+    pieces.clear();
     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
         if (!cell_is_offset_band(tid)) continue;
         const std::array<size_t, 4> vids = oriented_tet_vids(tid);
+        const int r = place_piece(vids.data(), 4);
         for (int i = 0; i < 4; ++i) {
             const size_t p = vids[size_t(i)];
             if (p == vid) continue; // the face opposite vid does not hold it
@@ -458,44 +459,89 @@ void TopoOffsetTetMesh::band_swept_faces(
             } else if (const std::optional<Tuple> sw = ft.switch_tetrahedron(*this)) {
                 o = int64_t(sw->tid(*this));
             }
-            if (o >= 0 && cell_is_offset_band(size_t(o))) continue; // inside B
+            if (o >= 0 && cell_is_offset_band(size_t(o)) &&
+                place_piece(oriented_tet_vids(size_t(o)).data(), 4) == r) {
+                continue; // inside B_r
+            }
             std::array<size_t, 2> ab;
             int k = 0;
             for (const size_t u : f) {
                 if (u != vid) ab[size_t(k++)] = u;
             }
             Vector3d A = m_vertex_attribute[ab[0]].m_posf, B = m_vertex_attribute[ab[1]].m_posf;
-            // (A - x0) x (B - x0) out of B, away from the fourth corner: orient3d positive
+            // (A - x0) x (B - x0) out of B_r, away from the fourth corner: orient3d positive
             // (Shewchuk's sign)
             const Orientation out = orient3d(x0, A, B, m_vertex_attribute[p].m_posf);
             if (out == Orientation::COPLANAR) continue; // a flat cell at x0 bounds nothing
             if (out != Orientation::POSITIVE) std::swap(A, B);
-            faces.push_back({{A, B}});
+            auto it = std::find_if(pieces.begin(), pieces.end(), [&](const SweptFacesOfPiece& q) {
+                return q.piece == r;
+            });
+            if (it == pieces.end()) it = pieces.insert(pieces.end(), SweptFacesOfPiece{r, {}});
+            it->faces.push_back({{A, B}});
         }
     }
 }
 
 double TopoOffsetTetMesh::band_swept_sum(
-    const int piece,
     const Vector3d& x0,
     const Vector3d& x1,
-    const std::vector<std::array<Vector3d, 2>>& faces,
+    const std::vector<SweptFacesOfPiece>& pieces,
     ExactBandIntegral::Stats* st) const
 {
-    // the function the smoother's search model evaluates too (BandVolumeEnergy3D::set_swept())
-    return BandVolumeEnergy3D::swept_change(
-        *band_exact_for(piece),
-        region_delta(piece),
-        x0,
-        x1,
-        faces,
-        st);
+    // the function the smoother's search model evaluates too (BandVolumeEnergy3D::set_swept()),
+    // per piece
+    double s = 0.;
+    for (const SweptFacesOfPiece& q : pieces) {
+        s += BandVolumeEnergy3D::swept_change(
+            *band_exact_for(q.piece),
+            region_delta(q.piece),
+            x0,
+            x1,
+            q.faces,
+            st);
+    }
+    return s;
+}
+
+std::vector<std::pair<size_t, int>> TopoOffsetTetMesh::band_cell_pieces(
+    const std::vector<size_t>& tids) const
+{
+    std::vector<std::pair<size_t, int>> out;
+    for (const size_t tid : tids) {
+        if (cell_is_offset_band(tid))
+            out.push_back({tid, place_piece(oriented_tet_vids(tid).data(), 4)});
+    }
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
+double TopoOffsetTetMesh::band_relabel_change(
+    const std::vector<size_t>& tids,
+    const std::vector<std::pair<size_t, int>>& before) const
+{
+    // See the declaration and EXACT SWEPT CHANGE, several entries.
+    if (m_offset_params.offsets.size() <= 1) return 0.;
+    double s = 0.;
+    for (const size_t tid : tids) {
+        if (!cell_is_offset_band(tid)) continue;
+        const auto it = std::lower_bound(
+            before.begin(),
+            before.end(),
+            std::pair<size_t, int>{tid, std::numeric_limits<int>::min()});
+        if (it == before.end() || it->first != tid) continue;
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const int r = place_piece(vs.data(), 4);
+        if (r != it->second) s += band_cell_term(vs, r) - band_cell_term(vs, it->second);
+    }
+    return s;
 }
 
 double TopoOffsetTetMesh::band_chain_change(
     const std::vector<std::array<size_t, 4>>& old_band,
     const std::vector<std::array<size_t, 4>>& new_band,
-    ExactBandIntegral::Stats* st) const
+    ExactBandIntegral::Stats* st,
+    const int piece) const
 {
     // See EXACT SWEPT CHANGE: dD = sum of the new band cells' outward faces less the old ones',
     // each face as its sorted vertex triple with the multiplicity of that orientation.
@@ -528,9 +574,7 @@ double TopoOffsetTetMesh::band_chain_change(
         if (n > on[apex]) apex = v;
     }
     // value() through the value table unless `st` is given (BandVolumeEnergy3D::swept_change()),
-    // at the cells' piece's target distance and integral (place_piece(); the run's and the whole
-    // complex's with one entry)
-    const int piece = old_band.empty() ? -1 : place_piece(old_band.front().data(), 4);
+    // at the cells' piece's target distance and integral
     const double delta = region_delta(piece);
     const ExactBandIntegral& band_exact = *band_exact_for(piece);
     double s = 0.;
@@ -548,10 +592,23 @@ double TopoOffsetTetMesh::swap_swept_change(
     const std::vector<std::array<size_t, 4>>& new_band,
     const bool flip)
 {
-    // See the declaration: an interior swap gives every new cell the ring's one label, so B
-    // keeps its region and its boundary
-    if (!flip) return 0.;
-    return band_chain_change(m_swap_record.local().old_band, new_band);
+    // See the declaration: an interior swap gives every new cell the ring's one label, so where
+    // every band cell is of one piece B_r keeps its region and its boundary
+    const SwapRecord& rec = m_swap_record.local();
+    std::vector<int> new_piece;
+    for (const auto& t : new_band) new_piece.push_back(place_piece(t.data(), 4));
+    const int r = !rec.old_piece.empty() ? rec.old_piece.front()
+                  : new_piece.empty()    ? -1
+                                         : new_piece.front();
+    bool one = true;
+    for (const int q : rec.old_piece) one = one && q == r;
+    for (const int q : new_piece) one = one && q == r;
+    if (one) return flip ? band_chain_change(rec.old_band, new_band, nullptr, r) : 0.;
+    double s = 0.;
+    for (size_t i = 0; i < new_band.size(); ++i) s += band_cell_term(new_band[i], new_piece[i]);
+    for (size_t i = 0; i < rec.old_band.size(); ++i)
+        s -= band_cell_term(rec.old_band[i], rec.old_piece[i]);
+    return s;
 }
 
 bool TopoOffsetTetMesh::swept_accept(
@@ -564,11 +621,15 @@ bool TopoOffsetTetMesh::swept_accept(
     // See the declaration.
     ++c.solves;
     const Vector3d x1 = m_vertex_attribute[vid].m_posf;
-    // band_swept_change()'s faces, the same at every halving (band_swept_faces() does not read
-    // vid's position)
-    std::vector<std::array<Vector3d, 2>> faces;
-    band_swept_faces(vid, x0, faces);
-    const std::shared_ptr<const BandVolumeEnergy3D>& model = m_swept_model.local();
+    // band_swept_change()'s faces, the same at every halving (band_swept_faces() reads vid's
+    // position only for the pieces), and the ring's pieces, read with vid at x0, where the move
+    // starts (place_piece() reads a cell's first corner's position where no corner has a piece)
+    std::vector<SweptFacesOfPiece> pieces;
+    m_vertex_attribute[vid].m_posf = x0;
+    band_swept_faces(vid, x0, pieces);
+    const std::vector<std::pair<size_t, int>> ring_pieces = band_cell_pieces(ring);
+    m_vertex_attribute[vid].m_posf = x1;
+    const std::vector<std::shared_ptr<const BandVolumeEnergy3D>>& models = m_swept_model.local();
     for (int k = 0; k <= kSweptHalvings; ++k) {
         if (k > 0) {
             m_vertex_attribute[vid].m_posf = x0 + std::ldexp(1., -k) * (x1 - x0);
@@ -580,16 +641,17 @@ bool TopoOffsetTetMesh::swept_accept(
         }
         const double dA = tet_energy_sum(ring, false) - amips_before;
         const Vector3d& x = m_vertex_attribute[vid].m_posf;
-        double dB;
-        const int piece = place_piece(&vid, 1);
-        if (!(model && model->swept_value_at(
-                           *band_exact_for(piece),
-                           region_delta(piece),
-                           x0,
-                           x,
-                           faces,
-                           dB))) {
-            dB = band_swept_sum(piece, x0, x, faces);
+        double dB = band_relabel_change(ring, ring_pieces);
+        for (size_t i = 0; i < pieces.size(); ++i) {
+            const SweptFacesOfPiece& q = pieces[i];
+            const ExactBandIntegral& eb = *band_exact_for(q.piece);
+            const double delta = region_delta(q.piece);
+            double d;
+            if (!(i < models.size() && models[i] &&
+                  models[i]->swept_value_at(eb, delta, x0, x, q.faces, d))) {
+                d = BandVolumeEnergy3D::swept_change(eb, delta, x0, x, q.faces);
+            }
+            dB += d;
         }
         if (dA + dB <= 0.) { // a NaN refuses; a tie passes
             ++c.accepted[size_t(k)];
@@ -749,6 +811,15 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
     // on the real cells in swap_after_cells(), so it needs no record beyond band_cancels.
     if (current_op_kind() != OpKind::swap_32) swap_record_fill(false);
     m_swap_record.local().band_cancels = band_cancels; // after the fill, which clears it
+    // "exact_swept": the band cells the swap replaces and their pieces (swap_swept_change())
+    if (swept_rule()) {
+        SwapRecord& rec = m_swap_record.local();
+        for (const size_t t : tids) {
+            if (!cell_is_offset_band(t)) continue;
+            rec.old_band.push_back(oriented_tet_vids(t));
+            rec.old_piece.push_back(place_piece(rec.old_band.back().data(), 4));
+        }
+    }
     return true;
 }
 
@@ -870,11 +941,13 @@ bool TopoOffsetTetMesh::swap_before_surface(
     if (current_op_kind() != OpKind::swap_32)
         swap_record_fill(true); // as in swap_before_interior()
     m_swap_record.local().band_cancels = band_cancels; // after the fill, which clears it
-    // "exact_swept": the band cells the flip replaces (swap_swept_change())
+    // "exact_swept": the band cells the flip replaces and their pieces (swap_swept_change())
     if (swept_rule()) {
+        SwapRecord& rec = m_swap_record.local();
         for (const size_t t : tids) {
-            if (cell_is_offset_band(t))
-                m_swap_record.local().old_band.push_back(oriented_tet_vids(t));
+            if (!cell_is_offset_band(t)) continue;
+            rec.old_band.push_back(oriented_tet_vids(t));
+            rec.old_piece.push_back(place_piece(rec.old_band.back().data(), 4));
         }
     }
 
@@ -968,12 +1041,15 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::amips3_energy(
     return sum;
 }
 
-bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
+bool TopoOffsetTetMesh::smooth_vertex_under_energy(const Tuple& t, const bool front)
 {
     // See the declaration. TetOptimizerMesh::smooth_after()'s options, two changes: the objective
     // comes from smoothing_extra_energy() (w_amips 0: the smoother adds no AMIPS term of its own),
     // and the engine's AMIPS^3 veto is replaced by the energy's, on the engine's scope, which
-    // includes vertices on a surface.
+    // includes vertices on a surface. A front vertex (front) takes the same options, solve and
+    // rule; where it differs, the line says FRONT. Until 2026-11-17 the front had its own copy of
+    // this function (smooth_front_vertex()), which had stopped reading smoothing_mode,
+    // project_line_search_steps and project_line_search_nested_steps.
     const size_t vid = t.vid(*this);
     optimization::SmoothVertexOptions opts;
     opts.w_amips = 0.;
@@ -981,28 +1057,38 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
     opts.two_stage = false;
-    opts.smoothing_mode = m_params.smoothing_mode == "exact"
-                              ? optimization::SmoothVertexOptions::SmoothingMode::Exact
+    opts.smoothing_mode = m_params.smoothing_mode == "penalty"
+                              ? optimization::SmoothVertexOptions::SmoothingMode::Penalty
                               : optimization::SmoothVertexOptions::SmoothingMode::Projected;
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
+    // The engine's veto compares AMIPS^3 alone (smoothing_cell_energy()), and a front vertex must
+    // be free to worsen its ring's shape on the way to the level set: off; the energy's veto below.
     opts.quality_veto = false;
     opts.max_step = damping_step(vid); // EXPERIMENTAL_damping; infinity when off
     const Vector3d x0 = std::as_const(m_vertex_attribute)[vid].m_posf;
-    // The rule is E itself: the sum of tet_energy() over the ring may not rise. A vertex held on a
-    // surface takes the engine's projected step, whose acceptance is that rule already
-    // (smoothing_ring_energy(): strictly below), so it needs no veto here. Every other vertex is
-    // vetoed after its solve: the solve descends the vertex's part of E, but a vertex held on the
-    // input descends only the AMIPS part (see smoothing_extra_energy()).
+    // The rule is E itself: the sum of tet_energy() over the ring may not rise (a tie passes, a
+    // NaN refuses). Read before the solve and after it, on the mesh: a smoothing move changes no
+    // label and moves one vertex, so the one-ring holds every cell whose energy it can change.
+    // Refused, TetMesh::smooth_vertex() rolls back the position and the ring's stored qualities;
+    // smooth_vertex_3d() has counted the move accepted by then, so it is recounted as a quality
+    // refusal and the counters still partition the attempts. A vertex held on a surface takes the
+    // engine's projected step, whose acceptance is that rule already (smoothing_ring_energy():
+    // strictly below), so it needs no veto here -- FRONT: the veto runs after the projected step
+    // too. Every other vertex is vetoed after its solve: the solve descends the vertex's part of
+    // E, but a vertex held on the input descends only the AMIPS part (see
+    // smoothing_extra_energy()).
     const bool projected =
+        !front &&
         opts.smoothing_mode == optimization::SmoothVertexOptions::SmoothingMode::Projected &&
         m_vertex_attribute[vid].m_is_on_surface && smoothing_energy_envelope(vid) != nullptr;
     const std::vector<size_t> ring = get_one_ring_tids_for_vertex(vid);
-    // EXPERIMENTAL_band_volume_rule "surface": a front vertex placed here (one an envelope holds)
-    // moves its offset faces too; their term joins both sides of the rule, and the projected
-    // step reads it through smoothing_ring_energy(), which needs the vertex's name.
+    // EXPERIMENTAL_band_volume_rule "surface": a front vertex moves its offset faces too; their
+    // term joins both sides of the rule, and the projected step reads it through
+    // smoothing_ring_energy(), which needs the vertex's name -- FRONT: not named, so its projected
+    // step compares the ring without the term, and the veto adds it on both sides.
     const bool surface = surface_energy() && m_vertex_extra[vid].m_is_on_offset;
-    m_smoothing_vid.local() = vid;
+    if (!front) m_smoothing_vid.local() = vid;
     struct ClearVid
     {
         size_t& v;
@@ -1010,9 +1096,12 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     } clear_vid{m_smoothing_vid.local()};
     // "exact_swept": the projected step compares smoothing_ring_energy(), which takes the band
     // term's change from the position at its first call on this vertex; every other move is
-    // accepted by swept_accept() (EXACT SWEPT CHANGE), from the ring's AMIPS part before
+    // accepted by swept_accept() (EXACT SWEPT CHANGE), from the ring's AMIPS part before. The
+    // vertex is recorded for smoothing_ring_energy() either way: a front vertex held on a region
+    // boundary (every one is held since 2026-11-04) takes the projected step, and before it was
+    // recorded it read the last non-front vertex's and threw (double_sphere, one round).
     const bool swept = swept_rule();
-    if (swept) m_swept_stored.local().first = vid;
+    if (swept) m_swept_stored.local().vid = vid;
     const double amips_before = swept && !projected ? tet_energy_sum(ring, false) : 0.;
     const double before =
         projected || swept ? 0. : tet_energy_sum(ring) + (surface ? surface_term_at(vid) : 0.);
@@ -1023,60 +1112,134 @@ bool TopoOffsetTetMesh::smooth_nonfront_vertex(const Tuple& t)
     // kept for a move that leaves the clear region. MEASURED (cube 1e-2 / 1e-4, front_flux, 15
     // rounds, serial): 412,850 of 1,962,638 non-front vetoes had such a ring, |dB| <= 1.6e-12
     // delta V over it (rounding; 16% exactly 0), and reading dB as 0 flipped 0 of them. Front
-    // vertices (a background cell in every ring) and held vertices (an input cell) never have one.
-    const bool cancels_before = !projected && !swept && band_term_cancels(ring);
+    // vertices (a background cell in every ring) and held vertices (an input cell) never have
+    // one, so the front does not ask.
+    const bool cancels_before = !front && !projected && !swept && band_term_cancels(ring);
     const double before_no_band = cancels_before ? tet_energy_sum(ring, false) : 0.;
-    // growth_mode "individual_op_reject": a front vertex held on a surface (the domain wall, say)
-    // moves its offset faces too; the move may not raise the turned ones among them.
+    // growth_mode "individual_op_reject": a front vertex moves its offset faces; the move may not
+    // raise the turned ones among them (every face it changes goes through vid).
     int turned_before = -1;
     if (turned_reject_active() && m_vertex_extra[vid].m_is_on_offset) {
         std::set<std::array<size_t, 3>> f;
         turned_front_faces_at(vid, f);
         turned_before = int(f.size());
     }
-    const auto raises_turned = [&]() {
-        if (turned_before < 0) return false;
+    // FRONT: the change this solve makes to the vertex's own error, 0 when the move is refused
+    // and rolled back (see VertexExtra::m_front_change).
+    const double r_before = front ? front_vertex_relative_residual(vid) : 0.;
+    const auto record_change = [&](const bool moved) {
+        if (!front) return;
+        VertexExtra& ve = m_vertex_extra[vid];
+        ve.m_front_change_group = m_smooth_group;
+        const double r_after = moved ? front_vertex_relative_residual(vid) : r_before;
+        // in the vertex's piece's bar (one entry: the run's)
+        const int piece = m_offset_params.offsets.size() > 1 ? place_piece(&vid, 1) : -1;
+        ve.m_front_change = moved ? std::abs(r_after - r_before) / front_conv_frac_of(piece) : 0.;
+    };
+    // FRONT, DEBUG_crossings (log-only): the ring measures this move can change -- of vid and of
+    // every vertex that shares a front face with it -- before the solve.
+    std::vector<size_t> nb;
+    std::vector<double> nb_before;
+    if (front && m_offset_params.debug_crossings) {
+        nb.push_back(vid);
+        for (const Tuple& ft : offset_surface_faces_live_at(vid)) {
+            for (const size_t u : get_face_vids(ft)) nb.push_back(u);
+        }
+        wmtk::vector_unique(nb);
+        for (const size_t u : nb) nb_before.push_back(ring_measure_at(u));
+    }
+    // FRONT: the solve's own counter, so DEBUG_output can pin its outcome to vid
+    // (m_front_solve_log), folded into the pass's m_newton_front, which therefore counts exactly
+    // what passing it in counted. At most one solve (two_stage is off), none when
+    // smooth_vertex_3d() refuses an already-inverted ring before solving; nothing after the solve
+    // touches the solver, so it still holds that solve's state here.
+    optimization::NewtonCounters one;
+    // FRONT, EXPERIMENTAL_band_volume_rule "front_flux": the band term's exceptions (a curved
+    // bisector crossing a piece, a partition that does not tile) are errors, not failed line
+    // searches; the shared smoother takes any exception out of a solve for the latter, so the
+    // term keeps its message (BandVolumeEnergy3D::front_flux_error()) and it is rethrown here.
+    std::string& ff_error = BandVolumeEnergy3D::front_flux_error();
+    if (front) ff_error.clear();
+    auto& solver = m_solver.local(); // criteria set by smoothing_solver() in smooth_after()
+    const bool ok = optimization::smooth_vertex_3d(
+        *this,
+        t,
+        opts,
+        solver,
+        &m_smooth_rejects,
+        front ? &one : &m_newton);
+    if (front) {
+        if (!ff_error.empty()) {
+            const std::string msg = std::move(ff_error);
+            ff_error.clear();
+            log_and_throw_error("front smoother, vertex {}: {}", vid, msg);
+        }
+        if (one.solves() > 0) {
+            m_newton_front.record(*solver, one.threw.load() > 0);
+            if (m_offset_params.debug_output) {
+                std::lock_guard<std::mutex> lock(m_front_solve_log_mutex);
+                m_front_solve_log.push_back(
+                    {vid, int(solver->current_criteria().iterations), int(solver->status()) + 1});
+            }
+        }
+    }
+    if (!ok) {
+        record_change(false);
+        return false;
+    }
+    if (front) {
+        // Diagnostic: the solve's final gradient norm and its ratio to the first one.
+        const auto& cr = solver->current_criteria();
+        const auto bin = [](double v, int lo) {
+            if (!(v > 0.)) return 0;
+            return std::clamp(int(std::floor(std::log10(v))) - lo + 1, 0, kGradBins - 1);
+        };
+        ++m_front_grad_abs[size_t(bin(cr.gradNorm, -14))];
+        ++m_front_grad_rel[size_t(bin(cr.relGradNorm, -14))];
+        ++m_front_veto_asked;
+    }
+    const auto refuse = [&]() {
+        --m_smooth_rejects.accepted;
+        ++m_smooth_rejects.quality;
+        record_change(false);
+        return false;
+    };
+    if (swept && !projected) {
+        // the exact change, with halvings
+        if (!swept_accept(vid, ring, x0, amips_before, front ? m_swept_front : m_swept_nonfront)) {
+            if (front) ++m_front_veto_fired;
+            return refuse();
+        }
+    } else if (!projected) {
+        const bool cancels = cancels_before && band_term_cancels(ring);
+        const double after = tet_energy_sum(ring, !cancels) + (surface ? surface_term_at(vid) : 0.);
+        if (!(after <= (cancels ? before_no_band : before))) { // a NaN refuses; a tie passes
+            if (front) ++m_front_veto_fired;
+            return refuse();
+        }
+    }
+    // the turned-face test at the position kept
+    if (turned_before >= 0) {
         std::set<std::array<size_t, 3>> f;
         turned_front_faces_at(vid, f);
-        if (int(f.size()) <= turned_before) return false;
-        ++m_turned_reject_smooth;
-        --m_smooth_rejects.accepted;
-        ++m_smooth_rejects.quality;
-        return true;
-    };
-    if (!optimization::smooth_vertex_3d(
-            *this,
-            t,
-            opts,
-            m_solver.local(),
-            &m_smooth_rejects,
-            &m_newton)) {
-        return false;
-    }
-    if (swept && !projected) {
-        // the exact change, with halvings, then the fold test at the position kept
-        if (!swept_accept(vid, ring, x0, amips_before, m_swept_nonfront)) {
-            --m_smooth_rejects.accepted;
-            ++m_smooth_rejects.quality;
-            return false;
+        if (int(f.size()) > turned_before) {
+            ++m_turned_reject_smooth;
+            return refuse();
         }
-        if (raises_turned()) return false;
-        count_damped_move(vid, x0, opts.max_step);
-        return true;
     }
-    if (raises_turned()) return false;
-    if (projected) {
-        count_damped_move(vid, x0, opts.max_step);
-        return true;
-    }
-    const bool cancels = cancels_before && band_term_cancels(ring);
-    const double after = tet_energy_sum(ring, !cancels) + (surface ? surface_term_at(vid) : 0.);
-    if (!(after <= (cancels ? before_no_band : before))) { // a NaN refuses; a tie passes
-        --m_smooth_rejects.accepted;
-        ++m_smooth_rejects.quality;
-        return false;
-    }
+    record_change(true);
     count_damped_move(vid, x0, opts.max_step);
+    if (front && m_offset_params.debug_crossings) {
+        for (size_t k = 0; k < nb.size(); ++k) {
+            const double after = ring_measure_at(nb[k]);
+            if (!(nb_before[k] <= 1.) || !(after > 1.)) continue;
+            if (nb[k] == vid) {
+                ++m_cross_own;
+            } else {
+                ++m_cross_neighbour;
+            }
+        }
+    }
     return true;
 }
 
@@ -1573,14 +1736,18 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
             wmtk::vector_unique(f1);
             for (const auto& f : f1) cv.surface_before += surface_face_term(f[0], f[1], f[2]);
         }
-        // "exact_swept": v1's boundary faces of B, for the band term's change, v1 moving onto v2
-        // in all its cells (EXACT SWEPT CHANGE; the cells through v2 go flat). The collapse
-        // changes no cell's label: v1's other cells keep theirs in their own slots.
+        // "exact_swept": v1's boundary faces of each B_r, for the band term's change, v1 moving
+        // onto v2 in all its cells (EXACT SWEPT CHANGE; the cells through v2 go flat), and the
+        // pieces of v1's band cells. The collapse changes no cell's label: v1's other cells keep
+        // theirs in their own slots; their pieces can change, v2 replacing v1 among their corners
+        // (band_relabel_change()).
         cv.swept_faces.clear();
+        cv.swept_pieces.clear();
         if (swept_rule()) {
             cv.swept_x1 = m_vertex_attribute[v1_id].m_posf;
             cv.swept_x2 = m_vertex_attribute[v2_id].m_posf;
             band_swept_faces(v1_id, cv.swept_x1, cv.swept_faces);
+            cv.swept_pieces = band_cell_pieces(ring1);
         }
         // use_rest_pose: the cells the collapse changes are v1's cells without v2, each keeping
         // its label; when they and the whole ring are plastic, the collapse is an exact tie
@@ -1754,8 +1921,10 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
         // whole change of the face term (see collapse_before_vertex()).
         if (!cv.tie && surface_energy()) after += surface_term_at(v2_id);
         if (!cv.tie && swept_rule()) { // "exact_swept": the band term's change
-            after +=
-                band_swept_sum(place_piece(&v2_id, 1), cv.swept_x1, cv.swept_x2, cv.swept_faces);
+            // v1's cells that v2 joins keep their slots: the change of their pieces
+            // (band_relabel_change()) reads them in v2's ring, where v2's other cells have none
+            after += band_swept_sum(cv.swept_x1, cv.swept_x2, cv.swept_faces) +
+                     band_relabel_change(get_one_ring_tids_for_vertex(v2_id), cv.swept_pieces);
         }
         if (cv.tie ? !scoreable : !(after <= cv.before + cv.surface_before)) { // a NaN refuses
             ++m_volume_reject_collapse;
@@ -2041,23 +2210,21 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
     // envelope by smoothing_energy_envelope() like any held vertex.
     if (tetwild_rules()) return TetOptimizerMesh::smooth_after(t);
 
-    // A front vertex goes through the shared smoother -- same solver, line search and accept
-    // tests as every other vertex -- with the offset's options: its objective carries the offset
-    // terms (smoothing_extra_energy), and the veto is on the ring's sum of tet_energy() instead
-    // of AMIPS, since a front vertex must be able to worsen its ring's shape on the way to the
-    // level set but not the energy, which charges both (see smooth_front_vertex()). Every other
-    // vertex minimises the same energy (smooth_nonfront_vertex()). A TetWild pass returned above.
-    if (ve.m_is_on_offset && !m_tetwild_pass) {
-        const bool ok = smooth_front_vertex(t);
-        if (ok) ++m_smooth_trace.offset_accepted;
-        return ok;
-    }
-    return smooth_nonfront_vertex(t);
+    // Every vertex, front or not, goes through the shared smoother -- same solver, line search and
+    // accept tests -- with the offset's options: its objective is its part of the energy
+    // (smoothing_extra_energy), and the veto is on the ring's sum of tet_energy() instead of
+    // AMIPS, since a front vertex must be able to worsen its ring's shape on the way to the level
+    // set but not the energy, which charges both (see smooth_vertex_under_energy()). A TetWild
+    // pass returned above.
+    const bool front = ve.m_is_on_offset && !m_tetwild_pass;
+    const bool ok = smooth_vertex_under_energy(t, front);
+    if (front && ok) ++m_smooth_trace.offset_accepted;
+    return ok;
 }
 
 double TopoOffsetTetMesh::front_vertex_normal_gradient(const size_t vid) const
 {
-    // ||grad F|| at the vertex's current position, F the objective smooth_front_vertex()
+    // ||grad F|| at the vertex's current position, F the objective smooth_vertex_under_energy()
     // minimises, taken along the move direction where there is one.
     const Vector3d x = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd xv = x, g(3);
@@ -2303,6 +2470,9 @@ void TopoOffsetTetMesh::crossing_snapshot(
 void TopoOffsetTetMesh::update_attributes()
 {
     TetOptimizerMesh::update_attributes();
+    // DEBUG_held_topology: after every pass of the base (split, collapse, swap, smoothing), once
+    // the baseline is taken.
+    if (m_held_topology) held_topology_check(m_debug_pass_name);
     if (!m_offset_params.debug_crossings || m_round <= 0) return;
     const std::string& p = m_debug_pass_name;
     if (p == "split" || p == "collapse" || p == "swap") {
@@ -3587,14 +3757,15 @@ int TopoOffsetTetMesh::place_piece(const size_t* vids, const size_t n) const
             best = r;
         }
     };
+    // The place's vertices of one piece decide; only if it has none, a vertex on cells of two
+    // pieces offers theirs: at a vertex two In entries share, a place of one entry's band is
+    // that entry's, not the other's of smaller distance.
+    for (size_t i = 0; i < n; ++i) consider(vertex_region(vids[i]));
+    if (best >= 0) return best;
     for (size_t i = 0; i < n; ++i) {
-        const int r = vertex_region(vids[i]);
-        if (r == -2) {
-            for (const size_t t : get_one_ring_tids_for_vertex(vids[i]))
-                consider(t < m_cell_region.size() ? m_cell_region[t] : -1);
-        } else {
-            consider(r);
-        }
+        if (vertex_region(vids[i]) != -2) continue;
+        for (const size_t t : get_one_ring_tids_for_vertex(vids[i]))
+            consider(t < m_cell_region.size() ? m_cell_region[t] : -1);
     }
     if (best >= 0) return best;
     return nearest_piece(m_vertex_attribute[vids[0]].m_posf);
@@ -3604,23 +3775,41 @@ void TopoOffsetTetMesh::assign_band_regions(const bool log)
 {
     // See m_region_potentials. A flood fill over the band cells, seeded from every band cell
     // with an input-complex vertex, whose piece is read off the per-piece envelopes (the nearest
-    // piece to a vertex ON the complex is its own, at distance 0). As in 2D, a cell reached from
-    // two regions and a vertex on cells of two regions read -2 and fall back to the union field.
+    // piece to a vertex ON the complex is its own, at distance 0) -- among the pieces of the
+    // cell's entry (band_cell_entry()): at a vertex two In entries share, both entries' pieces
+    // are at distance 0. The fill does not cross a face on the complex (three complex vertices):
+    // the bands of two In entries that touch meet there, and a band on both sides of one
+    // complex is seeded on both. As in 2D, a cell reached from two regions and a vertex on cells
+    // of two regions read -2 and fall back to the union field.
     m_cell_region.assign(tet_capacity(), -1);
     m_vertex_region.assign(vert_capacity(), -1);
     if (m_n_regions <= 1 || m_region_potentials.empty() || m_region_envelopes.empty()) return;
-    const auto region_at = [&](const Vector3d& p) { return nearest_piece(p); };
+    // The piece of entry k nearest to p; any piece's with one entry or no entry per piece.
+    const auto region_at = [&](const Vector3d& p, const size_t k) {
+        if (m_region_offset.size() != m_region_envelopes.size()) return nearest_piece(p);
+        int best = -1;
+        double best_d = std::numeric_limits<double>::infinity();
+        for (size_t r = 0; r < m_region_envelopes.size(); ++r) {
+            if (size_t(m_region_offset[r]) != k) continue;
+            const double d = m_region_envelopes[r]->squared_distance(p);
+            if (d < best_d) {
+                best_d = d;
+                best = int(r);
+            }
+        }
+        return best >= 0 ? best : nearest_piece(p);
+    };
     std::vector<size_t> queue;
-    std::vector<int> piece_of_vertex(vert_capacity(), -3); // -3: not looked up yet
+    std::map<std::pair<size_t, size_t>, int> piece_of_vertex; // (vertex, entry) -> piece
     for (const Tuple& t : get_tets()) {
         const size_t tid = t.tid(*this);
         if (!cell_is_offset_band(tid)) continue;
+        const size_t k = band_cell_entry(tid);
         for (const size_t v : oriented_tet_vids(tid)) {
             if (m_vertex_extra[v].label != 1) continue;
-            if (piece_of_vertex[v] == -3) {
-                piece_of_vertex[v] = region_at(m_vertex_attribute[v].m_posf);
-            }
-            const int r = piece_of_vertex[v];
+            const auto [it, added] = piece_of_vertex.try_emplace({v, k}, -1);
+            if (added) it->second = region_at(m_vertex_attribute[v].m_posf, k);
+            const int r = it->second;
             if (r < 0) continue;
             if (m_cell_region[tid] == -1) {
                 m_cell_region[tid] = r;
@@ -3636,10 +3825,14 @@ void TopoOffsetTetMesh::assign_band_regions(const bool log)
         const int r = m_cell_region[t];
         if (r < 0) continue;
         for (int j = 0; j < 4; ++j) {
-            const std::optional<Tuple> opp = tuple_from_face(t, j).switch_tetrahedron(*this);
+            const Tuple f = tuple_from_face(t, j);
+            const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
             if (!opp) continue;
             const size_t g = opp->tid(*this);
             if (!cell_is_offset_band(g)) continue;
+            bool on_complex = true;
+            for (const size_t v : get_face_vids(f)) on_complex &= m_vertex_extra[v].label == 1;
+            if (on_complex) continue;
             if (m_cell_region[g] == -1) {
                 m_cell_region[g] = r;
                 queue.push_back(g);
@@ -3832,6 +4025,7 @@ bool TopoOffsetTetMesh::settle_refinement_turn(
         : surface_energy()
             ? (e_now < o_bound || de <= m_offset_params.settle_stall_eps * (e_now - o_bound))
             : de < bar_energy;
+    m_turn_settled = settled; // check_level_set_reachable()
     // The floor of refine_front_by_halving().
     const double l = std::max(m_params.l, 1e-300);
     const double s_floor =
@@ -4542,7 +4736,8 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
         fate =
             "a TetWild pass: TetWild's smooth_after() (raw AMIPS sum), held in the offset envelope";
     } else if (ve.m_is_on_offset) {
-        fate = "the front smoother: AMIPS plus the offset terms (smooth_front_vertex)";
+        fate =
+            "the front smoother: AMIPS plus the offset terms (smooth_vertex_under_energy, front)";
     }
     logger().info("\t  smoothing fate: {}", fate);
 
@@ -4615,14 +4810,32 @@ bool TopoOffsetTetMesh::face_is_offset_surface_live(const Tuple& f) const
         // Domain boundary. A band cell here means the band was clipped by the bounding box, and
         // that face is offset surface -- its vertices can never reach the target distance, which
         // is precisely the thing that must be measured rather than hidden.
-        return cell_is_offset_band(ta);
+        // An In entry's selection may end on the domain boundary, which is then its complex.
+        return cell_is_offset_band(ta) &&
+               !band_face_on_in_complex(ta, size_t(-1), get_face_vids(f));
     }
     const size_t tb = opp->tid(*this);
     const bool a = cell_is_offset_band(ta), b = cell_is_offset_band(tb);
     if (a == b) return false; // both in the band, or neither: not the band's surface
     // The band's inner interface, against the input complex it wraps, sits at distance 0 by
-    // construction and would drag the reported error to target_distance everywhere.
-    return !cell_is_input_complex(a ? tb : ta);
+    // construction and would drag the reported error to target_distance everywhere: a face of a
+    // complex cell (Out), or a face of an In entry's complex, its selection's boundary, with no
+    // cell beyond it (band_face_on_in_complex()).
+    return !cell_is_input_complex(a ? tb : ta) &&
+           !band_face_on_in_complex(a ? ta : tb, a ? tb : ta, get_face_vids(f));
+}
+
+bool TopoOffsetTetMesh::band_face_on_in_complex(
+    const size_t band,
+    const size_t other,
+    const std::array<size_t, 3>& vids) const
+{
+    // See the declaration. The corners first: they decide almost every face, without the
+    // winding number band_cell_entry() may read.
+    if (!face_on_input_complex(vids)) return false;
+    const size_t k = band_cell_entry(band);
+    if (m_offset_params.direction(k) != Parameters::Offset::Direction::In) return false;
+    return other == size_t(-1) || !cell_in_selection(k, other);
 }
 
 bool TopoOffsetTetMesh::offset_face_normal_out_of_band(const Tuple& f, Vector3d& n) const
@@ -4783,11 +4996,15 @@ bool TopoOffsetTetMesh::for_each_live_offset_face_at(const size_t vid, F&& fn) c
         const size_t ta = sides[i].tid;
         if (j - i == 1) {
             // a band face on the domain boundary
-            if (cell_is_offset_band(ta) && fn(sides[i].face, ta)) return true;
+            if (cell_is_offset_band(ta) &&
+                !band_face_on_in_complex(ta, size_t(-1), sides[i].face) && fn(sides[i].face, ta))
+                return true;
         } else {
             const size_t tb = sides[i + 1].tid;
             const bool a = cell_is_offset_band(ta), b = cell_is_offset_band(tb);
-            if (a != b && !cell_is_input_complex(a ? tb : ta) && fn(sides[i].face, a ? ta : tb)) {
+            if (a != b && !cell_is_input_complex(a ? tb : ta) &&
+                !band_face_on_in_complex(a ? ta : tb, a ? tb : ta, sides[i].face) &&
+                fn(sides[i].face, a ? ta : tb)) {
                 return true;
             }
         }
@@ -4978,6 +5195,19 @@ void TopoOffsetTetMesh::refresh_offset_membership(const size_t vid)
     m_vertex_extra[vid].m_is_on_offset = vertex_has_live_offset_face(vid);
 }
 
+bool TopoOffsetTetMesh::vertex_has_tracked_face(const size_t vid) const
+{
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+            const auto vs = get_face_vids(f);
+            if (vs[0] == vid || vs[1] == vid || vs[2] == vid) return true;
+        }
+    }
+    return false;
+}
+
 std::pair<size_t, size_t> TopoOffsetTetMesh::offset_membership_mismatches() const
 {
     size_t flagged_not_live = 0, live_not_flagged = 0;
@@ -5001,6 +5231,31 @@ void TopoOffsetTetMesh::check_offset_membership(const char* when) const
         when,
         flagged_not_live,
         live_not_flagged);
+    // The base's m_is_on_surface, exactly vertex_has_tracked_face(): the engine decides from it
+    // (its collapse keeps a flagged vertex on the surface).
+    size_t flag_no_tracked = 0, tracked_no_flag = 0;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        const bool tracked = vertex_has_tracked_face(vid);
+        const bool flag = m_vertex_attribute[vid].m_is_on_surface;
+        if (flag && !tracked) ++flag_no_tracked;
+        if (tracked && !flag) ++tracked_no_flag;
+    }
+    logger().info(
+        "\t[sanity] m_is_on_surface @ {}: flagged without a tracked face {}, a tracked face "
+        "without the flag {}",
+        when,
+        flag_no_tracked,
+        tracked_no_flag);
+    if (flag_no_tracked != 0 || tracked_no_flag != 0) {
+        log_and_throw_error(
+            "m_is_on_surface is out of step @ {}: {} vertices carry it with no tracked face, {} "
+            "have a tracked face without it. An operation changed a tracked face without "
+            "re-deriving its corners' flag.",
+            when,
+            flag_no_tracked,
+            tracked_no_flag);
+    }
     if (flagged_not_live != 0 || live_not_flagged != 0) {
         log_and_throw_error(
             "offset membership is out of step @ {}: {} vertices carry m_is_on_offset with no live "
@@ -5420,6 +5675,7 @@ void TopoOffsetTetMesh::loop_group(const std::array<int, 4>& ops, const std::str
     // same turn. Under interleaved_smoothing this is once per group, else once per turn.
     if (m_offset_params.label_cleanup != "off" && (ops[0] > 0 || ops[1] > 0 || ops[2] > 0)) {
         label_cleanup(where);
+        held_topology_check("label_cleanup");
         // DEBUG_output: the clean-up's own frame, so its flips are seen apart from the condition-1
         // splits and the smoothing pass that follow it.
         if (m_offset_params.debug_output) {
@@ -5431,6 +5687,7 @@ void TopoOffsetTetMesh::loop_group(const std::array<int, 4>& ops, const std::str
     }
     for (int p = 0; p < ops[3]; ++p) {
         front_pocket_split(fmt::format("{}, before smoothing pass {}", where, p + 1));
+        held_topology_check("pocket_split");
         local_operations({{0, 0, 0, 1}});
     }
 }
@@ -5444,20 +5701,21 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
         return (m_vertex_attribute[e[0]].m_posf - m_vertex_attribute[e[1]].m_posf).squaredNorm();
     };
     // A pinned cell: its corners sorted (it names the cell across the round's splits), the edges
-    // to split it on, longest first (ties by vertex ids), and whether all six of its edges are on
-    // the offset surface.
+    // to split it on, longest first (ties by vertex ids), and whether all six of its edges, and
+    // all four of its faces, are on the offset surface.
     struct Pinned
     {
         std::array<size_t, 4> vids;
         std::vector<std::array<size_t, 2>> edges;
         bool six = false;
+        bool four = false;
     };
-    // One scan of the live cells. `no_face`: pinned cells with all four faces on the offset
-    // surface, which have no edge to split; `six` and `band`, when given: pinned cells with all
-    // six edges on it, and band cells with all four corners on the front.
-    const auto scan = [&](size_t& no_face, size_t* six, size_t* band) {
+    // One scan of the live cells. `four_face`: pinned cells with all four faces on the offset
+    // surface; `six` and `band`, when given: pinned cells with all six edges on it, and band
+    // cells with all four corners on the front.
+    const auto scan = [&](size_t& four_face, size_t* six, size_t* band) {
         std::vector<Pinned> out;
-        no_face = 0;
+        four_face = 0;
         for (const Tuple& t : get_tets()) {
             const size_t tid = t.tid(*this);
             const std::array<size_t, 4> vs = oriented_tet_vids(tid);
@@ -5494,13 +5752,11 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
                 // the cell's descendants. That is simplicial_embedding()'s face split, made of
                 // the loop's own edge splits; the component's face split hooks are the
                 // construction's (they write no m_is_on_offset, no rest, no exact fallback).
-                // A cell with all four faces on the offset surface is a one-cell component of
-                // its label; a split would leave its boundary, every corner of it on the front,
-                // as it is, so it is counted only. MEASURED before this (cube_in, target 0.3,
-                // 7 turns): 176 such cells over the passes (31 distinct; 102 band, 74 not), every
-                // one with exactly three faces on the offset surface, their shared corner on
-                // exactly three offset faces and in no other cell of the cell's label -- a cell
-                // alone under a front vertex of valence 3 -- and all 176 left unsplit.
+                // MEASURED before this (cube_in, target 0.3, 7 turns): 176 such cells over the
+                // passes (31 distinct; 102 band, 74 not), every one with exactly three faces on
+                // the offset surface, their shared corner on exactly three offset faces and in no
+                // other cell of the cell's label -- a cell alone under a front vertex of valence
+                // 3 -- and all 176 left unsplit.
                 p.six = true;
                 if (six) ++*six;
                 for (int j = 0; j < 4; ++j) {
@@ -5516,8 +5772,21 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
                     }
                 }
                 if (p.edges.empty()) {
-                    ++no_face;
-                    continue;
+                    // All four faces on the offset surface: a one-cell component of its label,
+                    // with no face to split on. It is split on its longest edge instead (on the
+                    // offset surface, so the midpoint m is on the front): the face (m, c, d)
+                    // between its two children, c and d its other corners, is not an offset face
+                    // and has its three edges on the offset surface, so both children are cells
+                    // with all six edges on it, which the next rounds split as above -- a vertex
+                    // off the front inside the cell. Before, it was counted and left. MEASURED
+                    // then on the 2D twin (TopoOffsetTriMesh::front_pocket_split(); 2026-11-12):
+                    // a hole of the band left as one such triangle was flattened by the smoothing
+                    // pass after it and stayed flat for the run.
+                    p.four = true;
+                    ++four_face;
+                    for (int i = 0; i < 4; ++i) {
+                        for (int j = i + 1; j < 4; ++j) p.edges.push_back({{p.vids[i], p.vids[j]}});
+                    }
                 }
             }
             std::sort(p.edges.begin(), p.edges.end(), [&](const auto& a, const auto& b) {
@@ -5634,12 +5903,12 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
             n_gone,
             n_no);
     }
-    size_t n_band = 0, n_six = 0, no_face = 0;
-    std::vector<Pinned> pinned = scan(no_face, &n_six, &n_band);
+    size_t n_band = 0, n_six = 0, four_face = 0;
+    std::vector<Pinned> pinned = scan(four_face, &n_six, &n_band);
     std::vector<std::array<size_t, 2>> sp_edges;
     std::vector<SpannedFace> sp_faces;
     scan_spanned(sp_edges, sp_faces);
-    const size_t found = pinned.size() + no_face, found_no_face = no_face;
+    const size_t found = pinned.size(), found_four_face = four_face;
     const size_t found_edges = sp_edges.size(), found_faces = sp_faces.size();
     size_t n_split = 0, n_refused = 0, n_split_edges = 0, n_split_faces = 0;
     const long waits0 = m_split_order_waits.load();
@@ -5684,11 +5953,12 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
         }
         n_split += split_now;
         // Every cell a split of an edge off the offset surface makes has the off-front midpoint
-        // as a corner; a split of an edge on it (a cell with all six edges there) leaves two
-        // children with one edge off it. So a rescan finds those children and the cells whose
-        // splits were all refused; with none committed it finds the same ones.
+        // as a corner; a split of an edge on it leaves two children with one edge off it (a cell
+        // with all six edges there) or with all six edges there and one face off it (a cell with
+        // all four faces there). So a rescan finds those children and the cells whose splits
+        // were all refused; with none committed it finds the same ones.
         if (split_now == 0) break;
-        pinned = scan(no_face, nullptr, nullptr);
+        pinned = scan(four_face, nullptr, nullptr);
         scan_spanned(sp_edges, sp_faces);
     }
     if (cap) {
@@ -5699,27 +5969,28 @@ void TopoOffsetTetMesh::front_pocket_split(const std::string& where)
             kPocketMaxRounds,
             pinned.size());
     }
-    const size_t left_six_split =
+    const size_t left_six =
         size_t(std::count_if(pinned.begin(), pinned.end(), [](const Pinned& p) { return p.six; }));
+    const size_t left_four =
+        size_t(std::count_if(pinned.begin(), pinned.end(), [](const Pinned& p) { return p.four; }));
     logger().info(
         "\t[pocket split] {}: pinned cells (outside the input complex, all four corners on the "
         "front) {}, of which {} with all six edges on the offset surface ({} with all four faces "
         "on it) | edges split {} in {} round(s), split attempts refused {} ({} by the "
-        "longest-edge order) | left: {} with all six edges on the offset surface ({} with all "
-        "four faces on it, not split; {} every split refused, or the cap), {} with an edge off "
-        "it (every split refused, or the cap) | of the pinned cells found, band cells {}{}",
+        "longest-edge order) | left (every split refused, or the cap): {} with all six edges on "
+        "the offset surface ({} with all four faces on it), {} with an edge off it | of the "
+        "pinned cells found, band cells {}{}",
         where,
         found,
         n_six,
-        found_no_face,
+        found_four_face,
         n_split,
         rounds,
         n_refused,
         m_split_order_waits.load() - waits0,
-        no_face + left_six_split,
-        no_face,
-        left_six_split,
-        pinned.size() - left_six_split,
+        left_six,
+        left_four,
+        pinned.size() - left_six,
         n_band,
         m_offset_params.front_spanned_split
             ? fmt::format(
@@ -5750,6 +6021,392 @@ double TopoOffsetTetMesh::label_flip_surface_change(const size_t tid) const
         (lo == own ? flipped : now) += s;
     }
     return flipped - now;
+}
+
+bool TopoOffsetTetMesh::held_object_face(const Tuple& f) const
+{
+    // See the declaration.
+    if (!f.switch_tetrahedron(*this)) return true; // the mesh boundary
+    const size_t fid = f.fid(*this);
+    return m_face_extra[fid].label == 1 || face_is_region(fid);
+}
+
+bool TopoOffsetTetMesh::held_object_edge(const size_t a, const size_t b) const
+{
+    // See the declaration.
+    const size_t eid = tuple_from_edge({{a, b}}).eid(*this);
+    if (m_edge_attribute[eid].label == 1) return true;
+    if (m_track_feature_edges && m_feature_edge_attribute[eid].is_tagged()) return true;
+    for (const size_t s : get_incident_tids_for_edge(a, b)) {
+        for (int k = 0; k < 4; ++k) {
+            const Tuple f = tuple_from_face(s, k);
+            const std::array<size_t, 3> fv = get_face_vids(f);
+            const bool has_a = fv[0] == a || fv[1] == a || fv[2] == a;
+            const bool has_b = fv[0] == b || fv[1] == b || fv[2] == b;
+            if (has_a && has_b && held_object_face(f)) return true;
+        }
+    }
+    return false;
+}
+
+bool TopoOffsetTetMesh::held_object_vertex(const size_t v) const
+{
+    // See the declaration.
+    if (m_vertex_extra[v].label == 1) return true;
+    if (m_track_feature_points &&
+        m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT) {
+        return true;
+    }
+    std::vector<size_t> seen; // the other ends of the edges at v already asked
+    for (const size_t s : get_one_ring_tids_for_vertex(v)) {
+        for (const size_t w : oriented_tet_vids(s)) {
+            if (w == v || std::find(seen.begin(), seen.end(), w) != seen.end()) continue;
+            seen.push_back(w);
+            if (held_object_edge(v, w)) return true;
+        }
+    }
+    return false;
+}
+
+std::array<int64_t, 4> TopoOffsetTetMesh::held_topology_signature(
+    std::map<std::array<double, 3>, std::array<bool, 2>>* vertex_touch,
+    std::array<std::array<int64_t, 4>, 4>* by_kind) const
+{
+    // See the declaration. The held simplices by sorted corners: the held faces with their edges
+    // and corners, the tagged and input-complex edges with their corners, the anchored and
+    // input-complex vertices.
+    std::map<std::vector<size_t>, size_t> index;
+    std::vector<std::vector<size_t>> simplices;
+    // the kinds a simplex belongs to: 1 the input complex, 2 the held curves and points, 4 the
+    // region boundaries, 8 the box -- a face of a held simplex takes its kind
+    std::vector<uint8_t> kinds;
+    const auto add = [&](std::vector<size_t> sigma, const uint8_t kind) {
+        std::sort(sigma.begin(), sigma.end());
+        const auto [it, fresh] = index.emplace(sigma, simplices.size());
+        if (fresh) {
+            simplices.push_back(sigma);
+            kinds.push_back(0);
+        }
+        kinds[it->second] |= kind;
+    };
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        for (int k = 0; k < 4; ++k) {
+            const Tuple f = tuple_from_face(tid, k);
+            if (!held_object_face(f)) continue;
+            const std::array<size_t, 3> fv = get_face_vids(f);
+            const uint8_t kind = !f.switch_tetrahedron(*this)            ? 8
+                                 : m_face_extra[f.fid(*this)].label == 1 ? 1
+                                                                         : 4;
+            add({fv[0], fv[1], fv[2]}, kind);
+            for (int i = 0; i < 3; ++i) {
+                add({fv[size_t(i)], fv[size_t((i + 1) % 3)]}, kind);
+                add({fv[size_t(i)]}, kind);
+            }
+        }
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        for (int i = 0; i < 4; ++i) {
+            for (int j = i + 1; j < 4; ++j) {
+                const size_t eid = tuple_from_edge({{vs[size_t(i)], vs[size_t(j)]}}).eid(*this);
+                const uint8_t kind =
+                    (m_edge_attribute[eid].label == 1 ? 1 : 0) |
+                    (m_track_feature_edges && m_feature_edge_attribute[eid].is_tagged() ? 2 : 0);
+                if (kind) {
+                    add({vs[size_t(i)], vs[size_t(j)]}, kind);
+                    add({vs[size_t(i)]}, kind);
+                    add({vs[size_t(j)]}, kind);
+                }
+            }
+        }
+        for (const size_t v : vs) {
+            const uint8_t kind =
+                (m_vertex_extra[v].label == 1 ? 1 : 0) |
+                (m_track_feature_points &&
+                         m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT
+                     ? 2
+                     : 0);
+            if (kind) add({v}, kind);
+        }
+    }
+    // Each simplex's chambers: its cells, joined across the faces through it that are not held.
+    std::vector<std::map<size_t, int>> chamber_of(simplices.size());
+    std::vector<std::vector<std::array<bool, 2>>> touched(simplices.size()); // band, non-band
+    std::vector<size_t> first(simplices.size() + 1, 0); // element ids: first[i] + chamber
+    for (size_t i = 0; i < simplices.size(); ++i) {
+        const std::vector<size_t>& sigma = simplices[i];
+        std::vector<size_t> star;
+        if (sigma.size() == 1) {
+            star = get_one_ring_tids_for_vertex(sigma[0]);
+        } else {
+            for (const size_t c : get_incident_tids_for_edge(sigma[0], sigma[1])) {
+                const std::array<size_t, 4> cv = oriented_tet_vids(c);
+                if (sigma.size() == 2 || std::find(cv.begin(), cv.end(), sigma[2]) != cv.end()) {
+                    star.push_back(c);
+                }
+            }
+        }
+        for (const size_t c0 : star) {
+            if (chamber_of[i].count(c0)) continue;
+            const int k = int(touched[i].size());
+            touched[i].push_back({{false, false}});
+            std::vector<size_t> stack{c0};
+            chamber_of[i][c0] = k;
+            while (!stack.empty()) {
+                const size_t c = stack.back();
+                stack.pop_back();
+                const int l = m_tet_attribute[c].label;
+                touched[i][size_t(k)][0] = touched[i][size_t(k)][0] || l == 2;
+                touched[i][size_t(k)][1] = touched[i][size_t(k)][1] || l == 0;
+                for (int j = 0; j < 4; ++j) {
+                    const Tuple f = tuple_from_face(c, j);
+                    const std::array<size_t, 3> fv = get_face_vids(f);
+                    const bool through = std::all_of(sigma.begin(), sigma.end(), [&](size_t x) {
+                        return fv[0] == x || fv[1] == x || fv[2] == x;
+                    });
+                    if (!through || held_object_face(f)) continue;
+                    const size_t n = f.switch_tetrahedron(*this)->tid(*this);
+                    if (chamber_of[i].emplace(n, k).second) stack.push_back(n);
+                }
+            }
+        }
+        first[i + 1] = first[i] + touched[i].size();
+        if (vertex_touch && sigma.size() == 1) {
+            const Vector3d& x = m_vertex_attribute[sigma[0]].m_posf;
+            std::array<bool, 2>& t = (*vertex_touch)[{{x[0], x[1], x[2]}}];
+            for (const auto& k : touched[i]) {
+                t[0] = t[0] || k[0];
+                t[1] = t[1] || k[1];
+            }
+        }
+    }
+    // Per label: union-find over the touched elements, each joined to its faces' elements (the
+    // face's chamber holding the element's cells); components and the Euler characteristic.
+    const auto compute = [&](const uint8_t mask) {
+        std::array<int64_t, 4> out{};
+        for (int label = 0; label < 2; ++label) {
+            std::vector<size_t> root(first.back());
+            std::iota(root.begin(), root.end(), size_t(0));
+            const auto find = [&root](size_t x) {
+                while (root[x] != x) x = root[x] = root[root[x]];
+                return x;
+            };
+            int64_t chi = 0;
+            for (size_t i = 0; i < simplices.size(); ++i) {
+                const std::vector<size_t>& sigma = simplices[i];
+                if (!(kinds[i] & mask)) continue;
+                for (size_t k = 0; k < touched[i].size(); ++k) {
+                    if (!touched[i][k][size_t(label)]) continue;
+                    chi += sigma.size() == 2 ? -1 : 1;
+                    if (sigma.size() == 1) continue;
+                    const size_t c = chamber_of[i].begin()->first; // any cell, then its chamber's
+                    size_t cell = c;
+                    for (const auto& [tid, kk] : chamber_of[i]) {
+                        if (size_t(kk) == k) {
+                            cell = tid;
+                            break;
+                        }
+                    }
+                    std::vector<std::vector<size_t>> faces;
+                    for (size_t a = 0; a < sigma.size(); ++a) {
+                        faces.push_back({sigma[a]});
+                        for (size_t b = a + 1; b < sigma.size(); ++b) {
+                            if (sigma.size() == 3) faces.push_back({sigma[a], sigma[b]});
+                        }
+                    }
+                    for (const std::vector<size_t>& rho : faces) {
+                        const auto it = index.find(rho);
+                        if (it == index.end()) continue;
+                        const size_t r = it->second;
+                        if (!(kinds[r] & mask)) continue;
+                        const int kr = chamber_of[r].at(cell);
+                        if (!touched[r][size_t(kr)][size_t(label)]) continue;
+                        root[find(first[i] + k)] = find(first[r] + size_t(kr));
+                    }
+                }
+            }
+            int64_t b0 = 0;
+            for (size_t i = 0; i < simplices.size(); ++i) {
+                if (!(kinds[i] & mask)) continue;
+                for (size_t k = 0; k < touched[i].size(); ++k) {
+                    if (touched[i][k][size_t(label)] && find(first[i] + k) == first[i] + k) ++b0;
+                }
+            }
+            out[size_t(2 * label)] = b0;
+            out[size_t(2 * label + 1)] = chi;
+            // DEBUG_held_topology, held curves and points, the band: each component's vertex count
+            // and centroid, logged where the topology changed.
+            if (mask == 2 && label == 0 && m_offset_params.debug_held_topology) {
+                std::map<size_t, std::pair<size_t, Vector3d>> comp;
+                for (size_t i = 0; i < simplices.size(); ++i) {
+                    if (!(kinds[i] & mask) || simplices[i].size() != 1) continue;
+                    for (size_t k = 0; k < touched[i].size(); ++k) {
+                        if (!touched[i][k][0]) continue;
+                        auto& [n, c] =
+                            comp.try_emplace(find(first[i] + k), 0, Vector3d::Zero()).first->second;
+                        ++n;
+                        c += m_vertex_attribute[simplices[i][0]].m_posf;
+                    }
+                }
+                m_held_curve_counts = {{0, 0}};
+                for (size_t i = 0; i < simplices.size(); ++i) {
+                    if (kinds[i] & 2) ++m_held_curve_counts[simplices[i].size() == 1 ? 0 : 1];
+                }
+                m_held_curve_band_components.clear();
+                for (const auto& [r, nc] : comp) {
+                    m_held_curve_band_components.emplace_back(
+                        nc.first,
+                        nc.second / double(nc.first));
+                }
+            }
+        }
+        return out;
+    };
+    if (by_kind) {
+        for (int k = 0; k < 4; ++k) (*by_kind)[size_t(k)] = compute(uint8_t(1 << k));
+    }
+    return compute(0xFF);
+}
+
+void TopoOffsetTetMesh::held_topology_check(const std::string& pass)
+{
+    // See the declaration.
+    if (!m_offset_params.debug_held_topology) return;
+    std::map<std::array<double, 3>, std::array<bool, 2>> touch;
+    std::array<std::array<int64_t, 4>, 4> by_kind{};
+    const std::array<int64_t, 4> s = held_topology_signature(&touch, &by_kind);
+    // Stale order-2 tags: edges still tagged order-2 whose tracked faces no longer make them one
+    // (drop_stale_order2_tags() removes such a tag at the next collapse next to it).
+    size_t n_stale = 0;
+    if (m_track_feature_edges) {
+        for (const Tuple& e : get_edges()) {
+            const FeatureEdgeAttributes& attr = m_feature_edge_attribute[e.eid(*this)];
+            if (!attr.has(FeatureEdgeAttributes::order2)) continue;
+            const std::array<size_t, 2> p{{e.vid(*this), e.switch_vertex(*this).vid(*this)}};
+            if (!holds_order2_edge(get_num_surface_faces_for_edge(p))) ++n_stale;
+        }
+    }
+    if (!m_held_topology) {
+        logger().info(
+            "\t[held topology] {}: baseline -- the band touches the held objects in {} "
+            "component(s), Euler characteristic {}; the non-band in {}, {} | stale order-2 tags {}",
+            pass,
+            s[0],
+            s[1],
+            s[2],
+            s[3],
+            n_stale);
+    } else if (s != *m_held_topology) {
+        ++m_held_topology_changes;
+        const std::array<int64_t, 4>& o = *m_held_topology;
+        logger().warn(
+            "\t[held topology] {} (turn {}): the held objects' contact topology changed -- band "
+            "{} -> {} component(s), Euler characteristic {} -> {}; non-band {} -> {}, {} -> {} "
+            "({} change(s) so far) | stale order-2 tags {} -> {}",
+            pass,
+            m_round,
+            o[0],
+            s[0],
+            o[1],
+            s[1],
+            o[2],
+            s[2],
+            o[3],
+            s[3],
+            m_held_topology_changes,
+            m_held_stale_order2,
+            n_stale);
+        // Where: the held vertices whose touch changed, matched by position (a collapse moves
+        // one vertex onto another, so the survivor keeps a position the map had), and those
+        // gone or new.
+        size_t n_changed = 0, n_gone = 0, n_new = 0;
+        std::string at;
+        for (const auto& [x, t] : touch) {
+            const auto it = m_held_vertex_touch.find(x);
+            if (it == m_held_vertex_touch.end()) {
+                ++n_new;
+                continue;
+            }
+            if (it->second == t) continue;
+            if (++n_changed <= 6) {
+                at += fmt::format(
+                    " ({:.4g}, {:.4g}, {:.4g}) band {}->{} non-band {}->{};",
+                    x[0],
+                    x[1],
+                    x[2],
+                    int(it->second[0]),
+                    int(t[0]),
+                    int(it->second[1]),
+                    int(t[1]));
+            }
+        }
+        for (const auto& [x, t] : m_held_vertex_touch) n_gone += touch.count(x) ? 0 : 1;
+        logger().warn(
+            "\t[held topology] {}: {} held vertices changed touch,{} {} gone, {} new",
+            pass,
+            n_changed,
+            at,
+            n_gone,
+            n_new);
+        const char* kind_names[4] = {
+            "input complex",
+            "curves and points",
+            "region boundaries",
+            "box"};
+        for (int k = 0; k < 4; ++k) {
+            const auto& a = m_held_topology_by_kind[size_t(k)];
+            const auto& b = by_kind[size_t(k)];
+            if (a == b) continue;
+            if (k == 1) {
+                std::string where;
+                for (const auto& [n, c] : m_held_curve_band_components) {
+                    where += fmt::format(" {} at ({:.3g}, {:.3g}, {:.3g});", n, c[0], c[1], c[2]);
+                }
+                logger().warn(
+                    "\t[held topology] {}: the band's components on held curves and points, "
+                    "vertices and centroid:{} | held curve vertices {} -> {}, edges {} -> {}",
+                    pass,
+                    where,
+                    m_held_curve_counts_before[0],
+                    m_held_curve_counts[0],
+                    m_held_curve_counts_before[1],
+                    m_held_curve_counts[1]);
+            }
+            logger().warn(
+                "\t[held topology] {}: {} -- band {} -> {} component(s), Euler characteristic {} "
+                "-> {}; non-band {} -> {}, {} -> {}",
+                pass,
+                kind_names[k],
+                a[0],
+                b[0],
+                a[1],
+                b[1],
+                a[2],
+                b[2],
+                a[3],
+                b[3]);
+        }
+    }
+    m_held_topology = s;
+    m_held_topology_by_kind = by_kind;
+    m_held_curve_counts_before = m_held_curve_counts;
+    m_held_stale_order2 = n_stale;
+    m_held_vertex_touch = std::move(touch);
+}
+
+void TopoOffsetTetMesh::check_level_set_reachable(const std::string& when)
+{
+    // See the declaration.
+    if (m_unreachable_cells == 0) return;
+    const std::string msg = fmt::format(
+        "[held objects] {}: the level set is out of reach without the band touching a held object "
+        "it did not touch as constructed -- the label clean-up keeps {} non-band cell(s) wholly "
+        "inside the level set out of the band, the first at {} (throw_on_unreachable_level_set "
+        "false warns and goes on)",
+        when,
+        m_unreachable_cells,
+        m_unreachable_where);
+    if (m_offset_params.throw_on_unreachable_level_set) log_and_throw_error("{}", msg);
+    logger().warn("\t{}", msg);
 }
 
 void TopoOffsetTetMesh::label_cleanup(const std::string& where)
@@ -5839,6 +6496,12 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     };
 
     const auto wants_flip = [&](const size_t tid) {
+        // Never across an In entry's complex: a non-band cell outside its selection is off the
+        // side the band grows on (cell_off_offset_side()).
+        if (!cell_is_offset_band(tid)) {
+            const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+            if (cell_off_offset_side(tid, place_piece(vs.data(), 4))) return false;
+        }
         if (energy_decrease) {
             if (get_quality(tuple_from_tet(tid)) >= MAX_ENERGY) return false;
             return surface_flip_lowers(tid);
@@ -5884,39 +6547,27 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     };
 
     // ELIGIBILITY: two labels only, so that the topology test sees everything t touches. Every
-    // cell sharing a vertex with t is band or non-band (no input-complex cell), not plastic (its
-    // AMIPS term would read the label), and of the one tag of its label there (the flipped cell
-    // takes the other label's, `tag`). And no corner of t is on anything else: the input complex
-    // (vertex label 1, which also catches a sheet, wire or point complex without cells), another
-    // tracked surface or the box (vertex_is_on_region(): a tag boundary or the wall), or the mesh
-    // boundary (a face through it with no cell beyond) -- which implies that no face of t is on the
-    // mesh boundary. The corner conditions are there because the test below reads cells only: at a
-    // corner on the wall, a flip the test allows can still join the front to the wall at that one
-    // vertex.
-    const auto eligible = [&](const size_t tid, CellTag& tag) {
-        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
-        std::array<const CellTag*, 3> tag_of{{nullptr, nullptr, nullptr}}; // by label
-        for (const size_t v : vs) {
-            if (m_vertex_extra[v].label == 1 || vertex_is_on_region(v)) return false;
+    // cell sharing a vertex with t is band or non-band (no input-complex cell) and not plastic (its
+    // AMIPS term would read the label). And no corner of t is where a held surface -- a tag
+    // boundary or the box (vertex_is_on_region()) -- and the front already meet (m_is_on_offset).
+    // Only the construction makes such contact (the held objects' test below never lets the loop
+    // make it): where the input complex meets another region or the box. There its faces between
+    // band and non-band are both held and front, the construction gives them the offset surface's
+    // class, and the held objects' test cannot see the held surface they lie on -- until such a
+    // face has a class of its own (double_sphere's junction). Every other corner, on the input
+    // complex, a held curve or point, a held surface or the box, the held objects' test decides
+    // (2026-11-10). Until then every corner on the input complex, a tracked surface, the box or
+    // the mesh boundary was refused, because the topology test reads cells only and a flip it
+    // allows can still join the front to the wall at one vertex -- which the held objects' test
+    // reads.
+    const auto eligible = [&](const size_t tid) {
+        for (const size_t v : oriented_tet_vids(tid)) {
+            if (vertex_is_on_region(v) && m_vertex_extra[v].m_is_on_offset) return false;
             for (const size_t s : get_one_ring_tids_for_vertex(v)) {
                 const int l = label_of(s);
                 if ((l != 0 && l != 2) || cell_is_plastic(s)) return false;
-                const CellTag& tg = m_tet_attribute[s].tag;
-                if (!tag_of[size_t(l)]) {
-                    tag_of[size_t(l)] = &tg;
-                } else if (*tag_of[size_t(l)] != tg) {
-                    return false;
-                }
-                for (int k = 0; k < 4; ++k) {
-                    const Tuple f = tuple_from_face(s, k);
-                    if (f.switch_tetrahedron(*this)) continue;
-                    const std::array<size_t, 3> fv = get_face_vids(f);
-                    if (std::find(fv.begin(), fv.end(), v) != fv.end()) return false;
-                }
             }
         }
-        const int other = label_of(tid) == 2 ? 0 : 2;
-        tag = tag_of[size_t(other)] ? *tag_of[size_t(other)] : CellTag{};
         return true;
     };
 
@@ -5976,23 +6627,288 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         return f;
     };
 
+    // THE HELD OBJECTS' TEST (2026-11-10). The invariant: the optimization keeps the topology the
+    // construction gave the band, the non-band AND every held object -- the input complex, the
+    // held curves (tagged edges) and points (anchors), and the held surfaces -- as if the front
+    // moved by a deformation of the domain that maps each held object onto itself. The topology
+    // test above keeps the first two; this keeps the rest. A held simplex sigma of t's closure
+    // has CHAMBERS: the cells around it, joined across the faces through sigma that are not held
+    // (a held face's two sides are two chambers). Per chamber, sigma is touched by a label when
+    // the chamber has a cell of it. Switching t from label s to o changes only the chamber
+    // holding t, for the held simplices of t's closure X: o touches each of them after, and s
+    // leaves those whose chamber had no other cell of s. Allowed iff both changes are simple:
+    //   the set o touches grows by X attached along A, the part of X o touched before: allowed
+    //     iff A -> X is a homotopy equivalence (per component of X, A meets it, connected, with
+    //     the same Euler characteristic) -- a held point o did not touch, alone in X, fails;
+    //   the set s touches loses Y, the part of X only t gave it: allowed iff cl(Y) \ Y -> cl(Y)
+    //     is one -- a held point whose last cell of s is t fails.
+    // So a held point's chamber status never changes, a crossing of the front with a held curve
+    // moves along it but is never born or lost, and the front never newly touches a held object.
+    // MEASURED before it (held point q 0.25 from p, target 0.3, frames, 2026-11-10): turn 1's
+    // clean-up took 6 of q's 30 cells into the band (all four corners inside the level set), so q
+    // joined the front and could not reach it (held 0.0035 from where it is, 1.67 bars short);
+    // the front folded around q every turn; under exact_swept turn 11 took q's last non-band cell
+    // and the band enclosed q. The held faces are the input complex's (label 1), the region
+    // boundaries (face_is_region()) and the mesh boundary, the box; t's own held faces count as
+    // simplices of X. So the front stops a layer of cells short of a held surface it did not
+    // touch as constructed, as of a held point or curve.
+    const auto held_face = [&](const Tuple& f) { return held_object_face(f); };
+    // The tag the flipped cell takes, of the label it joins. The band: the one tag of the band
+    // cells at t's corners (two pieces' bands, of two tags, refuse). The non-band: that of t's
+    // non-band face neighbours across faces that are not held (a held face's far side is another
+    // region); they must agree, and there must be one. Until 2026-11-10 both labels' tags were
+    // read over every cell at t's corners, which next to a region boundary sees both regions.
+    const auto joined_tag = [&](const size_t tid, CellTag& tag) {
+        const int o = label_of(tid) == 2 ? 0 : 2;
+        const CellTag* found = nullptr;
+        if (o == 2) {
+            for (const size_t v : oriented_tet_vids(tid)) {
+                for (const size_t s : get_one_ring_tids_for_vertex(v)) {
+                    if (label_of(s) != 2) continue;
+                    const CellTag& tg = m_tet_attribute[s].tag;
+                    if (found && *found != tg) return false;
+                    found = &tg;
+                }
+            }
+        } else {
+            for (int k = 0; k < 4; ++k) {
+                const Tuple f = tuple_from_face(tid, k);
+                if (held_face(f)) continue;
+                const size_t n = f.switch_tetrahedron(*this)->tid(*this);
+                if (label_of(n) != o) continue;
+                const CellTag& tg = m_tet_attribute[n].tag;
+                if (found && *found != tg) return false;
+                found = &tg;
+            }
+        }
+        if (!found) return false;
+        tag = *found;
+        return true;
+    };
+    const auto face_has = [&](const std::array<size_t, 3>& fv, const size_t x) {
+        return fv[0] == x || fv[1] == x || fv[2] == x;
+    };
+    const auto held_edge = [&](const size_t a, const size_t b) { return held_object_edge(a, b); };
+    const auto held_vertex = [&](const size_t v) { return held_object_vertex(v); };
+    // The chamber of sigma holding t: whether it has a cell of label o, and one of label s other
+    // than t.
+    const auto chamber = [&](const size_t tid,
+                             const std::vector<size_t>& sigma,
+                             const int s,
+                             const int o,
+                             bool& o_in,
+                             bool& s_other) {
+        o_in = s_other = false;
+        std::vector<size_t> seen{tid}, stack{tid};
+        while (!stack.empty()) {
+            const size_t c = stack.back();
+            stack.pop_back();
+            if (c != tid) {
+                o_in = o_in || label_of(c) == o;
+                s_other = s_other || label_of(c) == s;
+            }
+            for (int k = 0; k < 4; ++k) {
+                const Tuple f = tuple_from_face(c, k);
+                const std::array<size_t, 3> fv = get_face_vids(f);
+                if (!std::all_of(sigma.begin(), sigma.end(), [&](size_t x) {
+                        return face_has(fv, x);
+                    })) {
+                    continue;
+                }
+                if (held_face(f)) continue;
+                const size_t n = f.switch_tetrahedron(*this)->tid(*this);
+                if (std::find(seen.begin(), seen.end(), n) != seen.end()) continue;
+                seen.push_back(n);
+                stack.push_back(n);
+            }
+        }
+    };
+    const auto held_allows = [&](const size_t tid) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const int s = label_of(tid), o = s == 2 ? 0 : 2;
+        // X: the held simplices of t's closure, each as the local indices (0..3) of its corners
+        // -- closed, as a held edge's corners and a held face's edges are held.
+        std::vector<std::vector<int>> X;
+        std::array<bool, 4> hv{};
+        for (int i = 0; i < 4; ++i) {
+            hv[size_t(i)] = held_vertex(vs[size_t(i)]);
+            if (hv[size_t(i)]) X.push_back({i});
+        }
+        for (int i = 0; i < 4; ++i) {
+            for (int j = i + 1; j < 4; ++j) {
+                if (hv[size_t(i)] && hv[size_t(j)] && held_edge(vs[size_t(i)], vs[size_t(j)]))
+                    X.push_back({i, j});
+            }
+        }
+        for (int k = 0; k < 4; ++k) {
+            const Tuple f = tuple_from_face(tid, k);
+            if (!held_face(f)) continue;
+            const std::array<size_t, 3> fv = get_face_vids(f);
+            std::vector<int> c;
+            for (int i = 0; i < 4; ++i) {
+                if (face_has(fv, vs[size_t(i)])) c.push_back(i);
+            }
+            X.push_back(c);
+        }
+        if (X.empty()) return true;
+        std::vector<char> touched(X.size()), loses(X.size());
+        for (size_t x = 0; x < X.size(); ++x) {
+            std::vector<size_t> sigma;
+            for (const int i : X[x]) sigma.push_back(vs[size_t(i)]);
+            bool o_in = false, s_other = false;
+            chamber(tid, sigma, s, o, o_in, s_other);
+            touched[x] = o_in;
+            loses[x] = !s_other;
+        }
+        // Whether the closed part P of the closed set Q (flags over X) includes into Q as a
+        // homotopy equivalence: per component of Q, P meets it, is connected there, and has the
+        // same Euler characteristic.
+        const auto equivalent = [&](const std::vector<char>& inQ, const std::vector<char>& inP) {
+            const auto components = [&](const std::vector<char>& in) {
+                std::array<int, 4> r{{0, 1, 2, 3}};
+                const auto root = [&r](int a) {
+                    while (r[size_t(a)] != a) a = r[size_t(a)];
+                    return a;
+                };
+                for (size_t x = 0; x < X.size(); ++x) {
+                    if (in[x] && X[x].size() == 2) r[size_t(root(X[x][0]))] = root(X[x][1]);
+                }
+                for (int a = 0; a < 4; ++a) r[size_t(a)] = root(a);
+                return r;
+            };
+            const std::array<int, 4> rq = components(inQ), rp = components(inP);
+            for (int c = 0; c < 4; ++c) {
+                bool is_root = false;
+                for (size_t x = 0; x < X.size(); ++x) {
+                    is_root = is_root || (inQ[x] && X[x].size() == 1 && rq[size_t(X[x][0])] == c);
+                }
+                if (!is_root) continue;
+                int chi_q = 0, chi_p = 0, p_root = -1;
+                bool p_connected = true;
+                for (size_t x = 0; x < X.size(); ++x) {
+                    if (!inQ[x] || rq[size_t(X[x][0])] != c) continue;
+                    const int sign = X[x].size() == 2 ? -1 : 1;
+                    chi_q += sign;
+                    if (!inP[x]) continue;
+                    chi_p += sign;
+                    if (X[x].size() == 1) {
+                        const int pr = rp[size_t(X[x][0])];
+                        if (p_root < 0) p_root = pr;
+                        p_connected = p_connected && pr == p_root;
+                    }
+                }
+                if (p_root < 0 || !p_connected || chi_p != chi_q) return false;
+            }
+            return true;
+        };
+        const std::vector<char> all(X.size(), 1);
+        if (std::find(touched.begin(), touched.end(), 0) != touched.end() &&
+            !equivalent(all, touched)) {
+            return false;
+        }
+        if (std::find(loses.begin(), loses.end(), 1) != loses.end()) {
+            std::vector<char> closure(X.size(), 0), rest(X.size(), 0);
+            for (size_t y = 0; y < X.size(); ++y) {
+                if (!loses[y]) continue;
+                for (size_t x = 0; x < X.size(); ++x) {
+                    const bool face_of_y = std::all_of(X[x].begin(), X[x].end(), [&](int i) {
+                        return std::find(X[y].begin(), X[y].end(), i) != X[y].end();
+                    });
+                    if (face_of_y) closure[x] = 1;
+                }
+            }
+            for (size_t x = 0; x < X.size(); ++x) rest[x] = closure[x] && !loses[x];
+            if (!equivalent(closure, rest)) return false;
+        }
+        return true;
+    };
+
+    // The one-sided side test's non-band half (wants_flip()): d < the piece's target on all of
+    // t, so the band reaches the level set only through t. A cell held objects keep out, so,
+    // makes the level set out of reach (check_level_set_reachable()).
+    const auto inside_level_set = [&](const size_t tid) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const int piece = place_piece(vs.data(), 4);
+        const std::shared_ptr<const ExactBandIntegral>& be = band_exact_for(piece);
+        if (!be || cell_off_offset_side(tid, piece)) return false;
+        std::array<Vector3d, 4> p;
+        for (int k = 0; k < 4; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
+        return be->distance_bound(p) < region_delta(piece);
+    };
+    // A held vertex's kind and position, for the message.
+    const auto describe_held = [&](const size_t v) -> std::string {
+        const bool anchored = m_track_feature_points &&
+                              m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT;
+        const char* kind = m_vertex_extra[v].label == 1 ? "the input complex"
+                           : anchored
+                               ? "an anchored point (an input point, a curve end or a junction)"
+                           : !m_vertex_attribute[v].on_bbox_faces.empty() ? "the box"
+                           : m_vertex_extra[v].m_is_on_region             ? "a region boundary"
+                                                                          : "a held curve";
+        const Vector3d& x = m_vertex_attribute[v].m_posf;
+        return fmt::format("{} at ({:.4g}, {:.4g}, {:.4g})", kind, x[0], x[1], x[2]);
+    };
+    // How deep inside the level set t's held corners lie: the max over them of the piece's target
+    // minus d, and the deepest one's kind and position. Within front_conv of the level set a front
+    // passing outside the held object is already within the bar, so only a held object deeper
+    // than that makes the level set out of reach (MEASURED, double_sphere with tag_1 held, 4
+    // threads, exact_swept: a refused cell's held corner on tag_1's surface 0.001 inside, against
+    // front_conv 0.005, threw at turn 5 before this; the held point, 0.05 inside against 0.03,
+    // throws).
+    const auto held_depth = [&](const size_t tid) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const int piece = place_piece(vs.data(), 4);
+        const std::shared_ptr<const ExactBandIntegral>& be = band_exact_for(piece);
+        double depth = -std::numeric_limits<double>::infinity();
+        size_t deepest = vs[0];
+        for (const size_t v : vs) {
+            if (!be || !held_object_vertex(v)) continue;
+            const double dv = region_delta(piece) - be->distance(m_vertex_attribute[v].m_posf);
+            if (dv > depth) {
+                depth = dv;
+                deepest = v;
+            }
+        }
+        return std::pair<double, std::string>(
+            depth,
+            fmt::format("{}, {:.4g} inside the level set", describe_held(deepest), depth));
+    };
+
     // A flip, and everything derived from t's label, which lives on t's closure: the closed labels
-    // of its faces, edges and corners (2 where some cell holding it is band, else 0: eligibility
-    // keeps 1 out of the closure), the cached class of its four faces -- the only faces whose two
-    // sides change -- and the front flags of its four corners, the only vertices on those faces.
-    // The base's union flag m_is_on_surface is raised for a corner that joins the front, as the
-    // split and the collapse raise it; it is never cleared (vertex_is_held()).
+    // of its faces, edges and corners (2 where some cell holding it is band, else 0; a simplex of
+    // the input complex keeps its 1), the cached class of its four faces -- the only faces whose
+    // two sides change -- and the front flags of its four corners, the only vertices on those
+    // faces. The base's m_is_on_surface is re-derived for the same corners from their faces
+    // (vertex_has_tracked_face()): raised for a corner that joins the front, as the split and the
+    // collapse raise it, and cleared for one whose last tracked face the flip untracks. The
+    // engine decides from the flag, so it must be exact: its collapse keeps a flagged vertex on
+    // the surface. Until 2026-11-17 it was never cleared; 2D's twin measured what that left (see
+    // TopoOffsetTriMesh::label_cleanup()).
     const auto any_band = [this](const std::vector<size_t>& tids) {
         return std::any_of(tids.begin(), tids.end(), [this](const size_t s) {
             return cell_is_offset_band(s);
         });
     };
     const auto flip = [&](const size_t tid, const CellTag& tag) {
+        // A held face of t becoming front would be contact with a held surface the held objects'
+        // test forbids, and its class rewritten below: a bug, so it throws.
+        std::array<bool, 4> front_before{};
+        for (int j = 0; j < 4; ++j) {
+            front_before[size_t(j)] = face_is_offset_surface_live(tuple_from_face(tid, j));
+        }
         m_tet_attribute[tid].label = label_of(tid) == 2 ? 0 : 2;
         m_tet_attribute[tid].tag = tag;
         for (int j = 0; j < 4; ++j) {
             const Tuple f = tuple_from_face(tid, j);
             const size_t fid = f.fid(*this);
+            if (!front_before[size_t(j)] && held_face(f) && face_is_offset_surface_live(f)) {
+                log_and_throw_error(
+                    "[label cleanup] {}: cell {} makes held face {} front, which the held objects' "
+                    "test forbids",
+                    where,
+                    tid,
+                    fid);
+            }
             std::vector<size_t> sides{tid};
             if (const std::optional<Tuple> o = f.switch_tetrahedron(*this)) {
                 sides.push_back(o->tid(*this));
@@ -6019,7 +6935,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             int& lv = m_vertex_extra[v].label;
             if (lv != 1) lv = any_band(get_one_ring_tids_for_vertex(v)) ? 2 : 0;
             refresh_offset_membership(v);
-            if (m_vertex_extra[v].m_is_on_offset) m_vertex_attribute[v].m_is_on_surface = true;
+            m_vertex_attribute[v].m_is_on_surface = vertex_has_tracked_face(v);
         }
     };
 
@@ -6073,7 +6989,9 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     size_t to_band = 0, to_non = 0, n_odd = 0;
     int passes = 0;
     // The last pass's verdicts: that pass flips nothing, so they are what the clean-up leaves.
-    size_t n_cand = 0, n_want = 0, n_skip = 0;
+    size_t n_cand = 0, n_want = 0, n_skip = 0, n_refused_held = 0, n_refused_tag = 0;
+    size_t n_unreachable = 0; // of n_refused_held: non-band and wholly inside the level set
+    std::string unreachable_where;
     std::array<size_t, 5> n_refused{}; // by f
     for (;;) {
         ++passes;
@@ -6085,6 +7003,10 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         n_cand = cands.size();
         n_want = 0;
         n_skip = 0;
+        n_refused_held = 0;
+        n_refused_tag = 0;
+        n_unreachable = 0;
+        unreachable_where.clear();
         n_refused.fill(0);
         size_t n_now = 0;
         // The three tests are pure reads, so the order they are asked in decides only what is
@@ -6097,8 +7019,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             if (surface_energy() && !energy_decrease && flipped[tid]) continue;
             if (!wants_flip(tid)) continue;
             ++n_want;
-            CellTag tag;
-            if (!eligible(tid, tag)) {
+            if (!eligible(tid)) {
                 ++n_skip;
                 continue;
             }
@@ -6106,6 +7027,22 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             const int f = topology(tid, allow, odd);
             if (!allow) {
                 ++n_refused[size_t(f)];
+                continue;
+            }
+            if (!held_allows(tid)) {
+                ++n_refused_held;
+                if (!cell_is_offset_band(tid) && inside_level_set(tid)) {
+                    const auto [depth, where] = held_depth(tid);
+                    if (depth > front_conv_of(place_piece(oriented_tet_vids(tid).data(), 4)) &&
+                        n_unreachable++ == 0) {
+                        unreachable_where = where;
+                    }
+                }
+                continue;
+            }
+            CellTag tag;
+            if (!joined_tag(tid, tag)) {
+                ++n_refused_tag;
                 continue;
             }
             if (flipped[tid] && !energy_decrease) {
@@ -6148,6 +7085,8 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
             break;
         }
     }
+    m_unreachable_cells = n_unreachable;
+    m_unreachable_where = unreachable_where;
     double e1 = e0;
     size_t band1 = band0, non1 = non0, nm1 = nm0;
     if (to_band + to_non > 0) {
@@ -6173,7 +7112,9 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         "({} of them with f = 2 or 3 where the old label meets the cell again, at a front edge on "
         "more than two front faces or a front vertex, not tested) | left after the last pass: {} "
         "cells with a front face, {} on the other side by the side test, of which {} skipped for "
-        "eligibility, refused by topology f=0 {}, f=1 {}, f=2 {}, f=4 {} | E {:.9g} -> {:.9g} | "
+        "eligibility, refused by topology f=0 {}, f=1 {}, f=2 {}, f=4 {}, by the held objects {} "
+        "({} wholly inside the level set), for no single tag {} | "
+        "E {:.9g} -> {:.9g} | "
         "components (face adjacency) band {} -> {}, non-band {} -> {} | non-manifold front edges "
         "(on more than two front faces) {} -> {}",
         where,
@@ -6189,6 +7130,9 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         n_refused[1],
         n_refused[2],
         n_refused[4],
+        n_refused_held,
+        n_unreachable,
+        n_refused_tag,
         e0,
         e1,
         band0,
@@ -6226,6 +7170,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
     const int a_iters = std::max(1, m_offset_params.max_iterations);
     check_no_vertex_on_both_surfaces("construction");
     audit_surface_containment("construction");
+    m_unreachable_cells = 0; // each loop judges its own target (growth_mode's stages)
     needle_scan("after construction, before the loop");
     assign_band_regions();
     m_front_gradient_reference = front_gradient_linf();
@@ -6587,6 +7532,8 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // EXPERIMENTAL_settle_refinement: the settle test, the face test and the halving; true
         // when the loop may exit, which then replaces EnergyCriterion::converged() below.
         const bool settle_exit = settle && settle_refinement_turn(it + 1, settle_e_prev, refine);
+        // At a settled turn the last clean-up's refusals are no longer the front on its way.
+        if (settle && m_turn_settled) check_level_set_reachable(fmt::format("turn {}", it + 1));
         // The turn's "end" frame is written HERE, after the refinement, not before it: it is the
         // turn's final state, so what it carries is the sizing field the halving just lowered.
         // 3D ONLY; 2D still writes its end frame before the refinement. See .claude/CLAUDE.md.
@@ -6801,6 +7748,7 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
             return true;
         }
     }
+    check_level_set_reachable("the loop's end");
     logger().warn(
         "The loop did not converge in {} turns ({}){}",
         budget,
@@ -7331,6 +8279,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // surface IS, before any operation has run.
     check_offset_membership("construction");
     report_offset_face_lookup_misses("construction");
+    held_topology_check("construction"); // DEBUG_held_topology's baseline
 
     init_vertex_order();
 

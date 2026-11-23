@@ -2526,13 +2526,15 @@ TEST_CASE(
 {
     // tetwild -> topological_offset -> tetwild: the offset tags the band around `a` as tets,
     // `off`, a volume tetwild does not hold. Without feature curves, which the offset does not
-    // take yet.
+    // take yet. The envelope at half the default: the offset refuses one wider than the bar
+    // (0.1 x target_distance = 0.005), and the default, 1e-3 of the box diagonal 5.07, is 0.00507.
     WorkingDirectory cwd;
     const auto offset = topological_offset::topological_offset(
         {{"input", "m"},
          {"offsets",
           nlohmann::json::array(
               {{{"selection", "a"}, {"output_tags", {"off"}}, {"target_distance", 0.05}}})},
+         {"envelope_size_rel", 5e-4},
          {"optimize_offset", false},
          {"num_threads", 1}},
         {{"m", tags_only(two_tets_meshed({{"input", {"a", "b"}}}).first.at("mesh"))}});
@@ -2688,6 +2690,10 @@ TEST_CASE(
     const double eps = meshed.second.at("eps");
     auto options = offset_of_a;
     options["envelope_size"] = eps * (1 + 1e-9);
+    // The bar no narrower than simwild's eps, which the offset holds to: the offset refuses an
+    // envelope wider than the bar, and front_conv_rel's bar, 0.1 x target_distance = 0.005, is
+    // narrower than simwild's eps here (0.0085).
+    options["front_conv"] = eps * (1 + 1e-9);
     const auto offset = topological_offset::topological_offset(
         options,
         {{"m", tags_only(meshed.first.at("mesh"))}, {"e", meshed.first.at("envelope")}});
@@ -3045,8 +3051,9 @@ TEST_CASE(
     // number at its centroid, 1 inside that square and 0 outside -- fields, not tags, so no
     // regions: wn_<name> on the memory route, wn_<i> in the .msh, as tetwild's on its tets. The
     // winding number of a closed polygon off its boundary is exactly 0 or 1, so the tolerance only
-    // absorbs rounding. skip_winding_number leaves them out under filter none and is ignored
-    // under any other; the tagged route computes none.
+    // absorbs rounding. skip_winding_number -- the default -- leaves them out under every filter
+    // but "input", which keeps the faces by them and computes them regardless; the tagged route
+    // computes none.
     WorkingDirectory cwd;
     const auto check_fields = [](const MeshData& mesh, const std::array<std::string, 2>& names) {
         const auto& triangles = mesh.cell(CellType::Triangle);
@@ -3090,7 +3097,8 @@ TEST_CASE(
         {"simplify", false},
         {"max_iterations", 0},
         {"num_threads", 1},
-        {"write_vtu", false}};
+        {"write_vtu", false},
+        {"skip_winding_number", false}};
     auto named = file_options;
     named["input_names"] = {"a", "b"};
     named["output"] = "named";
@@ -3104,9 +3112,18 @@ TEST_CASE(
     check_fields(io::read_mesh("unnamed.msh"), {{"wn_0", "wn_1"}});
 
     CHECK(!has_wn(two_squares_meshed({{"skip_winding_number", true}}).first.at("mesh")));
+    CHECK(!has_wn(two_squares_meshed().first.at("mesh"))); // the default
     check_fields(
         two_squares_meshed({{"skip_winding_number", true}, {"filter", "input"}}).first.at("mesh"),
         {{"wn_a", "wn_b"}});
+    for (const std::string filter : {"tracked", "flood"}) {
+        INFO(filter);
+        CHECK(!has_wn(two_squares_meshed({{"filter", filter}}).first.at("mesh")));
+        check_fields(
+            two_squares_meshed({{"skip_winding_number", false}, {"filter", filter}})
+                .first.at("mesh"),
+            {{"wn_a", "wn_b"}});
+    }
 
     const auto again = triwild::triwild(
         {{"input", "m"}, {"max_iterations", 0}, {"num_threads", 1}},
@@ -3747,14 +3764,15 @@ TEST_CASE(
 {
     // The result -- the memory route's meshes, the .msh, the save_vtu file -- carries the tags,
     // the data fields components read (vid, labels, offset_tag) and amips and
-    // distance_over_target; a DEBUG_output frame every diagnostic field too. The input as in
-    // "TetWild refuses an offset's output, whose band is a volume".
+    // distance_over_target; a DEBUG_output frame every diagnostic field too. The input and the
+    // envelope as in "TetWild refuses an offset's output, whose band is a volume".
     WorkingDirectory cwd;
     const MeshData tagged = tags_only(two_tets_meshed({{"input", {"a", "b"}}}).first.at("mesh"));
     const nlohmann::json options = {
         {"offsets",
          nlohmann::json::array(
              {{{"selection", "a"}, {"output_tags", {"off"}}, {"target_distance", 0.05}}})},
+        {"envelope_size_rel", 5e-4},
         {"optimize_offset", false},
         {"num_threads", 1}};
     auto memory_options = options;

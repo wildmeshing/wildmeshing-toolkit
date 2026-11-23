@@ -32,7 +32,9 @@
             "background_remeshing_passes",
             "background_quality_threshold",
             "background_remeshing_max_operations",
-            "background_remeshing_max_attempts"
+            "background_remeshing_max_attempts",
+            "quality_improvement",
+            "quality_improvement_options"
         ]
     },
     {
@@ -81,7 +83,7 @@
         "pointer": "/iterations",
         "type": "int",
         "default": 5,
-        "doc": "Number of collapse/smoothing iterations; 0 computes targets without optimization."
+        "doc": "Number of construction collapse/target-smoothing iterations. Zero computes targets without this construction optimization stage; quality_improvement has independent cycle and smoothing settings."
     },
     {
         "pointer": "/keep_background_mesh",
@@ -196,5 +198,110 @@
         "type": "int",
         "default": 20000,
         "doc": "Maximum attempted background swaps/moves per tet iteration; positive."
+    },
+    {
+        "pointer": "/quality_improvement",
+        "type": "bool",
+        "default": false,
+        "doc": "Enable post-build region remeshing and native AMIPS-plus-thickness smoothing. Requires prism_dominant and a positive target thickness; rod frames are not supported. Replaces the separate Jacobian/background quality stages and transition/thickness smoothing. False disables this postprocess; there is no legacy relocation fallback. Nonzero min_tet_volume or relative_tet_volume_floor are rejected: this stage enforces strict positivity of actual cells."
+    },
+    {
+        "pointer": "/quality_improvement_options",
+        "type": "object",
+        "default": {},
+        "optional": [
+            "cycles",
+            "mixed_smoothing_sweeps",
+            "volume_passes",
+            "column_collapse_attempts",
+            "surface_split_budget",
+            "surface_flip_attempts",
+            "volume_split_budget",
+            "time_limit",
+            "initial_sizing_factor",
+            "quality_target",
+            "smoothing_target",
+            "thickness_weight",
+            "topology_enabled"
+        ],
+        "doc": "Options for quality_improvement. Final output selects the valid stage with the lowest global maximum AMIPS, independently of thickness energy; the target is not guaranteed within finite budgets. Non-box exterior domains retain fixed source triangulation, including offset boundaries if background was removed."
+    },
+    {
+        "pointer": "/quality_improvement_options/cycles",
+        "type": "int",
+        "default": 4,
+        "doc": "Maximum outer cycles, in [0,100]. Each has mixed smoothing, native/surface operations, bulk tet remeshing and mixed smoothing. Subsequent cycles halve sizing in one-ring neighborhoods of mixed cells above quality_target."
+    },
+    {
+        "pointer": "/quality_improvement_options/mixed_smoothing_sweeps",
+        "type": "int",
+        "default": 120,
+        "doc": "Maximum gradient smoothing sweeps per mixed stage, in [0,10000]. Active vertices come from actual mixed cells above quality_target; stop when no move is accepted or the target is reached."
+    },
+    {
+        "pointer": "/quality_improvement_options/volume_passes",
+        "type": "int",
+        "default": 2,
+        "doc": "Tet optimizer pass pairs per outer cycle, in [0,100]. Interfaces are fixed during this bulk stage."
+    },
+    {
+        "pointer": "/quality_improvement_options/column_collapse_attempts",
+        "type": "int",
+        "default": 100,
+        "doc": "Maximum paired prism-column collapse attempts per cycle; nonnegative."
+    },
+    {
+        "pointer": "/quality_improvement_options/surface_split_budget",
+        "type": "int",
+        "default": 1200,
+        "doc": "Maximum conforming mixed surface/native split transactions per cycle; nonnegative."
+    },
+    {
+        "pointer": "/quality_improvement_options/surface_flip_attempts",
+        "type": "int",
+        "default": 1200,
+        "doc": "Maximum compatible input/prism cap swaps per cycle; nonnegative."
+    },
+    {
+        "pointer": "/quality_improvement_options/volume_split_budget",
+        "type": "int",
+        "default": 12000,
+        "doc": "Maximum generated interior tet split vertices per bulk stage; nonnegative. Unrepresentable floating-point midpoints are rejected."
+    },
+    {
+        "pointer": "/quality_improvement_options/time_limit",
+        "type": "float",
+        "default": 900.0,
+        "doc": "Positive soft time limit in seconds, checked between operations. Validation and export may extend beyond it."
+    },
+    {
+        "pointer": "/quality_improvement_options/initial_sizing_factor",
+        "type": "float",
+        "default": 0.25,
+        "doc": "Positive multiplier of the initial mean unique offset-face edge length. The target length and adaptive refinement floor are clamped to the nominal thickness."
+    },
+    {
+        "pointer": "/quality_improvement_options/quality_target",
+        "type": "float",
+        "default": 20.0,
+        "doc": "Raw native AMIPS stopping/activation threshold, finite and greater than 3; ideal=3. Covers all actual tet/prism/pyramid cells including input volume and background."
+    },
+    {
+        "pointer": "/quality_improvement_options/smoothing_target",
+        "type": "float",
+        "default": 18.0,
+        "doc": "Threshold of the squared excess AMIPS loss; at least 3 and strictly below quality_target. The loss includes a small log-AMIPS regularizer."
+    },
+    {
+        "pointer": "/quality_improvement_options/thickness_weight",
+        "type": "float",
+        "default": 10.0,
+        "doc": "Nonnegative weight on squared relative projection-height error along the original reference direction. No spatial thickness regularizer. The projection band is max(25%, current error)."
+    },
+    {
+        "pointer": "/quality_improvement_options/topology_enabled",
+        "type": "bool",
+        "default": true,
+        "doc": "Enable native/surface and bulk tetrahedral topology operations; false runs the mixed smoothing stages alone."
     }
 ]

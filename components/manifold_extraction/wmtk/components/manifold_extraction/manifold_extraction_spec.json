@@ -16,6 +16,7 @@
       "save_vtu",
       "log_file",
       "report",
+      "throw_on_fail",
       "envelope"
     ]
   },
@@ -102,6 +103,12 @@
     "type": "string",
     "default": "",
     "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/throw_on_fail",
+    "type": "bool",
+    "default": false,
+    "doc": "Throw if the output has vertices that could not be rounded (their exact positions have no float64 representation). Without it, the run logs an error and returns: on the memory route the exact positions are in the mesh's V_rational; a written .msh holds their rounding only."
   },
   {
     "pointer": "/envelope",

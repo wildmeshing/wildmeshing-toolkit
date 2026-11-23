@@ -273,8 +273,8 @@ TEST_CASE("surface-tag-orientation-carried", "[orientation]")
     // corresponding orders (same_orientation). Every input's count with WMTK_PER_INPUT_ORIENTATION.
     using A3 = std::array<size_t, 3>;
     SurfaceTagAttributes f;
-    f.set_input_set(0b11);
-    f.set_orientation_along(InputSet(0b01), A3{{5, 3, 7}}, 1);
+    f.labels_mut() = LabelIds{0, 1};
+    f.set_orientation_along(LabelIds{0}, A3{{5, 3, 7}}, 1);
     CHECK(f.orientation_along(A3{{5, 3, 7}}) == 1);
     CHECK(f.orientation() == -1); // (5, 3, 7) is an odd permutation of (3, 5, 7)
     CHECK(f.oriented());
@@ -294,14 +294,14 @@ TEST_CASE("surface-tag-orientation-carried", "[orientation]")
 #ifdef WMTK_PER_INPUT_ORIENTATION
     // One count per input, 4 bits each, and the total their sum: two inputs facing opposite
     // ways on one face sum to 0, each keeping its own.
-    STATIC_REQUIRE(sizeof(SurfaceTagAttributes) == 43);
-    f.set_orientation_along(InputSet(0b10), A3{{3, 5, 7}}, 1);
+    STATIC_REQUIRE(sizeof(SurfaceTagAttributes) == 24);
+    f.set_orientation_along(LabelIds{1}, A3{{3, 5, 7}}, 1);
     CHECK(f.input_orientation(0) == -1);
     CHECK(f.input_orientation(1) == 1);
     CHECK(f.orientation() == 0);
     CHECK(f.oriented());
-    CHECK(f.orientation_of(0b01) == -1);
-    CHECK(f.orientation_of(0b10) == 1);
+    CHECK(f.orientation_of(LabelIds{0}) == -1);
+    CHECK(f.orientation_of(LabelIds{1}) == 1);
     // Along (3, 5, 7) taken as along (5, 3, 7), the other orientation of the same vertex set:
     // every input's count turned over.
     half.set_orientation_from(f, A3{{3, 5, 7}}, A3{{5, 3, 7}});
@@ -312,10 +312,10 @@ TEST_CASE("surface-tag-orientation-carried", "[orientation]")
     CHECK_FALSE(half.same_orientation(A3{{5, 3, 7}}, f, A3{{3, 5, 7}}));
     // Clamped to -8..7; the total is exact while every count is in range.
     SurfaceTagAttributes c;
-    c.set_orientation(0b111, 7);
+    c.set_orientation(LabelIds{0, 1, 2}, 7);
     CHECK(c.orientation() == 21);
-    c.set_orientation(0b001, 20);
-    c.set_orientation(0b010, -20);
+    c.set_orientation(LabelIds{0}, 20);
+    c.set_orientation(LabelIds{1}, -20);
     CHECK(c.input_orientation(0) == 7);
     CHECK(c.input_orientation(1) == -8);
     c.set_input_orientations({{2, -3}, {63, 5}});
@@ -325,11 +325,11 @@ TEST_CASE("surface-tag-orientation-carried", "[orientation]")
     CHECK(c.orientation() == 2);
 #else
     // One count for all the inputs: set for one input, it is every input's.
-    STATIC_REQUIRE(sizeof(SurfaceTagAttributes) == 11);
-    CHECK(f.orientation_of(0b10) == -1);
-    CHECK(f.orientation_of(0b100) == 0); // not on input 2
+    STATIC_REQUIRE(sizeof(SurfaceTagAttributes) == 14);
+    CHECK(f.orientation_of(LabelIds{1}) == -1);
+    CHECK(f.orientation_of(LabelIds{2}) == 0); // not on input 2
     SurfaceTagAttributes c;
-    c.set_orientation(0b1, 20);
+    c.set_orientation(LabelIds{0}, 20);
     CHECK(c.orientation() == 15);
 #endif
 }
