@@ -11,6 +11,7 @@
 #include <igl/readOBJ.h>
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -540,14 +541,19 @@ TEST_CASE("tetwild-volume-history-memory-route", "[tetwild][tracking]" + release
     CHECK(!plain.count("history_output"));
 }
 
-TEST_CASE("tetwild-volume-coarse-round-trip", "[tetwild][tracking]" + release_only)
+namespace {
+
+/// The icosahedron split once (42 vertices) through tetwild with a volume history, and 3,000
+/// positions of its tets mapped to the output and back: how many come back more than 1e-9 of the
+/// diagonal off, the worst, and the map's stats.
+struct CoarseRoundTrip
 {
-    // A known limitation, pinned (docs/tracking.md, "Volumes"). On an input this coarse -- the
-    // icosahedron split once, 42 vertices -- the insertion leaves tets that the positions the
-    // volume history holds, the exact ones rounded to doubles, turn flat or inverted
-    // (VolumeMapStats::inverted_ops): the tets there overlap, a position is in two, and a point
-    // mapped there and back can come back off, by up to the size of the tets around. Every
-    // operation maps, and the other points come back to a rounding.
+    size_t off = 0;
+    double worst = 0;
+    tracking::VolumeMapStats stats;
+};
+CoarseRoundTrip coarse_round_trip(const bool lattice_jitter)
+{
     nlohmann::json options = small_volume_run();
     options["input"] = "sphere";
     options["length_rel"] = 0.3;
@@ -555,6 +561,7 @@ TEST_CASE("tetwild-volume-coarse-round-trip", "[tetwild][tracking]" + release_on
     options["eps_simplify_rel"] = 0.01; // half of eps_rel, the simplification this was pinned at
     options["max_iterations"] = 1;
     options["preserve_topology"] = true;
+    options["lattice_jitter"] = lattice_jitter;
     const auto [outputs, report] = tetwild::tetwild(options, {{"sphere", icosphere(1, 1)}});
     const tracking::VolumeTracking t(
         history::SurfaceHistory::from_bytes(report.at("history").get_binary()),
@@ -581,18 +588,94 @@ TEST_CASE("tetwild-volume-coarse-round-trip", "[tetwild][tracking]" + release_on
         regions.push_back(p.region);
     }
     const auto back = t.map_positions(xyz, false, regions);
-    size_t off = 0;
-    double worst = 0;
+    CoarseRoundTrip out;
     for (size_t i = 0; i < pts.size(); ++i) {
         const double d = (back[i].position - pts[i]).norm() / diagonal;
-        off += d > 1e-9;
-        worst = std::max(worst, d);
+        out.off += d > 1e-9;
+        out.worst = std::max(out.worst, d);
     }
-    const auto stats = t.map().stats();
-    CHECK(stats.failed == 0);
-    CHECK(stats.inverted_ops > 0);
-    // 17 of 3000 off, the worst by 1.3% of the diagonal, and 61 such operations, when this was
-    // written; the bounds leave room for another platform's run
-    CHECK(off < pts.size() / 50);
-    CHECK(worst < 0.05);
+    out.stats = t.map().stats();
+    return out;
+}
+
+} // namespace
+
+TEST_CASE("tetwild-volume-coarse-round-trip", "[tetwild][tracking]" + release_only)
+{
+    // On an input this coarse -- the icosahedron split once, 42 vertices -- the regular background
+    // lattice misses input edges by an ulp, and the insertion leaves tets that the positions the
+    // volume history holds, the exact ones rounded to doubles, turn flat or inverted
+    // (VolumeMapStats::inverted_ops): the tets there overlap, a position is in two, and a point
+    // mapped there and back can come back off, by up to the size of the tets around
+    // (docs/tracking.md, "Volumes"). lattice_jitter, on by default, moves the lattice off them.
+    SECTION("lattice_jitter")
+    {
+        const CoarseRoundTrip r = coarse_round_trip(true);
+        CHECK(r.stats.failed == 0);
+        CHECK(r.stats.inverted_ops == 0);
+        CHECK(r.off == 0); // the worst 4e-13 of the diagonal when this was written
+        CHECK(r.worst < 1e-9);
+    }
+    SECTION("the regular lattice: the limitation, pinned")
+    {
+        const CoarseRoundTrip r = coarse_round_trip(false);
+        CHECK(r.stats.failed == 0);
+        CHECK(r.stats.inverted_ops > 0);
+        // 17 of 3000 off, the worst by 1.3% of the diagonal, and 61 such operations, when this
+        // was written; the bounds leave room for another platform's run
+        CHECK(r.off < 3000 / 50);
+        CHECK(r.worst < 0.05);
+    }
+}
+
+TEST_CASE("tetwild-lattice-jitter-leaves-no-flat-facets", "[tetwild][tracking]" + release_only)
+{
+    // The unit cube: the regular lattice is symmetric about it in exact arithmetic but not in
+    // doubles, its tets miss the cube's edges by an ulp, and the insertion leaves facets 1e-18
+    // wide (408 of 7,320 on the cube when this was written), with no area once rounded, as the
+    // surface history's embed holds them. lattice_jitter moves the lattice off them.
+    MeshData cube;
+    cube.V.resize(8, 3);
+    cube.V << 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1;
+    auto& F = cube.cells[CellType::Triangle].connectivity;
+    F.resize(12, 3);
+    F << 0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6,
+        3, 0, 4, 3, 4, 7;
+    // The embedded faces whose height over their longest edge is within 1e-12 of the mean edge.
+    const auto flat_facets = [&cube](const bool lattice_jitter) {
+        nlohmann::json options = {
+            {"input", "cube"},
+            {"simplify", false},
+            {"max_iterations", 1},
+            {"num_threads", 1},
+            {"write_vtu", false},
+            {"history_output", "recorded"},
+            {"lattice_jitter", lattice_jitter}};
+        const auto [outputs, report] = tetwild::tetwild(options, {{"cube", cube}});
+        const auto h = history::SurfaceHistory::from_bytes(report.at("history").get_binary());
+        const auto embed = std::find_if(h.edits.begin(), h.edits.end(), [](const auto& e) {
+            return e.kind == history::EditKind::embed;
+        });
+        REQUIRE(embed != h.edits.end());
+        std::map<uint64_t, Eigen::Vector3d> P;
+        for (const auto& m : embed->moves) P[m.vid] = m.pos;
+        const size_t nf = embed->v.size() / 3;
+        double mean = 0;
+        for (size_t f = 0; f < nf; ++f) {
+            for (int k = 0; k < 3; ++k) {
+                mean += (P.at(embed->v[3 * f + k]) - P.at(embed->v[3 * f + (k + 1) % 3])).norm();
+            }
+        }
+        mean /= double(3 * nf);
+        size_t flat = 0;
+        for (size_t f = 0; f < nf; ++f) {
+            const Eigen::Vector3d a = P.at(embed->v[3 * f]), b = P.at(embed->v[3 * f + 1]),
+                                  c = P.at(embed->v[3 * f + 2]);
+            const double longest = std::max({(b - a).norm(), (c - b).norm(), (a - c).norm()});
+            flat += !((b - a).cross(c - a).norm() > 1e-12 * mean * longest);
+        }
+        return flat;
+    };
+    CHECK(flat_facets(true) == 0);
+    CHECK(flat_facets(false) > 0);
 }

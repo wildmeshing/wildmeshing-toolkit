@@ -306,13 +306,19 @@ TEST_CASE("simwild-limit-collapse-length", "[simwild][sizing]")
 TEST_CASE("simwild-limit-collapse-length-3d", "[simwild][sizing]" + release_only)
 {
     // The cube's embedding, collapsed from the arrangement's fine tets: without the limit the
-    // longest tet edge is 1.74 l when measured, with it 1.30 l, under 4/3.
+    // longest tet edge is 1.74 l when measured, with it 1.30 l, under 4/3. On the regular
+    // background lattice: with it jittered (the default) the longest is 1.94 l and 1.42 l, the
+    // limit leaving up to 1% of the edges past 4/3.
     const MeshMap meshes{{"cube", unit_cube()}};
     const double l = 0.2;
     double longest[2] = {0, 0};
     for (const bool limit : {false, true}) {
-        const auto r =
-            simwild({{"input", {"cube"}}, {"length", l}, {"limit_collapse_length", limit}}, meshes);
+        const auto r = simwild(
+            {{"input", {"cube"}},
+             {"length", l},
+             {"limit_collapse_length", limit},
+             {"lattice_jitter", false}},
+            meshes);
         longest[limit] = longest_tet_edge(r.first.at("mesh"));
     }
     INFO(

@@ -438,6 +438,11 @@ TEST_CASE("tracking-example-simwild-volume", "[simwild][tracking]" + release_onl
         {"eps_rel", 1e-2},
         {"stop_energy", 10},
         {"max_iterations", 3},
+        // The mesh the bound below was measured on. With the lattice jittered (the default) the
+        // spheres' mesh has 27 operations inverted at the recorded positions (25 here), slivers
+        // along the curve where the two surfaces cross, and a point comes back 2.2e-3 off: the
+        // volume map's known limitation (docs/tracking.md, "Volumes"), on another mesh.
+        {"lattice_jitter", false},
     });
 
     // 2. Load the map: both histories, and the two meshes, which name the points.

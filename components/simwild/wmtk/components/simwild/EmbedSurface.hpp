@@ -32,6 +32,7 @@ using FacetSources = std::vector<std::pair<PositionKey, std::vector<uint32_t>>>;
  * @param box_max The box corner with the largest coordinate values.
  * @param features Optional feature curves and points the box is grown over too, as tetwild grows
  * its input bbox over them (utils::FeatureInputs::extend_bbox()).
+ * @param lattice_jitter Move the lattice off its regular grid (utils::delaunay_box_mesh()).
  */
 void delaunay_box_mesh(
     const wmtk::Envelope& envelope,
@@ -40,7 +41,8 @@ void delaunay_box_mesh(
     std::vector<wmtk::delaunay::Tetrahedron>& tets,
     Vector3d& box_min,
     Vector3d& box_max,
-    const utils::FeatureInputs* features = nullptr);
+    const utils::FeatureInputs* features = nullptr,
+    bool lattice_jitter = true);
 
 /**
  * @brief Embed a surface in the given volumetric mesh.
@@ -157,13 +159,16 @@ public:
      * surface; the background box is grown over them. Where they went: features_placed().
      * @param is_volume Per input, whether it is declared a volume, which must enclose a material
      * (see tag_from_winding_number()); empty: every input is.
+     * @param lattice_jitter Move the background lattice off its regular grid
+     * (utils::delaunay_box_mesh()): simwild's lattice_jitter option.
      */
     bool embed_surface(
         const bool flood_fill = false,
         const bool tag_from_winding_number = true,
         const bool provenance = false,
         const utils::FeatureInputs* features = nullptr,
-        const std::vector<bool>& is_volume = {});
+        const std::vector<bool>& is_volume = {},
+        bool lattice_jitter = true);
 
     /**
      * @brief Remove unreferenced vertices.

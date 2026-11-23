@@ -11,6 +11,7 @@
       "input_dir",
       "write_vtu",
       "simplify",
+      "lattice_jitter",
       "simplify_use_sample_envelope",
       "eps_simplify_rel",
       "eps_simplify",
@@ -152,6 +153,12 @@
     "type": "bool",
     "default": true,
     "doc": "If true, the input surface is simplified first. False inserts it as it is."
+  },
+  {
+    "pointer": "/lattice_jitter",
+    "type": "bool",
+    "default": true,
+    "doc": "Move each point of the background lattice, strictly inside its box, by up to 1e-3 of a voxel along each axis, by a hash of its grid index: the same on every platform. The regular lattice is symmetric about an axis-aligned input in exact arithmetic but not in doubles, so its Delaunay faces and edges miss the input's edges by an ulp, and the insertion leaves facets that thin: on the unit cube 408 of 7,320 tracked facets, 1e-18 wide, with no area once rounded. The surface map from history_output cannot lay them out, and the volume map finds tets inverted at the recorded positions. With the jitter the cube has none. Changes the output mesh; false is the regular lattice, as before."
   },
   {
     "pointer": "/simplify_use_sample_envelope",

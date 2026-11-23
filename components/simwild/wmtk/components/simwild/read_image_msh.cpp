@@ -202,6 +202,7 @@ InputData read_mesh(
     const bool perform_sanity_checks = json_params["DEBUG_sanity_checks"];
     const bool preserve_topology = json_params["preserve_topology"];
     const bool simplify = json_params["simplify"];
+    const bool lattice_jitter = json_params["lattice_jitter"];
     const bool tag_from_winding_number = json_params["tag_from_winding_number"];
     const bool split_connected_components = json_params["split_connected_components"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
@@ -320,7 +321,8 @@ InputData read_mesh(
         tag_from_winding_number,
         has_surface,
         features,
-        is_volume);
+        is_volume,
+        lattice_jitter);
     image_mesh.consolidate();
     if (features != nullptr && !features->empty()) {
         input_data.features = *features;

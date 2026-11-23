@@ -32,6 +32,15 @@ namespace wmtk::utils {
  *                   and the surviving lattice points
  * @param[out] tets  the Delaunay tetrahedralization of `points`
  * @param[out] box_min, box_max  the PADDED box actually used
+ * @param jitter     move each lattice point strictly inside the box by up to 1e-3 of its voxel
+ *                   along each axis, by a hash of its grid index (the same on every platform);
+ *                   points on the box's faces stay. The regular lattice is symmetric about an
+ *                   axis-aligned input in exact arithmetic but not in doubles, so its Delaunay
+ *                   faces and edges miss the input's edges by an ulp, and the insertion leaves
+ *                   facets that thin: on the unit cube 408 of 7,320 tracked facets are 1e-18
+ *                   wide and have no area once rounded, which no map from the history can lay
+ *                   out, and the volume map finds tets inverted at the recorded positions. With
+ *                   the jitter there are none on the cube. Callers' `lattice_jitter` option.
  */
 void delaunay_box_mesh(
     const Envelope& envelope,
@@ -41,6 +50,7 @@ void delaunay_box_mesh(
     std::vector<delaunay::Point3D>& points,
     std::vector<delaunay::Tetrahedron>& tets,
     Vector3d& box_min,
-    Vector3d& box_max);
+    Vector3d& box_max,
+    bool jitter);
 
 } // namespace wmtk::utils

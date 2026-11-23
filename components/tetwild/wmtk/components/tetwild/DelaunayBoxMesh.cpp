@@ -42,7 +42,8 @@ void TetWildMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>
         points,
         tets,
         box_min,
-        box_max);
+        box_max,
+        m_params.lattice_jitter);
 
     m_tet_params.box_min = box_min;
     m_tet_params.box_max = box_max;
