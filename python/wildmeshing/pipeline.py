@@ -23,7 +23,8 @@ An input's key is the sha256 of its file's bytes; a stage's key is the sha256 of
 its options with each option reference resolved and each other reference replaced by (key of S,
 kind, O or K, and for an output the mesh name it is passed under), and the sha256 of the
 installed compiled module -- not the version string, which a hand-copied install leaves stale.
-A stage takes, in order, the result in memory with its key, a checkpoint
+A stage takes, in order, the result in memory with its key while its `save` stem holds it, a
+checkpoint
 (wildmeshing.checkpoint: the cache entry <cache>/<key>, or the stage's `save` stem) whose record
 holds its key and whose files still hash as saved, else it runs; the cache entry and the `save`
 stem then hold its checkpoint. A file used for a stage was so written for that stage's key and
@@ -32,13 +33,16 @@ order varies; the cache keeps one valid run.
 
 While a component runs, the process's stdout and stderr -- where the C++ log goes -- are
 redirected into <cache>/<key>.log. A failed stage raises StageFailed, keeps its log, and the
-stages after it do not run.
+stages after it do not run. With `process` set, each component runs in a process of its own, the
+meshes and its result over a pipe: a crash fails only its stage, and stop() ends the running one
+(StageStopped).
 """
 import contextlib
 import copy
 import ctypes
 import hashlib
 import json
+import multiprocessing
 import os
 import re
 import sys
@@ -116,11 +120,43 @@ def _module_sha256():
 
 
 class StageFailed(RuntimeError):
-    """A stage's component raised; `log` is the path of its log."""
+    """A stage's component raised, or its process ended without a result; `log` is the path of
+    its log."""
 
     def __init__(self, stage, log):
         super().__init__(f"stage {stage} failed, log: {log}")
         self.stage, self.log = stage, log
+
+
+class StageStopped(RuntimeError):
+    """The run was stopped (Pipeline.stop) at the stage `stage`; `log` is the path of its log, None
+    when it had not started."""
+
+    def __init__(self, stage, log=None):
+        super().__init__(f"stopped at stage {stage}")
+        self.stage, self.log = stage, log
+
+
+def _invoke(component, options, meshes):
+    """The component on `options` and `meshes`, prismatic_mesh's input rebuilt first (OPTIONS)."""
+    if component == "prismatic_mesh" and ("input_tags" in options or "offset_tags" in options):
+        meshes[options["input"]] = _prismatic_input(
+            meshes[options["input"]], options.pop("input_tags", []), options.pop("offset_tags", []))
+    return getattr(wildmeshing, component)(options, meshes)
+
+
+def _child(component, options, meshes, log, conn):
+    """A stage's process: _invoke, its stdout and stderr into the file `log`; sends ("done",
+    (outputs, report)), or ("error", the exception)."""
+    try:
+        with _captured(log):
+            message = "done", _invoke(component, options, meshes)
+    except Exception as e:
+        message = "error", e
+    try:
+        conn.send(message)
+    except Exception as e:  # a result or an exception that does not pickle
+        conn.send(("error", RuntimeError(f"{type(e).__name__}: {e}")))
 
 
 def _is_ref(value):
@@ -149,6 +185,11 @@ def _replace(value, f):
     if isinstance(value, list):
         return [_replace(v, f) for v in value]
     return value
+
+
+def _holds(stem, key):
+    """Whether the checkpoint <stem> is one saved for `key`, its files as saved."""
+    return (checkpoint.verified(stem) or {}).get("key") == key
 
 
 def _mesh_name(ref):
@@ -198,6 +239,10 @@ class Pipeline:
         self.cache = os.path.join(root, cache or "pipeline_cache")
         self.results = {}
         self.running = None  # (stage, log path) while a component runs, for a live log
+        # Each component in a process of its own: a crash fails only its stage, stop() ends it.
+        self.process = False
+        self.child = None  # that process, while it runs
+        self.stopping = False
         names = set()
         for name in self.inputs:
             check_name(name, names)
@@ -282,13 +327,13 @@ class Pipeline:
         log = os.path.join(self.cache, f"{key}.log")
         self.running = stage["name"], log
         try:
-            with _captured(log):
-                if stage["component"] == "prismatic_mesh" and (
-                        "input_tags" in options or "offset_tags" in options):
-                    meshes[options["input"]] = _prismatic_input(
-                        meshes[options["input"]], options.pop("input_tags", []),
-                        options.pop("offset_tags", []))
-                outputs, report = getattr(wildmeshing, stage["component"])(options, meshes)
+            if self.process:
+                outputs, report = self._in_child(stage, options, meshes, log)
+            else:
+                with _captured(log):
+                    outputs, report = _invoke(stage["component"], options, meshes)
+        except StageStopped:
+            raise
         except Exception as e:
             with open(log, "a") as f:  # the error, which the C++ log need not hold
                 f.write(f"\n{type(e).__name__}: {e}\n")
@@ -299,13 +344,51 @@ class Pipeline:
                         component=stage["component"], options=_replace(resolved, shown))
         return outputs, report
 
+    def _in_child(self, stage, options, meshes, log):
+        """_invoke in a process of its own, the meshes and the result over a pipe, as
+        image-simulation's pipeline window ran its stages."""
+        ctx = multiprocessing.get_context("spawn")
+        receive, send = ctx.Pipe(duplex=False)
+        self.child = ctx.Process(target=_child, daemon=True,
+                                 args=(stage["component"], options, meshes, log, send))
+        self.child.start()
+        send.close()
+        message = None
+        try:
+            # Read as it comes: the child cannot end before its result is read.
+            while message is None and (self.child.is_alive() or receive.poll()):
+                if receive.poll(0.1):
+                    message = receive.recv()
+        except EOFError:  # it ended without sending one
+            pass
+        self.child.join()
+        code, self.child = self.child.exitcode, None
+        receive.close()
+        if self.stopping:
+            with open(log, "a") as f:
+                f.write("\nstopped\n")
+            raise StageStopped(stage["name"], log)
+        if message is None:
+            raise RuntimeError(f"its process ended with exit code {code}, without a result")
+        if message[0] == "error":
+            raise message[1]
+        return message[1]
+
+    def stop(self):
+        """Stop the run: the running component's process, when there is one, ends now; else the
+        run stops before its next stage."""
+        self.stopping = True
+        child = self.child
+        if child is not None:
+            child.kill()
+
     def _component(self, stage, key):
         """The result of a component stage: from the first of its cache entry and its save stem
         saved for `key` whose files hash as saved, else from running it; both then hold it."""
         stems = {"cache": os.path.join(self.cache, key)}
         if "save" in stage:
             stems["save"] = os.path.join(self.root, stage["save"])
-        fresh = lambda stem: (checkpoint.verified(stem) or {}).get("key") == key
+        fresh = lambda stem: _holds(stem, key)
         result = None
         for source, stem in stems.items():
             if fresh(stem):
@@ -339,12 +422,14 @@ class Pipeline:
         and stage: source is memory, file, cache, save or run, log the path of the stage's log
         (None for an input). on_stage(name, result) is called after each."""
         keys = {}
+        self.stopping = False
 
-        def done(name, key, fresh):
-            # The result in memory while its key is unchanged, else fresh().
+        def done(name, key, fresh, saved=lambda: True):
+            # The result in memory while its key is unchanged and its save stem holds it (one
+            # set since it was made does not), else fresh().
             old = self.results.get(name)
-            result = {**old, "source": "memory"} if old is not None and old["key"] == key else \
-                fresh()
+            result = {**old, "source": "memory"} \
+                if old is not None and old["key"] == key and saved() else fresh()
             self.results[name] = result
             if on_stage:
                 on_stage(name, result)
@@ -357,8 +442,11 @@ class Pipeline:
                                      "report": {}, "key": key, "source": "file", "log": None})
         for stage in self.stages:
             name = stage["name"]
+            if self.stopping:
+                raise StageStopped(name)
             key = keys[name] = self._key(stage, keys)
-            done(name, key, lambda: self._component(stage, key))
+            done(name, key, lambda: self._component(stage, key), lambda: "save" not in stage
+                 or _holds(os.path.join(self.root, stage["save"]), key))
             if name == until:
                 break
         return {name: self.results[name] for name in keys}

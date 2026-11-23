@@ -173,6 +173,24 @@ def test_an_edited_save_is_refused_and_the_stage_reruns(tmp_path, calls):
     assert not same(checkpoint.load(stem), {"mesh": mesh})
 
 
+def test_a_save_set_after_the_run_is_written_by_the_next(tmp_path, calls):
+    # A result in memory is taken while its save stem holds it: one set since is written from
+    # the cache, the component not run again, the stages reading it unchanged.
+    plain = stages()
+    del plain[0]["save"]
+    p = Pipeline.load(write(tmp_path, plain))
+    first = p.run()
+    calls.clear()
+    p.stages[0]["save"] = "out/later"
+    r = p.run()
+    assert not calls
+    assert sources(r)["remesh"] == "cache" and sources(r)["simplify_a"] == "memory"
+    stem = str(tmp_path / "out" / "later")
+    assert checkpoint.record(stem)["key"] == first["remesh"]["key"]
+    assert same(checkpoint.load(stem), first["remesh"]["outputs"])
+    assert sources(p.run())["remesh"] == "memory"
+
+
 def test_a_checkpoint_without_a_record_is_refused(tmp_path):
     write(tmp_path, [])
     stem = str(tmp_path / "old")
@@ -200,6 +218,30 @@ def test_a_failed_stage_stops_the_run_and_keeps_its_log(tmp_path, calls):
     with open(failed.value.log) as f:
         assert '"bogus"' in f.read()
     assert calls["isotropic_remeshing"] == 0 and "remesh" not in p.results
+
+
+def test_each_component_in_a_process_of_its_own(tmp_path):
+    # The same results as in this process; the log and a failure the same.
+    plain = stages()
+    del plain[0]["save"]  # each run its own
+    here = Pipeline.load(write(tmp_path, plain)).run()
+    p = Pipeline(plain, str(tmp_path), "apart", {"box": "box.obj"})
+    p.process = True
+    apart = p.run()
+    assert set(sources(apart).values()) == {"file", "run"}
+    for name in ["remesh", "simplify_a", "simplify_b"]:
+        assert same(here[name]["outputs"], apart[name]["outputs"]), name
+    assert apart["remesh"]["report"]["history"] == here["remesh"]["report"]["history"]
+    assert apart["map"]["report"]["edits"] == here["map"]["report"]["edits"]
+    with open(apart["remesh"]["log"]) as f:
+        assert "[wmtk] [info] remeshing on box" in f.read()
+    bad = {"name": "bad", "component": "tracking", "options": {"operation": "bogus"}}
+    p = Pipeline([bad], str(tmp_path), "apart_bad", {"box": "box.obj"})
+    p.process = True
+    with pytest.raises(StageFailed) as failed:
+        p.run()
+    with open(failed.value.log) as f:
+        assert '"bogus"' in f.read()
 
 
 def test_a_stage_refers_only_to_the_inputs_and_the_stages_above_it(tmp_path):
