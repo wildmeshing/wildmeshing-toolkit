@@ -7,11 +7,6 @@
       "description": "Build rods from original-correspondence offset regions collapsed to vertex rings. Equalize degrees along each path and map matching transported material slots. Construct adjacent-ring prism layers atomically, swap exterior interfaces when needed, and connect retained background through pyramids. Preserve input volume, shell reconstruction and protected attachment stars; invalid layers retain tets. Requires explicit input labels and correspondence.",
       "default": false
     },
-    "bad_tet_transition_expansion_rounds": {
-      "type": "integer",
-      "description": "Optional bounded outer retries after the configured hybrid relocation stages, in [0,5]. Each retry finds actual shell tets above relocation_amips_threshold, freezes their offset corner seeds, and marks all three offset vertices of every incident all-offset triangle. Preserve prior transition marks, rebuild conforming prism/pyramid/tet regions, then repeat the configured relocation stages with fresh stage-entry bounds. This grows exactly one vertex ring per retry, not a recursive flood. Input labels, correspondence and no-collapse topology protection are preserved. Zero disables; requires prism_dominant.",
-      "default": 0
-    },
     "rod_radius": {
       "type": "number",
       "description": "Rod mode only. Absolute target section radius; positive, or zero to use thicknessratio times the mean centerline edge length. Infeasible circular targets retain valid geometry and are reported.",
@@ -44,7 +39,7 @@
     },
     "iterations": {
       "type": "integer",
-      "description": "Number of original collapse/target-smoothing iterations. Zero computes targets without this optimization stage; hybrid relocation postpasses have independent iteration settings.",
+      "description": "Number of construction collapse/target-smoothing iterations. Zero computes targets without this construction optimization stage; quality_improvement has independent cycle and smoothing settings.",
       "default": 5
     },
     "keep_background_mesh": {
@@ -97,46 +92,6 @@
       "description": "Optional final coupled offset smoothing rounds, in [0,200]. Fits shell normal offset distance and rod section radius/plane while improving native prism AMIPS. Neighboring free rod offsets may move together. Input and protected offset vertices, correspondence and connectivity stay fixed. Tets and pyramids supply positivity constraints only; their shape quality is not optimized. Zero disables this stage.",
       "default": 0
     },
-    "collapse_edge_relocation_iterations": {
-      "type": "integer",
-      "description": "First-class local-domain AMIPS relocation rounds, in [0,200]. Defaults to 20 for prism_dominant output, implicitly disabled for pure-tet output; an explicit zero disables this stage. Select bad actual shell tets with a same-correspondence/same-component offset edge. Parameterize the common endpoint triangle patch of the current offset surface into a convex-boundary harmonic disk. Move only the two ends using analytic incident-tet AMIPS gradients pulled back into that shared domain. Bound each halving line search by the first domain boundary or UV triangle-collapse event. Accept only strict decrease of the actual summed AMIPS over all incident tets, including background, while preserving cell positivity. Individual tet quality may worsen; no per-cell quality caps or additional Armijo sufficient-decrease test apply. No target position, normal, spring, thickness energy or thickness-scaled displacement bound is used. Invalid or non-disk patches are reported and skipped. Explicit nonzero requests require prism_dominant.",
-      "default": 20
-    },
-    "prism_tet_relocation_iterations": {
-      "type": "integer",
-      "description": "Optional final AMIPS-plus-thickness relocation rounds for bad shell tets emitted from Jacobian-valid prism candidates, in [0,200]. Residual same-component edges take priority in classification. Move only offset corners of the remaining bad tets, minimizing incident reference-tet AMIPS/3 plus relocation_thickness_weight times squared relative normal-thickness error. Honor a hard thickness-error band and per-cell quality caps; keep all neighboring native prisms/pyramids positive. Requires prism_dominant; zero disables this class.",
-      "default": 0
-    },
-    "tet_face_relocation_iterations": {
-      "type": "integer",
-      "description": "Final offset-face vertex relocation rounds, in [0,200], after domain and optional prism-tet relocation. Defaults to 20 for prism_dominant output, implicitly disabled for pure-tet output; an explicit zero disables this stage. Rescan all current actual shell tets regardless of AMIPS or original class. Select their movable offset vertices lying on all-offset triangular faces. Shared prism/pyramid corners may move when tet_face_relocation_allow_mixed_cells is true; all neighboring native cells must remain positive. Minimize all incident reference-tet AMIPS/3, including background and prism/pyramid reference decompositions, plus projected-thickness energy. Accept strictly decreasing actual combined energy while preserving positivity, thickness-error and displacement bounds; no individual quality caps or seed-quality monotonicity tests. Explicit nonzero requests require prism_dominant.",
-      "default": 20
-    },
-    "tet_face_relocation_allow_mixed_cells": {
-      "type": "boolean",
-      "description": "Allow final tet-face relocation to move offset vertices shared with native prisms or pyramids, while preserving positivity of every incident native cell and reference tet. False reproduces the earlier selection restricted to entirely tetrahedral native one-rings. Only vertices incident to an actual shell tet are selected in either mode.",
-      "default": true
-    },
-    "relocation_amips_threshold": {
-      "type": "number",
-      "description": "Raw tet AMIPS threshold for classifying both bad-quality regions, finite and at least 3 (ideal tet = 3). First-class domain relocation has no per-tet acceptance cap and requires decreasing total incident AMIPS. Only second-class prism-tet relocation caps each touched tet at max(this threshold, its entry AMIPS), tightened after improvement. This threshold is not a global precondition on collapse/target smoothing.",
-      "default": 100.0
-    },
-    "relocation_thickness_weight": {
-      "type": "number",
-      "description": "Positive weight on sum((normal_thickness/target_thickness - 1)^2) for prism-tet and final tet-face relocation, added to all incident reference-tet AMIPS/3. Uses the fixed optimal normal, or column direction for singular/unavailable normals. It does not affect first-class offset-domain AMIPS relocation.",
-      "default": 1000.0
-    },
-    "relocation_thickness_tolerance": {
-      "type": "number",
-      "description": "Relative normal-thickness error allowed for prism-tet and final tet-face relocation, in [0,1). Existing out-of-band errors may improve without exceeding their error at entry to the corresponding stage. This is projected thickness, not nearest-surface distance. It does not constrain first-class offset-domain relocation.",
-      "default": 0.1
-    },
-    "relocation_max_displacement_ratio": {
-      "type": "number",
-      "description": "Positive total displacement bound for prism-tet and final tet-face relocation, relative to target thickness and measured from entry to the corresponding stage. Individual steps are at most 0.2 thickness. First-class displacement is bounded by the common local surface domain instead. All stages preserve positivity, shell min_tet_volume and optional relative volume checks; only legacy prism-tet relocation imposes per-cell quality caps.",
-      "default": 0.5
-    },
     "jacobian_target": {
       "type": "number",
       "description": "Positive target det(J), normalized by twice input triangle area times initial mean column length.",
@@ -181,6 +136,83 @@
       "type": "integer",
       "description": "Maximum attempted background swaps/moves per tet iteration; positive.",
       "default": 20000
+    },
+    "quality_improvement": {
+      "type": "boolean",
+      "description": "Enable post-build region remeshing and native AMIPS-plus-thickness smoothing. Requires prism_dominant and a positive target thickness; rod frames are not supported. Replaces the separate Jacobian/background quality stages and transition/thickness smoothing. False disables this postprocess; there is no legacy relocation fallback. Nonzero min_tet_volume or relative_tet_volume_floor are rejected: this stage enforces strict positivity of actual cells.",
+      "default": false
+    },
+    "quality_improvement_options": {
+      "type": "object",
+      "description": "Options for quality_improvement. Final output selects the valid stage with the lowest global maximum AMIPS, independently of thickness energy; the target is not guaranteed within finite budgets. Non-box exterior domains retain fixed source triangulation, including offset boundaries if background was removed.",
+      "default": {},
+      "properties": {
+        "cycles": {
+          "type": "integer",
+          "description": "Maximum outer cycles, in [0,100]. Each has mixed smoothing, native/surface operations, bulk tet remeshing and mixed smoothing. Subsequent cycles halve sizing in one-ring neighborhoods of mixed cells above quality_target.",
+          "default": 4
+        },
+        "mixed_smoothing_sweeps": {
+          "type": "integer",
+          "description": "Maximum gradient smoothing sweeps per mixed stage, in [0,10000]. Active vertices come from actual mixed cells above quality_target; stop when no move is accepted or the target is reached.",
+          "default": 120
+        },
+        "volume_passes": {
+          "type": "integer",
+          "description": "Tet optimizer pass pairs per outer cycle, in [0,100]. Interfaces are fixed during this bulk stage.",
+          "default": 2
+        },
+        "column_collapse_attempts": {
+          "type": "integer",
+          "description": "Maximum paired prism-column collapse attempts per cycle; nonnegative.",
+          "default": 100
+        },
+        "surface_split_budget": {
+          "type": "integer",
+          "description": "Maximum conforming mixed surface/native split transactions per cycle; nonnegative.",
+          "default": 1200
+        },
+        "surface_flip_attempts": {
+          "type": "integer",
+          "description": "Maximum compatible input/prism cap swaps per cycle; nonnegative.",
+          "default": 1200
+        },
+        "volume_split_budget": {
+          "type": "integer",
+          "description": "Maximum generated interior tet split vertices per bulk stage; nonnegative. Unrepresentable floating-point midpoints are rejected.",
+          "default": 12000
+        },
+        "time_limit": {
+          "type": "number",
+          "description": "Positive soft time limit in seconds, checked between operations. Validation and export may extend beyond it.",
+          "default": 900.0
+        },
+        "initial_sizing_factor": {
+          "type": "number",
+          "description": "Positive multiplier of the initial mean unique offset-face edge length. The target length and adaptive refinement floor are clamped to the nominal thickness.",
+          "default": 0.25
+        },
+        "quality_target": {
+          "type": "number",
+          "description": "Raw native AMIPS stopping/activation threshold, finite and greater than 3; ideal=3. Covers all actual tet/prism/pyramid cells including input volume and background.",
+          "default": 20.0
+        },
+        "smoothing_target": {
+          "type": "number",
+          "description": "Threshold of the squared excess AMIPS loss; at least 3 and strictly below quality_target. The loss includes a small log-AMIPS regularizer.",
+          "default": 18.0
+        },
+        "thickness_weight": {
+          "type": "number",
+          "description": "Nonnegative weight on squared relative projection-height error along the original reference direction. No spatial thickness regularizer. The projection band is max(25%, current error).",
+          "default": 10.0
+        },
+        "topology_enabled": {
+          "type": "boolean",
+          "description": "Enable native/surface and bulk tetrahedral topology operations; false runs the mixed smoothing stages alone.",
+          "default": true
+        }
+      }
     },
     "$schema": {
       "type": "string"

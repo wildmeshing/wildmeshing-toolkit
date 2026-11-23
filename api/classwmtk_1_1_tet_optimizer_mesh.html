@@ -101,12 +101,14 @@ Inheritance diagram for wmtk::TetOptimizerMesh:</div>
  <div class="center">
   <img src="classwmtk_1_1_tet_optimizer_mesh.png" usemap="#wmtk::TetOptimizerMesh_map" alt=""/>
   <map id="wmtk::TetOptimizerMesh_map" name="wmtk::TetOptimizerMesh_map">
-<area href="classwmtk_1_1_tet_mesh.html" alt="wmtk::TetMesh" shape="rect" coords="177,0,522,24"/>
-<area href="classwmtk_1_1_rational_positions.html" title="The rounded/exact bookkeeping shared by every mesh that keeps both coordinates." alt="wmtk::RationalPositions" shape="rect" coords="532,0,877,24"/>
-<area href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html" alt="wmtk::components::simwild::SimWildMesh" shape="rect" coords="0,112,345,136"/>
-<area href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html" alt="wmtk::components::tetwild::TetWildMesh" shape="rect" coords="355,112,700,136"/>
-<area href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" title="The offset&#39;s tet mesh, on the shared 3D optimizer." alt="wmtk::components::topological_offset::TopoOffsetTetMesh" shape="rect" coords="710,112,1055,136"/>
-<area href="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html" alt="wmtk::components::manifold_extraction::ManExtractTetMesh" shape="rect" coords="710,168,1055,192"/>
+<area href="classwmtk_1_1_tet_mesh.html" alt="wmtk::TetMesh" shape="rect" coords="392,0,774,24"/>
+<area href="classwmtk_1_1_rational_positions.html" title="The rounded/exact bookkeeping shared by every mesh that keeps both coordinates." alt="wmtk::RationalPositions" shape="rect" coords="784,0,1166,24"/>
+<area href="classwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_stock_fixed_background.html" alt="wmtk::components::prismatic_mesh::quality::StockFixedBackground" shape="rect" coords="0,112,382,136"/>
+<area href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html" alt="wmtk::components::simwild::SimWildMesh" shape="rect" coords="392,112,774,136"/>
+<area href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html" alt="wmtk::components::tetwild::TetWildMesh" shape="rect" coords="784,112,1166,136"/>
+<area href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" title="The offset&#39;s tet mesh, on the shared 3D optimizer." alt="wmtk::components::topological_offset::TopoOffsetTetMesh" shape="rect" coords="1176,112,1558,136"/>
+<area href="classwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_bulk.html" alt="wmtk::components::prismatic_mesh::quality::Bulk" shape="rect" coords="0,168,382,192"/>
+<area href="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html" alt="wmtk::components::manifold_extraction::ManExtractTetMesh" shape="rect" coords="1176,168,1558,192"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -2002,7 +2004,7 @@ Additional Inherited Members</h2></td></tr>
 <p>The quality of cell <code>tid</code>, and how to write it. </p>
 <p>The cell attribute types differ between the applications, so the base reaches the one field it shares through these. Both are AMIPS^3; see MAX_ENERGY. Topological operations and smoothing use the accessors so the shared algorithms remain independent of each application's cell-attribute type. </p>
 
-<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a9a3a80d8bddab28faed3d55a0db905b0">wmtk::components::simwild::SimWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ae074662c9b4173952aad6e0c2689dc59">wmtk::components::tetwild::TetWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af91813232c2e7ecdf843bdc224c25cc5">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a9a3a80d8bddab28faed3d55a0db905b0">wmtk::components::simwild::SimWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ae074662c9b4173952aad6e0c2689dc59">wmtk::components::tetwild::TetWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af91813232c2e7ecdf843bdc224c25cc5">wmtk::components::topological_offset::TopoOffsetTetMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_stock_fixed_background.html#a5c26ebdcf2cfba752ffe6af7c599cdad">wmtk::components::prismatic_mesh::quality::StockFixedBackground</a>.</p>
 
 </div>
 </div>
@@ -2301,7 +2303,7 @@ Additional Inherited Members</h2></td></tr>
 </div><div class="memdoc">
 <p>Non-const: an override may cache what it measured before the collapse so its <code>after</code> counterpart can tell a regression from a defect that was already there. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a90b1522f1d7a2516ddd1eeb90d92ecf8">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_stock_fixed_background.html#a62dd035ed0cb30fd08be3479043ea8e5">wmtk::components::prismatic_mesh::quality::StockFixedBackground</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a90b1522f1d7a2516ddd1eeb90d92ecf8">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -3404,7 +3406,7 @@ vertex is within the radius of this anchor", whether or not it carries the id. <
 </div><div class="memdoc">
 <p>Quality metric used by the driver. TetWild uses absolute AMIPS; SimWild overrides this with quality normalized by each cell's tag-dependent target. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ab7cd3fed496f74bd049f862f02441225">wmtk::components::simwild::SimWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_stock_fixed_background.html#a4d95f9ccf7736edd0011a5eb5fc9caa2">wmtk::components::prismatic_mesh::quality::StockFixedBackground</a>, and <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ab7cd3fed496f74bd049f862f02441225">wmtk::components::simwild::SimWildMesh</a>.</p>
 
 </div>
 </div>
@@ -4071,7 +4073,7 @@ vertex is within the radius of this anchor", whether or not it carries the id. <
 <p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> a surface vertex is pulled toward while smoothing. A real envelope, never a composite (see <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a2d59177fa56b8142e21ca9d9ee8cb8bb" title="Envelope the smoother checks tracked face face (attributes attr) at the moved vertex vid against; nul...">smoothing_containment_envelope()</a>). </p>
 <p>By default a vertex on a tagged curve is pulled toward its tube, the feature tube first (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#afcf86ff9e09cb6d2e2d9c01af9c4f8ab" title="The tube a vertex on a tagged curve is pulled toward while smoothing: the feature tube for a vertex w...">tagged_edge_pull_envelope()</a>). Else, with per-input envelopes, toward the inputs of the vertex's own faces, one real envelope at a time: the member of their union of input sets the vertex is farthest from, since the containment holds every face to its own set, so a vertex where a solid's boundary meets a sheet is pulled to whichever it strays from most. Else, and for a vertex on no tracked face, the union, m_envelope. tetwild's and simwild's, the same code in both, moved here; topological_offset asks it for a held vertex. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a823346cec868dc9046db538614e9bd02">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a823346cec868dc9046db538614e9bd02">wmtk::components::topological_offset::TopoOffsetTetMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_stock_fixed_background.html#ae5144fabe624231d8f98ac45e46fcd19">wmtk::components::prismatic_mesh::quality::StockFixedBackground</a>.</p>
 
 </div>
 </div>
@@ -4341,7 +4343,7 @@ vertex is within the radius of this anchor", whether or not it carries the id. <
 
 <p>Application metadata not represented by the shared vertex attributes. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab15510c222ac6bdf3a3dc503aabd8151">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_bulk.html#a3f72205b6f32e24e6fe2a052056b8604">wmtk::components::prismatic_mesh::quality::Bulk</a>, <a class="el" href="classwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_stock_fixed_background.html#a5773a2bcf9bac40aa38bff39c58d7752">wmtk::components::prismatic_mesh::quality::StockFixedBackground</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab15510c222ac6bdf3a3dc503aabd8151">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -4810,7 +4812,7 @@ vertex is within the radius of this anchor", whether or not it carries the id. <
 
 <p>Application data attached to the old cells. TetWild has none; SimWild caches tags. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#af555c30daf8b4abd4c06b15e96830241">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aac6753a2f5c74382b0181132c6049004">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_bulk.html#a9185b68208d1ecf9905355b62b789cd7">wmtk::components::prismatic_mesh::quality::Bulk</a>, <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#af555c30daf8b4abd4c06b15e96830241">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aac6753a2f5c74382b0181132c6049004">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>

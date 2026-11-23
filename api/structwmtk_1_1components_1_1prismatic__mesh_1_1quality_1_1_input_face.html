@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::components::prismatic_mesh::BadQualityRegions Struct Reference</title>
+<title>Wildmeshing Toolkit: wmtk::components::prismatic_mesh::quality::InputFace Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,34 +69,31 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>prismatic_mesh</b></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_bad_quality_regions.html">BadQualityRegions</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>prismatic_mesh</b></li><li class="navelem"><b>quality</b></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_input_face.html">InputFace</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="structwmtk_1_1components_1_1prismatic__mesh_1_1_bad_quality_regions-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">wmtk::components::prismatic_mesh::BadQualityRegions Struct Reference</div></div>
+<a href="structwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_input_face-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">wmtk::components::prismatic_mesh::quality::InputFace Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a10358d4f48f5f34b87fa6cdbeb8d46d9" id="r_a10358d4f48f5f34b87fa6cdbeb8d46d9"><td class="memItemLeft" align="right" valign="top"><a id="a10358d4f48f5f34b87fa6cdbeb8d46d9" name="a10358d4f48f5f34b87fa6cdbeb8d46d9"></a>
-std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_edge_tets</b></td></tr>
-<tr class="separator:a10358d4f48f5f34b87fa6cdbeb8d46d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a78e6370d185b961774c695e97649b793" id="r_a78e6370d185b961774c695e97649b793"><td class="memItemLeft" align="right" valign="top"><a id="a78e6370d185b961774c695e97649b793" name="a78e6370d185b961774c695e97649b793"></a>
-std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_edges</b></td></tr>
-<tr class="separator:a78e6370d185b961774c695e97649b793"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afeebce00a5d250e7487dcffe3f3c9cee" id="r_afeebce00a5d250e7487dcffe3f3c9cee"><td class="memItemLeft" align="right" valign="top"><a id="afeebce00a5d250e7487dcffe3f3c9cee" name="afeebce00a5d250e7487dcffe3f3c9cee"></a>
-std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>prism_tets</b></td></tr>
-<tr class="separator:afeebce00a5d250e7487dcffe3f3c9cee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af34c26fedd8230a6b2140b5bcaab87f9" id="r_af34c26fedd8230a6b2140b5bcaab87f9"><td class="memItemLeft" align="right" valign="top"><a id="af34c26fedd8230a6b2140b5bcaab87f9" name="af34c26fedd8230a6b2140b5bcaab87f9"></a>
-std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>other_tets</b></td></tr>
-<tr class="separator:af34c26fedd8230a6b2140b5bcaab87f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24c9cd64cb76ceda27bcd1635aab8613" id="r_a24c9cd64cb76ceda27bcd1635aab8613"><td class="memItemLeft" align="right" valign="top"><a id="a24c9cd64cb76ceda27bcd1635aab8613" name="a24c9cd64cb76ceda27bcd1635aab8613"></a>
+std::array&lt; size_t, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>v</b></td></tr>
+<tr class="separator:a24c9cd64cb76ceda27bcd1635aab8613"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7e7a2d9c117f4ff059db2aa6ad63f4d" id="r_af7e7a2d9c117f4ff059db2aa6ad63f4d"><td class="memItemLeft" align="right" valign="top"><a id="af7e7a2d9c117f4ff059db2aa6ad63f4d" name="af7e7a2d9c117f4ff059db2aa6ad63f4d"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>kind</b> = 0</td></tr>
+<tr class="separator:af7e7a2d9c117f4ff059db2aa6ad63f4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a60a278404790caf32639267d6f57e993" id="r_a60a278404790caf32639267d6f57e993"><td class="memItemLeft" align="right" valign="top"><a id="a60a278404790caf32639267d6f57e993" name="a60a278404790caf32639267d6f57e993"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>patch</b> = 0</td></tr>
+<tr class="separator:a60a278404790caf32639267d6f57e993"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li>components/prismatic_mesh/wmtk/components/prismatic_mesh/<a class="el" href="bad__quality__relocation_8hpp_source.html">bad_quality_relocation.hpp</a></li>
+<li>components/prismatic_mesh/wmtk/components/prismatic_mesh/quality/<a class="el" href="common_8hpp_source.html">common.hpp</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
