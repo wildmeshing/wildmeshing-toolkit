@@ -3662,7 +3662,8 @@ run the bindings. Four are registered in <code>tests/CMakeLists.txt</code>, when
 </ul>
 <p><code>tests/python/polyfem</code> holds the tests of <code>wildmeshing.polyfem_ops</code>. pytest collects it only when
 the polyfem extras (gmsh, scipy, h5py) are installed, and its tests that run PolyFEM skip without
-<code>POLYFEM_BIN</code>.</p>
+<code>POLYFEM_BIN</code>. <code>test_polyfem_sim.py</code> runs <code>polyfem_sim.run</code> up to the simulation it writes, with a
+stand-in <code>POLYFEM_BIN</code> (a shell script, so not on Windows): it needs no PolyFEM.</p>
 <h2 id="documentation-examples">Documentation examples<a class="headerlink" href="#documentation-examples" title="Permanent link">&para;</a></h2>
 <p>With <code>-DWMTK_BUILD_DOC_EXAMPLES=ON</code>, every <code>docs/examples/cpp/&lt;name&gt;.cpp</code> is built as
 <code>wmtk_doc_example_&lt;name&gt;</code>, linked with every component, and in a non-Debug build registered as
