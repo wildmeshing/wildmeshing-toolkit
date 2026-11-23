@@ -5,7 +5,11 @@ file, its stage keys and cache) and wildmeshing.viewer (the view of each stage).
     python -m wildmeshing.gui [<pipeline.json>]
 
 The "pipeline" window lists the inputs first, a table: name (editable; every reference follows a
-rename), file path ("..." for the system's file dialog), "x"; its last row adds one. Then the
+rename), file path ("..." for the system's file dialog; a 2D polyline .txt is read as its
+curves), "move", "x"; its last row adds one, and "+ box", "+ circle" (2D curves) and "+ cube" (a
+surface) write a unit primitive next to the pipeline file and add it. "move" puts a gizmo on the
+input in the view; let go, the placement is written into input_transform of the simwild stages
+that read it, the only option that places an input (a 2D input's 3x3, in its plane). Then the
 stages in run order, each with where its last result came from (memory, cache, save, run),
 "edited" once it or a stage it reads has changed since, or "failed". A new stage is named
 <n>_<component> until typed over, and reads the stage before it: its input that stage's mesh, its
@@ -60,7 +64,7 @@ import wildmeshing as wm
 from . import checkpoint
 from . import viewer as _viewer
 from .pipeline import (OPTIONS, Pipeline, StageFailed, StageStopped, _is_ref, _refs, _replace,
-                       check_name)
+                       check_name, read_input)
 
 ZERO = {"bool": False, "int": 0, "float": 0.0, "string": "", "list": [], "object": {}}
 SCALARS = ("bool", "int", "float", "string")
@@ -134,6 +138,34 @@ def _colored(raw):
             if code.isdigit() and int(code) in SGR:
                 colour = SGR[int(code)]
     return text, colour
+
+
+def _primitive(kind):
+    """The OBJ text of a unit primitive about the origin (image-simulation's scene_setup): "box"
+    a square and "circle" 64 segments, 2D curves; "cube" a 3D surface, its faces out."""
+    if kind == "cube":
+        V = [(x, y, z) for z in (-0.5, 0.5) for y in (-0.5, 0.5) for x in (-0.5, 0.5)]
+        V = [V[i] for i in (0, 1, 3, 2, 4, 5, 7, 6)]
+        F = [(1, 4, 3), (1, 3, 2), (5, 6, 7), (5, 7, 8), (1, 2, 6), (1, 6, 5), (4, 8, 7),
+             (4, 7, 3), (1, 5, 8), (1, 8, 4), (2, 3, 7), (2, 7, 6)]
+        return "".join(f"v {x} {y} {z}\n" for x, y, z in V) + \
+            "".join(f"f {a} {b} {c}\n" for a, b, c in F)
+    if kind == "box":
+        V = [(-0.5, -0.5), (0.5, -0.5), (0.5, 0.5), (-0.5, 0.5)]
+    else:
+        a = np.linspace(0.0, 2.0 * np.pi, 64, endpoint=False)
+        V = list(zip(0.5 * np.cos(a), 0.5 * np.sin(a)))
+    return "".join(f"v {float(x)!r} {float(y)!r} 0\n" for x, y in V) + \
+        "".join(f"l {i + 1} {(i + 1) % len(V) + 1}\n" for i in range(len(V)))
+
+
+def _dim(mesh):
+    """2 for curves alone (simwild's reading: no surface, a curve), else 3."""
+    kinds = {k for k, b in mesh.get("cells", {}).items() if len(b["connectivity"])}
+    return 2 if kinds == {"edge"} else 3
+
+
+XY = np.ix_([0, 1, 3], [0, 1, 3])  # a 2D placement's rows and columns in a 4x4 one
 
 
 def _operations(lines):
@@ -216,6 +248,10 @@ class Gui:
         self.message = ""
         self.log_stage = None
         self.checkpoints = {}  # stage -> the .msh its "save checkpoint" field names
+        # input -> its gizmo's state (place()): "layers" moved with it, "T" their transform as
+        # last set, "S" the view's world from the input's frame, "C" the layers' own placement
+        # about their centre, "dim", "moved" since written
+        self.placing = {}
         self.unfold_log = False  # "log" clicked: the log window opens on the next frame
         self.log = {"read": None, "lines": []}  # the shown log as last read: (path, size, start)
         self.cleared = {}  # log path -> the size it had at "clear": shown from there on
@@ -1024,6 +1060,124 @@ class Gui:
                 psim.TreePop()
         psim.TreePop()
 
+    def placers(self, name):
+        """The simwild stages that read the input `name`: [(stage, j)], j the index of their
+        `input` entry naming it."""
+        found = []
+        for stage in self.pipeline.stages:
+            entries = stage["options"].get("input") if stage["component"] == "simwild" else None
+            for j, ref in enumerate(entries if isinstance(entries, list) else [entries]):
+                if _is_ref(ref) and ref.get("from") == name and ref.get("output") == "mesh":
+                    found.append((stage["name"], j))
+        return found
+
+    def placement(self, name):
+        """The input's placement, a 4x4: the input_transform its first simwild reader gives it
+        (a 2D one's 3x3 in the x, y and homogeneous rows and columns), else identity."""
+        M = np.eye(4)
+        for stage, j in self.placers(name)[:1]:
+            given = self.stage(stage)["options"].get("input_transform", [])
+            m = given[j] if isinstance(given, list) and j < len(given) else []
+            if len(m) == 3:
+                M[XY] = m
+            elif len(m) == 4:
+                M = np.array(m, dtype=float)
+        return M
+
+    def set_placement(self, name, M, dim):
+        """Write the placement M (4x4) into input_transform of every simwild stage reading the
+        input `name`, at its entry: for a 2D input (`dim`), the 3x3 of M's x, y and homogeneous
+        rows and columns. ValueError where input_transform is a reference."""
+        value = (M[XY] if dim == 2 else M).tolist()
+        for stage, j in self.placers(name):
+            given = self.stage(stage)["options"].get("input_transform", [])
+            if not isinstance(given, list):
+                raise ValueError(f"{stage}: input_transform is a reference: not placed")
+            given = copy.deepcopy(given) + [[] for _ in range(j + 1 - len(given))]
+            given[j] = value
+            self.set_option(stage, "input_transform", given)
+
+    def place(self, name, on=True):
+        """Put a gizmo on the input `name` in the view, the input shown where placement() puts it
+        -- read and shown first when no run has shown it -- or take the gizmo off. Moved and let
+        go, the placement is written (set_placement; _follow()). ValueError when no simwild stage
+        reads the input: only simwild's input_transform places one."""
+        if not on:
+            self.placing.pop(name, None)
+            self.viewer.placing.discard(name)
+            self.viewer.apply()
+            return
+        if not self.placers(name):
+            raise ValueError(f"{name}: no simwild stage reads it, and only simwild's "
+                             "input_transform places an input")
+        result = self.pipeline.results.get(name)
+        path = os.path.join(self.pipeline.root, self.pipeline.inputs[name])
+        mesh = result["outputs"]["mesh"] if result else read_input(path)
+        if not self.viewer.layers(name):
+            self.viewer.set_stage(name, {"mesh": mesh}, {}, folder=self._folder(name))
+            with open(path, "rb") as f:
+                self.viewed[name] = hashlib.sha256(f.read()).hexdigest()
+        stage = next(s for s in self.viewer.stages if s["name"] == name)
+        if not stage["shown"]:
+            self.viewer._show(stage, True)
+        c, k = self.viewer.transform  # world = (x - c) k
+        S = np.diag([k, k, k, 1.0])
+        S[:3, 3] = -k * np.asarray(c)
+        C = np.eye(4)
+        C[:3, 3] = _viewer._placed(mesh, self.viewer.transform)[1]
+        layers = self.viewer.layers(name)
+        T = S @ self.placement(name) @ np.linalg.inv(S) @ C
+        for s in layers:
+            s.set_transform(T)
+        self.placing[name] = {"layers": layers, "T": np.array(layers[0].get_transform()),
+                              "S": S, "C": C, "dim": _dim(mesh), "moved": False}
+        self.viewer.placing.add(name)
+        self.viewer.apply()
+
+    def _follow(self):
+        """Each input being placed: its layers moved as its gizmo moved; once the mouse lets go
+        and no run goes on, the placement written and the input shown as written (a 2D one in
+        its plane). An input shown anew (a run read it again) is placed again; one gone is not."""
+        for name, p in list(self.placing.items()):
+            layers = self.viewer.layers(name)
+            if not layers:
+                del self.placing[name]
+                continue
+            if any(a is not b for a, b in zip(layers, p["layers"])) or \
+                    len(layers) != len(p["layers"]):
+                if not self._try(self.place, name):
+                    self.place(name, False)
+                continue
+            moved = next((T for T in (np.array(s.get_transform()) for s in layers)
+                          if not np.array_equal(T, p["T"])), None)
+            if moved is not None:
+                for s in layers:
+                    s.set_transform(moved)
+                p["T"], p["moved"] = np.array(layers[0].get_transform()), True
+            if p["moved"] and not self.psim.IsMouseDown(0) and not self.running():
+                S, C = p["S"], p["C"]
+                M = np.linalg.inv(S) @ p["T"] @ np.linalg.inv(C) @ S
+                if p["dim"] == 2:  # in its plane
+                    flat = np.eye(4)
+                    flat[XY] = M[XY]
+                    M = flat
+                if not (self._try(self.set_placement, name, M, p["dim"])
+                        and self._try(self.place, name)):  # shown as written
+                    self.place(name, False)
+
+    def add_primitive(self, kind):
+        """Write the unit primitive `kind` (_primitive) as <kind>.obj next to the pipeline file --
+        <kind>_2.obj, ... where that is taken, as a file or a name -- and add it as an input
+        named after it."""
+        n, stem = 1, kind
+        while os.path.exists(os.path.join(self.pipeline.root, f"{stem}.obj")) \
+                or stem in self.names():
+            n += 1
+            stem = f"{kind}_{n}"
+        with open(os.path.join(self.pipeline.root, f"{stem}.obj"), "x") as f:
+            f.write(_primitive(kind))
+        self.add_input(stem, f"{stem}.obj")
+
     def _write(self, save, path, overwrite):
         """save(path, overwrite); the message says it saved `path`, or why not."""
         try:
@@ -1083,6 +1237,18 @@ class Gui:
             psim.SameLine()
             psim.TextColored(RED, "missing")
         psim.TableSetColumnIndex(2)
+        readers = self.placers(name)
+        psim.BeginDisabled(not readers)
+        c, on = psim.Checkbox(f"##move{name}", name in self.placing)
+        if c:
+            self._try(self.place, name, on)
+        if psim.IsItemHovered(psim.ImGuiHoveredFlags_AllowWhenDisabled):
+            psim.SetTooltip("Move this input with a gizmo in the view; let go to write the\n"
+                            "placement into input_transform of the simwild stages reading it."
+                            if readers else "No simwild stage reads this input: only simwild's\n"
+                            "input_transform places one.")
+        psim.EndDisabled()
+        psim.TableSetColumnIndex(3)
         if psim.SmallButton(f"x##remove{name}"):
             self._try(self.remove, name)
 
@@ -1107,7 +1273,7 @@ class Gui:
         psim.SameLine()
         if psim.SmallButton("...##picknew"):
             self.pick_file("new")
-        psim.TableSetColumnIndex(2)
+        psim.TableSetColumnIndex(3)
         if psim.SmallButton("+##addinput"):
             if self._try(self.add_input, new["name"], new["file"]):
                 self.new_input = {"name": "", "file": ""}
@@ -1194,6 +1360,7 @@ class Gui:
         folded at start and unrolling upwards."""
         psim = self.psim
         self.poll()
+        self._follow()
         busy = self.running()
         _viewer.polyscope_panels(self.ps, psim)
         width, height = psim.GetIO().DisplaySize
@@ -1230,15 +1397,25 @@ class Gui:
             psim.TextWrapped(self.message)
         psim.Separator()
         psim.BeginDisabled(busy)
-        if psim.BeginTable("inputs", 3):
+        if psim.BeginTable("inputs", 4):
             psim.TableSetupColumn("input name", psim.ImGuiTableColumnFlags_WidthFixed, 90)
             psim.TableSetupColumn("file path", psim.ImGuiTableColumnFlags_WidthStretch)
+            psim.TableSetupColumn("move", psim.ImGuiTableColumnFlags_WidthFixed, 36)
             psim.TableSetupColumn("", psim.ImGuiTableColumnFlags_WidthFixed, 20)
             psim.TableHeadersRow()
             for name, file in list(self.pipeline.inputs.items()):
                 self._input_row(name, file)
             self._new_input_row()
             psim.EndTable()
+        for kind, what in (("box", "a unit square, a 2D curve"), ("circle", "a unit circle, a 2D "
+                           "curve of 64 segments"), ("cube", "a unit cube, a 3D surface")):
+            if psim.SmallButton(f"+ {kind}"):
+                self._try(self.add_primitive, kind)
+            if psim.IsItemHovered():
+                psim.SetTooltip(f"Write {what} about the origin, as {kind}.obj next to the\n"
+                                "pipeline file, and add it as an input; place it with \"move\".")
+            psim.SameLine()
+        psim.NewLine()
         psim.Separator()
         for i, stage in enumerate(list(self.pipeline.stages)):
             self._stage(i, stage)

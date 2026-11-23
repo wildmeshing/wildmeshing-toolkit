@@ -17,7 +17,8 @@ of S as it is; {"from": S, "option": K} passes S's option K -- as S sets it, els
 default -- known before anything runs. A stage refers only to the inputs and the stages above it,
 so the list order is a run order. Names -- of inputs and stages, one set -- are letters, digits,
 '_' and '-', as a tag expression reads a label. Paths are relative to the pipeline file; the
-cache defaults to <pipeline stem>_cache next to it.
+cache defaults to <pipeline stem>_cache next to it. An input file is read by read_input(): a 2D
+polyline .txt as its curves, any other file by wildmeshing.read_mesh.
 
 An input's key is the sha256 of its file's bytes; a stage's key is the sha256 of its component,
 its options with each option reference resolved and each other reference replaced by (key of S,
@@ -185,6 +186,34 @@ def _replace(value, f):
     if isinstance(value, list):
         return [_replace(v, f) for v in value]
     return value
+
+
+def read_input(path):
+    """An input file as a mesh: a 2D polyline .txt (image-simulation's png_to_polylines: "x y"
+    lines, each "# ring" section one closed loop) as its curves at z = 0, as read_mesh reads an
+    OBJ's 'l' records; any other file through wildmeshing.read_mesh."""
+    if not path.endswith(".txt"):
+        return wildmeshing.read_mesh(path)
+    V, E, start = [], [], 0
+
+    def close():
+        if len(V) - start >= 3:  # a loop: two points would give the one segment twice
+            E.append((len(V) - 1, start))
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("# ring"):
+                close()
+                start = len(V)
+            elif line and not line.startswith("#"):
+                x, y = line.split()[:2]
+                if len(V) > start:
+                    E.append((len(V) - 1, len(V)))
+                V.append((float(x), float(y), 0.0))
+    close()
+    return {"V": np.array(V, dtype=float).reshape(-1, 3), "vertex_attributes": {},
+            "cells": {"edge": {"connectivity": np.array(E, dtype=np.int64).reshape(-1, 2),
+                               "attributes": {}}}}
 
 
 def _holds(stem, key):
@@ -438,7 +467,7 @@ class Pipeline:
             path = os.path.join(self.root, file)
             with open(path, "rb") as f:
                 key = keys[name] = hashlib.sha256(f.read()).hexdigest()
-            done(name, key, lambda: {"outputs": {"mesh": wildmeshing.read_mesh(path)},
+            done(name, key, lambda: {"outputs": {"mesh": read_input(path)},
                                      "report": {}, "key": key, "source": "file", "log": None})
         for stage in self.stages:
             name = stage["name"]

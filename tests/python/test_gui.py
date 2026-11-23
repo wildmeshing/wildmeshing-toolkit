@@ -489,6 +489,74 @@ def test_the_log_plot_reads_each_operation_of_a_simwild_log(tmp_path, monkeypatc
     assert fits[:3] == [implot.ImPlotAxisFlags_AutoFit] * 3 and set(fits[3:]) == {0}
 
 
+def test_move_places_an_input_in_input_transform_of_its_simwild_readers(tmp_path):
+    box(tmp_path)
+    b = gui.Gui(Pipeline([], str(tmp_path)))
+    b.add_input("box", "box.obj")
+    gui.run_window(b, "mock")
+    with pytest.raises(ValueError, match="no simwild stage reads it"):
+        b.place("box")
+    b.add_stage("s", "simwild")
+    assert b.placers("box") == [("s", 0)]
+    b.place("box")  # read and shown: no run has read it
+    layers = b.viewer.layers("box")
+    T0 = np.array(layers[0].get_transform())
+    k = b.viewer.transform[1]  # the view's scale
+    move = np.eye(4)
+    move[:3, 3] = (0.1, 0.2, 0.3)
+    layers[0].set_transform(move @ T0)  # the gizmo dragged
+    polyscope.show(1)  # let go: the mock's mouse is up
+    expected = np.eye(4)
+    expected[:3, 3] = np.array([0.1, 0.2, 0.3]) / k  # in the input's frame
+    assert np.allclose(b.stage("s")["options"]["input_transform"], [expected], atol=1e-5)
+    assert all(np.allclose(s.get_transform(), move @ T0, atol=1e-6) for s in layers)
+    # Placed again, the gizmo starts where the placement is.
+    b.place("box", False)
+    b.place("box")
+    assert np.allclose(b.viewer.layers("box")[0].get_transform(), move @ T0, atol=1e-6)
+
+
+def test_a_2d_input_is_placed_in_its_plane(tmp_path):
+    (tmp_path / "ring.txt").write_text("# ring outer\n0 0\n1 0\n1 1\n0 1\n")
+    b = gui.Gui(Pipeline([], str(tmp_path)))
+    b.add_input("ring", "ring.txt")
+    b.add_stage("s", "simwild")
+    gui.run_window(b, "mock")
+    b.place("ring")
+    layer = b.viewer.layers("ring")[0]
+    T0 = np.array(layer.get_transform())
+    k = b.viewer.transform[1]
+    move = np.eye(4)
+    move[:3, 3] = (0.1, 0.0, 0.5)  # off the plane too
+    layer.set_transform(move @ T0)
+    polyscope.show(1)
+    (M,) = b.stage("s")["options"]["input_transform"]
+    assert np.allclose(M, [[1, 0, 0.1 / k], [0, 1, 0], [0, 0, 1]], atol=1e-5)  # a 3x3
+    in_plane = np.eye(4)
+    in_plane[0, 3] = 0.1
+    assert np.allclose(layer.get_transform(), in_plane @ T0, atol=1e-6)  # shown as written
+
+
+def test_a_primitive_is_written_next_to_the_pipeline_and_added(tmp_path):
+    box(tmp_path)  # box.obj taken
+    b = gui.Gui(Pipeline([], str(tmp_path)))
+    for kind in ["box", "circle", "cube"]:
+        b.add_primitive(kind)
+    assert b.pipeline.inputs == {"box_2": "box_2.obj", "circle": "circle.obj", "cube": "cube.obj"}
+    square = wm.read_mesh(str(tmp_path / "box_2.obj"))
+    assert square["V"].tolist() == [[-0.5, -0.5, 0], [0.5, -0.5, 0], [0.5, 0.5, 0],
+                                    [-0.5, 0.5, 0]]
+    assert square["cells"]["edge"]["connectivity"].tolist() == [[0, 1], [1, 2], [2, 3], [3, 0]]
+    circle = wm.read_mesh(str(tmp_path / "circle.obj"))
+    assert len(circle["V"]) == 64 and np.allclose(np.linalg.norm(circle["V"], axis=1), 0.5)
+    cube = wm.read_mesh(str(tmp_path / "cube.obj"))
+    V, F = cube["V"], cube["cells"]["triangle"]["connectivity"]
+    assert len(F) == 12
+    volume = np.einsum("ij,ij->i", V[F[:, 0]], np.cross(V[F[:, 1]], V[F[:, 2]])).sum() / 6
+    assert np.isclose(volume, 1.0)  # closed, its faces out
+    assert gui._dim(square) == 2 and gui._dim(cube) == 3
+
+
 def test_a_failed_stage_is_marked_and_its_log_chosen(tmp_path, monkeypatch):
     box(tmp_path)
     b = gui.Gui(Pipeline([], str(tmp_path)))

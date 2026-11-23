@@ -409,6 +409,7 @@ class Viewer:
         self.stages = []
         # The slice plane off at start: on, it hides half of every volume until moved.
         self.gizmos = {"slice": False, "transform": False}
+        self.placing = set()  # stages with a gizmo on their first layer (the GUI's input placing)
         self.plane = ps.add_scene_slice_plane()
         self.plane.set_pose((0.0, 0.0, 0.0), (1.0, 0.0, 0.0))
         self.plane.set_draw_plane(False)
@@ -455,13 +456,21 @@ class Viewer:
         for entry in stage["correspondences"]:
             yield from entry["directions"]
 
+    def layers(self, name):
+        """The layers of the stage `name`'s mesh, a shown item's first; [] without the stage."""
+        stage = next((s for s in self.stages if s["name"] == name), None)
+        items = sorted(self._items(stage), key=lambda item: not item["show"]) if stage else []
+        return [s for item in items for s in item["layers"]]
+
     def apply(self):
         for stage in self.stages:
+            placing = stage["name"] in self.placing and stage["shown"]
+            handle = self.layers(stage["name"])[:1] if placing else []
             for item in self._items(stage):
                 for s in item["layers"]:
                     s.set_enabled(stage["shown"] and item["show"])
-                    s.set_transform_gizmo_enabled(self.gizmos["transform"] and stage["shown"]
-                                                  and item["show"])
+                    s.set_transform_gizmo_enabled(any(s is h for h in handle) or (
+                        self.gizmos["transform"] and stage["shown"] and item["show"]))
                 for s in item["envelope"]:
                     s.set_enabled(stage["shown"] and item["env"])
             for d in self._directions(stage):

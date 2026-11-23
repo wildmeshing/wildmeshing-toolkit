@@ -18,7 +18,7 @@ import pytest
 
 import wildmeshing as wm
 from wildmeshing import checkpoint
-from wildmeshing.pipeline import Pipeline, StageFailed
+from wildmeshing.pipeline import Pipeline, StageFailed, read_input
 
 COMPONENTS = ["isotropic_remeshing", "qslim", "tracking"]
 
@@ -310,3 +310,22 @@ def test_prismatic_adapter_preserves_original_curves_faces_and_layer_links():
     # The adapter leaves the two layer links intact for C++ junction handling.
     assert converted['vertex_attributes']['corr_input_vid']['values'].tolist() == [-1,-1,-1,-1,0,4]
     assert converted['vertex_attributes']['labels']['values'][4] == 2
+
+
+def test_a_polyline_txt_input_is_read_as_its_curves(tmp_path):
+    # image-simulation's png_to_polylines: each "# ring" a closed loop, "x y" per line.
+    (tmp_path / "rings.txt").write_text("# bin: gray in [140, 220]\n# ring outer\n0 0\n1 0\n"
+                                        "1 1\n# ring hole\n0.2 0.2\n0.4 0.2\n0.4 0.4\n")
+    mesh = read_input(str(tmp_path / "rings.txt"))
+    assert mesh["V"].tolist() == [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0.2, 0.2, 0], [0.4, 0.2, 0],
+                                  [0.4, 0.4, 0]]
+    assert mesh["cells"]["edge"]["connectivity"].tolist() == [[0, 1], [1, 2], [2, 0], [3, 4],
+                                                               [4, 5], [5, 3]]
+    # As read_mesh reads an OBJ's 'l' records.
+    obj = tmp_path / "rings.obj"
+    obj.write_text("".join(f"v {x} {y} {z}\n" for x, y, z in mesh["V"])
+                   + "".join(f"l {a + 1} {b + 1}\n" for a, b in
+                             mesh["cells"]["edge"]["connectivity"]))
+    assert same(read_input(str(obj)), mesh)
+    r = Pipeline([], str(tmp_path), inputs={"rings": "rings.txt"}).run()["rings"]
+    assert r["source"] == "file" and same(r["outputs"]["mesh"], mesh)
