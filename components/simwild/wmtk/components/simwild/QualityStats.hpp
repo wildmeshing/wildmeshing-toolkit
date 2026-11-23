@@ -45,6 +45,9 @@ struct QualityBreakdown
     double max_relative = -1.;
     double avg_relative = 0.;
     size_t count = 0;
+    /// Cells above their own target (relative quality > 1): the ones the stopping criterion
+    /// still waits on.
+    size_t above_target = 0;
 };
 
 /**
@@ -107,6 +110,9 @@ QualityBreakdown collect_quality_breakdown(
         out.max_relative = std::max(out.max_relative, relative);
         out.avg_relative += relative;
         ++out.count;
+        if (relative > 1.) {
+            ++out.above_target;
+        }
     }
 
     if (out.count > 0) {
@@ -135,8 +141,9 @@ inline void log_quality_breakdown(const QualityBreakdown& breakdown)
     });
 
     logger().info(
-        "Quality by tag ({} cells, max rel = {:.4}, avg rel = {:.4}):",
+        "Quality by tag ({} cells, {} above target, max rel = {:.4}, avg rel = {:.4}):",
         breakdown.count,
+        breakdown.above_target,
         breakdown.max_relative,
         breakdown.avg_relative);
     for (const QualityGroup* g : order) {
