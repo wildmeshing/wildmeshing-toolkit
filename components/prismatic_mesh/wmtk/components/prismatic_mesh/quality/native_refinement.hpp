@@ -481,9 +481,8 @@ public:
                 if (a >= 0 && b >= 0) {
                     if (a == b)
                         mesh.correspondence[v] = a;
-                    else if (
-                        auto it = mid.find(edge(size_t(a), size_t(b)));
-                        it != mid.end() && mesh.input[it->second])
+                    else if (auto it = mid.find(edge(size_t(a), size_t(b)));
+                             it != mid.end() && mesh.input[it->second])
                         mesh.correspondence[v] = it->second;
                     else
                         mesh.correspondence[v] =
