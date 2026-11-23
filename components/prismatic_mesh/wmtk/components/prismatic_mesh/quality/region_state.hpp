@@ -79,9 +79,9 @@ refine_mixed_sizing(Mesh& m, double target_quality, double base, double floor, i
     for (int ring = 0; ring < rings; ++ring) {
         auto next = selected;
         for (const auto& c : m.cells) {
-            bool near = false;
-            for (size_t v : c.v) near |= selected[v];
-            if (near)
+            bool touches_selected = false;
+            for (size_t v : c.v) touches_selected |= selected[v] != 0;
+            if (touches_selected)
                 for (size_t v : c.v) next[v] = true;
         }
         selected = std::move(next);

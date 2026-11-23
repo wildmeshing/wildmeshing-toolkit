@@ -271,7 +271,7 @@ public:
                 for (int j : f) {
                     const size_t v = mesh.cells[ci].v[j];
                     fv.push_back(v);
-                    input &= mesh.input[v];
+                    input = input && mesh.input[v] != 0;
                 }
                 if (!input || std::find(fv.begin(), fv.end(), e[0]) == fv.end() ||
                     std::find(fv.begin(), fv.end(), e[1]) == fv.end())

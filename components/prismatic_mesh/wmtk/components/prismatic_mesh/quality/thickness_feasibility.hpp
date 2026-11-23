@@ -50,11 +50,11 @@ inline bool thickness_vectors_feasible(
         // some active simplex face. Enumerate those (at most 63 for a prism).
         // Singular stationary families attain the same value on a smaller face.
         for (size_t mask = 1; mask < (size_t(1) << n); ++mask) {
-            const size_t k = __builtin_popcountll(mask);
-            if (k < 3) continue;
             std::vector<size_t> ids;
             for (size_t i = 0; i < n; ++i)
                 if (mask & (size_t(1) << i)) ids.push_back(i);
+            const size_t k = ids.size();
+            if (k < 3) continue;
             L scale = 0;
             for (size_t i : ids)
                 for (size_t j : ids) scale = std::max(scale, std::abs(q(i, j)));

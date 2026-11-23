@@ -53,8 +53,8 @@ retile_tet_side(const Mesh& m, Edge edge, Edge ends, const std::set<size_t>& all
         }
     if (out.cells.empty()) throw std::runtime_error("missing_opposite_tet_side");
     for (auto& [region, graph] : graphs) {
-        for (const auto& [v, near] : graph)
-            if (near.size() != size_t(v == ends[0] || v == ends[1] ? 1 : 2))
+        for (const auto& [v, neighbors] : graph)
+            if (neighbors.size() != size_t(v == ends[0] || v == ends[1] ? 1 : 2))
                 throw std::runtime_error("opposite_tet_link_not_path");
         std::vector<size_t> path{ends[0]};
         size_t previous = size_t(-1), v = ends[0];
