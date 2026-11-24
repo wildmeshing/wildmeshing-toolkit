@@ -86,8 +86,8 @@ FeatureInputs read_feature_inputs(
  * @brief Marshal feature edges and points into the remesher's flat arrays, and check the
  * domain.
  *
- * The features AND their forcing-triangle apexes -- which stick out by up to 0.1x the edge
- * length along an axis -- must lie inside the background box [box_min, box_max], or the
+ * The features AND the edges' forcing-triangle apexes -- which stick out by up to 0.1x the
+ * edge length along an axis -- must lie inside the background box [box_min, box_max], or the
  * remesher's non-Delaunay insertion cannot locate them. The caller grows the input bbox over
  * the features (FeatureInputs::extend_bbox()), so a violation means only one thing: a feature
  * edge so long that a tenth of it exceeds the box padding (diag/15). Thrown with that diagnosis

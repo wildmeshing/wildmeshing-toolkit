@@ -807,15 +807,20 @@ CubeRoundTrip noisy_cube_round_trip(const int K, const double noise, const bool 
 
 } // namespace
 
-TEST_CASE("tetwild-curve-on-near-axis-aligned-cube-round-trip", "[tetwild][tracking]" + release_only)
+TEST_CASE(
+    "tetwild-curve-on-near-axis-aligned-cube-round-trip",
+    "[tetwild][tracking]" + release_only)
 {
     // A cube whose faces are axis-aligned only up to rounding (coordinates 1e-15 off), with its
-    // 12 edges as a curve input. The edge-forcing triangles of the insertion lie in axis-aligned
-    // planes through each curve segment, so they are almost, not exactly, in the plane of the
-    // face beside it, and the arrangement has facets about 1e-17 wide there, with no area once
-    // rounded. The surface map then sends pieces of the output onto segments of the input:
-    // output -> input -> output does not come back, with no build warning. Without the curve
-    // input, or with the exact cube (noise 0), every point comes back.
+    // 12 edges as a curve input (and, as edges.V is the whole cube, its other vertices as
+    // points). The insertion used to pin every curve segment and point with forcing triangles
+    // in axis-aligned planes, almost, not exactly, in the plane of the face beside them, and the
+    // arrangement had facets about 1e-17 wide there, with no area once rounded. The surface map
+    // then sent pieces of the output onto segments of the input: output -> input -> output did
+    // not come back, with no build warning. VolumeRemesher now adds no forcing triangle for a
+    // feature the arrangement has already (a crease or a vertex of the surface), so the curve
+    // changes nothing here. Without the curve input, or with the exact cube (noise 0), every
+    // point always came back.
     SECTION("exact cube, edges as a curve")
     {
         const CubeRoundTrip r = noisy_cube_round_trip(4, 0., true);
