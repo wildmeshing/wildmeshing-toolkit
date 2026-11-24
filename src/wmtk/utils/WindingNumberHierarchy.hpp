@@ -51,7 +51,8 @@ class WindingNumberHierarchy
 public:
     WindingNumberHierarchy(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F)
     {
-        Eigen::MatrixXi SVI, SVJ, SF;
+        Eigen::VectorXi SVI, SVJ;
+        Eigen::MatrixXi SF;
         igl::remove_duplicate_vertices(V, F, 0.0, m_V, SVI, SVJ, SF);
         add_node(std::move(SF));
         grow(0);
@@ -75,7 +76,8 @@ private:
     /// igl::triangle_fan(igl::exterior_edges(F)), with a fixed apex instead of a random one.
     static Eigen::MatrixXi cap_of(const Eigen::MatrixXi& F)
     {
-        const Eigen::MatrixXi E = igl::exterior_edges(F);
+        Eigen::MatrixXi E;
+        igl::exterior_edges(F, E);
         if (E.size() == 0) return Eigen::MatrixXi(0, 3);
         const int s = E(0, 0);
         std::vector<Eigen::Index> rows;

@@ -61,12 +61,17 @@ namespace {
 struct WorkingDirectory
 {
     std::filesystem::path old = std::filesystem::current_path();
-    std::filesystem::path path =
-        old / ("wmtk_memory_io_" +
-               std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    std::filesystem::path path;
     WorkingDirectory()
     {
-        std::filesystem::create_directory(path);
+        // A directory of its own. ctest runs these tests as parallel processes in one directory,
+        // and two of them can read the same clock value (it ticks every 100 ns on Windows), so a
+        // name that create_directory() finds taken is passed over for the next.
+        do {
+            path =
+                old / ("wmtk_memory_io_" +
+                       std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+        } while (!std::filesystem::create_directory(path));
         std::filesystem::current_path(path);
     }
     ~WorkingDirectory()

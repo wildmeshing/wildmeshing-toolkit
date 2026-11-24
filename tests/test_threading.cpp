@@ -342,9 +342,21 @@ bool run_on_distinct_workers(int n, F fn)
 // The width of a wave that covers the whole pool: every worker it has, and at least 128, which
 // is more than any other test here runs at once. With one thread submitting, a wave this wide
 // leaves the pool at exactly this many workers -- one per task -- each of which ran one task.
+//
+// Called between groups, it first waits until every worker the pool has started is idle. A
+// worker started for a job that another worker, freed up in the meantime, took instead (see
+// worker_pool::submit) counts in worker_count() at once but is idle only once its thread runs,
+// which on a loaded machine can be after the next wave was submitted: that wave would miss it,
+// and it would turn up idle afterwards, a worker that ran none of the wave's tasks.
 int whole_pool()
 {
-    return std::max(128, int(threading::detail::worker_pool::instance().worker_count()));
+    auto& pool = threading::detail::worker_pool::instance();
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+    while (pool.idle_count() < pool.worker_count() && std::chrono::steady_clock::now() < deadline) {
+        std::this_thread::yield();
+    }
+    REQUIRE(pool.idle_count() == pool.worker_count());
+    return std::max(128, int(pool.worker_count()));
 }
 } // namespace
 

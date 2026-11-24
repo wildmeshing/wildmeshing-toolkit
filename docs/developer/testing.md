@@ -127,7 +127,8 @@ The others are run by hand or elsewhere:
 
 `tests/python/polyfem` holds the tests of `wildmeshing.polyfem_ops`. pytest collects it only when
 the polyfem extras (gmsh, scipy, h5py) are installed, and its tests that run PolyFEM skip without
-`POLYFEM_BIN`.
+`POLYFEM_BIN`. `test_polyfem_sim.py` runs `polyfem_sim.run` up to the simulation it writes, with a
+stand-in `POLYFEM_BIN` (a shell script, so not on Windows): it needs no PolyFEM.
 
 ## Documentation examples
 
