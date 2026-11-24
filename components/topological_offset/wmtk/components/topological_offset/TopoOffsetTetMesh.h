@@ -689,7 +689,7 @@ public:
      * rules (m_op_rules: no band term); then the loop's setup redone on its result (vertex order,
      * plastic rests). The loop starts from the sizing field the pass leaves.
      */
-    void optimize_construction_pass();
+    void optimize_construction_pass(const std::string& front_envelope);
     /// The offset surface's envelope eps while optimize_construction_pass() runs: half the
     /// distance the march traced the front to, m_construction_distance / 2. 0 at every other time,
     /// when build_offset_envelope() takes envelope_size (the final pass included).
@@ -850,7 +850,12 @@ public:
     /// a non-band cell joins the band iff every corner is inside the level set, a band cell leaves
     /// it iff every corner is beyond; every other test is the same for both. Returns the flips.
     /// As TopoOffsetTriMesh::label_cleanup().
-    enum class FlipSide { Cleanup, Corners };
+    /// Cleanup: the loop's clean-up (EXPERIMENTAL_label_cleanup). Corners: label growth's corner rule.
+    /// CornersEnergy: EXPERIMENTAL_label_cleanup "growth" -- label growth's rule in the loop (its
+    /// eligibility, its region test), each flip decided by the band term's sign unless the cell is
+    /// proven on one side.
+    /// Star: no single-cell flips, only the whole-star retreat (EXPERIMENTAL_star_retreat).
+    enum class FlipSide { Cleanup, Corners, CornersEnergy, Star };
     size_t label_cleanup(const std::string& where, FlipSide side = FlipSide::Cleanup);
 
     /**
@@ -868,7 +873,12 @@ public:
      * cell's piece's; an edge whose crossing rounds onto u is not split. Serial. Returns {splits,
      * edges the shared split refused, edges not split for their crossing at u}. As 2D.
      */
-    std::array<size_t, 3> growth_splits(const std::string& where);
+    /// `loop` (EXPERIMENTAL_label_cleanup "growth"): both directions -- the band advancing (as
+    /// growth) and retreating (band cells at a front vertex beyond) -- and only from front vertices
+    /// more than front_conv from the level set.
+    /// `retreat_only` (EXPERIMENTAL_star_retreat): the loop's retreat splits alone.
+    std::array<size_t, 3>
+    growth_splits(const std::string& where, bool loop = false, bool retreat_only = false);
     /**
      * @brief The bisection of growth_splits(): x(s) = u + s (w - u) exact (growth_point()), d
      * read at its rounding, keeping d(x(lo)) < delta <= d(x(hi)) until the bracket's two points
@@ -876,7 +886,13 @@ public:
      * point inside the level set the doubles resolve (0: the crossing rounds onto u). s is a
      * dyadic fraction k / 2^n, n <= 52, exact in a double. No tolerance (Uday, 2026-11-20). As 2D.
      */
-    double bisection_on_edge(size_t u, size_t w, const ExactBandIntegral& be, double delta) const;
+    /// `beyond`: the first point at or beyond the level set (hi) instead of the last inside (lo).
+    double bisection_on_edge(
+        size_t u,
+        size_t w,
+        const ExactBandIntegral& be,
+        double delta,
+        bool beyond = false) const;
     /// The exact point u + s (w - u) of the edge (u, w), from the endpoints' exact positions.
     Vector3r growth_point(size_t u, size_t w, double s) const
     {
@@ -2125,6 +2141,10 @@ public:
     /// The turn the run is in, 1-based; 0 before the loop starts. Read only by
     /// write_optimization_debug_output(), to tag each frame with the turn it belongs to.
     int m_round = 0;
+    /// The turns the last optimize_offset_loop() ran: 0 when the mesh passed the exit test at the
+    /// loop's entry. Read by the report ("loop_turns"). Not m_iterations_used, which the loop sets
+    /// too: the final pass's mesh_improvement() resets that one and counts its own iterations.
+    int m_loop_turns = 0;
     /// Monotonic frame counter for the debug timeline.
     mutable size_t m_debug_seq = 0;
     /// DEBUG_output: the label of each debug frame, indexed by its sequence number, and, per
@@ -3381,7 +3401,8 @@ public:
     /// EXPERIMENTAL_settle_refinement, one turn, after energy_criterion(): settled when the offset
     /// energy (offset_energy(), no AMIPS) fell by less than the bar energy
     /// b = front_conv^2 A / (2 target_distance) since `e_prev` (the offset energy at the end of
-    /// the previous turn, turn 1: before its first group; set to the offset energy now). Only a
+    /// the previous turn, turn 1: before its first group; NaN: no turn behind the test, the exit
+    /// test at the loop's entry, a turn of length zero; set to the offset energy now). Only a
     /// settled turn tests the front faces (min_triangle_distance()
     /// and, settle_mark "max", ExactBandIntegral::max_distance()) and halves the corners of those
     /// more than front_conv from the level set, when `refine_now`. Logs the turn's [settle] line.

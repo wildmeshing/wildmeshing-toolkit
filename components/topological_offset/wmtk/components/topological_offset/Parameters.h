@@ -332,6 +332,24 @@ struct Parameters : public wmtk::OptimizerParameters
     /// of half the distance the march traced it to (TopoOffsetTetMesh::optimize_construction_pass()).
     /// Ignored when optimize_offset is false. See the spec doc.
     bool optimize_construction = true;
+    /// EXPERIMENTAL_construction_front_envelope (see the spec), 3D: what optimize_construction's
+    /// pass holds the offset surface to. "half_traced_distance" (the default): half the distance
+    /// the march traced it to. "envelope_size": the final pass's envelope, and the pass runs only
+    /// when the max AMIPS is at or over stop_energy, as the final pass.
+    std::string construction_front_envelope = "half_traced_distance";
+    /// EXPERIMENTAL_construction_pass_before_growth (see the spec), 3D: optimize_construction's
+    /// pass also runs on the march's front, before label_growth, with the same front envelope.
+    bool construction_pass_before_growth = false;
+    /// EXPERIMENTAL_crossing_step (see the spec), 3D: how the loop's smoothing moves a vertex on
+    /// the front and held. "nearest" (the default) or "solve_project".
+    std::string crossing_step = "nearest";
+    /// EXPERIMENTAL_resolve_crossing (see the spec), 3D, under label_growth: before growth, held
+    /// surfaces resolve the level set to front_conv near it (vanilla midpoint splits).
+    bool resolve_crossing = false;
+    /// EXPERIMENTAL_star_retreat (see the spec), 3D, under label_growth: after the loop's label
+    /// clean-up, the march's retreat splits at held front vertices beyond the level set and the
+    /// whole-star retreat.
+    bool star_retreat = false;
     /// 3D (2026-10-21; "linear" was EXPERIMENTAL_incremental_growth): how the loop grows the
     /// offset when the march traces the front below target_distance (construction_mode
     /// "max_marchable_fallback", the target not below the maximum marchable distance), from the
@@ -693,13 +711,32 @@ struct Parameters : public wmtk::OptimizerParameters
         front_pocket_split = json_params["EXPERIMENTAL_front_pocket_split"];
         front_spanned_split = json_params["EXPERIMENTAL_front_spanned_split"];
         exit_no_folds = json_params["EXPERIMENTAL_exit_no_folds"];
+        construction_front_envelope = json_params["EXPERIMENTAL_construction_front_envelope"];
+        if (construction_front_envelope != "half_traced_distance" &&
+            construction_front_envelope != "envelope_size" &&
+            construction_front_envelope != "front_conv") {
+            log_and_throw_error(
+                "EXPERIMENTAL_construction_front_envelope is \"half_traced_distance\", "
+                "\"envelope_size\" or \"front_conv\", not \"{}\"",
+                construction_front_envelope);
+        }
+        construction_pass_before_growth =
+            json_params["EXPERIMENTAL_construction_pass_before_growth"];
+        crossing_step = json_params["EXPERIMENTAL_crossing_step"];
+        if (crossing_step != "nearest" && crossing_step != "solve_project") {
+            log_and_throw_error(
+                "EXPERIMENTAL_crossing_step is \"nearest\" or \"solve_project\", not \"{}\"",
+                crossing_step);
+        }
+        resolve_crossing = json_params["EXPERIMENTAL_resolve_crossing"];
+        star_retreat = json_params["EXPERIMENTAL_star_retreat"];
         label_cleanup = json_params["EXPERIMENTAL_label_cleanup"];
         if (label_cleanup != "off" && label_cleanup != "one_sided" &&
             label_cleanup != "one_sided_tips" && label_cleanup != "one_sided_at_target" &&
-            label_cleanup != "energy_decrease") {
+            label_cleanup != "energy_decrease" && label_cleanup != "growth") {
             log_and_throw_error(
                 "EXPERIMENTAL_label_cleanup is \"off\", \"one_sided\", \"one_sided_tips\", "
-                "\"one_sided_at_target\" or \"energy_decrease\", not \"{}\"",
+                "\"one_sided_at_target\", \"energy_decrease\" or \"growth\", not \"{}\"",
                 label_cleanup);
         }
         // "energy_decrease" reads the face term of EXPERIMENTAL_band_volume_rule "surface".

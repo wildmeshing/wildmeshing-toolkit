@@ -8526,45 +8526,6 @@ TEST_CASE("label-cleanup-keeps-the-surface-flag-exact-2d", "[offset][2d]")
     }
 }
 
-TEST_CASE("held-segment-split-2d", "[offset][2d]")
-{
-    // THE HELD-SEGMENT SPLIT (smooth_vertex_under_energy(), front_pocket_split()): a front vertex
-    // on a held curve reaches the level set by sliding along the curve, and where the curve bends
-    // the straight held segment behind it leaves its tube, so the containment test refuses the
-    // move; the refused segment is split before the next smoothing pass. p offset to 0.3, and a
-    // held curve from p along x to (0.25, 0), then up to (0.25, 0.5): the level set crosses it on
-    // the second leg, past the bend. MEASURED (2026-11-17, 8 turns): with the split, a segment
-    // split at turns 2 and 4 and the front resolved at turn 5; with it off (the list cleared
-    // before the split), the front not resolved in 8 turns. throw_on_unreachable_level_set false:
-    // the reach check throws at turn 2 here (a non-band cell next to the bend, wholly inside the
-    // level set, kept out of the band), though the run goes on to resolve the front. The curve
-    // group is protected: since 2026-11-20 the construction releases and untracks an unprotected
-    // one where the band covers it, so the curve ends at the crossing, with no held segment behind
-    // the front vertex to refuse its move or be split; MEASURED unprotected: no split, the
-    // crossing vertex stops at x = 0.2487 short of the bend, the bend vertex becomes the crossing,
-    // and the front resolves at turn 9 instead of 5.
-    std::string log;
-    std::unique_ptr<TopoOffsetTriMesh> mesh;
-    const std::string what = run_loop_2d(
-        0.3,
-        {{"max_rounds", 8}, {"throw_on_unreachable_level_set", false}, {"protected_tags", "curve"}},
-        log,
-        {{4, 4}},
-        {{{4, 4}}, {{5, 4}}, {{5, 6}}},
-        false,
-        {},
-        &mesh);
-    INFO(log.substr(log.size() > 6000 ? log.size() - 6000 : 0));
-    REQUIRE(what.empty());
-    size_t split = 0;
-    for (size_t at = log.find("[held-segment split]"); at != std::string::npos;
-         at = log.find("[held-segment split]", at + 1)) {
-        split += std::stoul(log.substr(log.find("move, ", at) + 6));
-    }
-    CHECK(split > 0);
-    CHECK(mesh->m_converged);
-}
-
 TEST_CASE("unreachable-level-set-throws-in-the-loop-2d", "[offset][2d]")
 {
     // The 2D twin of unreachable-level-set-throws, through the loop: p offset to 0.3 with a held
@@ -9982,7 +9943,9 @@ TEST_CASE("offset-direction-in-optimized", "[offset][3d]")
     // beyond it to restore its labels from; close_labels() restores them. MEASURED before
     // (optimize_construction on, one turn): 7 input vertices on the box's edges and corner
     // flagged on the front and pulled off it by up to 0.042 (the envelope 0.0035), and 24 band
-    // cells outside the box.
+    // cells outside the box. front_conv_rel 0.005, so that the loop runs its turn: at 0.2 the
+    // front passes the exit test at the loop's entry (exit-test-at-entry) and no turn runs; and
+    // envelope_size_rel 1e-4, the envelope no wider than that bar (Parameters::init()).
     const std::array<int, 6> a = {{1, 3, 1, 3, 1, 3}};
     const nlohmann::json j = {
         {"input", "m"},
@@ -9992,13 +9955,15 @@ TEST_CASE("offset-direction-in-optimized", "[offset][3d]")
                {"direction", "in"},
                {"output_tags", {"a_band"}},
                {"target_distance", 0.1}}})},
-        {"front_conv_rel", 0.2},
+        {"front_conv_rel", 0.005},
+        {"envelope_size_rel", 1e-4},
         {"max_rounds", 1},
         {"num_threads", 1},
         {"throw_on_nonconvergence", false}};
     ComponentResult res;
     REQUIRE_NOTHROW(
         res = components::topological_offset::topological_offset(j, {{"m", box_grid({{"a", a}})}}));
+    REQUIRE(res.second.at("loop_turns") == 1);
     const MeshData& out = res.first.at("mesh");
     const auto cells = cells_tagged(out, "a_band");
     CHECK(!cells.empty());
@@ -10015,6 +9980,43 @@ TEST_CASE("offset-direction-in-optimized", "[offset][3d]")
         CHECK(std::abs(box_signed_distance(out.V.row(v).transpose(), a)) <= 1e-2);
     }
     CHECK(n_input > 0);
+}
+
+TEST_CASE("exit-test-at-entry", "[offset][3d]")
+{
+    // The 3D twin of exit-test-at-entry-2d, through the component: it logs to its own logger, so
+    // the test reads the report's loop_turns, not the log. The box inward at 0.1
+    // (offset-direction-in-optimized's box) at two bars. MEASURED, after turn 0 (the TetWild pass
+    // on the mesh as constructed) every front vertex within 0.00077 of the level set and no fold:
+    // 0.039 front_conv at front_conv_rel 0.2, so the front passes the test at the loop's entry
+    // and no turn runs; 1.5 front_conv at 0.005, so it fails and the loop runs its one turn
+    // (max_rounds 1). envelope_size_rel 1e-4 at both: the envelope no wider than the smaller bar
+    // (Parameters::init()). The bar alone differs: MEASURED, the same turn-0 offset energy, max
+    // AMIPS and worst front vertex at both.
+    const std::array<int, 6> a = {{1, 3, 1, 3, 1, 3}};
+    for (const double rel : {0.2, 0.005}) {
+        INFO("front_conv_rel " << rel);
+        const nlohmann::json j = {
+            {"input", "m"},
+            {"offsets",
+             nlohmann::json::array(
+                 {{{"selection", "a"},
+                   {"direction", "in"},
+                   {"output_tags", {"a_band"}},
+                   {"target_distance", 0.1}}})},
+            {"front_conv_rel", rel},
+            {"envelope_size_rel", 1e-4},
+            {"max_rounds", 1},
+            {"num_threads", 1},
+            {"throw_on_nonconvergence", false}};
+        ComponentResult res;
+        REQUIRE_NOTHROW(
+            res = components::topological_offset::topological_offset(
+                j,
+                {{"m", box_grid({{"a", a}})}}));
+        CHECK(res.second.at("loop_turns") == (rel == 0.2 ? 0 : 1));
+        if (rel == 0.2) CHECK(res.second.at("converged") == true);
+    }
 }
 
 TEST_CASE("offset-direction-touching-in", "[offset][3d]")
@@ -10066,7 +10068,11 @@ TEST_CASE("offset-direction-touching-in-optimized", "[offset][3d]")
 {
     // The same two touching bodies through the optimization: each band stays in its own body,
     // its places reading its own piece (assign_band_regions() seeds a band cell with its entry's
-    // piece and does not cross the shared face; place_piece()).
+    // piece and does not cross the shared face; place_piece()). front_conv_rel 0.005, so that the
+    // loop runs: at 0.2 the front passes the exit test at the loop's entry and no turn runs
+    // (MEASURED: every front vertex within 0.043 front_conv after turn 0; at 0.005 within 1.72,
+    // and the loop exits after 2 turns); and envelope_size_rel 5e-5, the envelope no wider than
+    // the smaller bar, b's (Parameters::init()).
     const std::array<int, 6> a = {{1, 3, 1, 3, 1, 3}}, b = {{4, 6, 1, 3, 1, 3}};
     const nlohmann::json j = {
         {"input", "m"},
@@ -10080,7 +10086,8 @@ TEST_CASE("offset-direction-touching-in-optimized", "[offset][3d]")
                {"direction", "in"},
                {"output_tags", {"b_band"}},
                {"target_distance", 0.05}}})},
-        {"front_conv_rel", 0.2},
+        {"front_conv_rel", 0.005},
+        {"envelope_size_rel", 5e-5},
         {"max_rounds", 3},
         {"num_threads", 1},
         {"throw_on_nonconvergence", false}};
@@ -10089,6 +10096,7 @@ TEST_CASE("offset-direction-touching-in-optimized", "[offset][3d]")
         res = components::topological_offset::topological_offset(
             j,
             {{"m", box_grid({{"a", a}, {"b", b}})}}));
+    REQUIRE(res.second.at("loop_turns") >= 1);
     const MeshData& out = res.first.at("mesh");
     const auto centroid = [](const CellCorners& c) {
         Vector3d x = Vector3d::Zero();
@@ -12109,16 +12117,20 @@ TEST_CASE("offset-direction-in-optimized-2d", "[offset][2d]")
     // every band face stays in the box and every input vertex on its boundary. An In entry's
     // complex is its selection's boundary, with no face beyond it to read its labels from; the
     // split carries them (split_adjust_position(), OptSplitCache2d::on_in_complex), as 3D's
-    // close_labels() restores them.
+    // close_labels() restores them. front_conv_rel 0.005, so that the loop runs its turn: at 0.2
+    // the front passes the exit test at the loop's entry (exit-test-at-entry-2d) and no turn runs;
+    // and envelope_size_rel 1e-4, the envelope no wider than that bar (Parameters::init()).
     const Box2d a = {{1, 3, 1, 3}};
     std::unique_ptr<TopoOffsetTriMesh> out;
     REQUIRE_NOTHROW(
         out = run_offsets_2d(
             box_grid_2d({{"a", a}}),
             {{"offsets", nlohmann::json::array({direction_entry_2d("a", "in", "a_band", 0.1)})},
-             {"front_conv_rel", 0.2},
+             {"front_conv_rel", 0.005},
+             {"envelope_size_rel", 1e-4},
              {"max_rounds", 1}},
             true));
+    REQUIRE(out->m_loop_turns == 1);
     const auto faces = faces_tagged_2d(*out, "a_band");
     CHECK(!faces.empty());
     for (const FaceCorners2d& c : faces) {
@@ -12135,6 +12147,70 @@ TEST_CASE("offset-direction-in-optimized-2d", "[offset][2d]")
             1e-2);
     }
     CHECK(n_input > 0);
+}
+
+TEST_CASE("exit-test-at-entry-2d", "[offset][2d]")
+{
+    // The loop runs its exit test at its entry, before turn 1 (optimize_offset_loop()), reported as
+    // turn 0: the test every turn ends with -- the settle test on a turn of length zero (its fall
+    // 0, settled), the marks, the folds -- with nothing halved. A front that passes leaves by a
+    // passed turn's exit path with no turn run; one that fails runs the loop. The box inward at
+    // 0.1 (offset-direction-in-optimized-2d's box, at front_conv_rel 0.2) passes: MEASURED, the
+    // march's sphere trace leaves every front vertex within 0.04 front_conv of the level set and no
+    // fold. p at 0.3 (settle-exit-2d's run) fails: MEASURED, all 6 front vertices short of the
+    // level set, the worst by 2.92 front_conv.
+    const auto line_of = [](const std::string& log, const std::string& head) {
+        const size_t at = log.find(head);
+        return at == std::string::npos ? std::string()
+                                       : log.substr(at, log.find_first_of("\r\n", at) - at);
+    };
+    {
+        std::string log;
+        const Box2d a = {{1, 3, 1, 3}};
+        std::unique_ptr<TopoOffsetTriMesh> in;
+        REQUIRE_NOTHROW(
+            in = run_offsets_2d(
+                box_grid_2d({{"a", a}}),
+                {{"offsets", nlohmann::json::array({direction_entry_2d("a", "in", "a_band", 0.1)})},
+                 {"front_conv_rel", 0.2},
+                 {"max_rounds", 1}},
+                true,
+                &log));
+        INFO(log.substr(log.size() > 6000 ? log.size() - 6000 : 0));
+        const std::string settle0 = line_of(log, "[settle] turn 0: ");
+        REQUIRE(!settle0.empty());
+        CHECK(settle0.find(", its fall 0, ") != std::string::npos);
+        CHECK(settle0.find("settled yes") != std::string::npos);
+        CHECK(settle0.find("marked 0 vertices") != std::string::npos);
+        CHECK(settle0.find("no halving (the exit test at entry)") != std::string::npos);
+        CHECK(line_of(log, "[exit folds] turn 0: ") == "[exit folds] turn 0: folds 0");
+        CHECK(log.find("The front is resolved after 0 iteration(s)") != std::string::npos);
+        CHECK(log.find("[energy step] turn 1 start") == std::string::npos);
+        CHECK(in->m_loop_turns == 0);
+        CHECK(in->m_converged);
+    }
+    {
+        std::string log;
+        std::unique_ptr<TopoOffsetTriMesh> p;
+        REQUIRE(run_loop_2d(
+                    0.3,
+                    {{"max_rounds", 8}, {"front_conv_rel", 0.2}},
+                    log,
+                    {{4, 4}},
+                    {},
+                    false,
+                    {},
+                    &p)
+                    .empty());
+        INFO(log.substr(log.size() > 6000 ? log.size() - 6000 : 0));
+        const std::string settle0 = line_of(log, "[settle] turn 0: ");
+        REQUIRE(!settle0.empty());
+        CHECK(settle0.find("no halving (the exit test at entry)") != std::string::npos);
+        CHECK(log.find("The front is resolved after 0 iteration(s)") == std::string::npos);
+        CHECK(log.find("[energy step] turn 1 start") != std::string::npos);
+        CHECK(p->m_loop_turns >= 1);
+        CHECK(p->m_converged);
+    }
 }
 
 TEST_CASE("offset-direction-touching-in-2d", "[offset][2d]")
@@ -12183,7 +12259,10 @@ TEST_CASE("offset-direction-touching-in-optimized-2d", "[offset][2d]")
     // The 2D twin of offset-direction-touching-in-optimized: the same two touching bodies through
     // the optimization: each band stays in its own body, its places reading its own piece
     // (assign_band_regions() seeds a band face with its entry's piece and does not cross the
-    // shared side; place_piece()).
+    // shared side; place_piece()). front_conv_rel 0.005, so that the loop runs: at 0.2 the front
+    // passes the exit test at the loop's entry and no turn runs (MEASURED: every front vertex
+    // within 0.037 front_conv); and envelope_size_rel 5e-5, the envelope no wider than the smaller
+    // bar, b's (Parameters::init()).
     const Box2d a = {{1, 3, 1, 3}}, b = {{4, 6, 1, 3}};
     std::unique_ptr<TopoOffsetTriMesh> out;
     REQUIRE_NOTHROW(
@@ -12193,9 +12272,11 @@ TEST_CASE("offset-direction-touching-in-optimized-2d", "[offset][2d]")
               nlohmann::json::array(
                   {direction_entry_2d("a", "in", "a_band", 0.1),
                    direction_entry_2d("b", "in", "b_band", 0.05)})},
-             {"front_conv_rel", 0.2},
+             {"front_conv_rel", 0.005},
+             {"envelope_size_rel", 5e-5},
              {"max_rounds", 3}},
             true));
+    REQUIRE(out->m_loop_turns >= 1);
     const auto centroid = [](const FaceCorners2d& c) {
         Vector2d x = Vector2d::Zero();
         for (const auto& q : c) x += Vector2d(q[0], q[1]) / 3.;

@@ -420,6 +420,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 report["converged"] = mesh.m_converged;
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
+                // The turns of the last loop (under incremental or smart growth, the last stage's);
+                // 0: the mesh passed the exit test at the loop's entry.
+                report["loop_turns"] = mesh.m_loop_turns;
             }
             report["all_rounded"] = unrounded == 0;
             report["#unrounded"] = unrounded;
@@ -742,6 +745,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 report["converged"] = mesh.m_converged;
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
+                // The turns of the last loop (under incremental or smart growth, the last stage's);
+                // 0: the mesh passed the exit test at the loop's entry.
+                report["loop_turns"] = mesh.m_loop_turns;
             }
             report["all_rounded"] = unrounded == 0;
             report["#unrounded"] = unrounded;

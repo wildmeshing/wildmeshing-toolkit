@@ -731,16 +731,6 @@ public:
     /// split (settle_refinement_turn()); front_pocket_split() splits them and clears the list. As
     /// in 3D, whose list holds front edges of its faces.
     std::vector<std::array<size_t, 2>> m_settle_split_edges;
-    /// HELD-SEGMENT SPLIT: the held segments that refused a front vertex's smoothing move, each
-    /// outside its tube at the refused position (smooth_vertex_under_energy()); front_pocket_split()
-    /// splits them before the next smoothing pass and clears the list. A held segment is straight
-    /// and its boundary may curve, so it bows L^2 / 8R inside a curve of radius R: a front vertex
-    /// that must slide along the boundary to reach the level set stretches the segment behind it
-    /// until it leaves the tube, and halving that segment quarters its bow. Kept by its ends'
-    /// positions, since the turn's consolidation renumbers the vertices before the next smoothing
-    /// pass; a segment whose end moved or went since is skipped.
-    std::vector<std::array<Vector2d, 2>> m_held_split_edges;
-    std::mutex m_held_split_mutex;
     /**
      * @brief EXPERIMENTAL_label_cleanup (see the spec). The 2D twin of
      * TopoOffsetTetMesh::label_cleanup(), one dimension down: a cell is a triangle, its faces
@@ -1641,6 +1631,10 @@ public:
     /// The turn the run is in, 1-based; 0 before the loop starts. Read only by
     /// write_smoothing_debug_output(), to tag each frame with the turn it belongs to.
     int m_round = 0;
+    /// The turns the last optimize_offset_loop() ran: 0 when the mesh passed the exit test at the
+    /// loop's entry. Read by the report ("loop_turns"). Not m_iterations_used, which the loop sets
+    /// too: the final pass's mesh_improvement() resets that one and counts its own iterations.
+    int m_loop_turns = 0;
     /// Monotonic frame counter for the debug timeline. Mutable because the write hook is const.
     mutable size_t m_debug_seq = 0;
     /// DEBUG_output: the label of each debug frame, indexed by its sequence number, and, per
@@ -3113,7 +3107,8 @@ public:
      * TopoOffsetTetMesh::settle_refinement_turn(), front chords in place of offset faces. Settled
      * when the offset energy (offset_energy(), no AMIPS) fell by less than the bar energy
      * b = front_conv^2 L / (2 target_distance) since `e_prev` (the offset energy at the end of
-     * the previous turn, turn 1: before its first group; set to the offset energy now), L the
+     * the previous turn, turn 1: before its first group; NaN: no turn behind the test, the exit
+     * test at the loop's entry, a turn of length zero; set to the offset energy now), L the
      * front's length: the offset term's excess for a front lying front_conv beyond the level set,
      * per unit length int_0^front_conv s / delta ds (3D: A, the front's area). Only a settled turn
      * marks the front by EXPERIMENTAL_settle_mark and halves the corners it marks, when

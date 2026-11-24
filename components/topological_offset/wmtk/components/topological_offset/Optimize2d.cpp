@@ -1147,28 +1147,6 @@ bool TopoOffsetTriMesh::smooth_vertex_under_energy(const Tuple& t, const bool fr
             {vid, int(solver.current_criteria().iterations), int(solver.status()) + 1});
     }
     if (!ok) {
-        // FRONT, HELD-SEGMENT SPLIT (m_held_split_edges): a front vertex on a held boundary whose
-        // move was refused, still at the refused position (the caller rolls it back): every held
-        // segment at it that is outside its tube there is listed for the next pocket split.
-        if (front && smoothing_containment_envelope(vid)) {
-            const Vector2d p = m_vertex_attribute[vid].m_posf;
-            if (p != x0) {
-                const auto& EA = std::as_const(m_edge_attribute);
-                const simplex::SimplexCollection es = get_surface_edges_for_vertex(vid);
-                for (const simplex::Edge& e : es.edges()) {
-                    const std::array<size_t, 2>& ev = e.vertices();
-                    const size_t eid = std::get<1>(tuple_from_edge(ev));
-                    const std::shared_ptr<Envelope> env =
-                        smoothing_containment_envelope(vid, ev, EA[eid]);
-                    if (!env) continue;
-                    const Vector2d q = m_vertex_attribute[ev[0] != vid ? ev[0] : ev[1]].m_posf;
-                    if (env->is_outside(std::array<Eigen::Vector2d, 2>{{p, q}})) {
-                        std::lock_guard<std::mutex> lock(m_held_split_mutex);
-                        m_held_split_edges.push_back({{x0, q}});
-                    }
-                }
-            }
-        }
         return false;
     }
     if (front) {
@@ -1301,7 +1279,112 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
             turned_front_edges_at(vid, f);
             turned_before = int(f.size());
         }
-        bool ok = smooth_vertex_under_energy(t, true);
+        // THE CROSSING STEP, 3D's smooth_after() one dimension down: a vertex on the front and on a
+        // held curve -- a crossing of the front with it -- belongs where the curve meets the level
+        // set; it steps toward its nearest point there (alternating projections), halving t = 1,
+        // 1/2, ... (project_line_search_steps candidates); the first candidate that inverts no
+        // face, keeps its held segments in their tubes, and lowers E (the ring's AMIPS terms plus
+        // the exact swept band change) is taken; none, no move. It replaces the engine's
+        // projected step for these vertices, as in 3D, whose measurement motivates it. MEASURED
+        // here (double disk, tag_1 held regions, tag_0 offset to 0.05 by label growth,
+        // front_conv_rel 0.002, 2026-11-23): converged at turn 9 against 15. Under every band rule:
+        // E's change as that rule reads it. It also retired
+        // the held-segment split (2026-11-17 to 11-23), which split a held segment the projected
+        // step's move had pushed out of its tube: this step's candidates are contained.
+        const auto crossing_step = [&]() -> bool {
+            const int piece = place_piece(&vid, 1);
+            const std::shared_ptr<const ExactBandIntegral2D>& be = band_exact_for(piece);
+            const std::shared_ptr<Envelope> pull = smoothing_energy_envelope(vid);
+            if (!pull || (!be && !m_input_complex_bvh)) return smooth_vertex_under_energy(t, true);
+            // d and its gradient: the exact integral's where the band rule builds it, else the
+            // input complex's (input_complex_distance(), the direction from its nearest point).
+            const auto dist = [&](const Vector2d& x) {
+                return be ? be->distance(x) : input_complex_distance(x);
+            };
+            const auto dist_grad = [&](const Vector2d& x, Vector2d& g) {
+                if (be) return be->distance(x, g);
+                const Eigen::VectorXd n = m_input_complex_bvh->nearest_point(Eigen::VectorXd(x));
+                g = x - Vector2d(n[0], n[1]);
+                return input_complex_distance(x);
+            };
+            const double delta = region_delta(piece);
+            auto& va = m_vertex_attribute[vid];
+            const Vector2d x0 = va.m_posf;
+            Vector2d x = x0, foot;
+            pull->nearest_point(x, foot);
+            Vector2d target = foot;
+            double gap = std::abs(dist(foot) - delta);
+            for (int k = 0; k < 64; ++k) {
+                x = target;
+                Vector2d g;
+                const double d = dist_grad(x, g);
+                const double gn = g.norm();
+                if (!(gn > 0.)) break;
+                x -= (d - delta) * (g / gn);
+                pull->nearest_point(x, foot);
+                const double gap_now = std::abs(dist(foot) - delta);
+                if (!(gap_now < gap)) break;
+                gap = gap_now;
+                target = foot;
+            }
+            if (!((target - x0).norm() > 0.)) return false;
+            const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
+            // E's change as the band rule reads it, as in 3D.
+            const bool swept = swept_rule() && be;
+            const double amips_before = tri_energy_sum(ring, false);
+            const double e_before = swept ? 0. : tri_energy_sum(ring);
+            std::vector<SweptEdgesOfPiece> pieces;
+            if (swept) band_swept_edges(vid, x0, pieces);
+            const std::vector<std::pair<size_t, int>> ring_pieces =
+                swept ? band_face_pieces(ring) : std::vector<std::pair<size_t, int>>{};
+            const auto contained = [&]() {
+                if (!smoothing_position_is_allowed(vid, va.m_posf)) return false;
+                const auto& EA = std::as_const(m_edge_attribute);
+                const simplex::SimplexCollection es = get_surface_edges_for_vertex(vid);
+                for (const simplex::Edge& e : es.edges()) {
+                    const std::array<size_t, 2>& ev = e.vertices();
+                    const size_t eid = std::get<1>(tuple_from_edge(ev));
+                    const std::shared_ptr<Envelope> env =
+                        smoothing_containment_envelope(vid, ev, EA[eid]);
+                    if (!env) continue;
+                    const Vector2d q = m_vertex_attribute[ev[0] != vid ? ev[0] : ev[1]].m_posf;
+                    if (env->is_outside(std::array<Eigen::Vector2d, 2>{{va.m_posf, q}}))
+                        return false;
+                }
+                return true;
+            };
+            for (int k = 0; k < std::max(1, m_params.project_line_search_steps); ++k) {
+                va.m_posf = x0 + std::ldexp(1., -k) * (target - x0);
+                va.set_pos_to_posf();
+                bool inverted = false;
+                for (const size_t f : ring) inverted = inverted || is_inverted(f);
+                if (inverted || !contained()) continue;
+                double dE = 0.;
+                if (swept) {
+                    const double dA = tri_energy_sum(ring, false) - amips_before;
+                    double dB = band_relabel_change(ring, ring_pieces);
+                    for (const SweptEdgesOfPiece& q : pieces) {
+                        dB += BandVolumeEnergy2D::swept_change(
+                            *band_exact_for(q.piece),
+                            region_delta(q.piece),
+                            x0,
+                            va.m_posf,
+                            q.edges);
+                    }
+                    dE = dA + dB;
+                } else {
+                    dE = tri_energy_sum(ring) - e_before;
+                }
+                if (dE < 0.) {
+                    for (const size_t f : ring) m_face_attribute[f].m_quality = get_quality(f);
+                    return true;
+                }
+            }
+            va.m_posf = x0;
+            va.set_pos_to_posf();
+            return false;
+        };
+        bool ok = vertex_is_on_region(vid) ? crossing_step() : smooth_vertex_under_energy(t, true);
         if (ok && turned_before >= 0) {
             std::set<std::array<size_t, 2>> f;
             turned_front_edges_at(vid, f);
@@ -3678,7 +3761,9 @@ bool TopoOffsetTriMesh::settle_refinement_turn(
     const double delta = m_offset_params.target_distance;
     const double eps = m_offset_params.front_conv;
     const double e_now = settle_metric(); // no AMIPS: see offset_energy()
-    const double de = e_prev - e_now;
+    // e_prev NaN: no turn behind the test, the exit test at the loop's entry -- a turn of length
+    // zero, dE = 0, settled (dE < b). As in 3D.
+    const double de = std::isnan(e_prev) ? 0. : e_prev - e_now;
     e_prev = e_now;
     const std::vector<std::array<size_t, 2>> edges = offset_surface_edges();
     double length = 0.;
@@ -3913,8 +3998,9 @@ bool TopoOffsetTriMesh::settle_refinement_turn(
                                          n_over_stencil,
                                          max_stencil)
                                    : std::string(),
-                      refine_now ? fmt::format("halved {} vertices", n_halved)
-                                 : std::string("no halving (this loop does not refine)"),
+                      refine_now  ? fmt::format("halved {} vertices", n_halved)
+                      : turn == 0 ? std::string("no halving (the exit test at entry)")
+                                  : std::string("no halving (this loop does not refine)"),
                       n_floor,
                       vertex_mode ? "vertices" : "chords with both ends",
                       s_floor,
@@ -6715,40 +6801,6 @@ void TopoOffsetTriMesh::front_pocket_split(const std::string& where)
         std::vector<Tuple> new_tris;
         return split_edge(t, new_tris);
     };
-    // HELD-SEGMENT SPLIT (m_held_split_edges): the held segments that refused a front vertex's
-    // smoothing move since the last pocket split, found again by their ends' positions, split
-    // here so that the smoothing pass that follows can make the move.
-    if (!m_held_split_edges.empty()) {
-        std::set<std::array<double, 4>> listed;
-        for (const auto& pe : m_held_split_edges) {
-            listed.insert({{pe[0][0], pe[0][1], pe[1][0], pe[1][1]}});
-        }
-        m_held_split_edges.clear();
-        std::map<std::pair<double, double>, size_t> at;
-        for (const Tuple& v : get_vertices()) {
-            const Vector2d& x = m_vertex_attribute[v.vid(*this)].m_posf;
-            at.emplace(std::make_pair(x[0], x[1]), v.vid(*this));
-        }
-        size_t n_done = 0, n_gone = 0, n_no = 0;
-        for (const std::array<double, 4>& pe : listed) {
-            const auto a = at.find({pe[0], pe[1]});
-            const auto b = at.find({pe[2], pe[3]});
-            if (a == at.end() || b == at.end() ||
-                get_incident_fids_for_edge(a->second, b->second).empty()) {
-                ++n_gone;
-                continue;
-            }
-            split_one({{a->second, b->second}}) ? ++n_done : ++n_no;
-        }
-        logger().info(
-            "\t[held-segment split] {}: {} held segment(s) that refused a front vertex's smoothing "
-            "move, {} split, {} gone (an end moved or the segment went), {} refused by the split",
-            where,
-            listed.size(),
-            n_done,
-            n_gone,
-            n_no);
-    }
     // EXPERIMENTAL_settle_mark "vertex_split": the chords the last settled turn listed
     // (settle_refinement_turn()), split here, before the pinned cells, so that the smoothing pass
     // that follows moves the new front vertices in the same turn. Split at the end of the settled
@@ -6880,7 +6932,7 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
         "\tLOOP: TriWild's operation groups with the front placed inside their "
         "smoothing passes | front energy-gradient reference {:.6g} | ONE criterion: the RMS "
         "relative error over a stencil_order {} stencil ({} points per chord) against front_conv "
-        "{:.6g} ({:.6g} x the bbox diagonal)",
+        "{:.6g} ({:.6g} x the configured target_distance)",
         m_front_gradient_reference,
         m_offset_params.stencil_order,
         stencil_points_per_edge(),
@@ -6928,6 +6980,279 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
                   /* adaptive_smoothing */ false ? std::string("adaptive smoothing")
                                                  : fmt::format("{} smoothing pass(es)", k)));
     partition_mesh_morton();
+    // EXPERIMENTAL_settle_refinement: the settle test refines and exits (settle_refinement_turn());
+    // the energy criterion's refinable sets, its sizing-floor warnings and its exit do not act.
+    // settle_e_prev is the offset energy at the end of the previous turn, for turn 1 before its
+    // first group. As in 3D.
+    const bool settle = m_offset_params.settle_refinement;
+    double settle_e_prev = 0.;
+    // The turn line: max AMIPS, the exit test's measure and the diagnostics, at the end of every
+    // turn and for the exit test at entry (turn 0).
+    const auto log_turn_line = [&](const int turn,
+                                   const double amips,
+                                   const double bar,
+                                   const EnergyCriterion& ec) {
+        const Vector2d wx = ec.worst_vid != static_cast<size_t>(-1)
+                                ? m_vertex_attribute[ec.worst_vid].m_posf
+                                : Vector2d::Zero();
+        if (ec.ring_exit) {
+            // front_measure "vertex_ring": the ring measure is the exit test; the chord measure
+            // and the vertex measure are the same numbers the face mode prints, as diagnostics.
+            const Vector2d rx = ec.worst_ring_vid != static_cast<size_t>(-1)
+                                    ? m_vertex_attribute[ec.worst_ring_vid].m_posf
+                                    : Vector2d::Zero();
+            logger().info(
+                "======== turn {} / {}: max AMIPS {:.4} (stop {:.4}) | {} max "
+                "{:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4})) over {} "
+                "front vertices, {} rings unmeasurable, {} unmeasurable in all (the exit test) | "
+                "diagnostic: chords max {:.4}x (avg {:.4}x), {} chords over the bar of {}; front "
+                "vertices max {:.4}x (avg {:.4}x), {} not placed of {} | vertices over the bar: "
+                "{}, refinable {} (at the sizing floor {}) ========",
+                turn,
+                budget,
+                amips,
+                bar,
+                ec.ring_name(),
+                ec.max_ring,
+                ec.avg_ring(),
+                ec.worst_ring_vid,
+                rx.x(),
+                rx.y(),
+                ec.n_rings,
+                ec.n_rings_unmeasurable,
+                ec.n_unmeasurable,
+                ec.max_edge,
+                ec.avg_edge(),
+                ec.n_edges_over,
+                ec.n_edges,
+                ec.max_vertex,
+                ec.avg_vertex(),
+                ec.n_unplaced,
+                ec.n_vertices,
+                ec.n_rings_over,
+                ec.refinable_vertices.size(),
+                ec.n_rings_at_floor);
+        } else {
+            logger().info(
+                "======== turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
+                "max {:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4})) "
+                "(diagnostic), chords max {:.4}x (avg {:.4}x), {} unmeasurable (the exit test) | "
+                "{} vertices, {} chords | chords over the bar: {}, of which {} with both ends "
+                "placed (worst {:.4}x, midpoint ({:.4}, {:.4})) | refinable chords {} (at the "
+                "sizing floor {}) ========",
+                turn,
+                budget,
+                amips,
+                bar,
+                ec.max_vertex,
+                ec.avg_vertex(),
+                ec.worst_vid,
+                wx.x(),
+                wx.y(),
+                ec.max_edge,
+                ec.avg_edge(),
+                ec.n_unmeasurable,
+                ec.n_vertices,
+                ec.n_edges,
+                ec.n_edges_over,
+                ec.n_edges_over_placed,
+                ec.max_edge_placed,
+                ec.worst_placed_mid.x(),
+                ec.worst_placed_mid.y(),
+                ec.refinable.size(),
+                ec.n_at_floor);
+        }
+    };
+    const auto hold_for_folds = [&](const int turn, bool resolved) -> bool {
+        // EXPERIMENTAL_exit_no_folds: no exit while a fold remains (fold_test(), through
+        // count_folds()): a vertex with two offset edges whose normals out of the band are within
+        // foldover_angle of opposite, one of the two more than foldover_angle from the field's
+        // normal at its midpoint (front_edge_field_angle()); an edge that cannot be measured
+        // counts as turned, so the exit is never released on what was not measured. Two opposite
+        // edges that both follow the field are a ridge vertex, the front following a corner of
+        // the level set sharper than foldover_angle, and do not hold the exit. As in 3D, whose
+        // measurements motivate both rules (cube_in at 0.45: a run exited with a flat sheet of
+        // inner cells and 5 real folds; the 10-26 batch: holding for every opposite pair held 4
+        // runs to the turn cap on ridges of the level set). The counts are logged every turn, the
+        // key on or off.
+        {
+            const FoldCount fc = count_folds();
+            logger().info(
+                "\t[exit folds] turn {}: folds {}{}",
+                turn,
+                fc.folds,
+                resolved && fc.folds > 0
+                    ? (m_offset_params.exit_no_folds
+                           ? " -- the exit test passes; held for the folds"
+                           : " -- the exit test passes; EXPERIMENTAL_exit_no_folds is off")
+                    : "");
+            if (fc.ridge_vertices > 0) {
+                logger().info(
+                    "\t[exit ridge vertices] turn {}: {} vertices with two opposite offset edges "
+                    "both within foldover_angle {} degrees of the field (not folds); their edges "
+                    "reach {:.4} degrees",
+                    turn,
+                    fc.ridge_vertices,
+                    m_offset_params.foldover_angle,
+                    fc.ridge_max_angle);
+            }
+            if (m_offset_params.exit_no_folds && fc.folds > 0) resolved = false;
+        }
+        return resolved;
+    };
+    // A loop that passed the exit test (after `turns` turns; 0: the test at entry) leaves here.
+    const auto leave = [&](const int turns,
+                           const EnergyCriterion& ec,
+                           const double amips,
+                           const double bar) -> bool {
+        // turned_free (growth_mode "smart"): a converged loop with an offset edge turned from the
+        // field has failed, judged here, before the verdict and the final pass, which it does not
+        // get. As in 3D.
+        if (turned_free) {
+            const TurnedEdgeCensus fc = turned_edge_census();
+            if (fc.n_turned > 0) {
+                logger().warn(
+                    "[{}] converged at target_distance {:.6g} after {} turn(s), but {} of {} "
+                    "offset edges are turned from the field (more than foldover_angle {} degrees "
+                    "from grad d; the worst {:.4g} degrees, at ({:.4}, {:.4}))",
+                    label,
+                    m_offset_params.target_distance,
+                    turns,
+                    fc.n_turned,
+                    fc.n_edges,
+                    m_offset_params.foldover_angle,
+                    fc.worst,
+                    fc.worst_at[0],
+                    fc.worst_at[1]);
+                refresh_released_envelope();
+                return false;
+            }
+        }
+        if (!final_stage) {
+            // The init_optimize loop ends here; the final pass and the verdict belong to the
+            // ordinary loop that follows it.
+            logger().info(
+                "[{}] converged at target_distance {:.6g} after {} turn(s): {}{} max {:.4}x the "
+                "bar over {} front vertices, max AMIPS {:.4}",
+                label,
+                m_offset_params.target_distance,
+                turns,
+                settle ? "settled, no front chord over the bar (EXPERIMENTAL_settle_refinement); "
+                         "diagnostic: "
+                       : "",
+                ec.ring_exit ? std::string(ec.ring_name()) : std::string("chords"),
+                (ec.ring_exit ? ec.max_ring : ec.max_edge) / ec.bar,
+                ec.n_vertices,
+                amips);
+            refresh_released_envelope();
+            return true;
+        }
+        m_energy_verdict = ec;
+        m_converged = true;
+        // Provisional: the final pass below overwrites both when it runs. The verdict at the
+        // end of optimize_offset() requires this AND the front's.
+        m_quality_max_amips = amips;
+        m_quality_converged = amips < bar;
+        if (settle) {
+            logger().info(
+                "The front is resolved after {} iteration(s): the turn settled and no front "
+                "chord is more than front_conv from the level set "
+                "(EXPERIMENTAL_settle_refinement); front chords max {:.4}x with {} over the "
+                "bar (diagnostic); front vertices max {:.4}x (diagnostic); max AMIPS {:.4} "
+                "against stop {:.4}",
+                turns,
+                ec.max_edge / ec.bar,
+                ec.n_edges_over,
+                ec.max_vertex / ec.bar,
+                amips,
+                bar);
+        } else if (ec.ring_exit) {
+            logger().info(
+                "The front is resolved after {} iteration(s): every front "
+                "vertex's {} within the bar (rings max {:.4}x), nothing unmeasurable; front "
+                "chords max {:.4}x with {} over the bar (diagnostic); front vertices max "
+                "{:.4}x (diagnostic); max AMIPS {:.4} against stop {:.4}",
+                turns,
+                ec.ring_name(),
+                ec.max_ring / ec.bar,
+                ec.max_edge / ec.bar,
+                ec.n_edges_over,
+                ec.max_vertex / ec.bar,
+                amips,
+                bar);
+        } else {
+            logger().info(
+                "The front is resolved after {} iteration(s): every front chord "
+                "within the bar (chords max {:.4}x), nothing unmeasurable; front vertices max "
+                "{:.4}x (diagnostic); max AMIPS {:.4} against stop {:.4}",
+                turns,
+                ec.max_edge / ec.bar,
+                ec.max_vertex / ec.bar,
+                amips,
+                bar);
+        }
+        if (amips >= bar) {
+            logger().info(
+                "======== final pass, front frozen: max AMIPS {:.6g} >= stop_energy {} "
+                "========",
+                amips,
+                m_params.stop_energy);
+            m_round = turns + 1;
+            // The front's tube, built from the front as placement left it and held for the
+            // entire pass; the region boundaries stay held in the tubes and masks the load
+            // built (m_tag_envelopes, never rebuilt), as 3D's final pass adds the front's
+            // envelope alone (build_final_envelopes(), 2b8de047ba). Equilateral AMIPS alone:
+            // the plastic vertex path and the rest-shape term are both off. Until 2026-11-11
+            // the region tubes and the vertex masks were rebuilt here from the tags and
+            // on_curve, which no operation carries: MEASURED on the mesh the loop leaves (p
+            // offset to 0.3, a held curve-group curve 0.5 from it, 3 to 8 turns, 5 runs), the
+            // rebuild put 1 to 4 of the curve's 7 to 9 tracked edges in its tube and took the
+            // curve bit off 1 to 8 of its 8 to 10 vertices; after 3 turns 4 of its 8 edges
+            // were held by nothing.
+            rebuild_offset_envelope();
+            m_freeze_front = true;
+            const bool plastic_was = m_plastic_active;
+            m_plastic_active = false;
+            mesh_improvement(a_iters);
+            m_plastic_active = plastic_was;
+            m_freeze_front = false;
+            assign_band_regions();
+            const double final_amips = std::get<0>(optimization_quality_stats());
+            m_quality_max_amips = final_amips;
+            m_quality_converged = final_amips < m_params.stop_energy;
+            logger().log(
+                m_quality_converged ? spdlog::level::info : spdlog::level::warn,
+                "\t[final pass] max element quality {:.4} (stop {:.4}) -> {}",
+                final_amips,
+                optimization_stop_metric(),
+                m_quality_converged ? "ok" : "STILL OVER: the run does not converge");
+            if (m_offset_params.debug_output) {
+                write_smoothing_debug_output(fmt::format("end_{}F", turns + 1));
+            }
+        }
+        refresh_released_envelope();
+        return true;
+    };
+    // The exit test at entry (Uday 2026-11-23), as in 3D (see there for why): before any of the
+    // loop's work, pre_smooth included, the test every turn ends with, reported as turn 0 (2D
+    // has no TetWild pass before the loop). A mesh that passes it leaves by the exit path of a
+    // turn that passed. The settle test sees a turn of length zero (dE = 0, settled); nothing is
+    // halved, so a mesh that fails the test runs the loop exactly as without it (the test changes
+    // nothing: energy_criterion() writes only its own locals, count_folds() and settle_metric()
+    // are const, settle_refinement_turn() halves and lists splits only with refine_now).
+    m_iterations_used = 0;
+    m_loop_turns = 0;
+    {
+        const double amips = std::get<0>(optimization_quality_stats());
+        const double bar = optimization_stop_metric();
+        const EnergyCriterion ec = energy_criterion();
+        log_turn_line(0, amips, bar, ec);
+        double no_turn = std::numeric_limits<double>::quiet_NaN(); // a turn of length zero
+        const bool resolved = hold_for_folds(
+            0,
+            settle ? settle_refinement_turn(0, no_turn, /*refine_now=*/false) : ec.converged());
+        if (resolved) return leave(0, ec, amips, bar);
+    }
     if (m_offset_params.pre_smooth) {
         // One smoothing block on the constructed mesh before turn 1's split pass: the same
         // block every operation group is followed by, with the same bookkeeping around it
@@ -6948,15 +7273,10 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
         }
         refresh_released_envelope();
     }
-    // EXPERIMENTAL_settle_refinement: the settle test refines and exits (settle_refinement_turn());
-    // the energy criterion's refinable sets, its sizing-floor warnings and its exit do not act.
-    // settle_e_prev is the offset energy at the end of the previous turn, for turn 1 before its
-    // first group. As in 3D.
-    const bool settle = m_offset_params.settle_refinement;
-    double settle_e_prev = 0.;
     for (int it = 0; it < budget; ++it) {
         m_round = it + 1;
         m_iterations_used = it + 1;
+        m_loop_turns = it + 1;
         refresh_released_envelope();
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
@@ -7023,76 +7343,7 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
         const double amips = std::get<0>(optimization_quality_stats());
         const double bar = optimization_stop_metric();
         const EnergyCriterion ec = energy_criterion();
-        const Vector2d wx = ec.worst_vid != static_cast<size_t>(-1)
-                                ? m_vertex_attribute[ec.worst_vid].m_posf
-                                : Vector2d::Zero();
-        if (ec.ring_exit) {
-            // front_measure "vertex_ring": the ring measure is the exit test; the chord measure
-            // and the vertex measure are the same numbers the face mode prints, as diagnostics.
-            const Vector2d rx = ec.worst_ring_vid != static_cast<size_t>(-1)
-                                    ? m_vertex_attribute[ec.worst_ring_vid].m_posf
-                                    : Vector2d::Zero();
-            logger().info(
-                "======== turn {} / {}: max AMIPS {:.4} (stop {:.4}) | {} max "
-                "{:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4})) over {} "
-                "front vertices, {} rings unmeasurable, {} unmeasurable in all (the exit test) | "
-                "diagnostic: chords max {:.4}x (avg {:.4}x), {} chords over the bar of {}; front "
-                "vertices max {:.4}x (avg {:.4}x), {} not placed of {} | vertices over the bar: "
-                "{}, refinable {} (at the sizing floor {}) ========",
-                it + 1,
-                budget,
-                amips,
-                bar,
-                ec.ring_name(),
-                ec.max_ring,
-                ec.avg_ring(),
-                ec.worst_ring_vid,
-                rx.x(),
-                rx.y(),
-                ec.n_rings,
-                ec.n_rings_unmeasurable,
-                ec.n_unmeasurable,
-                ec.max_edge,
-                ec.avg_edge(),
-                ec.n_edges_over,
-                ec.n_edges,
-                ec.max_vertex,
-                ec.avg_vertex(),
-                ec.n_unplaced,
-                ec.n_vertices,
-                ec.n_rings_over,
-                ec.refinable_vertices.size(),
-                ec.n_rings_at_floor);
-        } else {
-            logger().info(
-                "======== turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
-                "max {:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4})) "
-                "(diagnostic), chords max {:.4}x (avg {:.4}x), {} unmeasurable (the exit test) | "
-                "{} vertices, {} chords | chords over the bar: {}, of which {} with both ends "
-                "placed (worst {:.4}x, midpoint ({:.4}, {:.4})) | refinable chords {} (at the "
-                "sizing floor {}) ========",
-                it + 1,
-                budget,
-                amips,
-                bar,
-                ec.max_vertex,
-                ec.avg_vertex(),
-                ec.worst_vid,
-                wx.x(),
-                wx.y(),
-                ec.max_edge,
-                ec.avg_edge(),
-                ec.n_unmeasurable,
-                ec.n_vertices,
-                ec.n_edges,
-                ec.n_edges_over,
-                ec.n_edges_over_placed,
-                ec.max_edge_placed,
-                ec.worst_placed_mid.x(),
-                ec.worst_placed_mid.y(),
-                ec.refinable.size(),
-                ec.n_at_floor);
-        }
+        log_turn_line(it + 1, amips, bar, ec);
         // Chords over the bar with both ends at the sizing floor block the exit (they are over
         // the bar) and no refinement will ever take them, so a run that keeps them never
         // converges: a warning, every turn they exist. The turn line's "at the sizing floor"
@@ -7182,169 +7433,8 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
         // EXPERIMENTAL_settle_refinement: the settle exit (settled, nothing marked) in place of
         // converged(); the criterion's measures are then diagnostics. As in 3D.
         bool resolved = settle ? settle_exit : ec.converged();
-        // EXPERIMENTAL_exit_no_folds: no exit while a fold remains (fold_test(), through
-        // count_folds()): a vertex with two offset edges whose normals out of the band are within
-        // foldover_angle of opposite, one of the two more than foldover_angle from the field's
-        // normal at its midpoint (front_edge_field_angle()); an edge that cannot be measured
-        // counts as turned, so the exit is never released on what was not measured. Two opposite
-        // edges that both follow the field are a ridge vertex, the front following a corner of
-        // the level set sharper than foldover_angle, and do not hold the exit. As in 3D, whose
-        // measurements motivate both rules (cube_in at 0.45: a run exited with a flat sheet of
-        // inner cells and 5 real folds; the 10-26 batch: holding for every opposite pair held 4
-        // runs to the turn cap on ridges of the level set). The counts are logged every turn, the
-        // key on or off.
-        {
-            const FoldCount fc = count_folds();
-            logger().info(
-                "\t[exit folds] turn {}: folds {}{}",
-                it + 1,
-                fc.folds,
-                resolved && fc.folds > 0
-                    ? (m_offset_params.exit_no_folds
-                           ? " -- the exit test passes; held for the folds"
-                           : " -- the exit test passes; EXPERIMENTAL_exit_no_folds is off")
-                    : "");
-            if (fc.ridge_vertices > 0) {
-                logger().info(
-                    "\t[exit ridge vertices] turn {}: {} vertices with two opposite offset edges "
-                    "both within foldover_angle {} degrees of the field (not folds); their edges "
-                    "reach {:.4} degrees",
-                    it + 1,
-                    fc.ridge_vertices,
-                    m_offset_params.foldover_angle,
-                    fc.ridge_max_angle);
-            }
-            if (m_offset_params.exit_no_folds && fc.folds > 0) resolved = false;
-        }
-        // turned_free (growth_mode "smart"): a converged loop with an offset edge turned from the
-        // field has failed, judged here, before the verdict and the final pass, which it does not
-        // get. As in 3D.
-        if (resolved && turned_free) {
-            const TurnedEdgeCensus fc = turned_edge_census();
-            if (fc.n_turned > 0) {
-                logger().warn(
-                    "[{}] converged at target_distance {:.6g} after {} turn(s), but {} of {} "
-                    "offset edges are turned from the field (more than foldover_angle {} degrees "
-                    "from grad d; the worst {:.4g} degrees, at ({:.4}, {:.4}))",
-                    label,
-                    m_offset_params.target_distance,
-                    it + 1,
-                    fc.n_turned,
-                    fc.n_edges,
-                    m_offset_params.foldover_angle,
-                    fc.worst,
-                    fc.worst_at[0],
-                    fc.worst_at[1]);
-                refresh_released_envelope();
-                return false;
-            }
-        }
-        if (resolved && !final_stage) {
-            // The init_optimize loop ends here; the final pass and the verdict belong to the
-            // ordinary loop that follows it.
-            logger().info(
-                "[{}] converged at target_distance {:.6g} after {} turn(s): {}{} max {:.4}x the "
-                "bar over {} front vertices, max AMIPS {:.4}",
-                label,
-                m_offset_params.target_distance,
-                it + 1,
-                settle ? "settled, no front chord over the bar (EXPERIMENTAL_settle_refinement); "
-                         "diagnostic: "
-                       : "",
-                ec.ring_exit ? std::string(ec.ring_name()) : std::string("chords"),
-                (ec.ring_exit ? ec.max_ring : ec.max_edge) / ec.bar,
-                ec.n_vertices,
-                amips);
-            refresh_released_envelope();
-            return true;
-        }
-        if (resolved) {
-            m_energy_verdict = ec;
-            m_converged = true;
-            // Provisional: the final pass below overwrites both when it runs. The verdict at the
-            // end of optimize_offset() requires this AND the front's.
-            m_quality_max_amips = amips;
-            m_quality_converged = amips < bar;
-            if (settle) {
-                logger().info(
-                    "The front is resolved after {} iteration(s): the turn settled and no front "
-                    "chord is more than front_conv from the level set "
-                    "(EXPERIMENTAL_settle_refinement); front chords max {:.4}x with {} over the "
-                    "bar (diagnostic); front vertices max {:.4}x (diagnostic); max AMIPS {:.4} "
-                    "against stop {:.4}",
-                    it + 1,
-                    ec.max_edge / ec.bar,
-                    ec.n_edges_over,
-                    ec.max_vertex / ec.bar,
-                    amips,
-                    bar);
-            } else if (ec.ring_exit) {
-                logger().info(
-                    "The front is resolved after {} iteration(s): every front "
-                    "vertex's {} within the bar (rings max {:.4}x), nothing unmeasurable; front "
-                    "chords max {:.4}x with {} over the bar (diagnostic); front vertices max "
-                    "{:.4}x (diagnostic); max AMIPS {:.4} against stop {:.4}",
-                    it + 1,
-                    ec.ring_name(),
-                    ec.max_ring / ec.bar,
-                    ec.max_edge / ec.bar,
-                    ec.n_edges_over,
-                    ec.max_vertex / ec.bar,
-                    amips,
-                    bar);
-            } else {
-                logger().info(
-                    "The front is resolved after {} iteration(s): every front chord "
-                    "within the bar (chords max {:.4}x), nothing unmeasurable; front vertices max "
-                    "{:.4}x (diagnostic); max AMIPS {:.4} against stop {:.4}",
-                    it + 1,
-                    ec.max_edge / ec.bar,
-                    ec.max_vertex / ec.bar,
-                    amips,
-                    bar);
-            }
-            if (amips >= bar) {
-                logger().info(
-                    "======== final pass, front frozen: max AMIPS {:.6g} >= stop_energy {} "
-                    "========",
-                    amips,
-                    m_params.stop_energy);
-                m_round = it + 2;
-                // The front's tube, built from the front as placement left it and held for the
-                // entire pass; the region boundaries stay held in the tubes and masks the load
-                // built (m_tag_envelopes, never rebuilt), as 3D's final pass adds the front's
-                // envelope alone (build_final_envelopes(), 2b8de047ba). Equilateral AMIPS alone:
-                // the plastic vertex path and the rest-shape term are both off. Until 2026-11-11
-                // the region tubes and the vertex masks were rebuilt here from the tags and
-                // on_curve, which no operation carries: MEASURED on the mesh the loop leaves (p
-                // offset to 0.3, a held curve-group curve 0.5 from it, 3 to 8 turns, 5 runs), the
-                // rebuild put 1 to 4 of the curve's 7 to 9 tracked edges in its tube and took the
-                // curve bit off 1 to 8 of its 8 to 10 vertices; after 3 turns 4 of its 8 edges
-                // were held by nothing.
-                rebuild_offset_envelope();
-                m_freeze_front = true;
-                const bool plastic_was = m_plastic_active;
-                m_plastic_active = false;
-                mesh_improvement(a_iters);
-                m_plastic_active = plastic_was;
-                m_freeze_front = false;
-                assign_band_regions();
-                const double final_amips = std::get<0>(optimization_quality_stats());
-                m_quality_max_amips = final_amips;
-                m_quality_converged = final_amips < m_params.stop_energy;
-                logger().log(
-                    m_quality_converged ? spdlog::level::info : spdlog::level::warn,
-                    "\t[final pass] max element quality {:.4} (stop {:.4}) -> {}",
-                    final_amips,
-                    optimization_stop_metric(),
-                    m_quality_converged ? "ok" : "STILL OVER: the run does not converge");
-                if (m_offset_params.debug_output) {
-                    write_smoothing_debug_output(fmt::format("end_{}F", it + 2));
-                }
-            }
-            refresh_released_envelope();
-            return true;
-        }
+        resolved = hold_for_folds(it + 1, resolved);
+        if (resolved) return leave(it + 1, ec, amips, bar);
     }
     check_level_set_reachable("the loop's end");
     logger().warn(
@@ -7645,7 +7735,9 @@ void TopoOffsetTriMesh::smart_growth()
             label,
             attempts,
             /*turned_free=*/true);
-        const int turns = m_iterations_used;
+        // m_loop_turns, not m_iterations_used: the final stage can end in the final pass, whose
+        // mesh_improvement() resets m_iterations_used and counts its own iterations there.
+        const int turns = m_loop_turns;
         const double base = sched.base;
         report_entries(ok);
         switch (sched.report(ok)) {
