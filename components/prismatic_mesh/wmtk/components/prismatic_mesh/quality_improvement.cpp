@@ -30,6 +30,9 @@ QualityImprovementOptions QualityImprovementOptions::from_json(const nlohmann::j
     QUALITY_OPTION(quality_target);
     QUALITY_OPTION(smoothing_target);
     QUALITY_OPTION(thickness_weight);
+    QUALITY_OPTION(thickness_smoothing_weight);
+    QUALITY_OPTION(thickness_tolerance);
+    QUALITY_OPTION(thickness_feature_angle);
     QUALITY_OPTION(topology_enabled);
 #undef QUALITY_OPTION
     // Read operation budgets as signed values first: negative JSON integers must
@@ -61,6 +64,9 @@ nlohmann::json QualityImprovementOptions::json() const
         {"quality_target", quality_target},
         {"smoothing_target", smoothing_target},
         {"thickness_weight", thickness_weight},
+        {"thickness_smoothing_weight", thickness_smoothing_weight},
+        {"thickness_tolerance", thickness_tolerance},
+        {"thickness_feature_angle", thickness_feature_angle},
         {"topology_enabled", topology_enabled}};
 }
 
@@ -73,7 +79,10 @@ void QualityImprovementOptions::validate() const
         !std::isfinite(quality_target) ||
         !(smoothing_target >= 3 && smoothing_target < quality_target) ||
         !std::isfinite(smoothing_target) || thickness_weight < 0 ||
-        !std::isfinite(thickness_weight))
+        !std::isfinite(thickness_weight) || thickness_smoothing_weight < 0 ||
+        !std::isfinite(thickness_smoothing_weight) || !(thickness_tolerance > 0) ||
+        !std::isfinite(thickness_tolerance) || !(thickness_feature_angle > 0) ||
+        thickness_feature_angle > 90 || !std::isfinite(thickness_feature_angle))
         throw std::invalid_argument("Invalid quality improvement options.");
 }
 
@@ -219,20 +228,34 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
     auto best = m;
     auto best_rules = rules;
     auto best_reference = reference;
-    double best_max = q::mixed_score(m, target)["maximum_AMIPS"];
+    const auto energy_score = [&]() {
+        return q::mixed_energy_score(
+            m,
+            reference,
+            options.smoothing_target,
+            options.thickness_weight,
+            options.thickness_smoothing_weight,
+            options.thickness_tolerance,
+            options.thickness_feature_angle);
+    };
+    auto best_score = energy_score();
     nlohmann::json report = {
         {"configuration", options.json()},
         {"sizing_field", sizing},
         {"baseline_quality", q::quality(m)},
+        {"baseline_thickness", best_score.thickness.report},
+        {"baseline_energy", best_score.report},
         {"stages", nlohmann::json::array()},
         {"adaptive_refinements", nlohmann::json::array()},
         {"selected_checkpoint", {{"cycle", 0}, {"stage", -1}}},
         {"outer_boundary_policy",
          box_boundary ? "fixed_box_geometry" : "fixed_source_triangulation"},
         {"quality_definition", "Raw AMIPS ideal=3; native prism/pyramid order-4 integral"},
+        {"checkpoint_selection", "minimum combined AMIPS, point-height and neighbor-height energy"},
+        {"checkpoint_energy_accumulation", "exact sum of floating-point contributions"},
         {"thickness_definition",
-         "Height projected along the original reference direction; no spatial thickness "
-         "regularizer"}};
+         "Relative projected height and neighbor-height differences on shell interfaces; "
+         "opposite reference normals, feature creases and target-height transitions excluded"}};
     for (int cycle = 0; cycle < options.cycles && !deadline.expired(); ++cycle) {
         if (cycle)
             report["adaptive_refinements"].push_back(
@@ -242,6 +265,7 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
             auto backup = m;
             auto backup_rules = rules;
             auto backup_reference = reference;
+            q::MixedEnergyScore candidate_score;
             nlohmann::json row = {
                 {"cycle", cycle + 1},
                 {"stage", stage},
@@ -256,7 +280,10 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
                         options.smoothing_target,
                         target,
                         options.thickness_weight,
-                        deadline);
+                        deadline,
+                        options.thickness_smoothing_weight,
+                        options.thickness_tolerance,
+                        options.thickness_feature_angle);
                 if (stage == 1) {
                     row["operations"]["column_collapses"] = q::prism_region_collapses(
                         m,
@@ -285,27 +312,32 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
                         options.volume_passes);
                 reference.extend(m);
                 row["validation"] = validate();
+                candidate_score = energy_score();
             } catch (const std::exception& e) {
                 m = std::move(backup);
                 rules = std::move(backup_rules);
                 reference = std::move(backup_reference);
                 row["rolled_back"] = e.what();
+                candidate_score = energy_score();
             }
             row["after"] = q::mixed_score(m, target);
+            row["energy"] = candidate_score.report;
+            row["thickness"] = candidate_score.thickness.report;
             row["seconds"] = deadline.seconds();
             report["stages"].push_back(row);
             const double maximum = row["after"]["maximum_AMIPS"];
-            if (maximum < best_max) {
+            if (candidate_score.value < best_score.value) {
                 best = m;
                 best_rules = rules;
                 best_reference = reference;
-                best_max = maximum;
+                best_score = candidate_score;
                 report["selected_checkpoint"] = {{"cycle", cycle + 1}, {"stage", stage}};
             }
             logger()
                 .info("Hybrid quality cycle {} stage {}: max AMIPS {}", cycle + 1, stage, maximum);
         }
-        if (q::mixed_score(m, target)["over_target"] == 0) break;
+        if (q::mixed_score(m, target)["over_target"] == 0 && energy_score().thickness.target_met)
+            break;
     }
     m = std::move(best);
     rules = std::move(best_rules);
@@ -313,8 +345,14 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
     report["final_validation"] = validate();
     report["final_quality"] = q::quality(m);
     report["final_all_mixed"] = q::mixed_score(m, target);
+    const auto final_score = energy_score();
+    report["final_energy"] = final_score.report;
+    report["final_thickness"] = final_score.thickness.report;
     report["seconds"] = deadline.seconds();
-    report["target_met"] = report["final_all_mixed"]["over_target"] == 0;
+    report["quality_target_met"] = report["final_all_mixed"]["over_target"] == 0;
+    report["thickness_target_met"] = final_score.thickness.target_met;
+    report["target_met"] =
+        report["quality_target_met"].get<bool>() && report["thickness_target_met"].get<bool>();
     report["status"] =
         report["target_met"].get<bool>() ? "complete_target_met" : "complete_target_not_reached";
     report["reference_tet_provenance"] =

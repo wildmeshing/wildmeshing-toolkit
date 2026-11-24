@@ -17,7 +17,10 @@ struct QualityImprovementOptions
     double initial_sizing_factor = 0.25;
     double quality_target = 20;
     double smoothing_target = 18;
-    double thickness_weight = 10;
+    double thickness_weight = 100;
+    double thickness_smoothing_weight = 10;
+    double thickness_tolerance = 0.05;
+    double thickness_feature_angle = 30;
     bool topology_enabled = true;
 
     static QualityImprovementOptions from_json(const nlohmann::json& options);
@@ -52,7 +55,7 @@ struct ImprovedHybridMesh
 
 // Does not mutate the construction/reference mesh. Preserves material interfaces,
 // retained input geometry, positive actual cells, and the exterior domain. The
-// returned checkpoint minimizes the global maximum AMIPS over valid stages.
+// returned checkpoint minimizes combined AMIPS and thickness energy over valid stages.
 ImprovedHybridMesh improve_prismatic_mesh_quality(
     const PrismaticMeshInput& input,
     const PrismDominantMesh& hybrid,
