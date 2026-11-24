@@ -12357,6 +12357,35 @@ TEST_CASE("label-growth-held-crossing-2d", "[offset][2d]")
     CHECK(on_line > 0); // the front still crosses the line
 }
 
+TEST_CASE("label-growth-split-edge-labels-2d", "[offset][2d]")
+{
+    // label-growth-held-crossing-2d's input, target 0.15, label growth alone: the run completes,
+    // so its components checks hold (flood_fill() walks edges labelled 1 or 2, before and after
+    // growth). Until 2026-11-23 the 2D optimization split -- the one growth's splits use -- left
+    // its new edges' construction labels unset (the halves and the edges to the apexes), and here
+    // a band vertex had every edge at 0: "CONNECTED COMPONENTS MISMATCH: 1 before, 2 after", B
+    // held and protected alike (first MEASURED on the double disk, tag_1 a region, target 0.05).
+    const bool protect = GENERATE(false, true);
+    INFO((protect ? "B protected" : "B held"));
+    MeshData input = grid_2d({{"p", {{4, 4}}}});
+    auto& tris = input.cells.at(CellType::Triangle);
+    DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tris.connectivity.rows(), 2);
+    for (Eigen::Index r = 0; r < tris.connectivity.rows(); ++r) {
+        double x = 0.;
+        for (int c = 0; c < 3; ++c) x += input.V(tris.connectivity(r, c), 0) / 3.;
+        tags(r, x > 0. ? 1 : 0) = 1;
+    }
+    tris.attributes["tags"] = {tags, {"A", "B"}};
+    nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.15}}})},
+        {"label_growth", true},
+        {"optimize_offset", false},
+        {"num_threads", 1}};
+    if (protect) j["protected_tags"] = "B";
+    REQUIRE_NOTHROW(components::topological_offset::topological_offset(j, {{"m", input}}));
+}
+
 namespace {
 /// The result's front as vertex positions: every corner of a triangle shared by a band tet and a
 /// tet outside the band. The 3D twin of result_front_2d()'s ends.

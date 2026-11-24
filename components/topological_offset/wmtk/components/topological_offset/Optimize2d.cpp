@@ -913,6 +913,22 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
             m_face_extra[fid].label = it->second;
         }
     }
+    // The children's edges: each half carries the split edge's construction label, and each new
+    // edge from the midpoint to an apex lies inside that apex's parent, so carries the parent's
+    // (reset first: a recycled slot keeps a dead edge's record), as the marching split does
+    // (marching_split_edge_after()). Until 2026-11-23 neither was written here, so an edge of a
+    // band triangle could read 0, and flood_fill(), which walks edges labelled 1 or 2, split the
+    // band from the complex: MEASURED, the double disk with tag_1 a region, tag_0 offset to 0.05
+    // by label growth, every front_conv_rel -- a band vertex whose every edge read 0, the
+    // components check after growth 1 -> 2 and the run stopped.
+    for (const size_t endpoint : {c.v1_id, c.v2_id}) {
+        m_edge_extra[std::get<1>(tuple_from_edge({{endpoint, v_id}}))].label = c.split_edge_label;
+    }
+    for (const auto& [apex, apex_label] : c.face_label) {
+        const size_t eid = std::get<1>(tuple_from_edge({{apex, v_id}}));
+        m_edge_extra[eid] = EdgeExtra2d();
+        m_edge_extra[eid].label = apex_label;
+    }
     // The construction label, from the flags and face labels just set (carried_vertex_label()).
     m_vertex_extra[v_id].label = carried_vertex_label(v_id);
     // Several entries: a complex vertex the split has just made carries no entry yet, and

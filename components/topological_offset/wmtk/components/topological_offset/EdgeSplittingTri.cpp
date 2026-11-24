@@ -65,6 +65,7 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
         c.edge_labels = common_labels(
             m_vertex_extra[c.v1_id].m_boundary_labels,
             m_vertex_extra[c.v2_id].m_boundary_labels);
+        c.split_edge_label = m_edge_extra[t.eid(*this)].label;
         const simplex::Edge edge(c.v1_id, c.v2_id);
         // parent_q_max is diagnostic: split_after_vertex() uses it to say whether a needle child
         // came from a parent that was already unscoreable, or from a healthy one.

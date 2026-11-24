@@ -1713,6 +1713,8 @@ public:
         /// on the front, which the parents' labels (a band face and one that is neither band nor
         /// input complex) would say. 3D labels such a face 1 (close_labels()).
         bool on_in_complex = false;
+        /// The split edge's construction label, for its two halves (split_adjust_position()).
+        int split_edge_label = 0;
     };
     wmtk::threading::enumerable_thread_specific<OptSplitCache2d> m_opt_split_cache;
 
