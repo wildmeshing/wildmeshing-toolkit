@@ -10,10 +10,11 @@ var searchData=
   ['meshdata_7',['MeshData',['../structwmtk_1_1_mesh_data.html',1,'wmtk']]],
   ['meshsnapshot_8',['meshsnapshot',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_mesh_snapshot.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::MeshSnapshot'],['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_mesh_snapshot.html',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::MeshSnapshot']]],
   ['metadata_9',['Metadata',['../structwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_stock_fixed_background_1_1_metadata.html',1,'wmtk::components::prismatic_mesh::quality::StockFixedBackground']]],
-  ['mixedreference_10',['MixedReference',['../structwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_mixed_reference.html',1,'wmtk::components::prismatic_mesh::quality']]],
-  ['mmsurfacemesh_11',['MMSurfaceMesh',['../classwmtk_1_1components_1_1c1__simplification_1_1_m_m_surface_mesh.html',1,'wmtk::components::c1_simplification']]],
-  ['mmtetmesh_12',['MMTetMesh',['../classwmtk_1_1components_1_1c1__simplification_1_1_m_m_tet_mesh.html',1,'wmtk::components::c1_simplification']]],
-  ['mmuvmesh_13',['MMUVMesh',['../classwmtk_1_1components_1_1c1__simplification_1_1_m_m_u_v_mesh.html',1,'wmtk::components::c1_simplification']]],
-  ['mortoncode64_14',['MortonCode64',['../class_resorting_1_1_morton_code64.html',1,'Resorting']]],
-  ['mshdata_15',['MshData',['../classwmtk_1_1_msh_data.html',1,'wmtk']]]
+  ['mixedenergyscore_10',['MixedEnergyScore',['../structwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_mixed_energy_score.html',1,'wmtk::components::prismatic_mesh::quality']]],
+  ['mixedreference_11',['MixedReference',['../structwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_mixed_reference.html',1,'wmtk::components::prismatic_mesh::quality']]],
+  ['mmsurfacemesh_12',['MMSurfaceMesh',['../classwmtk_1_1components_1_1c1__simplification_1_1_m_m_surface_mesh.html',1,'wmtk::components::c1_simplification']]],
+  ['mmtetmesh_13',['MMTetMesh',['../classwmtk_1_1components_1_1c1__simplification_1_1_m_m_tet_mesh.html',1,'wmtk::components::c1_simplification']]],
+  ['mmuvmesh_14',['MMUVMesh',['../classwmtk_1_1components_1_1c1__simplification_1_1_m_m_u_v_mesh.html',1,'wmtk::components::c1_simplification']]],
+  ['mortoncode64_15',['MortonCode64',['../class_resorting_1_1_morton_code64.html',1,'Resorting']]],
+  ['mshdata_16',['MshData',['../classwmtk_1_1_msh_data.html',1,'wmtk']]]
 ];

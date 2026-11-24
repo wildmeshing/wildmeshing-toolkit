@@ -101,62 +101,65 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>    <span class="keywordtype">double</span> initial_sizing_factor = 0.25;</div>
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>    <span class="keywordtype">double</span> quality_target = 20;</div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>    <span class="keywordtype">double</span> smoothing_target = 18;</div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>    <span class="keywordtype">double</span> thickness_weight = 10;</div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>    <span class="keywordtype">bool</span> topology_enabled = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    <span class="keyword">static</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_quality_improvement_options.html">QualityImprovementOptions</a> from_json(<span class="keyword">const</span> nlohmann::json&amp; options);</div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>    nlohmann::json json() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>    <span class="keywordtype">void</span> validate() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>};</div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>    <span class="keywordtype">double</span> thickness_weight = 100;</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>    <span class="keywordtype">double</span> thickness_smoothing_weight = 10;</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>    <span class="keywordtype">double</span> thickness_tolerance = 0.05;</div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    <span class="keywordtype">double</span> thickness_feature_angle = 30;</div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>    <span class="keywordtype">bool</span> topology_enabled = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>    <span class="keyword">static</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_quality_improvement_options.html">QualityImprovementOptions</a> from_json(<span class="keyword">const</span> nlohmann::json&amp; options);</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>    nlohmann::json json() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <span class="keywordtype">void</span> validate() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>};</div>
 </div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
-<div class="foldopen" id="foldopen00028" data-start="{" data-end="};">
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_cell.html">   28</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_cell.html">ImprovedHybridCell</a></div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>{</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    HybridCellType type;</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    std::vector&lt;size_t&gt; vertices; <span class="comment">// VTK ordering; the native prism reference reverses each cap</span></div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <span class="keywordtype">int</span> region = 3; <span class="comment">// 1: input volume, 2: shell, 3: background</span></div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    <span class="keywordtype">double</span> amips = 0; <span class="comment">// raw AMIPS; ideal = 3; native order-4 prism/pyramid integral</span></div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>};</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
+<div class="foldopen" id="foldopen00031" data-start="{" data-end="};">
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_cell.html">   31</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_cell.html">ImprovedHybridCell</a></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>{</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    HybridCellType type;</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    std::vector&lt;size_t&gt; vertices; <span class="comment">// VTK ordering; the native prism reference reverses each cap</span></div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="keywordtype">int</span> region = 3; <span class="comment">// 1: input volume, 2: shell, 3: background</span></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    <span class="keywordtype">double</span> amips = 0; <span class="comment">// raw AMIPS; ideal = 3; native order-4 prism/pyramid integral</span></div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>};</div>
 </div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="comment">// Retopology has its own vertex/cell row space. The original hybrid&#39;s reference</span></div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="comment">// tetrahedra describe the construction, not this result, and are left untouched.</span></div>
-<div class="foldopen" id="foldopen00038" data-start="{" data-end="};">
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_mesh.html">   38</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_mesh.html">ImprovedHybridMesh</a></div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>{</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    MatrixXd vertices;</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    std::vector&lt;ImprovedHybridCell&gt; cells;</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    std::vector&lt;int64_t&gt; source_vertex_ids;</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    std::vector&lt;int64_t&gt; correspondence; <span class="comment">// rows in vertices; negative means geometric/free</span></div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    std::vector&lt;int64_t&gt; original_vertex_rows; <span class="comment">// -1 for inserted vertices</span></div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    std::vector&lt;int&gt; vertex_tags;</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    MatrixXd reference_base;</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    MatrixXd reference_normals;</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    std::vector&lt;double&gt; target_heights; <span class="comment">// zero where no active reference-height constraint exists</span></div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    std::vector&lt;double&gt; target_edge_lengths;</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    nlohmann::json report;</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>};</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="comment">// Retopology has its own vertex/cell row space. The original hybrid&#39;s reference</span></div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><span class="comment">// tetrahedra describe the construction, not this result, and are left untouched.</span></div>
+<div class="foldopen" id="foldopen00041" data-start="{" data-end="};">
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_mesh.html">   41</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_mesh.html">ImprovedHybridMesh</a></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>{</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    MatrixXd vertices;</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    std::vector&lt;ImprovedHybridCell&gt; cells;</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    std::vector&lt;int64_t&gt; source_vertex_ids;</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    std::vector&lt;int64_t&gt; correspondence; <span class="comment">// rows in vertices; negative means geometric/free</span></div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    std::vector&lt;int64_t&gt; original_vertex_rows; <span class="comment">// -1 for inserted vertices</span></div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    std::vector&lt;int&gt; vertex_tags;</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    MatrixXd reference_base;</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    MatrixXd reference_normals;</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    std::vector&lt;double&gt; target_heights; <span class="comment">// zero where no active reference-height constraint exists</span></div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    std::vector&lt;double&gt; target_edge_lengths;</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    nlohmann::json report;</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>};</div>
 </div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="comment">// Does not mutate the construction/reference mesh. Preserves material interfaces,</span></div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="comment">// retained input geometry, positive actual cells, and the exterior domain. The</span></div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="comment">// returned checkpoint minimizes the global maximum AMIPS over valid stages.</span></div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_mesh.html">ImprovedHybridMesh</a> improve_prismatic_mesh_quality(</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_prismatic_mesh_input.html">PrismaticMeshInput</a>&amp; input,</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_prism_dominant_mesh.html">PrismDominantMesh</a>&amp; hybrid,</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_quality_improvement_options.html">QualityImprovementOptions</a>&amp; options = {});</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span><span class="keywordtype">void</span> write_improved_prismatic_mesh(</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <span class="keyword">const</span> ImprovedHybridMesh&amp; mesh,</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    <span class="keyword">const</span> std::filesystem::path&amp; path,</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    <span class="keywordtype">bool</span> include_background = <span class="keyword">true</span>,</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    MeshMap* output = <span class="keyword">nullptr</span>,</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    nlohmann::json* report = <span class="keyword">nullptr</span>);</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span> </div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>} <span class="comment">// namespace wmtk::components::prismatic_mesh</span></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_cell_html"><div class="ttname"><a href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_cell.html">wmtk::components::prismatic_mesh::ImprovedHybridCell</a></div><div class="ttdef"><b>Definition</b> quality_improvement.hpp:29</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_mesh_html"><div class="ttname"><a href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_mesh.html">wmtk::components::prismatic_mesh::ImprovedHybridMesh</a></div><div class="ttdef"><b>Definition</b> quality_improvement.hpp:39</div></div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><span class="comment">// Does not mutate the construction/reference mesh. Preserves material interfaces,</span></div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="comment">// retained input geometry, positive actual cells, and the exterior domain. The</span></div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span><span class="comment">// returned checkpoint minimizes combined AMIPS and thickness energy over valid stages.</span></div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_mesh.html">ImprovedHybridMesh</a> improve_prismatic_mesh_quality(</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_prismatic_mesh_input.html">PrismaticMeshInput</a>&amp; input,</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_prism_dominant_mesh.html">PrismDominantMesh</a>&amp; hybrid,</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1components_1_1prismatic__mesh_1_1_quality_improvement_options.html">QualityImprovementOptions</a>&amp; options = {});</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span> </div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span><span class="keywordtype">void</span> write_improved_prismatic_mesh(</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    <span class="keyword">const</span> ImprovedHybridMesh&amp; mesh,</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <span class="keyword">const</span> std::filesystem::path&amp; path,</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <span class="keywordtype">bool</span> include_background = <span class="keyword">true</span>,</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    MeshMap* output = <span class="keyword">nullptr</span>,</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    nlohmann::json* report = <span class="keyword">nullptr</span>);</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>} <span class="comment">// namespace wmtk::components::prismatic_mesh</span></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_cell_html"><div class="ttname"><a href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_cell.html">wmtk::components::prismatic_mesh::ImprovedHybridCell</a></div><div class="ttdef"><b>Definition</b> quality_improvement.hpp:32</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_mesh_html"><div class="ttname"><a href="structwmtk_1_1components_1_1prismatic__mesh_1_1_improved_hybrid_mesh.html">wmtk::components::prismatic_mesh::ImprovedHybridMesh</a></div><div class="ttdef"><b>Definition</b> quality_improvement.hpp:42</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1prismatic__mesh_1_1_prism_dominant_mesh_html"><div class="ttname"><a href="structwmtk_1_1components_1_1prismatic__mesh_1_1_prism_dominant_mesh.html">wmtk::components::prismatic_mesh::PrismDominantMesh</a></div><div class="ttdef"><b>Definition</b> prismatic_mesh.hpp:153</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1prismatic__mesh_1_1_prismatic_mesh_input_html"><div class="ttname"><a href="structwmtk_1_1components_1_1prismatic__mesh_1_1_prismatic_mesh_input.html">wmtk::components::prismatic_mesh::PrismaticMeshInput</a></div><div class="ttdef"><b>Definition</b> prismatic_mesh.hpp:99</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1prismatic__mesh_1_1_quality_improvement_options_html"><div class="ttname"><a href="structwmtk_1_1components_1_1prismatic__mesh_1_1_quality_improvement_options.html">wmtk::components::prismatic_mesh::QualityImprovementOptions</a></div><div class="ttdef"><b>Definition</b> quality_improvement.hpp:8</div></div>

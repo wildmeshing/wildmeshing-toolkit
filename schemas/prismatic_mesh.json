@@ -144,7 +144,7 @@
     },
     "quality_improvement_options": {
       "type": "object",
-      "description": "Options for quality_improvement. Final output selects the valid stage with the lowest global maximum AMIPS, independently of thickness energy; the target is not guaranteed within finite budgets. Non-box exterior domains retain fixed source triangulation, including offset boundaries if background was removed.",
+      "description": "Options for quality_improvement. Final output selects the valid stage with the lowest combined AMIPS, point-height and neighbor-height energy. Convergence requires both the quality and enabled thickness criteria; finite budgets do not guarantee these targets. Non-box exterior domains retain fixed source triangulation, including offset boundaries if background was removed.",
       "default": {},
       "properties": {
         "cycles": {
@@ -154,7 +154,7 @@
         },
         "mixed_smoothing_sweeps": {
           "type": "integer",
-          "description": "Maximum gradient smoothing sweeps per mixed stage, in [0,10000]. Active vertices come from actual mixed cells above quality_target; stop when no move is accepted or the target is reached.",
+          "description": "Maximum gradient smoothing sweeps per mixed stage, in [0,10000]. Active vertices come from actual mixed cells above quality_target and enabled point/neighbor height errors above thickness_tolerance. Stop when no move is accepted or both criteria are met.",
           "default": 120
         },
         "volume_passes": {
@@ -202,10 +202,25 @@
           "description": "Threshold of the squared excess AMIPS loss; at least 3 and strictly below quality_target. The loss includes a small log-AMIPS regularizer.",
           "default": 18.0
         },
+        "thickness_smoothing_weight": {
+          "type": "number",
+          "description": "Nonnegative weight on squared differences of relative reference-height errors across neighboring shell-interface vertices. Degree-normalized pairs exclude opposite reference normals, normal changes above thickness_feature_angle and target-height ratios above 1.5. Zero disables this term.",
+          "default": 10.0
+        },
+        "thickness_tolerance": {
+          "type": "number",
+          "description": "Positive finite activation and convergence tolerance for relative reference-height error and neighbor error differences; 0.05 means 5%. Each criterion applies only when its energy weight is positive. Vertices without a valid reference on a shell interface are held fixed during mixed smoothing and counted in the report.",
+          "default": 0.05
+        },
+        "thickness_feature_angle": {
+          "type": "number",
+          "description": "Reference-normal angle in degrees, in (0,90], above which neighboring interface vertices are not coupled by thickness smoothing. Does not add a geometry envelope or change input feature constraints.",
+          "default": 30.0
+        },
         "thickness_weight": {
           "type": "number",
-          "description": "Nonnegative weight on squared relative projection-height error along the original reference direction. No spatial thickness regularizer. The projection band is max(25%, current error).",
-          "default": 10.0
+          "description": "Nonnegative weight on squared relative projection-height error along the original reference direction. thickness_smoothing_weight controls the neighbor term separately. The projection band is max(25%, current error). Zero disables point-height activation and energy.",
+          "default": 100.0
         },
         "topology_enabled": {
           "type": "boolean",
