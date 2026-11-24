@@ -29,11 +29,16 @@ Config (dict):
                                or a body's tag name
   contact / time / solver / output / space : dict — optional pass-through
   save_vtu           : bool  — emit paraview .vtu/.pvd (default True)
-  save_restart       : bool  — write state.hdf5/restart.json checkpoints so
-                               a later run can resume (default True)
-  resume             : bool  — resume from restart files found in out_dir/sim_output
-                               (default True); set False or delete them to
-                               start fresh
+  save_restart       : bool  — have PolyFEM write a checkpoint after every time
+                               step, overwriting sim_output/checkpoint.hdf5, so
+                               a later run can resume (default False; a
+                               time-dependent simulation only)
+  resume             : bool  — resume from sim_output/checkpoint.hdf5 if there
+                               is one (default False). PolyFEM takes the whole
+                               configuration from the checkpoint, so cfg must
+                               build the simulation.json that wrote it;
+                               force_resume resumes anyway, on the
+                               checkpoint's settings
 
 Example:
   cfg = {
@@ -72,29 +77,17 @@ def _diff_json_keys(a, b, path: str = "") -> list:
     return [] if a == b else [path or "<root>"]
 
 
-# Fields that can safely differ between a resumed run and the saved
-# simulation.json. Extending tend, tweaking output bookkeeping, retuning the
-# solver, or providing initial conditions (only applied at t=0) does not
-# invalidate the state vectors saved at t > 0.
-_RESUME_SAFE_PREFIXES = (
-    "time.tend",
-    "output.",
-    "solver.",
-    "initial_conditions.",
-)
-
-
-def _filter_drift(diffs: list) -> list:
-    return [d for d in diffs if not any(
-        d == p.rstrip(".") or d.startswith(p) for p in _RESUME_SAFE_PREFIXES
-    )]
-
-
 SIM_DEFAULTS = {
     "scale":        0.001,
     "save_vtu":     True,
-    "save_restart": True,
+    "save_restart": False,
+    "resume":       False,
 }
+
+# The checkpoint save_restart has PolyFEM write, in its output directory. No `{}`
+# in the name, which PolyFEM would fill with the time step: one file, overwritten
+# every step.
+CHECKPOINT = "checkpoint.hdf5"
 
 # Polyfem JSON section defaults — match the in-tree reference simulation.json
 # (lego-head-3d-coarse). These are merged shallowly with whatever the user
@@ -334,15 +327,8 @@ def build_polyfem_sim_json(cfg: dict, msh_path: Path, sim_out_dir: Path,
         output["paraview"] = deep_merge(
             deep_merge(PARAVIEW_DEFAULTS, {"skip_frame": 1}),
             output.get("paraview", {}))
-    # Restart checkpoint: polyfem fmt::format-substitutes `{}` with the global
-    # timestep index. Omitting `{}` makes fmt return the literal string each
-    # step, so polyfem overwrites the same `state.hdf5` / `restart.json`
-    # instead of accumulating one pair per timestep.
     if save_restart:
-        data = dict(output.get("data", {}))
-        data.setdefault("state", "state.hdf5")
-        output["data"] = data
-        output.setdefault("restart_json", "restart.json")
+        output["checkpoint"] = deep_merge({"path": CHECKPOINT}, output.get("checkpoint", {}))
     j["output"] = output
 
     return j
@@ -361,7 +347,7 @@ def run(cfg: dict, out_dir=None, in_dirname: str = "sim_input",
     out_dir = Path(out_dir) if out_dir is not None else (
         msh_path.parent / "sim")
     # Generated polyfem inputs go to
-    # in_dirname/, everything polyfem writes (vtu/pvd, log, restart/state)
+    # in_dirname/, everything polyfem writes (vtu/pvd, log, checkpoint)
     # to out_dirname/. Override the names e.g. to "input"/"output" when
     # out_dir is already a per-simulation folder.
     sim_in_dir = out_dir / in_dirname
@@ -410,56 +396,37 @@ def run(cfg: dict, out_dir=None, in_dirname: str = "sim_input",
 
     sim_json_path = sim_in_dir / "simulation.json"
 
-    # Resume from the latest polyfem-written restart_<N>.json if one is in
-    # sim_output/. Polyfem's restart file references simulation.json via `common`,
-    # so the saved state must match the cfg used to produce it — bail out if
-    # the freshly-built cfg has drifted from the saved simulation.json.
-    resume = cfg.get("resume", True)
+    # Resume from the checkpoint a save_restart run left in sim_output/. PolyFEM
+    # takes the whole configuration from the checkpoint, so it resumes only the
+    # simulation.json that wrote it: a change to cfg since would be ignored.
     json_to_run = sim_json_path
-    if resume:
-        # Prefer the overwrite-style `restart.json`; fall back to legacy
-        # per-timestep `restart_<N>.json` from older runs.
-        restart_single = sim_out_dir / "restart.json"
-        if restart_single.exists():
-            restarts = [restart_single]
-        else:
-            restarts = sorted(
-                sim_out_dir.glob("restart_*.json"),
-                key=lambda p: int(p.stem.split("_")[-1]) if p.stem.split("_")[-1].isdigit() else -1,
-            )
-        if restarts and sim_json_path.exists():
-            try:
-                prior_json = json.loads(sim_json_path.read_text())
-            except json.JSONDecodeError:
-                prior_json = None
-            if prior_json != sim_json:
-                all_diffs = _diff_json_keys(prior_json or {}, sim_json)
-                unsafe = _filter_drift(all_diffs)
-                safe = [d for d in all_diffs if d not in unsafe]
-                if safe:
-                    print(f"  resume: applying safe cfg changes to "
-                          f"{sim_json_path.name}: {safe}")
-                if unsafe and not cfg.get("force_resume", False):
-                    raise RuntimeError(
-                        f"cfg has drifted from {sim_json_path.name} on fields that affect saved state.\n"
-                        f"  Unsafe diffs: {unsafe}\n"
-                        f"  (safe diffs would have been auto-applied: {safe or 'none'})\n"
-                        f"  The saved state hdf5 was produced under the OLD cfg, so resuming would\n"
-                        f"  silently mix old state vectors with new settings.\n"
-                        f"  Fix one of:\n"
-                        f"    - cfg['resume'] = False  (start fresh, keeps the old files around)\n"
-                        f"    - delete {sim_out_dir}/restart*.json and state*.hdf5  (clean slate)\n"
-                        f"    - cfg['force_resume'] = True  (override at your own risk)\n"
-                        f"    - revert cfg so it matches {sim_json_path}")
-                if unsafe:
-                    print(f"  resume: WARNING force_resume=True; ignoring unsafe diffs: {unsafe}")
-        if restarts:
-            json_to_run = restarts[-1]
-            print(f"  resuming from {json_to_run.name} "
-                  f"(set cfg['resume']=False or delete state*.hdf5/restart*.json to start fresh)")
-
-    sim_json_path.write_text(json.dumps(sim_json, indent=4))
-    print(f"  wrote {sim_json_path}")
+    checkpoint = sim_out_dir / CHECKPOINT
+    if cfg.get("resume", SIM_DEFAULTS["resume"]) and checkpoint.exists():
+        try:
+            prior_json = json.loads(sim_json_path.read_text())
+        except (FileNotFoundError, json.JSONDecodeError):
+            prior_json = None
+        if prior_json != json.loads(json.dumps(sim_json)):
+            diffs = (_diff_json_keys(prior_json, sim_json) if prior_json is not None
+                     else [f"no readable {sim_json_path.name}"])
+            if not cfg.get("force_resume", False):
+                raise RuntimeError(
+                    f"cfg has changed since {checkpoint.name} was written: {diffs}\n"
+                    f"  PolyFEM resumes on the checkpoint's own settings, so these changes\n"
+                    f"  would be ignored. Fix one of:\n"
+                    f"    - cfg['resume'] = False  (start fresh)\n"
+                    f"    - delete {checkpoint}  (start fresh)\n"
+                    f"    - cfg['force_resume'] = True  (resume on the checkpoint's settings)\n"
+                    f"    - revert cfg so it matches {sim_json_path}")
+            print(f"  resume: WARNING force_resume=True; the checkpoint's settings win over: {diffs}")
+        json_to_run = sim_in_dir / "resume.json"
+        json_to_run.write_text(json.dumps(
+            {"input": {"checkpoint": {"path": str(checkpoint.resolve())}}}, indent=4))
+        print(f"  resuming from {checkpoint} "
+              f"(set cfg['resume']=False or delete it to start fresh)")
+    else:
+        sim_json_path.write_text(json.dumps(sim_json, indent=4))
+        print(f"  wrote {sim_json_path}")
 
     cmd = [polyfem, "-j", str(json_to_run), "-o", str(sim_out_dir)]
     print(f"  running: {' '.join(cmd)}\n")
