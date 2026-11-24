@@ -105,6 +105,33 @@ def test_history_correspondence_maps_both_ways():
         viewer._history_correspondence(outputs["mesh"], outputs["mesh"], report["history"])
 
 
+def test_a_2d_chain_is_seen_from_above_and_a_3d_one_from_the_side():
+    """A chain whose vertices all lie at one z (a 2D one) is shown as image-simulation's
+    scene_setup shows it: orthographic, panned and zoomed in its plane, x right and y up -- the
+    first stage the pipeline GUI shows sets it, as view() does. A 3D chain keeps z up."""
+    imgui = pytest.importorskip("polyscope.imgui")
+    flat = {"mesh": {"V": np.array([[0.0, 0.0], [2.0, 0.0], [0.0, 1.0]]), "cells": {
+        "triangle": {"connectivity": np.array([[0, 1, 2]], np.int64),
+                     "attributes": tags([[1]], ["a"])}}}}
+
+    def seen_from_above():
+        camera = polyscope.get_view_camera_parameters()
+        return (polyscope.get_navigation_style() == "planar"
+                and polyscope.get_view_projection_mode() == "orthographic"
+                and np.allclose(camera.get_look_dir(), [0, 0, -1])
+                and np.allclose(camera.get_up_dir(), [0, 1, 0])
+                and np.allclose(camera.get_right_dir(), [1, 0, 0]))
+
+    viewer.start(polyscope, "mock")
+    viewer.Viewer(polyscope, imgui).set_stage("plane", flat)  # the GUI's first stage
+    assert seen_from_above()
+    viewer.view([("cube", stage())], screenshots="mock")
+    assert polyscope.get_up_dir() == "z_up" and polyscope.get_navigation_style() == "turntable"
+    assert polyscope.get_view_projection_mode() == "perspective"
+    viewer.view([("plane", flat)], screenshots="mock")
+    assert seen_from_above()
+
+
 def test_a_simulation_plays_its_frames():
     """A mesh with vertex attributes displacement_<step> has frames, not attributes to colour by:
     a frame moves every layer to the rest positions plus that frame's displacements, "play" steps

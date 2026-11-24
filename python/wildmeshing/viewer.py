@@ -17,7 +17,8 @@ shown with its envelope -- the rows of the envelope the stage returned that carr
 at start; "ambient", the background, starts hidden. A label keeps its colour in every stage. A
 slice plane, off at start, cuts the volumes. Every stage is moved and scaled alike, so that the
 whole chain fills the unit box around the origin, z up; each mesh is placed about its own centre,
-where its transform gizmo sits.
+where its transform gizmo sits. A 2D chain (every vertex at one z) is seen from above, as
+image-simulation's scene_setup shows one: orthographic, panned and zoomed in its plane, y up.
 
 A simulation (polyfem_sim: vertex attributes displacement_<step>, the report's "time") has its
 frames: a slider moves the stage's layers to a frame's positions, "play" steps through them, one
@@ -410,6 +411,28 @@ def _correspondences(outputs, report, source):
     return out
 
 
+EYE = (1.2, -1.6, 0.9)  # a 3D chain's first view: from the front, right and above
+
+
+def _flat(outputs_list):
+    """Whether every vertex of the meshes of `outputs_list` lies at one z: a 2D chain's do."""
+    z = [_world(m["V"], (np.zeros(3), 1.0))[:, 2] for outputs in outputs_list
+         for m in outputs.values()]
+    z = np.concatenate(z) if z else np.zeros(0)
+    return len(z) > 0 and np.ptp(z) == 0
+
+
+def _plan_view(ps):
+    """A 2D chain's camera, as image-simulation's scene_setup has it: orthographic, panned and
+    zoomed in its plane, x right and y up; looking down z at the origin from as far as EYE."""
+    ps.set_up_dir("y_up")
+    ps.set_front_dir("z_front")
+    ps.set_navigation_style("planar")
+    ps.set_view_projection_mode("orthographic")
+    ps.set_view_center_raw((0.0, 0.0, 0.0))
+    ps.look_at((0.0, 0.0, float(np.linalg.norm(EYE))), (0.0, 0.0, 0.0))
+
+
 def _transform(outputs_list):
     """The move and scale that put every mesh of `outputs_list` in the unit box about the origin."""
     points = [_world(m["V"], (np.zeros(3), 1.0)) for outputs in outputs_list
@@ -452,7 +475,11 @@ class Viewer:
         the stage of that name, or of the stage `replace` (a renamed one), if any; in the panel,
         under `folder` if one is given."""
         if self.transform is None:
+            # The first stage shown frames the chain; a 2D one turns the camera (view() turns it
+            # for the stages it is given).
             self.transform = _transform([outputs])
+            if _flat([outputs]):
+                _plan_view(self.ps)
         old = self.remove_stage(replace or name)
         targets = []
         mesh = outputs.get("mesh") or {}
@@ -672,11 +699,14 @@ class Viewer:
 
 
 def start(ps, screenshots=None):
-    """polyscope, started as every view of a chain is: z up, no ground, its own windows built by
-    polyscope_panels(); `screenshots` "mock" (or WM_VIEWER_SCREENSHOTS) without a window."""
+    """polyscope, started as every view of a chain is: z up, turntable, perspective (a 2D chain
+    turns the camera, _plan_view()), no ground, its own windows built by polyscope_panels();
+    `screenshots` "mock" (or WM_VIEWER_SCREENSHOTS) without a window."""
     screenshots = screenshots or os.environ.get("WM_VIEWER_SCREENSHOTS")
     ps.init("openGL_mock" if screenshots == "mock" else "auto")
     ps.set_up_dir("z_up")
+    ps.set_navigation_style("turntable")
+    ps.set_view_projection_mode("perspective")
     ps.set_ground_plane_mode("none")
     ps.set_build_default_gui_panels(False)
     return screenshots
@@ -708,8 +738,11 @@ def view(stages, screenshots=None):
     for i, (name, outputs, report, source) in enumerate(stages):
         viewer.set_stage(name, outputs, report, source, shown=i == len(stages) - 1)
         print(name, {g: list(v) for g, v in viewer.stages[-1]["items"].items() if v})
-    ps.set_view_center_raw((0.0, 0.0, 0.0))
-    ps.look_at((1.2, -1.6, 0.9), (0.0, 0.0, 0.0))
+    if _flat([outputs for _, outputs, _, _ in stages]):
+        _plan_view(ps)
+    else:
+        ps.set_view_center_raw((0.0, 0.0, 0.0))
+        ps.look_at(EYE, (0.0, 0.0, 0.0))
 
     if screenshots and screenshots != "mock":
         os.makedirs(screenshots, exist_ok=True)
