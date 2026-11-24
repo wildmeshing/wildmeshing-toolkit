@@ -103,3 +103,47 @@ def test_history_correspondence_maps_both_ways():
     assert polyscope.has_point_cloud("box output -> input images")
     with pytest.raises(ValueError):  # not the surface the history starts from
         viewer._history_correspondence(outputs["mesh"], outputs["mesh"], report["history"])
+
+
+def test_a_simulation_plays_its_frames():
+    """A mesh with vertex attributes displacement_<step> has frames, not attributes to colour by:
+    a frame moves every layer to the rest positions plus that frame's displacements, "play" steps
+    on once per frame drawn."""
+    imgui = pytest.importorskip("polyscope.imgui")
+    polyscope.init("openGL_mock")
+    mesh = stage()["mesh"]
+    U = [np.zeros((14, 3)), np.tile([0.0, 0.0, 0.5], (14, 1)), np.tile([1.0, 0.0, 0.0], (14, 1))]
+    mesh["vertex_attributes"] = {f"displacement_{2 * k}": u for k, u in enumerate(U)}
+    v = viewer.Viewer(polyscope, imgui)
+    v.set_stage("sim", {"mesh": mesh}, {"time": [0.0, 0.02, 0.04]})
+    s = v.stages[0]
+    assert s["frames"]["steps"] == [0, 2, 4]
+    assert [a["label"] for a in s["attributes"]] == ["tetrahedron quality"]  # no frame
+    moved = []
+    for item in v._items(s):
+        for layer in item["layers"]:
+            update = next(getattr(layer, u) for u in ("update_vertex_positions",
+                                                      "update_node_positions",
+                                                      "update_point_positions")
+                          if hasattr(layer, u))
+
+            def spy(P, update=update, layer=layer):
+                moved.append((layer, np.array(P)))
+                update(P)
+            for u in ("update_vertex_positions", "update_node_positions",
+                      "update_point_positions"):
+                if hasattr(layer, u):
+                    setattr(layer, u, spy)
+    v._frame(s, 0)
+    rest = dict((id(layer), P) for layer, P in moved)
+    moved.clear()
+    v._frame(s, 1)
+    k = v.transform[1]
+    assert len(moved) == len(rest) >= 6  # tets, prism faces, sheet, curve and its ends
+    for layer, P in moved:
+        np.testing.assert_allclose(P - rest[id(layer)], np.tile([0, 0, 0.5 * k], (len(P), 1)))
+    s["frames"]["playing"] = True
+    polyscope.set_user_callback(v.panel)
+    polyscope.show(1)
+    assert s["frames"]["frame"] == 2
+    polyscope.clear_user_callback()

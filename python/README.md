@@ -96,6 +96,13 @@ component does; `polyfem_sim` takes its own configuration.
 - In this process, on mesh dictionaries, writing no files: `minimum_separation.separate(options,
   meshes)`, `laplacian_smoothing.smooth(options, meshes)` and `polyfem_sim.simulate(cfg, mesh)`.
   They need a wildmeshing built with `WMTK_WITH_POLYFEM`.
+- As pipeline stages, with that build: components `laplacian_smoothing`, `minimum_separation`
+  and `polyfem_sim`, which call `smooth`, `separate` and `polyfem_sim.simulation(options,
+  meshes)`. A stage has no `output` or `save_vtu`. `polyfem_sim` takes `bodies` (the tags
+  simulated) and the sections `polyfem_sim.run` passes to PolyFEM (`polyfem_sim/spec.json`); its
+  mesh is the simulation mesh at rest, a vertex attribute `displacement_<step>` per step
+  PolyFEM's `output.paraview.skip_frame` keeps (mesh units), which the gui's view plays. A stage's
+  key also holds the polyfem_ops sources.
 - On files, a `.msh` in and a `.msh` out (write a memory result with `wm.save` first):
   `minimum_separation(options)`, `laplacian_smoothing(options)` and `polyfem_sim.run(cfg)`.
   `minimum_separation` solves in this process here too, so it needs `WMTK_WITH_POLYFEM`: each of

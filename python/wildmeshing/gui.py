@@ -15,11 +15,14 @@ stages in run order, each with where its last result came from (memory, cache, s
 <n>_<component> until typed over, and reads the stage before it: its input that stage's mesh, its
 envelope that stage's envelope; the first stage reads the inputs. A tracking stage reads the last
 history recorded: of the last stage with history_output set. A component stage calls one
-component, on options edited as the component's spec types them (wm.spec: the spec the compiled
-module holds, so the fields follow the installed build): checkboxes, numbers, choices, text,
-lists item by item and objects field by field as deep as the spec types them (a list it bounds,
-of scalars -- a pair, a row of a matrix -- on one line; "x" and "+" within its min and max),
-JSON for what it does not type. An option naming labels (its rule's "labels") has a
+component -- the compiled module's, and the PolyFEM operations (laplacian_smoothing,
+minimum_separation, polyfem_sim) when it is built with WMTK_WITH_POLYFEM -- on options edited as
+the component's spec types them (pipeline.spec: the spec the compiled module holds, so the fields
+follow the installed build, or the PolyFEM operation's spec.json): checkboxes, numbers, choices,
+text, lists item by item and objects field by field as deep as the spec types them (a list it
+bounds, of scalars -- a pair, a row of a matrix -- on one line; "x" and "+" within its min and
+max; a value of a rule that lists types, as the type it has), JSON for what it does not type and
+for an object whose rule names no fields. An option naming labels (its rule's "labels") has a
 dropdown of the labels the stage can name (Gui.labels), and a red note when its value names one
 the stage's input does not have; a stage naming its inputs (simwild, tetwild, triwild) shows
 `input` and its per-input lists (their rules' "per_input") as one table, a row per input. Only
@@ -64,7 +67,7 @@ import wildmeshing as wm
 from . import checkpoint
 from . import viewer as _viewer
 from .pipeline import (OPTIONS, Pipeline, StageFailed, StageStopped, _is_ref, _refs, _replace,
-                       check_name, read_input)
+                       check_name, components, read_input, spec)
 
 ZERO = {"bool": False, "int": 0, "float": 0.0, "string": "", "list": [], "object": {}}
 SCALARS = ("bool", "int", "float", "string")
@@ -111,11 +114,27 @@ def _new(rules, pointer):
     # "skip": no fixed default, the component sets the option itself.
     if "default" in rule and rule["default"] != "skip":
         return copy.deepcopy(rule["default"])
-    if rule.get("type") == "object":
+    kind = _kind(rule)
+    if kind == "object":
         return {k: _new(rules, f"{pointer}/{k}") for k in rule.get("required", [])}
-    if rule.get("type") == "list":
+    if kind == "list":
         return [_new(rules, pointer + "/*") for _ in range(rule.get("min", 0))]
-    return ZERO.get(rule.get("type"), "")
+    return ZERO.get(kind, "")
+
+
+HAS_TYPE = {"bool": lambda v: isinstance(v, bool),
+            "int": lambda v: isinstance(v, int) and not isinstance(v, bool),
+            "float": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+            "string": lambda v: isinstance(v, str), "list": lambda v: isinstance(v, list),
+            "object": lambda v: isinstance(v, dict)}
+
+
+def _kind(rule, value=None):
+    """The rule's type; of the types a rule lists, the one `value` has, else the first."""
+    kind = rule.get("type")
+    if not isinstance(kind, list):
+        return kind
+    return next((k for k in kind if value is not None and HAS_TYPE[k](value)), kind[0])
 
 
 def _one_line(rules, pointer):
@@ -274,7 +293,7 @@ class Gui:
         application name aside, which the memory route does not need."""
         if component not in self.specs:
             extra = OPTIONS.get(component, [])  # the options the pipeline reads for C++, for now
-            rules = {r["pointer"]: r for r in wm.spec(component) + extra}
+            rules = {r["pointer"]: r for r in spec(component) + extra}
             root = rules.get("/", {})
             self.specs[component] = (rules,
                                      [k for k in root.get("required", []) if k != "application"],
@@ -972,12 +991,13 @@ class Gui:
         `unset`, for an option the stage need not set: an "x" that removes it."""
         psim = self.psim
         rule = rules.get(pointer, {})
-        kind = rule.get("type")
+        kind = _kind(rule, value)
         if isinstance(value, list) and _one_line(rules, pointer):
             return self._row(name, label, value, pointer, rules, unset)
         if kind == "list" and isinstance(value, list) and "type" in rules.get(pointer + "/*", {}):
             return self._list(name, label, value, pointer, rules, unset)
-        if kind == "object" and isinstance(value, dict) and not _is_ref(value):
+        if kind == "object" and isinstance(value, dict) and not _is_ref(value) \
+                and ("required" in rule or "optional" in rule):  # else any key: JSON, below
             return self._object(name, label, value, pointer, rules, unset)
         if _is_ref(value):
             changed, value = self._ref(name, label, value)
@@ -1330,7 +1350,7 @@ class Gui:
     def _add(self):
         """The row adding a stage: its component, its name (<n>_<component> until typed over)."""
         psim = self.psim
-        kinds = wm.components()
+        kinds = components()
         _, self.new["kind"] = psim.Combo("new stage", self.new["kind"], kinds)
         default = self._default_name(kinds[self.new["kind"]])
         if self.new["name"] in ("", self.new.get("default")):  # not typed over: follow the kind

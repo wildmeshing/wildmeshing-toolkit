@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import wildmeshing as wm
-from wildmeshing import checkpoint
+from wildmeshing import checkpoint, pipeline
 from wildmeshing.pipeline import Pipeline, StageFailed, read_input
 
 COMPONENTS = ["isotropic_remeshing", "qslim", "tracking"]
@@ -329,3 +329,46 @@ def test_a_polyline_txt_input_is_read_as_its_curves(tmp_path):
     assert same(read_input(str(obj)), mesh)
     r = Pipeline([], str(tmp_path), inputs={"rings": "rings.txt"}).run()["rings"]
     assert r["source"] == "file" and same(r["outputs"]["mesh"], mesh)
+
+
+@pytest.mark.parametrize("built_in", [False, True])
+def test_the_polyfem_operations_are_components_only_with_polyfem_built_in(monkeypatch, built_in):
+    """laplacian_smoothing, minimum_separation and polyfem_sim are components while the module runs
+    PolyFEM in process; a stage naming one, on a module built without, says so."""
+    monkeypatch.setattr(pipeline, "_in_process", lambda: built_in)
+    listed = {"laplacian_smoothing", "minimum_separation", "polyfem_sim"} & set(
+        pipeline.components())
+    assert listed == ({"laplacian_smoothing", "minimum_separation", "polyfem_sim"}
+                      if built_in else set())
+    sim = [{"name": "sim", "component": "polyfem_sim",
+            "options": {"input": {"from": "m", "output": "mesh"}, "bodies": ["tag_0"]}}]
+    if built_in:
+        Pipeline(sim, inputs={"m": "m.msh"})
+    else:
+        with pytest.raises(ValueError, match="sim: polyfem_sim needs a wildmeshing built with "
+                                             "WMTK_WITH_POLYFEM"):
+            Pipeline(sim, inputs={"m": "m.msh"})
+
+
+def test_a_polyfem_stage_has_no_file_options_and_its_key_holds_the_ops_sources(monkeypatch):
+    """A stage has no file route: smoothing's and separation's output and save_vtu are not its
+    options, polyfem_sim's output (PolyFEM's own section) is. The polyfem_ops sources are in a
+    PolyFEM stage's key, not in another stage's."""
+    monkeypatch.setattr(pipeline, "_in_process", lambda: True)
+    for component in ["laplacian_smoothing", "minimum_separation"]:
+        rules = pipeline.spec(component)
+        root = next(r for r in rules if r["pointer"] == "/")
+        assert not {"output", "save_vtu"} & set(root["optional"] + root["required"])
+        assert not [r for r in rules if r["pointer"].split("/")[1] in ("output", "save_vtu")]
+    assert "output" in next(r for r in pipeline.spec("polyfem_sim") if r["pointer"] == "/")[
+        "optional"]
+
+    smooth = {"name": "s", "component": "laplacian_smoothing",
+              "options": {"input": {"from": "m", "output": "mesh"}}}
+    remesh = {"name": "r", "component": "isotropic_remeshing",
+              "options": {"input": {"from": "m", "output": "mesh"}}}
+    p = Pipeline([smooth, remesh], inputs={"m": "m.msh"})
+    keys = {"m": "input key"}
+    before = p._key(smooth, keys), p._key(remesh, keys)
+    monkeypatch.setattr(pipeline, "_polyfem_ops_hash", "other sources")
+    assert p._key(smooth, keys) != before[0] and p._key(remesh, keys) == before[1]

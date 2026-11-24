@@ -205,6 +205,11 @@ def msh_selections(msh_path: str, mesh_dim: int) -> dict:
     gmsh.finalize()
     return selections
 
+# The boundary-condition lists whose items may name a "selection" instead of an "id".
+_BC_LISTS = ("dirichlet_boundary", "neumann_boundary", "pressure_boundary",
+             "obstacle_displacements")
+
+
 def _resolve_bc_list(bc_list: list, selection_map: dict) -> list:
     """Resolve named surface selections to polyfem ids in a list of BC items.
     Items may carry `"selection": {"region": expr, "filter": expr?}` instead
@@ -268,8 +273,7 @@ def build_polyfem_sim_json(cfg: dict, msh_path: Path, sim_out_dir: Path,
     # `dimension` to all-true at mesh_dim if user omits it.
     raw_bc = dict(cfg.get("boundary_conditions", {}))
     sel_map = id_map["selections"]
-    for key in ("dirichlet_boundary", "neumann_boundary",
-                "pressure_boundary", "obstacle_displacements"):
+    for key in _BC_LISTS:
         if key in raw_bc and isinstance(raw_bc[key], list):
             raw_bc[key] = _resolve_bc_list(raw_bc[key], sel_map)
     for item in raw_bc.get("dirichlet_boundary", []):
@@ -580,6 +584,67 @@ def simulate(cfg: dict, mesh: dict, out_dir=None, step_callback=None,
             for (region, filt), sid in selections.items()))
     resources, attributes = mesh_group_resources(MESH_RESOURCE, group)
     return _core.polyfem_simulate(sim_json, resources, attributes, step_callback)["displacement"]
+
+
+# simulation()'s options that go to PolyFEM as run() passes them, checked by PolyFEM.
+_SECTIONS = ("transformation", "materials", "boundary_conditions", "initial_conditions",
+             "contact", "time", "solver", "space", "output")
+
+
+def simulation(options: dict, meshes: dict) -> tuple:
+    """Simulate the cells of options["bodies"] of the tagged mesh dictionary
+    meshes[options["input"]] in this process (a wildmeshing built with
+    WMTK_WITH_POLYFEM), as a component's memory interface. Options: spec.json; the
+    sections run() passes to PolyFEM are PolyFEM's to check. The mesh is cut to its
+    simulation mesh (simulation_mesh) on the selections the boundary conditions name.
+
+    Returns ({"mesh": the simulation mesh at rest, a vertex attribute
+    "displacement_<step>" for each step kept}, {"steps", "time", "max_displacement"}):
+    the steps PolyFEM's own output keeps (output.paraview.skip_frame), each step's
+    time, and the displacements in mesh units (the transformation's scale undone).
+    Writes no files."""
+    from .. import spec as _spec
+    from .msh_boundary_extractor import simulation_mesh
+    p = _spec.validate(_spec.load_spec("polyfem_sim"),
+                       {k: v for k, v in options.items() if k not in _SECTIONS})
+    cfg = {k: options[k] for k in _SECTIONS if k in options}
+    for key, value in cfg.items():
+        if not isinstance(value, dict):
+            raise ValueError(f"polyfem_sim: {key} must be an object, got {value!r}")
+    moved = sorted(set(cfg.get("transformation", {})) - {"scale", "translation"})
+    if moved:  # a rotation turns the displacements: undone only for a scale
+        raise ValueError(f"polyfem_sim: transformation {moved} is not undone on the "
+                         "displacements; give a scale and a translation only")
+    skip = cfg.get("output", {}).get("paraview", {}).get("skip_frame", 1)
+    if not isinstance(skip, int) or skip < 1:
+        raise ValueError(f"polyfem_sim: output.paraview.skip_frame must be >= 1, got {skip!r}")
+    if p["input"] not in meshes:
+        raise KeyError(f"polyfem_sim: no mesh '{p['input']}' in meshes")
+
+    selections = []
+    for key in _BC_LISTS:
+        for item in cfg.get("boundary_conditions", {}).get(key, []):
+            if isinstance(item, dict) and "selection" in item and item["selection"] not in selections:
+                selections.append(item["selection"])
+    sim = simulation_mesh(meshes[p["input"]], p["bodies"], selections)
+    dim = 3 if "tetrahedron" in sim["cells"] else 2
+    scale = np.broadcast_to(np.asarray(cfg.get("transformation", {}).get("scale", p["scale"]),
+                                       dtype=float), (dim,))
+    frames = {}
+
+    def keep(step, displacement):
+        if step % skip == 0:
+            frames[step] = np.array(displacement, dtype=float) / scale  # -> mesh units
+
+    simulate(dict(cfg, scale=p["scale"]), sim, step_callback=keep)
+    time = deep_merge(SIM_SECTION_DEFAULTS["time"], cfg.get("time", {}))
+    steps = sorted(frames)
+    attributes = dict(sim.get("vertex_attributes") or {})
+    attributes.update({f"displacement_{step}": frames[step] for step in steps})
+    return {"mesh": dict(sim, vertex_attributes=attributes)}, {
+        "steps": steps,
+        "time": [time.get("t0", 0.0) + step * time["dt"] for step in steps],
+        "max_displacement": max((float(np.abs(u).max()) for u in frames.values()), default=0.0)}
 
 
 # ---------------------------------------------------------------------------

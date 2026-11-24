@@ -11,7 +11,7 @@ import pytest
 
 polyscope = pytest.importorskip("polyscope")
 import wildmeshing as wm  # noqa: E402
-from wildmeshing import checkpoint, gui, viewer  # noqa: E402
+from wildmeshing import checkpoint, gui, pipeline, viewer  # noqa: E402
 from wildmeshing.pipeline import Pipeline  # noqa: E402
 
 
@@ -216,6 +216,52 @@ def test_nested_values_follow_the_spec(tmp_path, monkeypatch):
                                         {"tags": "", "quality": 0.0}]
     assert options["sizing_field"] == [{"tags": "box", "length_rel": 0.1, "length": -1.0}]
     assert not clicks
+
+
+def test_the_polyfem_operations_are_stages_drawn_as_their_spec_types_them(tmp_path, monkeypatch):
+    """With PolyFEM built in, "new stage" lists the PolyFEM operations; a selection is a label
+    expression or a region and filter with their dropdowns, as its rule's types allow; a section
+    PolyFEM checks (an object of any keys) is one JSON box."""
+    monkeypatch.setattr(viewer, "OPEN_ALL", True)
+    monkeypatch.setattr(pipeline, "_in_process", lambda: True)
+    box(tmp_path)
+    b = gui.Gui(Pipeline([], str(tmp_path)))
+    b.add_input("box", "box.obj")
+    b.add_stage("mesh", "simwild")
+    b.add_stage("smooth", "laplacian_smoothing")
+    b.add_stage("sim", "polyfem_sim")
+    assert b.stage("smooth")["options"]["input"] == {"from": "mesh", "output": "mesh"}
+    assert b.stage("sim")["options"]["bodies"] == [""]  # min 1
+    rules = b.spec("laplacian_smoothing")[0]
+    assert gui._new(rules, "/interfaces/*") == ""  # the first type it lists
+    b.set_option("smooth", "interfaces", [{"region": "box", "filter": "ambient"}, "box"])
+    b.set_option("sim", "materials", {"box": {"type": "NeoHookean", "E": 1e6}})
+    b.set_option("sim", "input", {"from": "mesh", "output": "mesh"})  # labels known: mesh ran
+    b.pipeline.results["mesh"] = {"key": "k", "report": {}, "outputs": {"mesh": {"cells": {
+        "tetrahedron": {"attributes": {"tags": {"values": [[1, 0]],
+                                                "labels": ["box", "ambient"]}}}}}}}
+
+    drawn, dropdowns, boxes = set(), {}, []
+    value = b._value
+    monkeypatch.setattr(b, "_value", lambda name, label, v, pointer, rules, unset=None: (
+        drawn.add((name, pointer)), value(name, label, v, pointer, rules, unset))[1])
+    json_box = b._json
+    monkeypatch.setattr(b, "_json", lambda key, label, v: (
+        boxes.append(key), json_box(key, label, v))[1])
+    imgui = pytest.importorskip("polyscope.imgui")
+    combo = imgui.Combo
+    monkeypatch.setattr(imgui, "Combo", lambda label, i, items: (
+        dropdowns.__setitem__(label, list(items)), combo(label, i, items))[1])
+    gui.run_window(b, "mock")
+    assert {"laplacian_smoothing", "minimum_separation", "polyfem_sim"} <= set(
+        dropdowns["new stage"])
+    assert drawn >= {("smooth", "/interfaces/*"), ("smooth", "/interfaces/*/region"),
+                     ("smooth", "/interfaces/*/filter"), ("sim", "/materials"),
+                     ("sim", "/bodies/*")}
+    assert ("sim", "/materials/box") not in drawn and any(k.endswith("materials") for k in boxes)
+    for path in ["interfaces/0/region", "interfaces/0/filter", "interfaces/1", "bodies/0"]:
+        found = [k for k in dropdowns if k.startswith("##labels") and path in k]
+        assert found and all(dropdowns[k] == ["box", "ambient"] for k in found), path
 
 
 def test_a_window_error_is_shown_and_the_window_stays(tmp_path, monkeypatch, capsys):

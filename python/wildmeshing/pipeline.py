@@ -24,6 +24,9 @@ An input's key is the sha256 of its file's bytes; a stage's key is the sha256 of
 its options with each option reference resolved and each other reference replaced by (key of S,
 kind, O or K, and for an output the mesh name it is passed under), and the sha256 of the
 installed compiled module -- not the version string, which a hand-copied install leaves stale.
+A component is one of the compiled module's or, when the module runs PolyFEM in this process
+(built with WMTK_WITH_POLYFEM), a PolyFEM operation (POLYFEM: laplacian_smoothing,
+minimum_separation, polyfem_sim), whose key also holds the sha256 of the polyfem_ops sources.
 A stage takes, in order, the result in memory with its key while its `save` stem holds it, a
 checkpoint
 (wildmeshing.checkpoint: the cache entry <cache>/<key>, or the stage's `save` stem) whose record
@@ -42,6 +45,7 @@ import contextlib
 import copy
 import ctypes
 import hashlib
+import importlib
 import json
 import multiprocessing
 import os
@@ -65,6 +69,64 @@ OPTIONS = {"prismatic_mesh": [
      "doc": "The input volume (tag_0), a tag expression. Read by wildmeshing.pipeline for now."},
     {"pointer": "/offset_tags", "type": "string", "labels": "expression", "default": "",
      "doc": "The band (offset), a tag expression. Read by wildmeshing.pipeline for now."}]}
+
+# The PolyFEM operations, components written in Python: {component: (its package in polyfem_ops,
+# the memory interface a stage calls, its options a stage does not have)}. A stage has no file
+# route: `output` names the file one writes, and save_vtu writes PolyFEM's. They are components
+# only while the module runs PolyFEM in this process (built with WMTK_WITH_POLYFEM).
+POLYFEM = {"laplacian_smoothing": ("laplacian_smoothing", "smooth", {"output", "save_vtu"}),
+           "minimum_separation": ("minimum_separation", "separate", {"output", "save_vtu"}),
+           "polyfem_sim": ("polyfem_sim", "simulation", set())}
+POLYFEM_OPS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "polyfem_ops")
+
+
+def _in_process():
+    return hasattr(wildmeshing._core, "polyfem_simulate")
+
+
+def components():
+    """The components a stage may call: the compiled module's, then the PolyFEM operations when
+    it runs PolyFEM in this process."""
+    return wildmeshing.components() + (list(POLYFEM) if _in_process() else [])
+
+
+def spec(component):
+    """The component's option rules: the compiled module's spec, or a PolyFEM operation's
+    spec.json without the options a stage does not have."""
+    if component not in POLYFEM:
+        return wildmeshing.spec(component)
+    package, _, dropped = POLYFEM[component]
+    with open(os.path.join(POLYFEM_OPS, package, "spec.json")) as f:
+        rules = json.load(f)
+    out = []
+    for rule in rules:
+        if rule["pointer"] == "/":
+            rule = dict(rule, optional=[k for k in rule.get("optional", []) if k not in dropped])
+        elif rule["pointer"].split("/")[1] in dropped:
+            continue
+        out.append(rule)
+    return out
+
+
+_polyfem_ops_hash = None
+
+
+def _polyfem_ops_sha256():
+    """The sha256 of the polyfem_ops sources, which turn a PolyFEM stage's options into what
+    PolyFEM runs: part of its key, as the compiled module is."""
+    global _polyfem_ops_hash
+    if _polyfem_ops_hash is None:
+        h = hashlib.sha256()
+        for folder, dirs, files in sorted(os.walk(POLYFEM_OPS)):
+            dirs[:] = sorted(d for d in dirs if d != "__pycache__")
+            for name in sorted(files):
+                if name.endswith((".py", ".json")):
+                    path = os.path.join(folder, name)
+                    h.update(os.path.relpath(path, POLYFEM_OPS).encode() + b"\0")
+                    with open(path, "rb") as f:
+                        h.update(hashlib.sha256(f.read()).digest())
+        _polyfem_ops_hash = h.hexdigest()
+    return _polyfem_ops_hash
 
 
 def _prismatic_input(mesh, input_tags, offset_tags):
@@ -143,6 +205,10 @@ def _invoke(component, options, meshes):
     if component == "prismatic_mesh" and ("input_tags" in options or "offset_tags" in options):
         meshes[options["input"]] = _prismatic_input(
             meshes[options["input"]], options.pop("input_tags", []), options.pop("offset_tags", []))
+    if component in POLYFEM:
+        package, function, _ = POLYFEM[component]
+        module = importlib.import_module(f"{__package__}.polyfem_ops.{package}")
+        return getattr(module, function)(options, meshes)
     return getattr(wildmeshing, component)(options, meshes)
 
 
@@ -281,7 +347,10 @@ class Pipeline:
             check_name(name, names)
             if "component" not in stage:
                 raise ValueError(f"stage {name}: a stage calls a component; a file is an input")
-            if stage["component"] not in wildmeshing.components():
+            if stage["component"] not in components():
+                if stage["component"] in POLYFEM:
+                    raise ValueError(f"stage {name}: {stage['component']} needs a wildmeshing "
+                                     "built with WMTK_WITH_POLYFEM")
                 raise ValueError(f"stage {name}: unknown component {stage['component']}")
             for ref in _refs(stage.get("options", {})):
                 if ref["from"] not in names:
@@ -308,7 +377,7 @@ class Pipeline:
             options = self._resolved(source)
             if ref["option"] in options:
                 return options[ref["option"]]
-            rule = next((r for r in wildmeshing.spec(source["component"])
+            rule = next((r for r in spec(source["component"])
                          if r["pointer"] == "/" + ref["option"]), {})
             if "default" not in rule or rule["default"] == "skip":  # "skip": set at run time
                 raise ValueError(f"stage {stage['name']}: {ref['from']} sets no {ref['option']}"
@@ -324,7 +393,10 @@ class Pipeline:
                 return [keys[r["from"]], "output", r["output"], _mesh_name(r)]
             return [keys[r["from"]], "report", r["report"]]
         options = _replace(self._resolved(stage), hashed)
-        text = json.dumps([stage["component"], options, _module_sha256()], sort_keys=True)
+        parts = [stage["component"], options, _module_sha256()]
+        if stage["component"] in POLYFEM:
+            parts.append(_polyfem_ops_sha256())
+        text = json.dumps(parts, sort_keys=True)
         return hashlib.sha256(text.encode()).hexdigest()
 
     def _call(self, stage, key):

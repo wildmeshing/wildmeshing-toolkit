@@ -19,6 +19,10 @@ slice plane, off at start, cuts the volumes. Every stage is moved and scaled ali
 whole chain fills the unit box around the origin, z up; each mesh is placed about its own centre,
 where its transform gizmo sits.
 
+A simulation (polyfem_sim: vertex attributes displacement_<step>, the report's "time") has its
+frames: a slider moves the stage's layers to a frame's positions, "play" steps through them, one
+per frame drawn.
+
 Attributes are shown on demand: per stage, its mesh's numeric attributes but the tags, one entry
 per column with its range, and one "colour by" choice among them, registered on the stage's layers
 only when chosen. Correspondences are drawn on demand too, as a line from each point to its image,
@@ -30,6 +34,7 @@ wildmeshing.Tracking, and back).
 Needs polyscope (pip install -e ".[viewer]"); the rest of the package does not.
 """
 import os
+import re
 import sys
 import zlib
 
@@ -38,6 +43,7 @@ import numpy as np
 VOLUME_TYPES = ["tetrahedron", "pyramid", "prism", "hexahedron"]
 GROUPS = [("volume tags", VOLUME_TYPES), ("face tags", ["triangle"]), ("edge tags", ["edge"])]
 UNTAGGED = "(untagged)"
+FRAME = re.compile(r"displacement_(\d+)")  # a simulation's frame (polyfem_sim): its step
 
 # Each cell kind's faces, as local vertex indices: triangles and quads.
 CELL_FACES = {
@@ -84,7 +90,8 @@ def _attributes(mesh):
     for kind, attributes, n in sources:
         for name, a in (attributes or {}).items():
             values = _values(a)
-            if name == "tags" or values.dtype.kind not in "biuf" or not n or values.shape[0] != n:
+            if name == "tags" or (kind == "vertex" and FRAME.fullmatch(name)) \
+                    or values.dtype.kind not in "biuf" or not n or values.shape[0] != n:
                 continue
             values = values.reshape(n, -1).astype(float)
             for j in range(values.shape[1]):
@@ -98,6 +105,27 @@ def _attributes(mesh):
                 out.append({"label": f"{kind} {name}" + (f"[{j}]" if values.shape[1] > 1 else ""),
                             "kind": kind, "values": column, "range": value_range, "text": text})
     return out
+
+
+def _frames(mesh, report):
+    """A simulation's frames: the mesh's vertex attributes displacement_<step> by step, each
+    step's time when the report lists one per frame; None without any."""
+    found = sorted(((int(m.group(1)), _values(a))
+                    for name, a in (mesh.get("vertex_attributes") or {}).items()
+                    if (m := FRAME.fullmatch(name))), key=lambda f: f[0])
+    if not found:
+        return None
+    time = (report or {}).get("time")
+    return {"steps": [step for step, _ in found], "U": [u for _, u in found],
+            "time": time if time is not None and len(time) == len(found) else None,
+            "frame": 0, "playing": False}
+
+
+def _move(structure, P):
+    """Put the structure's vertices at P: a surface's or volume's, a curve's nodes, points."""
+    for update in ("update_vertex_positions", "update_node_positions", "update_point_positions"):
+        if hasattr(structure, update):
+            return getattr(structure, update)(P)
 
 
 def _colour_by(targets, attribute):
@@ -318,12 +346,15 @@ def _stage_items(ps, stage, outputs, transform, targets):
             for label in labels:
                 colour = _colour(label)
                 name = f"{stage} {group[:-5]} {label}"
+                used = None  # the mesh's vertices the layers hold, by row: all of them
                 if group == "volume tags":
                     layers = _volume_layers(ps, name, V, mesh, label, colour, targets)
                 else:
                     block = mesh["cells"][kinds[0]]
-                    layers = _rows_layers(ps, name, V, block, _label_rows(block)[label], colour,
-                                          kinds[0], False, targets)
+                    rows = _label_rows(block)[label]
+                    layers = _rows_layers(ps, name, V, block, rows, colour, kinds[0], False,
+                                          targets)
+                    used = np.unique(np.asarray(block["connectivity"], np.int64)[rows])
                 for s in layers:
                     s.set_position(centre)
                 env_layers = []
@@ -340,7 +371,7 @@ def _stage_items(ps, stage, outputs, transform, targets):
                     s.set_position(env_centre)
                 items[group][label] = {
                     "layers": layers, "envelope": env_layers, "show": label != "ambient",
-                    "default": label != "ambient", "env": False}
+                    "default": label != "ambient", "env": False, "used": used}
     # An envelope without labels: one item of its own.
     if envelope and all(not _label_rows(b).keys() - {UNTAGGED} for b in envelope["cells"].values()):
         layers = []
@@ -424,11 +455,15 @@ class Viewer:
             self.transform = _transform([outputs])
         old = self.remove_stage(replace or name)
         targets = []
+        mesh = outputs.get("mesh") or {}
         stage = {"name": name, "shown": shown, "targets": targets, "folder": folder,
                  "items": _stage_items(self.ps, name, outputs, self.transform, targets),
-                 "attributes": _attributes(outputs["mesh"])
-                 if (outputs.get("mesh") or {}).get("cells") else [],
-                 "colour": None, "correspondences": _correspondences(outputs, report, source)}
+                 "attributes": _attributes(mesh) if mesh.get("cells") else [],
+                 "colour": None, "correspondences": _correspondences(outputs, report, source),
+                 "frames": _frames(mesh, report) if mesh.get("cells") else None}
+        if stage["frames"]:
+            stage["rest"] = mesh["V"], _placed(mesh, self.transform)[1]
+            self._frame(stage, 0)
         self.stages.insert(len(self.stages) if old is None else old, stage)
         self.apply()
 
@@ -492,6 +527,20 @@ class Viewer:
             d.update(layers=b["layers"], text=b["text"])
         entry["warnings"], entry["built"] = built["warnings"], True
 
+    def _frame(self, stage, k):
+        """Draw frame k of the stage's simulation: its mesh's vertices moved by that frame's
+        displacements, each layer about the centre it was placed about."""
+        frames = stage["frames"]
+        frames["frame"] = k
+        V, centre = stage["rest"]
+        U = frames["U"][k]
+        D = np.array(V, float)
+        D[:, :U.shape[1]] += U
+        P = _world(D, self.transform) - centre
+        for item in self._items(stage):
+            for s in item["layers"]:
+                _move(s, P if item.get("used") is None else P[item["used"]])
+
     def _show(self, stage, shown):
         stage["shown"] = shown
         if shown:
@@ -506,6 +555,10 @@ class Viewer:
         psim = self.psim
         changed = False
         drawn = set()
+        for stage in self.stages:  # a playing simulation: its next frame, each time drawn
+            frames = stage["frames"]
+            if frames and frames["playing"] and stage["shown"]:
+                self._frame(stage, (frames["frame"] + 1) % len(frames["steps"]))
         for i, stage in enumerate(self.stages):
             folder = stage["folder"]
             if folder is None:
@@ -568,6 +621,17 @@ class Viewer:
                     item["show"] = bool(item["layers"])
                     item["env"] = not item["layers"]
                     changed = True
+            psim.TreePop()
+        frames = stage["frames"]
+        if frames and _node(psim, f"frames##{name}"):
+            c, k = psim.SliderInt(f"frame##{name}", frames["frame"], 0, len(frames["steps"]) - 1)
+            if c:
+                self._frame(stage, k)
+            psim.SameLine()
+            _, frames["playing"] = psim.Checkbox(f"play##{name}", frames["playing"])
+            k = frames["frame"]
+            psim.TextDisabled(f"step {frames['steps'][k]}" + (
+                f", t = {frames['time'][k]:.4g}" if frames["time"] else ""))
             psim.TreePop()
         if stage["attributes"] and _node(psim, f"attributes##{name}"):
             # One choice per stage: polyscope colours a layer by one quantity at a time.
