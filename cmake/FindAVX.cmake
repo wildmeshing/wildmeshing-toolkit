@@ -15,8 +15,8 @@
 # through ccache, whose hash covers the command line and the sources but not the machine, so one
 # built where AVX-512 exists and restored where it does not dies on its first EVEX instruction.
 # This repo therefore builds its dependencies for the compiler's default instruction set, so that
-# a build is valid wherever it is run. recipes/ipc_toolkit.cmake does the same for ipc's own
-# FindSIMD (by a different route, for a reason documented there).
+# a build is valid wherever it is run. recipes/ipc_toolkit.cmake turns ipc's SIMD off, so ipc's
+# own FindSIMD does not run.
 #
 # This file wins because the top-level CMakeLists.txt puts ${CMAKE_SOURCE_DIR}/cmake on
 # CMAKE_MODULE_PATH before any dependency is added, and both ipc-toolkit and Tight-Inclusion
