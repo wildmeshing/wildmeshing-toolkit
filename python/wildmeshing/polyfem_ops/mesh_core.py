@@ -74,6 +74,7 @@ class TaggedMesh:
     """
 
     def __init__(self, msh_path):
+        """Read a physical-groups .msh."""
         gmsh.initialize()
         try:
             gmsh.open(str(msh_path))
@@ -117,7 +118,49 @@ class TaggedMesh:
                                 self.node_tag_to_idx[int(v)] for v in arr[j])
         finally:
             gmsh.finalize()
+        self._index()
 
+    # The order wm.write_mesh numbers a mesh dictionary's cell blocks (wmtk::CellType), so
+    # from_mesh names the groups as the .msh written from the dictionary has them.
+    _CELL_TYPES = ("point", "edge", "triangle", "quad", "tetrahedron", "prism", "pyramid")
+
+    @classmethod
+    def from_mesh(cls, mesh: dict) -> "TaggedMesh":
+        """The TaggedMesh of a tagged mesh dictionary (wm.read_mesh, a pipeline
+        stage's mesh), as of the .msh wm.write_mesh writes from it: node tags
+        1..n, the top-dimensional cells of each tag in it, the groups numbered
+        as write_mesh numbers them. A cell with no tag is in no group."""
+        self = cls.__new__(cls)
+        cell = "tetrahedron" if "tetrahedron" in mesh["cells"] else "triangle"
+        if cell not in mesh["cells"]:
+            raise ValueError("TaggedMesh.from_mesh: the mesh has no tetrahedra or triangles")
+        self.mesh_dim = 3 if cell == "tetrahedron" else 2
+        V = np.asarray(mesh["V"], dtype=np.float64)
+        self.total_n_nodes = len(V)
+        self.node_tag_to_idx = {t: t - 1 for t in range(1, len(V) + 1)}
+        self.coords = V[:, :self.mesh_dim].copy()
+        first = 1 + sum(len(mesh["cells"][c]["attributes"]["tags"]["labels"])
+                        for c in self._CELL_TYPES[:self._CELL_TYPES.index(cell)]
+                        if c in mesh["cells"] and "tags" in mesh["cells"][c].get("attributes", {}))
+        block = mesh["cells"][cell]
+        tags = block.get("attributes", {}).get("tags")
+        labels = list(tags["labels"]) if tags else []
+        self.names = {name: first + j for j, name in enumerate(labels)}
+        member = np.asarray(tags["values"]) != 0 if tags else np.zeros((0, 0), dtype=bool)
+        C = np.asarray(block["connectivity"], dtype=np.int64)
+        self.prim_nodes = {}
+        self.prim_tags = {}
+        # Group by group, as the reader above lists a .msh's elements (which, within a group,
+        # also orders them by tag set).
+        for j, name in enumerate(labels):
+            for c in np.flatnonzero(member[:, j]):
+                key = int(c) + 1
+                self.prim_tags.setdefault(key, set()).add(name)
+                self.prim_nodes.setdefault(key, tuple(int(v) for v in C[c]))
+        self._index()
+        return self
+
+    def _index(self):
         self.prim_tags = {k: frozenset(v) for k, v in self.prim_tags.items()}
         nppf = (4 if self.mesh_dim == 3 else 3) - 1
         self.face_to_prims = defaultdict(list)

@@ -10,6 +10,17 @@ message(STATUS "Third-party: creating target 'polysolve::polysolve'")
 # # TODO: this requires a conflicting version of Eigen. Reenable when Eigen 3.4+ is available.
 # set(POLYSOLVE_WITH_ACCELERATE OFF CACHE BOOL "Enable Apple Accelerate" FORCE)
 
+# TBB first, with WMTK_WITH_POLYFEM. polysolve's default solvers can bring oneTBB 2021.6 in when no
+# TBB::tbb is defined yet (its MKL recipe does, and MKL is a default off Apple silicon);
+# ipc-toolkit later adds its 2022.3.0 as well, and ipc's scalable_ccd fails -Werror=extra-semi on
+# TBB's headers, which reach it as -I rather than -isystem. The same 2022.3.0 headers fail the same
+# way when it is polysolve's recipe that adds them; why the recipe changes -I against -isystem is
+# not known. recipes/onetbb.cmake is ipc-toolkit's own recipe, so the build keeps the one oneTBB,
+# 2022.3.0, it has without polyfem, where polysolve's options add no TBB.
+if(WMTK_WITH_POLYFEM)
+    include(onetbb)
+endif()
+
 include(CPM)
 # polysolve main with polysolve#126 (with /advanced/track_info off, see
 # wmtk/optimization/solver.hpp, a solve skips its info json and timings) and polysolve#131 (a
@@ -18,23 +29,42 @@ include(CPM)
 # less, with the same iterates).
 # Since 1b01e6c (the Eigen 5 fix) main also gained an MPI option that defaults to ON off Windows,
 # hence POLYSOLVE_WITH_MPI OFF below.
+#
+# polyfem (uday/imagesim) pins 621e8fb3, 6 commits before this one: with WMTK_WITH_POLYFEM it
+# builds on this one.
+#
+# wmtk alone solves only small dense systems (DenseNewton with Eigen::LDLT, optimization/solver.hpp),
+# so every sparse solver is off. polyfem's simulations need them (polyfem_sim asks for
+# AccelerateLDLT, PardisoLDLT or CholmodDecomposition): with WMTK_WITH_POLYFEM, polysolve's own
+# defaults, as a polyfem build has them, with their rule for CMake 4: AMGCL's CMakeLists sets a
+# policy CMake 4 removed (CMP0058 OLD), so polysolve and polyfem, as top-level projects, turn it
+# off there.
+if(WMTK_WITH_POLYFEM)
+    set(WMTK_POLYSOLVE_OPTIONS)
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0.0")
+        list(APPEND WMTK_POLYSOLVE_OPTIONS "POLYSOLVE_WITH_AMGCL OFF")
+    endif()
+else()
+    set(WMTK_POLYSOLVE_OPTIONS
+        "POLYSOLVE_WITH_MPI OFF"
+        "POLYSOLVE_WITH_ACCELERATE OFF"
+        "POLYSOLVE_WITH_CHOLMOD OFF"
+        "POLYSOLVE_WITH_UMFPACK OFF"
+        "POLYSOLVE_WITH_SUPERLU OFF"
+        "POLYSOLVE_WITH_SPQR OFF"
+        "POLYSOLVE_WITH_MKL OFF"
+        "POLYSOLVE_WITH_CUSOLVER OFF"
+        "POLYSOLVE_WITH_PARDISO OFF"
+        "POLYSOLVE_WITH_HYPRE OFF"
+        "POLYSOLVE_WITH_AMGCL OFF"
+        "POLYSOLVE_WITH_SPECTRA OFF"
+    )
+endif()
 CPMAddPackage(
     NAME polysolve
     GITHUB_REPOSITORY polyfem/polysolve
     GIT_TAG f0cc343edf19c427655e0462567f518181df165f
-    OPTIONS
-    "POLYSOLVE_WITH_MPI OFF"
-    "POLYSOLVE_WITH_ACCELERATE OFF"
-    "POLYSOLVE_WITH_CHOLMOD OFF"
-    "POLYSOLVE_WITH_UMFPACK OFF"
-    "POLYSOLVE_WITH_SUPERLU OFF"
-    "POLYSOLVE_WITH_SPQR OFF"
-    "POLYSOLVE_WITH_MKL OFF"
-    "POLYSOLVE_WITH_CUSOLVER OFF"
-    "POLYSOLVE_WITH_PARDISO OFF"
-    "POLYSOLVE_WITH_HYPRE OFF"
-    "POLYSOLVE_WITH_AMGCL OFF"
-    "POLYSOLVE_WITH_SPECTRA OFF"
+    OPTIONS ${WMTK_POLYSOLVE_OPTIONS}
 )
 
 set_target_properties(polysolve PROPERTIES FOLDER third_party)
