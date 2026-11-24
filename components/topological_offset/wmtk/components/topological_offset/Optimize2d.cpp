@@ -5673,8 +5673,12 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
     // is another region); they must agree, and there must be one. As in 3D.
     // A protected tag stays with the triangle (protected_tags, Uday 2026-11-20): joining the band,
     // t takes the band's tags -- its triangles' tags without their protected ones, which must
-    // agree -- beside its own protected tags; leaving it, a triangle with protected tags keeps
-    // those alone. As 3D.
+    // agree -- beside its own protected tags; leaving it, its non-band neighbours' tags (across
+    // edges that are not held) without their protected ones beside its own protected tags, which
+    // must then be each such neighbour's tags exactly, so that no edge between two non-band
+    // triangles of different tag sets is left unheld. Without protected tags, the neighbours' one
+    // tag set, as before. Until 2026-11-23 a triangle with protected tags left with those alone.
+    // As 3D, whose measurement motivates the change.
     const auto without_protected = [&](const CellTag& g) {
         const CellTag kept = m_offset_params.protected_kept(g);
         CellTag base;
@@ -5685,11 +5689,6 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
     const auto joined_tag = [&](const size_t fid, CellTag& tag) {
         const int o = label_of(fid) == 2 ? 0 : 2;
         const CellTag own_kept = m_offset_params.protected_kept(m_face_attribute[fid].tags);
-        if (o == 0 && !own_kept.empty()) {
-            tag = own_kept;
-            return true;
-        }
-        const CellTag* found = nullptr;
         if (o == 2) {
             std::optional<CellTag> base;
             for (const size_t v : oriented_tri_vids(fid)) {
@@ -5704,19 +5703,22 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
             tag = *base;
             tag.insert(own_kept.begin(), own_kept.end());
             return true;
-        } else {
-            for (int k = 0; k < 3; ++k) {
-                const Tuple e = tuple_from_edge(fid, size_t(k));
-                if (held_face(e)) continue;
-                const size_t n = e.switch_face(*this)->fid(*this);
-                if (label_of(n) != o) continue;
-                const CellTag& tg = m_face_attribute[n].tags;
-                if (found && *found != tg) return false;
-                found = &tg;
-            }
         }
-        if (!found) return false;
-        tag = *found;
+        std::optional<CellTag> joined;
+        for (int k = 0; k < 3; ++k) {
+            const Tuple e = tuple_from_edge(fid, size_t(k));
+            if (held_face(e)) continue;
+            const size_t n = e.switch_face(*this)->fid(*this);
+            if (label_of(n) != o) continue;
+            const CellTag& tg = m_face_attribute[n].tags;
+            if (!joined) {
+                joined = without_protected(tg);
+                joined->insert(own_kept.begin(), own_kept.end());
+            }
+            if (*joined != tg) return false;
+        }
+        if (!joined) return false;
+        tag = *joined;
         return true;
     };
     // THE REGION TEST (label growth, 2026-11-20), 3D's one dimension down. The objects whose

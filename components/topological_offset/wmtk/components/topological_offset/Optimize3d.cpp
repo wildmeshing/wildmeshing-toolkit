@@ -6742,7 +6742,17 @@ size_t TopoOffsetTetMesh::label_cleanup(const std::string& where, const FlipSide
     // read over every cell at t's corners, which next to a region boundary sees both regions.
     // A protected tag stays with the cell (protected_tags, Uday 2026-11-20): joining the band, t
     // takes the band's tags -- its cells' tags without their protected ones, which must agree --
-    // beside its own protected tags; leaving it, a cell with protected tags keeps those alone.
+    // beside its own protected tags; leaving it, its non-band neighbours' tags (across faces that
+    // are not held) without their protected ones beside its own protected tags, which must then
+    // be each such neighbour's tags exactly, so that no face between two non-band cells of
+    // different tag sets is left unheld. Without protected tags, the neighbours' one tag set, as
+    // before. Until 2026-11-23 a cell with protected tags left with those alone: MEASURED
+    // (double_sphere, tag_0 offset in to 0.1, tag_1 protected, EXPERIMENTAL_label_cleanup
+    // "growth_rules"), at turn 7 two band cells with tag_1 at an edge on the input complex left
+    // as tag_1 alone beside cells of tag_0 alone, outside tag_0's selection by their tags; the
+    // pocket split then made a front face there with its corners on the input complex, read as
+    // the band's inner interface (band_face_on_in_complex()), held with no labels, and its
+    // containment check threw.
     const auto without_protected = [&](const CellTag& g) {
         const CellTag kept = m_offset_params.protected_kept(g);
         CellTag base;
@@ -6753,11 +6763,6 @@ size_t TopoOffsetTetMesh::label_cleanup(const std::string& where, const FlipSide
     const auto joined_tag = [&](const size_t tid, CellTag& tag) {
         const int o = label_of(tid) == 2 ? 0 : 2;
         const CellTag own_kept = m_offset_params.protected_kept(m_tet_attribute[tid].tag);
-        if (o == 0 && !own_kept.empty()) {
-            tag = own_kept;
-            return true;
-        }
-        const CellTag* found = nullptr;
         if (o == 2) {
             std::optional<CellTag> base;
             for (const size_t v : oriented_tet_vids(tid)) {
@@ -6772,19 +6777,22 @@ size_t TopoOffsetTetMesh::label_cleanup(const std::string& where, const FlipSide
             tag = *base;
             tag.insert(own_kept.begin(), own_kept.end());
             return true;
-        } else {
-            for (int k = 0; k < 4; ++k) {
-                const Tuple f = tuple_from_face(tid, k);
-                if (held_face(f)) continue;
-                const size_t n = f.switch_tetrahedron(*this)->tid(*this);
-                if (label_of(n) != o) continue;
-                const CellTag& tg = m_tet_attribute[n].tag;
-                if (found && *found != tg) return false;
-                found = &tg;
-            }
         }
-        if (!found) return false;
-        tag = *found;
+        std::optional<CellTag> joined;
+        for (int k = 0; k < 4; ++k) {
+            const Tuple f = tuple_from_face(tid, k);
+            if (held_face(f)) continue;
+            const size_t n = f.switch_tetrahedron(*this)->tid(*this);
+            if (label_of(n) != o) continue;
+            const CellTag& tg = m_tet_attribute[n].tag;
+            if (!joined) {
+                joined = without_protected(tg);
+                joined->insert(own_kept.begin(), own_kept.end());
+            }
+            if (*joined != tg) return false;
+        }
+        if (!joined) return false;
+        tag = *joined;
         return true;
     };
 
