@@ -107,7 +107,7 @@ std::vector<OutputPoint> Tracking::to_output(
         pts.push_back(
             input_by_vertices()
                 ? by_vertices(m_input, m_map.input_faces(), m_input_face_of, p.vertices, p.bary)
-                : SurfacePoint{p.face, p.bary});
+                : SurfacePoint{p.face, p.bary, p.lo});
     }
     const std::vector<SurfacePoint> mapped = m_map.to_output(std::move(pts), warnings);
     const auto& faces = m_map.output_faces();
@@ -117,6 +117,7 @@ std::vector<OutputPoint> Tracking::to_output(
         const SurfacePoint& p = mapped[i];
         if (p.face >= faces.size() || !alive[p.face]) continue;
         out[i].bary = p.bary;
+        out[i].lo = p.lo;
         if (!output_by_vertices()) {
             out[i].face = p.face;
             continue;
@@ -141,7 +142,7 @@ std::vector<InputPoint> Tracking::to_input(
         if (output_by_vertices()) {
             pts[i] = by_vertices(m_output, faces, m_output_face_of, p.vertices, p.bary);
         } else if (p.face < faces.size() && alive[p.face]) {
-            pts[i] = {p.face, p.bary};
+            pts[i] = {p.face, p.bary, p.lo};
         }
     }
     const std::vector<SurfacePoint> mapped = m_map.to_input(std::move(pts), warnings);
@@ -152,6 +153,7 @@ std::vector<InputPoint> Tracking::to_input(
         const SurfacePoint& p = mapped[i];
         if (p.face >= in_faces.size() || !in_alive[p.face]) continue;
         out[i].bary = p.bary;
+        out[i].lo = p.lo;
         if (!input_by_vertices()) {
             out[i].face = p.face;
             continue;

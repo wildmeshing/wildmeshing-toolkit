@@ -30,7 +30,7 @@ void log_warnings(const char* what, const MapWarnings& w)
 {
     logger().info(
         "{}: {} warning(s) -- not a disk {}, flat triangle {}, inverted {}, merged faces {}, "
-        "unlocated {}, replaced faces {}",
+        "unlocated {}, replaced faces {}, broken curve segments {}, imprecise {}",
         what,
         w.total(),
         w.not_a_disk,
@@ -38,7 +38,9 @@ void log_warnings(const char* what, const MapWarnings& w)
         w.inverted,
         w.merged_faces,
         w.unlocated,
-        w.replaced);
+        w.replaced,
+        w.broken_segments,
+        w.imprecise);
     if (w.total() > 0) logger().warn("{}: the map is not a bijection everywhere", what);
 }
 
@@ -202,6 +204,8 @@ SurfaceMapOptions options_of(const nlohmann::json& json_params)
     if (json_params["collapse_patch"] == "removed_star") {
         options.collapse_patch = CollapsePatch::removed_star;
     }
+    options.certify = json_params["certify"];
+    options.source_accuracy = json_params["source_accuracy"];
     return options;
 }
 
@@ -230,6 +234,38 @@ void map_points(
     size_t lost = 0, total = 0;
     MapWarnings warnings;
     timer.start();
+    // Further terms of points, if given: points_path.tail, a line `row n t...` adds the sum of n
+    // terms (three coordinates each) to the point on line `row` (from 0).
+    std::vector<Eigen::Vector3d> lows;
+    if (std::ifstream tails(points_path + ".tail"); tails) {
+        std::string line;
+        while (std::getline(tails, line)) {
+            std::istringstream ss(line);
+            size_t row = 0, n = 0;
+            if (!(ss >> row >> n)) continue;
+            if (row >= lows.size()) lows.resize(row + 1, Eigen::Vector3d::Zero());
+            for (size_t i = 0; i < n; ++i) {
+                Eigen::Vector3d t;
+                if (ss >> t[0] >> t[1] >> t[2]) lows[row] += t;
+            }
+        }
+    }
+    const auto low = [&](const size_t row) {
+        return row < lows.size() ? lows[row] : Eigen::Vector3d(Eigen::Vector3d::Zero());
+    };
+    // Further terms of the mapped points, in the same format, beside them: a point the doubles
+    // do not tell precisely enough (an ill-conditioned map) has one.
+    std::ofstream out_tails(output_points + ".tail");
+    if (!out_tails) log_and_throw_error("Could not write {}.tail", output_points);
+    out_tails.precision(17);
+    size_t row_out = 0, with_term = 0;
+    const auto write_low = [&](const Eigen::Vector3d& lo) {
+        if ((lo.array() != 0).any()) {
+            out_tails << row_out << " 1 " << lo[0] << " " << lo[1] << " " << lo[2] << "\n";
+            ++with_term;
+        }
+        ++row_out;
+    };
     if (forward) {
         std::vector<InputPoint> pts;
         for (const auto& r : read_points(points_path, n_in)) {
@@ -240,6 +276,7 @@ void map_points(
             } else {
                 p.face = id_of(r[0]);
                 p.bary = Eigen::Vector3d(r[1], r[2], r[3]);
+                p.lo = low(pts.size());
             }
             pts.push_back(p);
         }
@@ -254,6 +291,7 @@ void map_points(
                 out << id_text(p.face) << " ";
             }
             out << p.bary[0] << " " << p.bary[1] << " " << p.bary[2] << "\n";
+            write_low(p.lo);
         }
     } else {
         std::vector<OutputPoint> pts;
@@ -265,6 +303,7 @@ void map_points(
             } else {
                 p.face = id_of(r[0]);
                 p.bary = Eigen::Vector3d(r[1], r[2], r[3]);
+                p.lo = low(pts.size());
             }
             pts.push_back(p);
         }
@@ -279,14 +318,123 @@ void map_points(
                 out << id_text(p.face) << " ";
             }
             out << p.bary[0] << " " << p.bary[1] << " " << p.bary[2] << "\n";
+            write_low(p.lo);
         }
     }
     logger().info(
-        "{} points mapped to the {} in {:.3}s, {} without an image; written to {}",
+        "{} points mapped to the {} in {:.3}s, {} without an image, {} with a further term; "
+        "written to {}",
         total,
         forward ? "output" : "input",
         timer.getElapsedTimeInSec(),
         lost,
+        with_term,
+        output_points);
+    log_warnings("mapping", warnings);
+}
+
+/// Further terms of segment ends (SurfaceSegment::tail), in a file of their own beside the
+/// segments: a line `row end n t...` gives end `end` (0 or 1) of the segment on line `row`
+/// (from 0) n terms of three coordinates each. Segments without a line have none.
+void write_tails(std::ostream& out, const size_t row, const SurfaceSegment& s)
+{
+    if (!s.tail) return;
+    for (int end = 0; end < 2; ++end) {
+        const BaryTail& t = (*s.tail)[end];
+        if (t.empty()) continue;
+        out << row << " " << end << " " << t.size();
+        for (const Eigen::Vector3d& x : t) out << " " << x[0] << " " << x[1] << " " << x[2];
+        out << "\n";
+    }
+}
+
+void read_tails(const std::string& path, const std::vector<SurfaceSegment*>& rows)
+{
+    std::ifstream in(path);
+    if (!in) return;
+    std::string line;
+    for (size_t number = 1; std::getline(in, line); ++number) {
+        std::istringstream ss(line);
+        size_t row = 0, n = 0;
+        int end = 0;
+        if (!(ss >> row >> end >> n)) continue;
+        if (row >= rows.size() || end < 0 || end > 1) {
+            log_and_throw_error("{}:{}: no segment end {} {}", path, number, row, end);
+        }
+        BaryTail t(n);
+        for (Eigen::Vector3d& x : t) {
+            if (!(ss >> x[0] >> x[1] >> x[2])) {
+                log_and_throw_error("{}:{}: expected {} terms", path, number, n);
+            }
+        }
+        SurfaceSegment& s = *rows[row];
+        auto both = s.tail ? *s.tail : std::array<BaryTail, 2>{};
+        both[end] = std::move(t);
+        s.tail = std::make_shared<const std::array<BaryTail, 2>>(std::move(both));
+    }
+}
+
+/// The map_curves operation: curves on the input to the output, or back. Each line of the file is
+/// a segment, `curve face a0 a1 a2 b0 b1 b2`; a curve's segments are in order.
+void map_surface_curves(
+    const history::SurfaceHistory& h,
+    const nlohmann::json& json_params,
+    const std::filesystem::path& root)
+{
+    using wmtk::utils::resolve_path;
+    if (std::string(json_params["output_points"]).empty()) {
+        log_and_throw_error("map_curves: output_points is required");
+    }
+    const std::string output_points = resolve_path(root, json_params["output_points"]).string();
+    const bool forward = json_params["direction"] == "to_output";
+    igl::Timer timer;
+    timer.start();
+    const SurfaceMap map(h, options_of(json_params));
+    logger().info("map built in {:.3}s", timer.getElapsedTimeInSec());
+    std::vector<SurfaceCurve> curves;
+    const std::string points_path = resolve_path(root, json_params["points"]).string();
+    std::vector<std::pair<size_t, size_t>> order; // curve and place of each line
+    for (const auto& r : read_points(points_path, 8)) {
+        const size_t c = size_t(r[0]);
+        if (c >= curves.size()) curves.resize(c + 1);
+        order.emplace_back(c, curves[c].size());
+        curves[c].push_back(
+            {id_of(r[1]), {Eigen::Vector3d(r[2], r[3], r[4]), Eigen::Vector3d(r[5], r[6], r[7])}});
+    }
+    std::vector<SurfaceSegment*> rows;
+    for (const auto& [c, i] : order) rows.push_back(&curves[c][i]);
+    read_tails(points_path + ".tail", rows);
+    timer.start();
+    MapWarnings warnings;
+    const auto mapped =
+        forward ? map.curves_to_output(curves, &warnings) : map.curves_to_input(curves, &warnings);
+    const double time = timer.getElapsedTimeInSec();
+    std::ofstream out(output_points);
+    if (!out) log_and_throw_error("Could not write {}", output_points);
+    out.precision(17);
+    size_t in = 0, total = 0;
+    for (const SurfaceCurve& c : curves) in += c.size();
+    std::ofstream tails(output_points + ".tail");
+    if (!tails) log_and_throw_error("Could not write {}.tail", output_points);
+    tails.precision(17);
+    for (size_t c = 0; c < mapped.size(); ++c) {
+        for (size_t part = 0; part < mapped[c].size(); ++part) {
+            for (const SurfaceSegment& s : mapped[c][part]) {
+                out << c << " " << part << " " << s.face;
+                for (const auto& b : s.bary) out << " " << b[0] << " " << b[1] << " " << b[2];
+                out << "\n";
+                write_tails(tails, total, s);
+                ++total;
+            }
+        }
+    }
+    logger().info(
+        "{} curves mapped to the {} in {:.3}s: {} segments became {}; written to {}",
+        curves.size(),
+        forward ? "output" : "input",
+        time,
+        in,
+        total,
         output_points);
     log_warnings("mapping", warnings);
 }
@@ -604,7 +752,7 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // through Tracking, CurveTracking and VolumeTracking (wm.Tracking, wm.CurveTracking and
         // wm.VolumeTracking in Python).
         const std::string op = json_params["operation"];
-        if (op == "map" || op == "map_volume") {
+        if (op == "map" || op == "map_curves" || op == "map_volume") {
             throw std::runtime_error(
                 "tracking: operation " + op +
                 " reads and writes files of points; on the memory route only info, transfer, "
@@ -661,6 +809,10 @@ void run(nlohmann::json json_params, io::ComponentIO& component_io)
         history_path,
         timer.getElapsedTimeInSec());
 
+    if (json_params["operation"] == "map_curves") {
+        map_surface_curves(h, json_params, root);
+        return;
+    }
     if (json_params["operation"] == "map") {
         map_points(h, json_params, root);
         return;
