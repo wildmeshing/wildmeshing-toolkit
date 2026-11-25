@@ -62,6 +62,7 @@
     },
     {
         "pointer": "/collision_pairs/*/*",
+        "labels": "expression",
         "type": [
             "string",
             "object"
@@ -77,11 +78,13 @@
     },
     {
         "pointer": "/collision_pairs/*/*/region",
+        "labels": "expression",
         "type": "string",
         "doc": "Boolean expression for the region whose boundary is selected."
     },
     {
         "pointer": "/collision_pairs/*/*/filter",
+        "labels": "expression",
         "type": "string",
         "doc": "Boolean expression the outside cell must satisfy (optional; omit to keep the whole boundary)."
     },
@@ -244,6 +247,7 @@
     },
     {
         "pointer": "/protected_regions/*",
+        "labels": "expression",
         "type": [
             "string",
             "object"
@@ -264,6 +268,7 @@
     },
     {
         "pointer": "/ambient_like_tags/*",
+        "labels": "existing",
         "type": "string",
         "doc": "A tag name."
     }

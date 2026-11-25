@@ -5,49 +5,94 @@ file, its stage keys and cache) and wildmeshing.viewer (the view of each stage).
     python -m wildmeshing.gui [<pipeline.json>]
 
 The "pipeline" window lists the inputs first, a table: name (editable; every reference follows a
-rename), file path ("..." for the system's file dialog), "x"; its last row adds one. Then the
+rename), file path ("..." for the system's file dialog; a 2D polyline .txt is read as its
+curves), "move", "x"; its last row adds one, and "+ box", "+ circle" (2D curves) and "+ cube" (a
+surface) write a unit primitive next to the pipeline file and add it. "move" puts a gizmo on the
+input in the view; let go, the placement is written into input_transform of the simwild stages
+that read it, the only option that places an input (a 2D input's 3x3, in its plane). Then the
 stages in run order, each with where its last result came from (memory, cache, save, run),
 "edited" once it or a stage it reads has changed since, or "failed". A new stage is named
 <n>_<component> until typed over, and reads the stage before it: its input that stage's mesh, its
 envelope that stage's envelope; the first stage reads the inputs. A tracking stage reads the last
 history recorded: of the last stage with history_output set. A component stage calls one
-component, on options edited as the component's spec types them (wm.spec: the spec the compiled
-module holds, so the fields follow the installed build): checkboxes, numbers, choices, text,
-lists item by item, JSON for objects. An option naming labels (its rule's "labels") has a
+component -- the compiled module's, and the PolyFEM operations (laplacian_smoothing,
+minimum_separation, polyfem_sim) when it is built with WMTK_WITH_POLYFEM -- on options edited as
+the component's spec types them (pipeline.spec: the spec the compiled module holds, so the fields
+follow the installed build, or the PolyFEM operation's spec.json): checkboxes, numbers, choices,
+text, lists item by item and objects field by field as deep as the spec types them (a list it
+bounds, of scalars -- a pair, a row of a matrix -- on one line; "x" and "+" within its min and
+max; a value of a rule that lists types, as the type it has), JSON for what it does not type and
+for an object whose rule names no fields. An option naming labels (its rule's "labels") has a
 dropdown of the labels the stage can name (Gui.labels), and a red note when its value names one
 the stage's input does not have; a stage naming its inputs (simwild, tetwild, triwild) shows
 `input` and its per-input lists (their rules' "per_input") as one table, a row per input. Only
 the options set are written to the pipeline; "other
 options", folded, lists the others -- a filter, each with its default, its doc as its tooltip,
 "+" to set it; EXPERIMENTAL_ and DEBUG_ ones in a group of their own. "ref" turns a value into a
-reference to an earlier stage's output mesh, report value or option. "run" on a stage runs the
-pipeline through that stage in a background thread -- the stages above it from memory or the
-cache unless they changed; the bindings release the GIL, so the window keeps drawing -- and each
-stage it runs appears in the "view" window, shown alone. The "log" window holds a stage's log,
-live while it runs. Editing is off while a run goes on. "save" writes the pipeline file; its
-paths stay relative to the folder the pipeline was loaded from (the current folder for a new one).
+reference to an earlier stage's output mesh, report value or option. "save checkpoint" on a
+stage writes the result it shows, then and there, to the .msh named beside it (the stage's name
+at first), asking before it overwrites one; the pipeline file is not changed. "run", "log" and
+"remove" sit on a stage's line, folded or not. "run" runs the pipeline through that stage in a background
+thread -- the stages above it from memory or the cache unless they changed; the bindings release
+the GIL, so the window keeps drawing -- and each stage it runs appears in the "view" window,
+shown alone. Each component runs in a process of its own: a crash fails only its stage, and
+"stop" ends the running one, the stages after it not run. The "log" window holds a stage's log,
+live while it runs, each line in its spdlog level's colour (else its ANSI colour); "clear" hides
+the lines so far, "autoscroll" keeps the newest in view; "plot" shows a simwild log's cells,
+cells above target and max relative quality after each operation. Editing is off while a run goes on.
+"save" writes the pipeline file, asking first over a file this window has not read, or one
+changed since it read or wrote it; its paths stay relative to the folder the pipeline was loaded
+from (the current folder for a new one). An exception drawing the window shows as its message,
+and the window stays.
 
 Needs polyscope (pip install -e ".[viewer]").
 """
 import copy
 import functools
+import hashlib
 import json
 import os
 import queue
+import re
 import subprocess
 import sys
 import textwrap
 import threading
+import traceback
+
+import numpy as np
 
 import wildmeshing as wm
 
+from . import checkpoint
 from . import viewer as _viewer
-from .pipeline import OPTIONS, Pipeline, StageFailed, _is_ref, _refs, _replace, check_name
+from .pipeline import (OPTIONS, Pipeline, StageFailed, StageStopped, _is_ref, _refs, _replace,
+                       check_name, components, read_input, spec)
 
 ZERO = {"bool": False, "int": 0, "float": 0.0, "string": "", "list": [], "object": {}}
 SCALARS = ("bool", "int", "float", "string")
 RED = (0.9, 0.3, 0.3, 1.0)
 MARGIN = 10  # between windows, as polyscope's own
+LOG_LINES = 400  # the log window shows the last ones
+# A log line's colour (_colored): its spdlog level's, else its ANSI foreground colour's (the
+# xterm codes), else the theme's text colour.
+LEVELS = {"critical": (1.0, 0.3, 0.3, 1.0), "error": (1.0, 0.42, 0.42, 1.0),
+          "warning": (1.0, 0.85, 0.35, 1.0), "debug": (0.55, 0.55, 0.6, 1.0),
+          "trace": (0.55, 0.55, 0.6, 1.0)}
+SGR = {30: (0.55, 0.55, 0.55, 1.0), 31: (0.95, 0.4, 0.4, 1.0), 32: (0.45, 0.85, 0.5, 1.0),
+       33: (0.95, 0.8, 0.35, 1.0), 34: (0.5, 0.65, 1.0, 1.0), 35: (0.9, 0.5, 0.9, 1.0),
+       36: (0.4, 0.85, 0.9, 1.0), 37: (0.85, 0.85, 0.85, 1.0), 90: (0.55, 0.55, 0.58, 1.0),
+       91: (1.0, 0.45, 0.45, 1.0), 92: (0.5, 0.9, 0.55, 1.0), 93: (1.0, 0.88, 0.4, 1.0),
+       94: (0.55, 0.7, 1.0, 1.0), 95: (1.0, 0.55, 1.0, 1.0), 96: (0.45, 0.9, 1.0, 1.0),
+       97: (1.0, 1.0, 1.0, 1.0)}
+ANSI = re.compile(r"\x1b\[([0-9;]*)m")
+SPDLOG = re.compile(r"^\[[^\]]*\] \[[^\]]*\] \[(\w+)\]")  # [time] [logger] [level]
+# A simwild log's lines the plot reads (_operations), each without its spdlog prefix.
+OPERATION = re.compile(r"^==(splitting|collapsing|swapping|smoothing) *\d*==$")
+ITERATION = re.compile(r"^=+it \w+=+$")
+QUALITY = re.compile(r"^Quality by tag \((\d+) cells, (\d+) above target, max rel = ([^,]+),")
+REFINE = re.compile(r"^>+stuck-refine \(maxE")
+MARKERS = {"splitting": "Up", "collapsing": "Down", "swapping": "Square", "smoothing": "Circle"}
 LEFT = 305  # the width of polyscope's own windows, at ui scale 1
 # The system's file dialog, in a process of its own: tkinter in this one would share macOS's one
 # application object with polyscope's window.
@@ -61,12 +106,116 @@ print(tkinter.filedialog.askopenfilename(parent=root, title="mesh file", initial
 RIGHT = 520  # the right column's width at start: "pipeline" and "view"
 
 
-def _default(rule):
-    """A new value for an option: its spec default, else its type's zero."""
+def _new(rules, pointer):
+    """A new value for the option or item at `pointer`: its spec default; else, one its rule
+    takes: an object with its required fields, a list with its fewest items, each new in turn;
+    else its type's zero."""
+    rule = rules.get(pointer, {})
     # "skip": no fixed default, the component sets the option itself.
     if "default" in rule and rule["default"] != "skip":
         return copy.deepcopy(rule["default"])
-    return ZERO.get(rule.get("type"), "")
+    kind = _kind(rule)
+    if kind == "object":
+        return {k: _new(rules, f"{pointer}/{k}") for k in rule.get("required", [])}
+    if kind == "list":
+        return [_new(rules, pointer + "/*") for _ in range(rule.get("min", 0))]
+    return ZERO.get(kind, "")
+
+
+HAS_TYPE = {"bool": lambda v: isinstance(v, bool),
+            "int": lambda v: isinstance(v, int) and not isinstance(v, bool),
+            "float": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+            "string": lambda v: isinstance(v, str), "list": lambda v: isinstance(v, list),
+            "object": lambda v: isinstance(v, dict)}
+
+
+def _kind(rule, value=None):
+    """The rule's type; of the types a rule lists, the one `value` has, else the first."""
+    kind = rule.get("type")
+    if not isinstance(kind, list):
+        return kind
+    return next((k for k in kind if value is not None and HAS_TYPE[k](value)), kind[0])
+
+
+def _one_line(rules, pointer):
+    """Whether the value at `pointer` is drawn on one line: a list of scalars its rule bounds (a
+    "max": a pair, a row of a matrix)."""
+    rule = rules.get(pointer, {})
+    return rule.get("type") == "list" and "max" in rule \
+        and rules.get(pointer + "/*", {}).get("type") in SCALARS
+
+
+def _colored(raw):
+    """A log line without its ANSI codes, and its colour (LEVELS, SGR; None: the theme's)."""
+    text = ANSI.sub("", raw)
+    level = SPDLOG.match(text)
+    if level:
+        return text, LEVELS.get(level.group(1))
+    colour = None
+    for m in ANSI.finditer(raw):
+        for code in m.group(1).split(";"):
+            if code.isdigit() and int(code) in SGR:
+                colour = SGR[int(code)]
+    return text, colour
+
+
+def _primitive(kind):
+    """The OBJ text of a unit primitive about the origin (image-simulation's scene_setup): "box"
+    a square and "circle" 64 segments, 2D curves; "cube" a 3D surface, its faces out."""
+    if kind == "cube":
+        V = [(x, y, z) for z in (-0.5, 0.5) for y in (-0.5, 0.5) for x in (-0.5, 0.5)]
+        V = [V[i] for i in (0, 1, 3, 2, 4, 5, 7, 6)]
+        F = [(1, 4, 3), (1, 3, 2), (5, 6, 7), (5, 7, 8), (1, 2, 6), (1, 6, 5), (4, 8, 7),
+             (4, 7, 3), (1, 5, 8), (1, 8, 4), (2, 3, 7), (2, 7, 6)]
+        return "".join(f"v {x} {y} {z}\n" for x, y, z in V) + \
+            "".join(f"f {a} {b} {c}\n" for a, b, c in F)
+    if kind == "box":
+        V = [(-0.5, -0.5), (0.5, -0.5), (0.5, 0.5), (-0.5, 0.5)]
+    else:
+        a = np.linspace(0.0, 2.0 * np.pi, 64, endpoint=False)
+        V = list(zip(0.5 * np.cos(a), 0.5 * np.sin(a)))
+    return "".join(f"v {float(x)!r} {float(y)!r} 0\n" for x, y in V) + \
+        "".join(f"l {i + 1} {(i + 1) % len(V) + 1}\n" for i in range(len(V)))
+
+
+def _dim(mesh):
+    """2 for curves alone (simwild's reading: no surface, a curve), else 3."""
+    kinds = {k for k, b in mesh.get("cells", {}).items() if len(b["connectivity"])}
+    return 2 if kinds == {"edge"} else 3
+
+
+XY = np.ix_([0, 1, 3], [0, 1, 3])  # a 2D placement's rows and columns in a 4x4 one
+
+
+def _operations(lines):
+    """The plot's data from a simwild log: each operation (a split, collapse, swap or smoothing
+    pass), in order, as (kind, cells, cells above target, max relative quality) after it -- the
+    first "Quality by tag" line after its header; and the operations each iteration and each
+    stuck-refine came before."""
+    ops, iterations, refines, kind = [], [], [], None
+    for raw in lines:
+        line = SPDLOG.sub("", ANSI.sub("", raw)).strip()
+        quality = QUALITY.match(line)
+        if ITERATION.match(line):
+            iterations.append(len(ops))
+        elif REFINE.match(line):
+            refines.append(len(ops))
+        elif OPERATION.match(line):
+            kind = OPERATION.match(line).group(1)
+        elif kind and quality:
+            ops.append((kind, int(quality[1]), int(quality[2]), float(quality[3])))
+            kind = None
+    return {"ops": ops, "iterations": iterations, "refines": refines}
+
+
+def _stamp(path):
+    """The file at `path` as found now: its real path and the sha256 of its bytes; None without
+    one."""
+    try:
+        with open(path, "rb") as f:
+            return os.path.realpath(path), hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        return None
 
 
 def _parses(text):
@@ -103,7 +252,13 @@ class Gui:
     are the panel's buttons, callable without a window."""
 
     def __init__(self, pipeline, path=None):
+        """`path`: the file `pipeline` was read from, or a new one to save it to."""
         self.pipeline, self.path = pipeline, path or "pipeline.json"
+        pipeline.process = True  # a stage's crash fails only that stage; "stop" ends it
+        # The pipeline file as this window last read or wrote it.
+        self.disk = _stamp(path) if path else None
+        self.error = ""  # the traceback of the last exception drawing the window
+        self.asking = None  # why "save" asks before it overwrites the pipeline file
         self.status = {}  # stage -> its last result's source, "edited" or "failed"
         self.logs = {}  # stage -> its log's path
         self.viewed = {}  # stage -> the key of the result the viewer shows
@@ -111,7 +266,19 @@ class Gui:
         self.thread = None
         self.message = ""
         self.log_stage = None
-        self.log = {"path": None, "size": -1, "text": ""}
+        self.checkpoints = {}  # stage -> the .msh its "save checkpoint" field names
+        # input -> its gizmo's state (place()): "layers" moved with it, "T" their transform as
+        # last set, "S" the view's world from the input's frame, "C" the layers' own placement
+        # about their centre, "dim", "moved" since written
+        self.placing = {}
+        self.unfold_log = False  # "log" clicked: the log window opens on the next frame
+        self.log = {"read": None, "lines": []}  # the shown log as last read: (path, size, start)
+        self.cleared = {}  # log path -> the size it had at "clear": shown from there on
+        self.autoscroll = True
+        self.scrolled = None  # the read the log window last scrolled to the end of
+        self.plotting = False  # the log window shows the plot, not the text
+        self.counts = {"read": None}  # _operations() of the shown log as last read: (path, size)
+        self.refit = False  # the plot fits its axes to the data again: the log grew
         self.new = {"kind": 0, "name": ""}  # the stage being added
         self.new_input = {"name": "", "file": ""}
         self.text = {}  # the JSON text of a field being edited
@@ -126,7 +293,7 @@ class Gui:
         application name aside, which the memory route does not need."""
         if component not in self.specs:
             extra = OPTIONS.get(component, [])  # the options the pipeline reads for C++, for now
-            rules = {r["pointer"]: r for r in wm.spec(component) + extra}
+            rules = {r["pointer"]: r for r in spec(component) + extra}
             root = rules.get("/", {})
             self.specs[component] = (rules,
                                      [k for k in root.get("required", []) if k != "application"],
@@ -196,7 +363,7 @@ class Gui:
         references to what it most likely reads (_chained)."""
         check_name(name, self.names())
         rules, required, _ = self.spec(component)
-        options = {k: _default(rules.get(f"/{k}", {})) for k in required}
+        options = {k: _new(rules, f"/{k}") for k in required}
         options.update(self._chained(component))
         self.pipeline.stages.append({"name": name, "component": component, "options": options})
 
@@ -261,6 +428,32 @@ class Gui:
         del self.stage(name)["options"][key]
         self._edited(name)
 
+    def _stem(self, path):
+        stem = os.path.join(self.pipeline.root, path)
+        return stem[:-len(".msh")] if stem.endswith(".msh") else stem
+
+    def taken(self, path):
+        """Whether save_checkpoint(_, `path`) would overwrite a checkpoint or a mesh."""
+        return any(os.path.exists(self._stem(path) + s) for s in (".msh", ".json"))
+
+    def save_checkpoint(self, name, path, overwrite=False):
+        """Write the stage's result, the one shown, as the checkpoint at `path` -- a .msh
+        relative to the pipeline's folder, and the files wildmeshing.checkpoint writes beside
+        it -- with the record of its cache entry. The pipeline file is not changed. ValueError
+        without a result, or where taken() unless `overwrite`."""
+        result = self.pipeline.results.get(name)
+        if result is None:
+            raise ValueError(f"{name} has no result yet: run it first")
+        if not overwrite and self.taken(path):
+            raise ValueError(f"{path} is already there: not saved")
+        rec = checkpoint.record(os.path.join(self.pipeline.cache, result["key"]))
+        log = None
+        if result["log"] and os.path.exists(result["log"]):
+            with open(result["log"]) as f:
+                log = f.read()
+        checkpoint.save(result["outputs"], self._stem(path), result["report"], log,
+                        key=result["key"], component=rec["component"], options=rec["options"])
+
     def _per_input(self, name):
         """The per-input options the stage sets as lists (not references), in its order."""
         stage = self.stage(name)
@@ -277,7 +470,7 @@ class Gui:
         n = len(options["input"])
         for key in self._per_input(name):
             if len(options[key]) == n:
-                self.set_option(name, key, options[key] + [_default(rules.get(f"/{key}/*", {}))])
+                self.set_option(name, key, options[key] + [_new(rules, f"/{key}/*")])
         self.set_option(name, "input", options["input"] + [{"from": self.above(name)[-1],
                                                             "output": "mesh"}])
 
@@ -288,13 +481,29 @@ class Gui:
             if j < len(options[key]):
                 self.set_option(name, key, options[key][:j] + options[key][j + 1:])
 
-    def save(self, path):
+    def conflict(self, path):
+        """Why writing `path` would overwrite a file this window has not seen as it is now:
+        another file, or the one it last read or wrote, saved since by another window or an
+        editor. None when there is no such file."""
+        found = _stamp(path)
+        if found is None or found == self.disk:
+            return None
+        return "changed on disk since this window read or saved it" \
+            if self.disk is not None and found[0] == self.disk[0] else \
+            "is a file this window has not read"
+
+    def save(self, path, overwrite=False):
+        """Write the pipeline file `path`. Over a file in conflict(), only with `overwrite`:
+        ValueError without, the file left as it is (the window asks first)."""
+        why = None if overwrite else self.conflict(path)
+        if why:
+            raise ValueError(f"{path} {why}: not saved")
         cache = os.path.relpath(self.pipeline.cache, self.pipeline.root)
         with open(path, "w") as f:
             json.dump({"cache": cache, "inputs": self.pipeline.inputs,
                        "stages": self.pipeline.stages}, f, indent=2)
             f.write("\n")
-        self.path = path
+        self.path, self.disk = path, _stamp(path)
 
     def running(self):
         return self.thread is not None and self.thread.is_alive()
@@ -307,6 +516,8 @@ class Gui:
                 self.pipeline.run(until, on_stage=lambda n, r: self.queue.put(("done", n, r)))
             except StageFailed as e:
                 self.queue.put(("failed", e.stage, e.log))
+            except StageStopped as e:
+                self.queue.put(("stopped", e.stage, e.log))
             except Exception as e:  # a bad pipeline (a missing file, a reference to nothing)
                 self.queue.put(("error", None, f"{type(e).__name__}: {e}"))
         self.message = ""
@@ -414,21 +625,87 @@ class Gui:
             elif kind == "failed":
                 self.status[name], self.logs[name] = "failed", value
                 self.log_stage, self.message = name, f"{name} failed: its log is in the log window"
+            elif kind == "stopped":
+                self.status[name] = "stopped"
+                if value:
+                    self.logs[name] = value
+                self.message = f"stopped at {name}"
             else:
                 self.message = value
 
-    def _log_text(self):
-        """The log of the running stage, else of the chosen one, read again when it grows."""
+    def _log_path(self):
         running = self.pipeline.running
-        path = running[1] if running else self.logs.get(self.log_stage)
+        return running[1] if running else self.logs.get(self.log_stage)
+
+    def _counts(self):
+        """_operations() of the shown log, all of it, read again when it grows."""
+        path = self._log_path()
         if not path or not os.path.exists(path):
-            return ""
-        size = os.path.getsize(path)
-        if (path, size) != (self.log["path"], self.log["size"]):
+            return None
+        read = (path, os.path.getsize(path))
+        if read != self.counts["read"]:
             with open(path, errors="replace") as f:
-                lines = f.read().splitlines()
-            self.log = {"path": path, "size": size, "text": "\n".join(lines[-400:])}
-        return self.log["text"]
+                self.counts = {"read": read, **_operations(f.read().splitlines())}
+            self.refit = True
+        return self.counts
+
+    def _plot(self):
+        """The shown log's operations as three plots on one operation axis -- cells, cells
+        above target, max relative quality -- a marker per kind of operation, a line where each
+        iteration starts and where each stuck-refine came; a log axis for a series all above 0
+        that spans a factor of 20 (tools/plot_stage_log.py's rule). Fit to the data again when
+        the log grows."""
+        psim, implot = self.psim, self.implot
+        counts = self._counts()
+        if not counts or not counts["ops"]:
+            psim.TextUnformatted("no simwild operations in this log to plot")
+            return
+        ops = counts["ops"]
+        x = np.arange(len(ops), dtype=float)
+        kinds = np.array([op[0] for op in ops])
+        fit = implot.ImPlotAxisFlags_AutoFit if self.refit else 0
+        self.refit = False
+        lines = {name: np.array(at, dtype=float) - 0.5
+                 for name, at in (("iteration", counts["iterations"]),
+                                  ("stuck-refine", counts["refines"])) if at}
+        if not implot.BeginSubplots("##operations", 3, 1, (-1, -1),
+                                    implot.ImPlotSubplotFlags_LinkAllX):
+            return
+        for j, title in enumerate(("cells", "cells above target", "max relative quality")):
+            ys = np.array([op[j + 1] for op in ops], dtype=float)
+            if not implot.BeginPlot(title):
+                continue
+            implot.SetupAxes("", "", fit, fit)
+            if ys.min() > 0 and ys.max() / ys.min() >= 20:
+                implot.SetupAxisScale(implot.ImAxis_Y1, implot.ImPlotScale_Log10)
+            implot.PlotLine(f"##{title}", x, ys)
+            for kind, marker in MARKERS.items():
+                at = kinds == kind
+                if at.any():
+                    implot.SetNextMarkerStyle(getattr(implot, f"ImPlotMarker_{marker}"))
+                    implot.PlotScatter(kind, x[at], ys[at])
+            for name, xs in lines.items():
+                implot.PlotInfLines(name, xs)
+            implot.EndPlot()
+        implot.EndSubplots()
+
+    def _log_lines(self):
+        """The shown log -- the running stage's, else the chosen one's -- from where "clear" left
+        it: its last LOG_LINES lines, each (text, colour), read again when it grows."""
+        path = self._log_path()
+        if not path or not os.path.exists(path):
+            return []
+        size = os.path.getsize(path)
+        start = self.cleared.get(path, 0)
+        if start > size:  # written again since
+            start = 0
+        if (path, size, start) != self.log["read"]:
+            with open(path, "rb") as f:
+                f.seek(start)
+                text = f.read(size - start).decode(errors="replace")
+            self.log = {"read": (path, size, start),
+                        "lines": [_colored(line) for line in text.splitlines()[-LOG_LINES:]]}
+        return self.log["lines"]
 
     # The window.
 
@@ -487,13 +764,19 @@ class Gui:
     def _label(self, name, label, value, rule):
         """A label option: its text, beside it a dropdown of the labels the stage can name -- one
         chosen replaces an existing label, and joins an expression with |; in red, why the value
-        names one it cannot (label_problem)."""
+        names one it cannot (label_problem). The text and the dropdown, an arrow, share one
+        item's width, as an item of a row (_row) has."""
         psim = self.psim
         labels, _ = self.labels(name)
+        arrow = psim.GetFrameHeight()
+        if labels:
+            psim.PushItemWidth(max(psim.CalcItemWidth() - arrow - psim.GetStyle().ItemSpacing[0],
+                                   arrow))
         changed, value = psim.InputText(label, value)
         if labels:
+            psim.PopItemWidth()
             psim.SameLine()
-            psim.PushItemWidth(110)
+            psim.PushItemWidth(arrow)
             chosen, k = psim.Combo(f"##labels{label}", -1, labels)
             psim.PopItemWidth()
             if chosen:
@@ -542,7 +825,7 @@ class Gui:
                     elif key == "input":
                         psim.TextDisabled("no input")
                     elif psim.SmallButton(f"+##{name}/{key}/{j}"):
-                        item = _default(rules.get(f"/{key}/*", {}))
+                        item = _new(rules, f"/{key}/*")
                         edits.append(lambda key=key, j=j, item=item: self.set_option(
                             name, key, options[key] + [item] * (j + 1 - len(options[key]))))
                 psim.TableSetColumnIndex(len(keys) + 1)
@@ -555,35 +838,150 @@ class Gui:
             edit()
 
     def _list(self, name, label, value, pointer, rules, unset=None):
-        """A list of scalars, an item per row with "x" to remove it; "+" appends a value, "+ ref"
-        a reference to the stage just above. `unset` (an optional option): an "x" on the title
-        line removes the whole option."""
+        """A list its rule types the items of, an item per row, each as its rule types it, with
+        "x" to remove it; "+" appends a new item, "+ ref" (scalar items) a reference to the stage
+        just above; "x" and "+" only while the list stays within its rule's min and max. `unset`
+        (an optional option): an "x" on the title line removes the whole option."""
         psim = self.psim
-        psim.TextUnformatted(label.split("##")[0])
-        self._tooltip(rules.get(pointer, {}))
+        rule, item = rules.get(pointer, {}), rules.get(pointer + "/*", {})
+        if self._title(label, rule, unset):
+            return False, value
+        changed, out = False, list(value)
+        removable = len(value) > rule.get("min", 0)
+        # An item drawn on one line has its "x" after it, one of several lines a line of its own.
+        inline = item.get("type") in SCALARS or _one_line(rules, pointer + "/*")
+        psim.Indent()
+        for j, entry in enumerate(value):
+            if not inline:
+                psim.TextDisabled(str(j))
+                if removable:
+                    psim.SameLine()
+                    if psim.SmallButton(f"x##{label}/remove{j}"):
+                        del out[j]
+                        changed = True
+                        break
+                psim.Indent()
+            # A row and its "x" share one item's width, as a scalar item's does not need.
+            narrowed = inline and removable and item.get("type") not in SCALARS
+            if narrowed:
+                psim.PushItemWidth(psim.CalcItemWidth() - self._button_width("x"))
+            c, out[j] = self._value(name, f"##{label}/{j}", entry, pointer + "/*", rules)
+            if narrowed:
+                psim.PopItemWidth()
+            changed |= c
+            if not inline:
+                psim.Unindent()
+            elif removable:
+                psim.SameLine()
+                if psim.SmallButton(f"x##{label}/remove{j}"):
+                    del out[j]
+                    changed = True
+                    break
+        if len(value) < rule.get("max", float("inf")):
+            if psim.SmallButton(f"+##{label}/append"):
+                out.append(_new(rules, pointer + "/*"))
+                changed = True
+            above = self.above(name)
+            if above and item.get("type") in SCALARS:
+                psim.SameLine()
+                if psim.SmallButton(f"+ ref##{label}/append_ref"):
+                    out.append({"from": above[-1], "output": "mesh"})
+                    changed = True
+        psim.Unindent()
+        return changed, out
+
+    def _button_width(self, text):
+        """A small button's width and the spacing before it."""
+        style = self.psim.GetStyle()
+        return self.psim.CalcTextSize(text)[0] + 2 * style.FramePadding[0] + style.ItemSpacing[0]
+
+    def _title(self, label, rule, unset):
+        """A list's or an object's title line, its doc as its tooltip, and `unset`'s "x" on it;
+        none for an item. Whether "x" was clicked."""
+        psim = self.psim
+        title = label.split("##")[0]
+        if not title:
+            return False
+        psim.TextUnformatted(title)
+        self._tooltip(rule)
+        if unset is None:
+            return False
+        psim.SameLine()
+        if psim.SmallButton(f"x##unset{label}"):
+            unset()
+            return True
+        return False
+
+    def _row(self, name, label, value, pointer, rules, unset=None):
+        """A list of scalars its rule bounds (_one_line): its title, then one item's width holding
+        its items in equal widths and its buttons, "x" removing the last and "+" appending one
+        while within its rule's min and max."""
+        psim = self.psim
+        rule = rules.get(pointer, {})
+        title = label.split("##")[0]
+        if title:
+            psim.TextUnformatted(title)
+            self._tooltip(rule)
+            psim.SameLine()
+        buttons = ["x"] * (len(value) > rule.get("min", 0)) + ["+"] * (len(value) < rule["max"]) \
+            + ["x"] * (unset is not None)
+        spacing = psim.GetStyle().ItemSpacing[0]
+        n = max(len(value), 1)
+        width = max((psim.CalcItemWidth() - sum(map(self._button_width, buttons))
+                     - (n - 1) * spacing) / n, psim.GetFrameHeight())
+        changed, out = False, list(value)
+        for j, entry in enumerate(value):
+            if j:
+                psim.SameLine()
+            psim.PushItemWidth(width)
+            c, out[j] = self._value(name, f"##{label}/{j}", entry, pointer + "/*", rules)
+            psim.PopItemWidth()
+            changed |= c
+        if len(value) > rule.get("min", 0):
+            psim.SameLine()
+            if psim.SmallButton(f"x##{label}/remove"):
+                out.pop()
+                changed = True
+        if len(value) < rule["max"]:
+            if value:
+                psim.SameLine()
+            if psim.SmallButton(f"+##{label}/append"):
+                out.append(_new(rules, pointer + "/*"))
+                changed = True
         if unset is not None:
             psim.SameLine()
             if psim.SmallButton(f"x##unset{label}"):
                 unset()
                 return False, value
-        changed, out = False, list(value)
+        return changed, out
+
+    def _object(self, name, label, value, pointer, rules, unset=None):
+        """An object its rule types: its title, then each field it sets, as that field's rule
+        types it, "x" on an optional one; "+", a dropdown of the fields it does not set, adds one
+        at its new value."""
+        psim = self.psim
+        rule = rules.get(pointer, {})
+        if self._title(label, rule, unset):
+            return False, value
+        required = rule.get("required", [])
+        changed, out, removed = False, dict(value), []
         psim.Indent()
-        for j, item in enumerate(value):
-            c, out[j] = self._value(name, f"##{label}/{j}", item, pointer + "/*", rules)
-            changed |= c
-            psim.SameLine()
-            if psim.SmallButton(f"x##{label}/remove{j}"):
-                del out[j]
-                changed = True
-                break
-        if psim.SmallButton(f"+##{label}/append"):
-            out.append(_default(rules.get(pointer + "/*", {})))
+        for key in value:
+            drop = None if key in required else lambda key=key: removed.append(key)
+            c, v = self._value(name, f"{key}##{label}/{key}", value[key], f"{pointer}/{key}",
+                               rules, drop)
+            if c:
+                out[key], changed = v, True
+        for key in removed:
+            del out[key]
             changed = True
-        above = self.above(name)
-        if above:
-            psim.SameLine()
-            if psim.SmallButton(f"+ ref##{label}/append_ref"):
-                out.append({"from": above[-1], "output": "mesh"})
+        missing = [k for k in required + rule.get("optional", []) if k not in value]
+        if missing:
+            psim.PushItemWidth(110)
+            chosen, k = psim.Combo(f"+##{label}/add", -1, missing)
+            psim.PopItemWidth()
+            if chosen:
+                out[missing[k]] = _new(rules, f"{pointer}/{missing[k]}")
                 changed = True
         psim.Unindent()
         return changed, out
@@ -593,10 +991,14 @@ class Gui:
         `unset`, for an option the stage need not set: an "x" that removes it."""
         psim = self.psim
         rule = rules.get(pointer, {})
-        kind = rule.get("type")
-        if kind == "list" and isinstance(value, list) \
-                and rules.get(pointer + "/*", {}).get("type") in SCALARS:
+        kind = _kind(rule, value)
+        if isinstance(value, list) and _one_line(rules, pointer):
+            return self._row(name, label, value, pointer, rules, unset)
+        if kind == "list" and isinstance(value, list) and "type" in rules.get(pointer + "/*", {}):
             return self._list(name, label, value, pointer, rules, unset)
+        if kind == "object" and isinstance(value, dict) and not _is_ref(value) \
+                and ("required" in rule or "optional" in rule):  # else any key: JSON, below
+            return self._object(name, label, value, pointer, rules, unset)
         if _is_ref(value):
             changed, value = self._ref(name, label, value)
         elif kind == "bool" and isinstance(value, bool):
@@ -613,14 +1015,15 @@ class Gui:
             changed, value = self._label(name, label, value, rule)
         elif kind == "string" and isinstance(value, str):
             changed, value = psim.InputText(label, value)
-        else:  # objects, lists of objects, and values of another type than their rule's
+        else:  # values their rule does not type, or of another type than their rule's
             changed, value = self._json(f"{name}/{label}", label, value)
         self._tooltip(rule)
         above = self.above(name)
         if kind in SCALARS and above and not pointer.endswith("/*"):  # a list item: see _list
             psim.SameLine()
             if psim.SmallButton(f"{'value' if _is_ref(value) else 'ref'}##toggle{label}"):
-                value = _default(rule) if _is_ref(value) else {"from": above[-1], "output": "mesh"}
+                value = _new(rules, pointer) if _is_ref(value) else \
+                    {"from": above[-1], "output": "mesh"}
                 changed = True
         if unset is not None:
             psim.SameLine()
@@ -661,7 +1064,7 @@ class Gui:
             for key in group_keys:
                 rule = rules.get(f"/{key}", {})
                 if psim.SmallButton(f"+##add{name}/{key}"):
-                    self.set_option(name, key, _default(rule))
+                    self.set_option(name, key, _new(rules, f"/{key}"))
                 psim.SameLine()
                 psim.TextUnformatted(key)
                 self._tooltip(rule)
@@ -676,6 +1079,149 @@ class Gui:
             if group:
                 psim.TreePop()
         psim.TreePop()
+
+    def placers(self, name):
+        """The simwild stages that read the input `name`: [(stage, j)], j the index of their
+        `input` entry naming it."""
+        found = []
+        for stage in self.pipeline.stages:
+            entries = stage["options"].get("input") if stage["component"] == "simwild" else None
+            for j, ref in enumerate(entries if isinstance(entries, list) else [entries]):
+                if _is_ref(ref) and ref.get("from") == name and ref.get("output") == "mesh":
+                    found.append((stage["name"], j))
+        return found
+
+    def placement(self, name):
+        """The input's placement, a 4x4: the input_transform its first simwild reader gives it
+        (a 2D one's 3x3 in the x, y and homogeneous rows and columns), else identity."""
+        M = np.eye(4)
+        for stage, j in self.placers(name)[:1]:
+            given = self.stage(stage)["options"].get("input_transform", [])
+            m = given[j] if isinstance(given, list) and j < len(given) else []
+            if len(m) == 3:
+                M[XY] = m
+            elif len(m) == 4:
+                M = np.array(m, dtype=float)
+        return M
+
+    def set_placement(self, name, M, dim):
+        """Write the placement M (4x4) into input_transform of every simwild stage reading the
+        input `name`, at its entry: for a 2D input (`dim`), the 3x3 of M's x, y and homogeneous
+        rows and columns. ValueError where input_transform is a reference."""
+        value = (M[XY] if dim == 2 else M).tolist()
+        for stage, j in self.placers(name):
+            given = self.stage(stage)["options"].get("input_transform", [])
+            if not isinstance(given, list):
+                raise ValueError(f"{stage}: input_transform is a reference: not placed")
+            given = copy.deepcopy(given) + [[] for _ in range(j + 1 - len(given))]
+            given[j] = value
+            self.set_option(stage, "input_transform", given)
+
+    def place(self, name, on=True):
+        """Put a gizmo on the input `name` in the view, the input shown where placement() puts it
+        -- read and shown first when no run has shown it -- or take the gizmo off. Moved and let
+        go, the placement is written (set_placement; _follow()). ValueError when no simwild stage
+        reads the input: only simwild's input_transform places one."""
+        if not on:
+            self.placing.pop(name, None)
+            self.viewer.placing.discard(name)
+            self.viewer.apply()
+            return
+        if not self.placers(name):
+            raise ValueError(f"{name}: no simwild stage reads it, and only simwild's "
+                             "input_transform places an input")
+        result = self.pipeline.results.get(name)
+        path = os.path.join(self.pipeline.root, self.pipeline.inputs[name])
+        mesh = result["outputs"]["mesh"] if result else read_input(path)
+        if not self.viewer.layers(name):
+            self.viewer.set_stage(name, {"mesh": mesh}, {}, folder=self._folder(name))
+            with open(path, "rb") as f:
+                self.viewed[name] = hashlib.sha256(f.read()).hexdigest()
+        stage = next(s for s in self.viewer.stages if s["name"] == name)
+        if not stage["shown"]:
+            self.viewer._show(stage, True)
+        c, k = self.viewer.transform  # world = (x - c) k
+        S = np.diag([k, k, k, 1.0])
+        S[:3, 3] = -k * np.asarray(c)
+        C = np.eye(4)
+        C[:3, 3] = _viewer._placed(mesh, self.viewer.transform)[1]
+        layers = self.viewer.layers(name)
+        T = S @ self.placement(name) @ np.linalg.inv(S) @ C
+        for s in layers:
+            s.set_transform(T)
+        self.placing[name] = {"layers": layers, "T": np.array(layers[0].get_transform()),
+                              "S": S, "C": C, "dim": _dim(mesh), "moved": False}
+        self.viewer.placing.add(name)
+        self.viewer.apply()
+
+    def _follow(self):
+        """Each input being placed: its layers moved as its gizmo moved; once the mouse lets go
+        and no run goes on, the placement written and the input shown as written (a 2D one in
+        its plane). An input shown anew (a run read it again) is placed again; one gone is not."""
+        for name, p in list(self.placing.items()):
+            layers = self.viewer.layers(name)
+            if not layers:
+                del self.placing[name]
+                continue
+            if any(a is not b for a, b in zip(layers, p["layers"])) or \
+                    len(layers) != len(p["layers"]):
+                if not self._try(self.place, name):
+                    self.place(name, False)
+                continue
+            moved = next((T for T in (np.array(s.get_transform()) for s in layers)
+                          if not np.array_equal(T, p["T"])), None)
+            if moved is not None:
+                for s in layers:
+                    s.set_transform(moved)
+                p["T"], p["moved"] = np.array(layers[0].get_transform()), True
+            if p["moved"] and not self.psim.IsMouseDown(0) and not self.running():
+                S, C = p["S"], p["C"]
+                M = np.linalg.inv(S) @ p["T"] @ np.linalg.inv(C) @ S
+                if p["dim"] == 2:  # in its plane
+                    flat = np.eye(4)
+                    flat[XY] = M[XY]
+                    M = flat
+                if not (self._try(self.set_placement, name, M, p["dim"])
+                        and self._try(self.place, name)):  # shown as written
+                    self.place(name, False)
+
+    def add_primitive(self, kind):
+        """Write the unit primitive `kind` (_primitive) as <kind>.obj next to the pipeline file --
+        <kind>_2.obj, ... where that is taken, as a file or a name -- and add it as an input
+        named after it."""
+        n, stem = 1, kind
+        while os.path.exists(os.path.join(self.pipeline.root, f"{stem}.obj")) \
+                or stem in self.names():
+            n += 1
+            stem = f"{kind}_{n}"
+        with open(os.path.join(self.pipeline.root, f"{stem}.obj"), "x") as f:
+            f.write(_primitive(kind))
+        self.add_input(stem, f"{stem}.obj")
+
+    def _write(self, save, path, overwrite):
+        """save(path, overwrite); the message says it saved `path`, or why not."""
+        try:
+            save(path, overwrite)
+            self.message = f"saved {path}"
+        except (OSError, ValueError) as e:
+            self.message = str(e)
+
+    def _overwrite(self, popup, text):
+        """The modal `popup` (OpenPopup opens it) asking to overwrite what `text` names: whether
+        "overwrite" was clicked; "cancel" leaves the message "not saved"."""
+        psim = self.psim
+        yes = False
+        if psim.BeginPopupModal(popup, psim.ImGuiWindowFlags_AlwaysAutoResize):
+            psim.TextUnformatted(text)
+            if psim.Button("overwrite"):
+                yes = True
+                psim.CloseCurrentPopup()
+            psim.SameLine()
+            if psim.Button("cancel"):
+                self.message = "not saved"
+                psim.CloseCurrentPopup()
+            psim.EndPopup()
+        return yes
 
     def _try(self, edit, *args):
         """Apply an edit; one it refuses (ValueError) becomes the message. Whether it applied."""
@@ -711,6 +1257,18 @@ class Gui:
             psim.SameLine()
             psim.TextColored(RED, "missing")
         psim.TableSetColumnIndex(2)
+        readers = self.placers(name)
+        psim.BeginDisabled(not readers)
+        c, on = psim.Checkbox(f"##move{name}", name in self.placing)
+        if c:
+            self._try(self.place, name, on)
+        if psim.IsItemHovered(psim.ImGuiHoveredFlags_AllowWhenDisabled):
+            psim.SetTooltip("Move this input with a gizmo in the view; let go to write the\n"
+                            "placement into input_transform of the simwild stages reading it."
+                            if readers else "No simwild stage reads this input: only simwild's\n"
+                            "input_transform places one.")
+        psim.EndDisabled()
+        psim.TableSetColumnIndex(3)
         if psim.SmallButton(f"x##remove{name}"):
             self._try(self.remove, name)
 
@@ -735,7 +1293,7 @@ class Gui:
         psim.SameLine()
         if psim.SmallButton("...##picknew"):
             self.pick_file("new")
-        psim.TableSetColumnIndex(2)
+        psim.TableSetColumnIndex(3)
         if psim.SmallButton("+##addinput"):
             if self._try(self.add_input, new["name"], new["file"]):
                 self.new_input = {"name": "", "file": ""}
@@ -745,27 +1303,54 @@ class Gui:
         name = stage["name"]
         running = self.pipeline.running
         status = "running" if running and running[0] == name else self.status.get(name, "not run")
-        if not _viewer._node(psim, f"{i + 1}. {name}: {stage['component']} [{status}]"
-                                   f"###stage{name}"):
-            return
-        self._options(stage)
-        if psim.Button(f"run##run{name}"):
+        # The buttons on the stage's line, folded or not; the node takes no clicks under them.
+        psim.SetNextItemAllowOverlap()
+        expanded = _viewer._node(psim, f"{i + 1}. {name}: {stage['component']} [{status}]"
+                                       f"###stage{name}")
+        psim.SameLine()
+        if psim.SmallButton(f"run##run{name}"):
             self.start(name)
         if psim.IsItemHovered():
             psim.SetTooltip("Run this stage. The stages above it run only if they changed; the\n"
                             "others come from memory or the cache. The stages below wait.")
         psim.SameLine()
-        if psim.Button(f"log##log{name}"):
-            self.log_stage = name
+        if psim.SmallButton(f"log##log{name}"):
+            self.log_stage, self.unfold_log = name, True
+        if psim.IsItemHovered():
+            psim.SetTooltip("Show this stage's log in the log window.")
         psim.SameLine()
-        if psim.Button(f"remove##remove{name}"):
-            self._try(self.remove, name)
+        removed = psim.SmallButton(f"remove##remove{name}") and self._try(self.remove, name)
+        if not expanded:
+            return
+        if not removed:
+            self._options(stage)
+            psim.PushItemWidth(max(psim.CalcItemWidth() - self._button_width("save checkpoint"),
+                                   psim.GetFrameHeight()))
+            _, path = psim.InputText(f"##checkpoint{name}",
+                                     self.checkpoints.get(name, f"{name}.msh"))
+            psim.PopItemWidth()
+            self.checkpoints[name] = path
+            save = functools.partial(self.save_checkpoint, name)
+            psim.SameLine()
+            psim.BeginDisabled(name not in self.pipeline.results)
+            if psim.Button(f"save checkpoint##checkpoint{name}"):
+                if self.taken(path):
+                    psim.OpenPopup("overwrite?##checkpoint")
+                else:
+                    self._write(save, path, False)
+            if psim.IsItemHovered(psim.ImGuiHoveredFlags_AllowWhenDisabled):
+                psim.SetTooltip("Write the result this stage shows to this .msh, relative to the\n"
+                                "pipeline file, and beside it its record (.json), its other\n"
+                                "meshes and its log. The pipeline file is not changed.")
+            psim.EndDisabled()
+            if self._overwrite("overwrite?##checkpoint", f"{path} is already there."):
+                self._write(save, path, True)
         psim.TreePop()
 
     def _add(self):
         """The row adding a stage: its component, its name (<n>_<component> until typed over)."""
         psim = self.psim
-        kinds = wm.components()
+        kinds = components()
         _, self.new["kind"] = psim.Combo("new stage", self.new["kind"], kinds)
         default = self._default_name(kinds[self.new["kind"]])
         if self.new["name"] in ("", self.new.get("default")):  # not typed over: follow the kind
@@ -776,12 +1361,26 @@ class Gui:
             self._try(self.add_stage, self.new["name"], kinds[self.new["kind"]])
 
     def panel(self):
-        """Every frame: what the run finished, then the windows. polyscope's own on the left,
+        """Every frame: the windows (_panel). An exception drawing them becomes the message, its
+        traceback on stderr once while it repeats, and the window stays open: ImGui closes what
+        the frame left open."""
+        try:
+            self._panel()
+        except Exception as e:
+            self.message = f"window error: {type(e).__name__}: {e}"
+            text = traceback.format_exc()
+            if text != self.error:
+                self.error = text
+                sys.stderr.write(text)
+
+    def _panel(self):
+        """What the run finished, then the windows. polyscope's own on the left,
         folded at start; on the right "pipeline" and "view" (the stages' panel) below it, which
         takes the height the pipeline leaves; "log" along the bottom between the two columns,
         folded at start and unrolling upwards."""
         psim = self.psim
         self.poll()
+        self._follow()
         busy = self.running()
         _viewer.polyscope_panels(self.ps, psim)
         width, height = psim.GetIO().DisplaySize
@@ -795,15 +1394,22 @@ class Gui:
         psim.Begin("pipeline", True, psim.ImGuiWindowFlags_HorizontalScrollbar)
         _, self.path = psim.InputText("pipeline file", self.path)
         if psim.Button("save"):
-            try:
-                self.save(self.path)
-                self.message = f"saved {self.path}"
-            except OSError as e:
-                self.message = str(e)
+            self.asking = self.conflict(self.path)
+            if self.asking:
+                psim.OpenPopup("overwrite?")
+            else:
+                self._write(self.save, self.path, False)
+        if self._overwrite("overwrite?", f"{self.path} {self.asking}."):
+            self._write(self.save, self.path, True)
         psim.SameLine()
         if psim.Button("run all") and not busy:
             self.start()
         if busy:
+            psim.SameLine()
+            if psim.Button("stop"):
+                self.pipeline.stop()
+            if psim.IsItemHovered():
+                psim.SetTooltip("End the running stage now; the stages after it do not run.")
             psim.SameLine()
             running = self.pipeline.running
             psim.TextUnformatted(f"running {running[0]}" if running else "running")
@@ -811,15 +1417,25 @@ class Gui:
             psim.TextWrapped(self.message)
         psim.Separator()
         psim.BeginDisabled(busy)
-        if psim.BeginTable("inputs", 3):
+        if psim.BeginTable("inputs", 4):
             psim.TableSetupColumn("input name", psim.ImGuiTableColumnFlags_WidthFixed, 90)
             psim.TableSetupColumn("file path", psim.ImGuiTableColumnFlags_WidthStretch)
+            psim.TableSetupColumn("move", psim.ImGuiTableColumnFlags_WidthFixed, 36)
             psim.TableSetupColumn("", psim.ImGuiTableColumnFlags_WidthFixed, 20)
             psim.TableHeadersRow()
             for name, file in list(self.pipeline.inputs.items()):
                 self._input_row(name, file)
             self._new_input_row()
             psim.EndTable()
+        for kind, what in (("box", "a unit square, a 2D curve"), ("circle", "a unit circle, a 2D "
+                           "curve of 64 segments"), ("cube", "a unit cube, a 3D surface")):
+            if psim.SmallButton(f"+ {kind}"):
+                self._try(self.add_primitive, kind)
+            if psim.IsItemHovered():
+                psim.SetTooltip(f"Write {what} about the origin, as {kind}.obj next to the\n"
+                                "pipeline file, and add it as an input; place it with \"move\".")
+            psim.SameLine()
+        psim.NewLine()
         psim.Separator()
         for i, stage in enumerate(list(self.pipeline.stages)):
             self._stage(i, stage)
@@ -845,6 +1461,9 @@ class Gui:
         psim.SetNextWindowSize((span, 0.35 * height), psim.ImGuiCond_Once)
         psim.SetNextWindowSizeConstraints((span, 60), (span, height - 2 * MARGIN))
         psim.SetNextWindowCollapsed(True, psim.ImGuiCond_Once)
+        if self.unfold_log:
+            psim.SetNextWindowCollapsed(False)
+            self.unfold_log = False
         running = self.pipeline.running
         shown = running[0] if running else self.log_stage
         # The title says whose log it is: folded, the title bar is all there is.
@@ -853,11 +1472,37 @@ class Gui:
         if expanded:
             if not shown:
                 psim.TextUnformatted("no log chosen: a stage's \"log\" button")
-            psim.BeginChild("log text")
-            psim.TextUnformatted(self._log_text())
-            if running:
-                psim.SetScrollHereY(1.0)
-            psim.EndChild()
+            if psim.RadioButton("text", not self.plotting):
+                self.plotting = False
+            psim.SameLine()
+            if psim.RadioButton("plot", self.plotting):
+                self.plotting = True
+            if psim.IsItemHovered():
+                psim.SetTooltip("simwild's cells, cells above target and max relative quality\n"
+                                "after each operation.")
+            if self.plotting:
+                self._plot()
+            else:
+                psim.SameLine()
+                path = self._log_path()
+                if psim.Button("clear") and path and os.path.exists(path):
+                    self.cleared[path] = os.path.getsize(path)
+                if psim.IsItemHovered():
+                    psim.SetTooltip("Hide the lines so far; the log file keeps them.")
+                psim.SameLine()
+                _, self.autoscroll = psim.Checkbox("autoscroll", self.autoscroll)
+                if psim.IsItemHovered():
+                    psim.SetTooltip("Keep the newest line in view as the log grows.")
+                psim.BeginChild("log text")
+                for text, colour in self._log_lines():
+                    if colour:
+                        psim.TextColored(colour, text)
+                    else:
+                        psim.TextUnformatted(text)
+                if self.autoscroll and self.log["read"] != self.scrolled:
+                    psim.SetScrollHereY(1.0)
+                self.scrolled = self.log["read"]
+                psim.EndChild()
         psim.End()
 
 
@@ -866,10 +1511,11 @@ def run_window(gui, screenshots=None):
     without one, as a self-test."""
     import polyscope as ps
     import polyscope.imgui as psim
+    import polyscope.implot as implot
 
     mode = _viewer.start(ps, screenshots)
     ps.set_open_imgui_window_for_user_callback(False)  # the GUI places its own windows
-    gui.ps, gui.psim = ps, psim
+    gui.ps, gui.psim, gui.implot = ps, psim, implot
     if gui.viewer is None:
         gui.viewer = _viewer.Viewer(ps, psim)
     ps.set_user_callback(gui.panel)

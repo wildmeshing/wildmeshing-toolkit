@@ -17,13 +17,18 @@ of S as it is; {"from": S, "option": K} passes S's option K -- as S sets it, els
 default -- known before anything runs. A stage refers only to the inputs and the stages above it,
 so the list order is a run order. Names -- of inputs and stages, one set -- are letters, digits,
 '_' and '-', as a tag expression reads a label. Paths are relative to the pipeline file; the
-cache defaults to <pipeline stem>_cache next to it.
+cache defaults to <pipeline stem>_cache next to it. An input file is read by read_input(): a 2D
+polyline .txt as its curves, any other file by wildmeshing.read_mesh.
 
 An input's key is the sha256 of its file's bytes; a stage's key is the sha256 of its component,
 its options with each option reference resolved and each other reference replaced by (key of S,
 kind, O or K, and for an output the mesh name it is passed under), and the sha256 of the
 installed compiled module -- not the version string, which a hand-copied install leaves stale.
-A stage takes, in order, the result in memory with its key, a checkpoint
+A component is one of the compiled module's or, when the module runs PolyFEM in this process
+(built with WMTK_WITH_POLYFEM), a PolyFEM operation (POLYFEM: laplacian_smoothing,
+minimum_separation, polyfem_sim), whose key also holds the sha256 of the polyfem_ops sources.
+A stage takes, in order, the result in memory with its key while its `save` stem holds it, a
+checkpoint
 (wildmeshing.checkpoint: the cache entry <cache>/<key>, or the stage's `save` stem) whose record
 holds its key and whose files still hash as saved, else it runs; the cache entry and the `save`
 stem then hold its checkpoint. A file used for a stage was so written for that stage's key and
@@ -32,13 +37,17 @@ order varies; the cache keeps one valid run.
 
 While a component runs, the process's stdout and stderr -- where the C++ log goes -- are
 redirected into <cache>/<key>.log. A failed stage raises StageFailed, keeps its log, and the
-stages after it do not run.
+stages after it do not run. With `process` set, each component runs in a process of its own, the
+meshes and its result over a pipe: a crash fails only its stage, and stop() ends the running one
+(StageStopped).
 """
 import contextlib
 import copy
 import ctypes
 import hashlib
+import importlib
 import json
+import multiprocessing
 import os
 import re
 import sys
@@ -60,6 +69,64 @@ OPTIONS = {"prismatic_mesh": [
      "doc": "The input volume (tag_0), a tag expression. Read by wildmeshing.pipeline for now."},
     {"pointer": "/offset_tags", "type": "string", "labels": "expression", "default": "",
      "doc": "The band (offset), a tag expression. Read by wildmeshing.pipeline for now."}]}
+
+# The PolyFEM operations, components written in Python: {component: (its package in polyfem_ops,
+# the memory interface a stage calls, its options a stage does not have)}. A stage has no file
+# route: `output` names the file one writes, and save_vtu writes PolyFEM's. They are components
+# only while the module runs PolyFEM in this process (built with WMTK_WITH_POLYFEM).
+POLYFEM = {"laplacian_smoothing": ("laplacian_smoothing", "smooth", {"output", "save_vtu"}),
+           "minimum_separation": ("minimum_separation", "separate", {"output", "save_vtu"}),
+           "polyfem_sim": ("polyfem_sim", "simulation", set())}
+POLYFEM_OPS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "polyfem_ops")
+
+
+def _in_process():
+    return hasattr(wildmeshing._core, "polyfem_simulate")
+
+
+def components():
+    """The components a stage may call: the compiled module's, then the PolyFEM operations when
+    it runs PolyFEM in this process."""
+    return wildmeshing.components() + (list(POLYFEM) if _in_process() else [])
+
+
+def spec(component):
+    """The component's option rules: the compiled module's spec, or a PolyFEM operation's
+    spec.json without the options a stage does not have."""
+    if component not in POLYFEM:
+        return wildmeshing.spec(component)
+    package, _, dropped = POLYFEM[component]
+    with open(os.path.join(POLYFEM_OPS, package, "spec.json")) as f:
+        rules = json.load(f)
+    out = []
+    for rule in rules:
+        if rule["pointer"] == "/":
+            rule = dict(rule, optional=[k for k in rule.get("optional", []) if k not in dropped])
+        elif rule["pointer"].split("/")[1] in dropped:
+            continue
+        out.append(rule)
+    return out
+
+
+_polyfem_ops_hash = None
+
+
+def _polyfem_ops_sha256():
+    """The sha256 of the polyfem_ops sources, which turn a PolyFEM stage's options into what
+    PolyFEM runs: part of its key, as the compiled module is."""
+    global _polyfem_ops_hash
+    if _polyfem_ops_hash is None:
+        h = hashlib.sha256()
+        for folder, dirs, files in sorted(os.walk(POLYFEM_OPS)):
+            dirs[:] = sorted(d for d in dirs if d != "__pycache__")
+            for name in sorted(files):
+                if name.endswith((".py", ".json")):
+                    path = os.path.join(folder, name)
+                    h.update(os.path.relpath(path, POLYFEM_OPS).encode() + b"\0")
+                    with open(path, "rb") as f:
+                        h.update(hashlib.sha256(f.read()).digest())
+        _polyfem_ops_hash = h.hexdigest()
+    return _polyfem_ops_hash
 
 
 def _prismatic_input(mesh, input_tags, offset_tags):
@@ -116,11 +183,47 @@ def _module_sha256():
 
 
 class StageFailed(RuntimeError):
-    """A stage's component raised; `log` is the path of its log."""
+    """A stage's component raised, or its process ended without a result; `log` is the path of
+    its log."""
 
     def __init__(self, stage, log):
         super().__init__(f"stage {stage} failed, log: {log}")
         self.stage, self.log = stage, log
+
+
+class StageStopped(RuntimeError):
+    """The run was stopped (Pipeline.stop) at the stage `stage`; `log` is the path of its log, None
+    when it had not started."""
+
+    def __init__(self, stage, log=None):
+        super().__init__(f"stopped at stage {stage}")
+        self.stage, self.log = stage, log
+
+
+def _invoke(component, options, meshes):
+    """The component on `options` and `meshes`, prismatic_mesh's input rebuilt first (OPTIONS)."""
+    if component == "prismatic_mesh" and ("input_tags" in options or "offset_tags" in options):
+        meshes[options["input"]] = _prismatic_input(
+            meshes[options["input"]], options.pop("input_tags", []), options.pop("offset_tags", []))
+    if component in POLYFEM:
+        package, function, _ = POLYFEM[component]
+        module = importlib.import_module(f"{__package__}.polyfem_ops.{package}")
+        return getattr(module, function)(options, meshes)
+    return getattr(wildmeshing, component)(options, meshes)
+
+
+def _child(component, options, meshes, log, conn):
+    """A stage's process: _invoke, its stdout and stderr into the file `log`; sends ("done",
+    (outputs, report)), or ("error", the exception)."""
+    try:
+        with _captured(log):
+            message = "done", _invoke(component, options, meshes)
+    except Exception as e:
+        message = "error", e
+    try:
+        conn.send(message)
+    except Exception as e:  # a result or an exception that does not pickle
+        conn.send(("error", RuntimeError(f"{type(e).__name__}: {e}")))
 
 
 def _is_ref(value):
@@ -149,6 +252,39 @@ def _replace(value, f):
     if isinstance(value, list):
         return [_replace(v, f) for v in value]
     return value
+
+
+def read_input(path):
+    """An input file as a mesh: a 2D polyline .txt (image-simulation's png_to_polylines: "x y"
+    lines, each "# ring" section one closed loop) as its curves at z = 0, as read_mesh reads an
+    OBJ's 'l' records; any other file through wildmeshing.read_mesh."""
+    if not path.endswith(".txt"):
+        return wildmeshing.read_mesh(path)
+    V, E, start = [], [], 0
+
+    def close():
+        if len(V) - start >= 3:  # a loop: two points would give the one segment twice
+            E.append((len(V) - 1, start))
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("# ring"):
+                close()
+                start = len(V)
+            elif line and not line.startswith("#"):
+                x, y = line.split()[:2]
+                if len(V) > start:
+                    E.append((len(V) - 1, len(V)))
+                V.append((float(x), float(y), 0.0))
+    close()
+    return {"V": np.array(V, dtype=float).reshape(-1, 3), "vertex_attributes": {},
+            "cells": {"edge": {"connectivity": np.array(E, dtype=np.int64).reshape(-1, 2),
+                               "attributes": {}}}}
+
+
+def _holds(stem, key):
+    """Whether the checkpoint <stem> is one saved for `key`, its files as saved."""
+    return (checkpoint.verified(stem) or {}).get("key") == key
 
 
 def _mesh_name(ref):
@@ -198,6 +334,10 @@ class Pipeline:
         self.cache = os.path.join(root, cache or "pipeline_cache")
         self.results = {}
         self.running = None  # (stage, log path) while a component runs, for a live log
+        # Each component in a process of its own: a crash fails only its stage, stop() ends it.
+        self.process = False
+        self.child = None  # that process, while it runs
+        self.stopping = False
         names = set()
         for name in self.inputs:
             check_name(name, names)
@@ -207,7 +347,10 @@ class Pipeline:
             check_name(name, names)
             if "component" not in stage:
                 raise ValueError(f"stage {name}: a stage calls a component; a file is an input")
-            if stage["component"] not in wildmeshing.components():
+            if stage["component"] not in components():
+                if stage["component"] in POLYFEM:
+                    raise ValueError(f"stage {name}: {stage['component']} needs a wildmeshing "
+                                     "built with WMTK_WITH_POLYFEM")
                 raise ValueError(f"stage {name}: unknown component {stage['component']}")
             for ref in _refs(stage.get("options", {})):
                 if ref["from"] not in names:
@@ -234,7 +377,7 @@ class Pipeline:
             options = self._resolved(source)
             if ref["option"] in options:
                 return options[ref["option"]]
-            rule = next((r for r in wildmeshing.spec(source["component"])
+            rule = next((r for r in spec(source["component"])
                          if r["pointer"] == "/" + ref["option"]), {})
             if "default" not in rule or rule["default"] == "skip":  # "skip": set at run time
                 raise ValueError(f"stage {stage['name']}: {ref['from']} sets no {ref['option']}"
@@ -250,7 +393,10 @@ class Pipeline:
                 return [keys[r["from"]], "output", r["output"], _mesh_name(r)]
             return [keys[r["from"]], "report", r["report"]]
         options = _replace(self._resolved(stage), hashed)
-        text = json.dumps([stage["component"], options, _module_sha256()], sort_keys=True)
+        parts = [stage["component"], options, _module_sha256()]
+        if stage["component"] in POLYFEM:
+            parts.append(_polyfem_ops_sha256())
+        text = json.dumps(parts, sort_keys=True)
         return hashlib.sha256(text.encode()).hexdigest()
 
     def _call(self, stage, key):
@@ -282,13 +428,13 @@ class Pipeline:
         log = os.path.join(self.cache, f"{key}.log")
         self.running = stage["name"], log
         try:
-            with _captured(log):
-                if stage["component"] == "prismatic_mesh" and (
-                        "input_tags" in options or "offset_tags" in options):
-                    meshes[options["input"]] = _prismatic_input(
-                        meshes[options["input"]], options.pop("input_tags", []),
-                        options.pop("offset_tags", []))
-                outputs, report = getattr(wildmeshing, stage["component"])(options, meshes)
+            if self.process:
+                outputs, report = self._in_child(stage, options, meshes, log)
+            else:
+                with _captured(log):
+                    outputs, report = _invoke(stage["component"], options, meshes)
+        except StageStopped:
+            raise
         except Exception as e:
             with open(log, "a") as f:  # the error, which the C++ log need not hold
                 f.write(f"\n{type(e).__name__}: {e}\n")
@@ -299,13 +445,51 @@ class Pipeline:
                         component=stage["component"], options=_replace(resolved, shown))
         return outputs, report
 
+    def _in_child(self, stage, options, meshes, log):
+        """_invoke in a process of its own, the meshes and the result over a pipe, as
+        image-simulation's pipeline window ran its stages."""
+        ctx = multiprocessing.get_context("spawn")
+        receive, send = ctx.Pipe(duplex=False)
+        self.child = ctx.Process(target=_child, daemon=True,
+                                 args=(stage["component"], options, meshes, log, send))
+        self.child.start()
+        send.close()
+        message = None
+        try:
+            # Read as it comes: the child cannot end before its result is read.
+            while message is None and (self.child.is_alive() or receive.poll()):
+                if receive.poll(0.1):
+                    message = receive.recv()
+        except EOFError:  # it ended without sending one
+            pass
+        self.child.join()
+        code, self.child = self.child.exitcode, None
+        receive.close()
+        if self.stopping:
+            with open(log, "a") as f:
+                f.write("\nstopped\n")
+            raise StageStopped(stage["name"], log)
+        if message is None:
+            raise RuntimeError(f"its process ended with exit code {code}, without a result")
+        if message[0] == "error":
+            raise message[1]
+        return message[1]
+
+    def stop(self):
+        """Stop the run: the running component's process, when there is one, ends now; else the
+        run stops before its next stage."""
+        self.stopping = True
+        child = self.child
+        if child is not None:
+            child.kill()
+
     def _component(self, stage, key):
         """The result of a component stage: from the first of its cache entry and its save stem
         saved for `key` whose files hash as saved, else from running it; both then hold it."""
         stems = {"cache": os.path.join(self.cache, key)}
         if "save" in stage:
             stems["save"] = os.path.join(self.root, stage["save"])
-        fresh = lambda stem: (checkpoint.verified(stem) or {}).get("key") == key
+        fresh = lambda stem: _holds(stem, key)
         result = None
         for source, stem in stems.items():
             if fresh(stem):
@@ -339,12 +523,14 @@ class Pipeline:
         and stage: source is memory, file, cache, save or run, log the path of the stage's log
         (None for an input). on_stage(name, result) is called after each."""
         keys = {}
+        self.stopping = False
 
-        def done(name, key, fresh):
-            # The result in memory while its key is unchanged, else fresh().
+        def done(name, key, fresh, saved=lambda: True):
+            # The result in memory while its key is unchanged and its save stem holds it (one
+            # set since it was made does not), else fresh().
             old = self.results.get(name)
-            result = {**old, "source": "memory"} if old is not None and old["key"] == key else \
-                fresh()
+            result = {**old, "source": "memory"} \
+                if old is not None and old["key"] == key and saved() else fresh()
             self.results[name] = result
             if on_stage:
                 on_stage(name, result)
@@ -353,12 +539,15 @@ class Pipeline:
             path = os.path.join(self.root, file)
             with open(path, "rb") as f:
                 key = keys[name] = hashlib.sha256(f.read()).hexdigest()
-            done(name, key, lambda: {"outputs": {"mesh": wildmeshing.read_mesh(path)},
+            done(name, key, lambda: {"outputs": {"mesh": read_input(path)},
                                      "report": {}, "key": key, "source": "file", "log": None})
         for stage in self.stages:
             name = stage["name"]
+            if self.stopping:
+                raise StageStopped(name)
             key = keys[name] = self._key(stage, keys)
-            done(name, key, lambda: self._component(stage, key))
+            done(name, key, lambda: self._component(stage, key), lambda: "save" not in stage
+                 or _holds(os.path.join(self.root, stage["save"]), key))
             if name == until:
                 break
         return {name: self.results[name] for name in keys}
