@@ -68,9 +68,9 @@ void write_improved_prismatic_mesh(
                         : c.type == HybridCellType::Pyramid ? paraviewo::CellType::Pyramid
                                                             : paraviewo::CellType::Tetrahedron;
         for (size_t v : c.vertices) element.vertices.push_back(index.at(v));
-        // Gmsh and VTK use opposite wedge cap winding. The public result and
-        // memory/VTU routes use VTK order; the MSH writer expects native Gmsh order.
-        if (!output && path.extension() == ".msh" && c.type == HybridCellType::Prism) {
+        // File VTU uses VTK winding. MeshData/Python and MSH use the same native
+        // Gmsh winding as the construction exporter and the generic mesh I/O.
+        if ((output || path.extension() == ".msh") && c.type == HybridCellType::Prism) {
             std::swap(element.vertices[1], element.vertices[2]);
             std::swap(element.vertices[4], element.vertices[5]);
         }
@@ -100,6 +100,17 @@ void write_improved_prismatic_mesh(
     cell_fields.emplace("offset_tag", std::move(offset));
     cell_fields.emplace("AMIPS_native", std::move(amips));
     cell_fields.emplace("full_mesh_cell_id", std::move(full_ids));
+    if (!mesh.construction_regions.empty()) {
+        VectorXd construction(nc), rod(nc), joint(nc);
+        for (size_t i = 0; i < nc; ++i) {
+            construction[i] = mesh.construction_regions.at(rows[i]);
+            rod[i] = mesh.rod_regions.at(rows[i]);
+            joint[i] = mesh.joint_one_ring.at(rows[i]);
+        }
+        cell_fields.emplace("construction_region", std::move(construction));
+        cell_fields.emplace("rod_region", std::move(rod));
+        cell_fields.emplace("joint_one_ring", std::move(joint));
+    }
     if (!output && !path.parent_path().empty())
         std::filesystem::create_directories(path.parent_path());
     if (!output && path.extension() == ".msh")

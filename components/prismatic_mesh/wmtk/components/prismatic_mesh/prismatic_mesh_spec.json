@@ -12,6 +12,26 @@
             "input_dir",
             "thicknessratio",
             "rod_mode",
+            "rod_edge_based",
+            "rod_position_iterations",
+            "rod_position_weight",
+            "rod_laplace_weight",
+            "rod_position_smoothing_weight",
+            "rod_position_smoothing_iterations",
+            "rod_position_smoothing_geometry_weight",
+            "rod_joint_smoothing_iterations",
+            "rod_joint_smoothing_weight",
+            "rod_joint_geometry_weight",
+            "rod_joint_blend_radius_ratio",
+            "rod_coupled_optimization_rounds",
+            "rod_coupled_optimization_iterations",
+            "rod_coupled_smoothing_weight",
+            "rod_coupled_geometry_weight",
+            "rod_background_remeshing",
+            "rod_background_remeshing_radius",
+            "rod_background_remeshing_target_length",
+            "rod_background_remeshing_passes",
+            "rod_background_remeshing_time_limit",
             "rod_radius",
             "iterations",
             "keep_background_mesh",
@@ -42,6 +62,126 @@
         "type": "bool",
         "default": false,
         "doc": "Build rods from original-correspondence offset regions collapsed to vertex rings. Equalize degrees along each path and map matching transported material slots. Construct adjacent-ring prism layers atomically, swap exterior interfaces when needed, and connect retained background through pyramids. Preserve input volume, shell reconstruction and protected attachment stars; invalid layers retain tets. Requires explicit input labels and correspondence."
+    },
+    {
+        "pointer": "/rod_edge_based",
+        "type": "bool",
+        "default": false,
+        "doc": "Edge-based rod construction from complete source-edge tet links (requires rod_mode), including mixed shell/rod/solid inputs. Separate shared frame cofaces by conforming edge splits, insert midpoint sections and reselect the rod domain. Align ring degrees and fix material mapping before optimizing positions in the tet rod volume, then attempt interface swaps and native prism construction. Input points and refined joint stars stay fixed; failed layers retain tets. Reports include band-volume changes. Classify maximal edges without input-face or solid cofaces as rods. Separate shell-owned link points while retaining shell correspondence. Build and optimize shell cells first, then protect them during rod geometry and reconstruction. Existing vertex-region construction remains the default."
+    },
+    {
+        "pointer": "/rod_position_iterations",
+        "type": "int",
+        "default": 20,
+        "doc": "Edge-based rod mode only. Position-optimization sweeps on the tetrahedral rod volume after degree alignment and fixed ring mapping, before interface swaps and native prism construction. Zero disables these sweeps. Input points and protected joint stars remain fixed; all incident background tets must stay positive."
+    },
+    {
+        "pointer": "/rod_position_weight",
+        "type": "float",
+        "default": 100.0,
+        "doc": "Nonnegative weight of radius and mapped circular-section targets relative to mean tet AMIPS during rod_position_iterations. Every valid prism-cap ring, including transition rings, targets every radial edge k at angle 2*pi*k/degree in its transported frame. Geometry errors are normalized by rod_radius. Zero performs AMIPS-only position optimization."
+    },
+    {
+        "pointer": "/rod_position_smoothing_weight",
+        "type": "float",
+        "default": 0.0,
+        "doc": "Optional surface fairing in the pre-prism rod tet position optimization. Penalizes longitudinal second differences of mapped radial vectors after parallel transport and deviations from regular circular ring spacing. Input centerline, joint offsets, ring mapping and tet connectivity stay fixed. Radius/section fitting and tet AMIPS remain active. Zero preserves the position optimizer without this fairing term."
+    },
+    {
+        "pointer": "/rod_position_smoothing_iterations",
+        "type": "int",
+        "default": 20,
+        "doc": "Extra surface-smoothing sweeps after the existing rod tet position optimization, enabled only when rod_position_smoothing_weight is positive. Mapping and connectivity remain fixed. Neighboring pure-background interior vertices can relax with the rod surface; outer boundary, input and protected joint offsets stay fixed."
+    },
+    {
+        "pointer": "/rod_position_smoothing_geometry_weight",
+        "type": "float",
+        "default": 1000.0,
+        "doc": "Radius/section-plane fitting weight in the optional second rod surface-smoothing pass. The original rod_position_weight and original position pass are preserved. Angular sliding is available to longitudinal/circular fairing while ring mapping stays fixed."
+    },
+    {
+        "pointer": "/rod_laplace_weight",
+        "type": "float",
+        "default": 10.0,
+        "doc": "Edge-based rod mode: Laplace energy of rod vertices outside valid prism-cap rings. Offset-front vertices use surface neighbors and retain a carrier-radius penalty; every edge of every valid ring follows the globally transported material-slot targets. Input and protected joints remain fixed, and all incident tets must stay positive."
+    },
+    {
+        "pointer": "/rod_joint_smoothing_iterations",
+        "type": "int",
+        "default": 0,
+        "doc": "Optional geometry-only optimization of pure-rod branching joint offset stars, after regular rod positions and before background remeshing/native construction. In [0,200]; zero disables. Keep input graph, frame labels and all tet connectivity. Refresh the protected coordinate snapshot only after validating accepted joint moves."
+    },
+    {
+        "pointer": "/rod_joint_smoothing_weight",
+        "type": "float",
+        "default": 20.0,
+        "doc": "Nonnegative surface Laplace energy weight for the optional joint pass, including joint port-ring points. All coupled rod/background tet AMIPS and radius/frame fitting remain active."
+    },
+    {
+        "pointer": "/rod_joint_geometry_weight",
+        "type": "float",
+        "default": 100.0,
+        "doc": "Nonnegative weight of radius-normalized carrier-radius and transported port-frame errors in the optional joint pass. Joint offsets have no cumulative displacement cap; geometry energy and energy-decreasing backtracking govern moves, and all incident tets must stay strictly positive."
+    },
+    {
+        "pointer": "/rod_joint_blend_radius_ratio",
+        "type": "float",
+        "default": 0.0,
+        "doc": "Joint-core capsule-union smooth-min blend width divided by rod radius, in [0,1]. Zero gives the sharp tube union. Only joint-core points use this implicit reference; valid port rings retain their transported frame targets."
+    },
+    {
+        "pointer": "/rod_coupled_optimization_rounds",
+        "type": "int",
+        "default": 0,
+        "doc": "Alternate local background remeshing and a simultaneous rod/joint/background position solve, before native reconstruction. In [0,3]; zero retains the original single background-remeshing stage. Requires rod_edge_based and rod_background_remeshing with background present. Input graph, material mapping, neighborhood outer boundary, and rod tet connectivity stay fixed."
+    },
+    {
+        "pointer": "/rod_coupled_optimization_iterations",
+        "type": "int",
+        "default": 20,
+        "doc": "Joint rod/background position sweeps after each local remeshing round, in [1,200]. All affected tets remain strictly positive and each accepted step decreases combined energy."
+    },
+    {
+        "pointer": "/rod_coupled_smoothing_weight",
+        "type": "float",
+        "default": 10.0,
+        "doc": "Nonnegative shared surface Laplace weight across all rod offset points, including mapped frame rings and joint/tet regions, in each coupled round."
+    },
+    {
+        "pointer": "/rod_coupled_geometry_weight",
+        "type": "float",
+        "default": 100.0,
+        "doc": "Nonnegative radius/frame fitting weight in each coupled round. Geometry targets and material mapping are retained; background points in the full surface-distance neighborhood can adapt to moving rod points."
+    },
+    {
+        "pointer": "/rod_background_remeshing",
+        "type": "bool",
+        "default": false,
+        "doc": "Edge-based rods with background only. After rod position optimization, apply TetWild split/collapse/swap/smoothing to a local pure-background neighborhood, then run rod interface swaps and prism/pyramid construction. Rod cells/vertices and the extracted patch boundary remain fixed. No CDT is used."
+    },
+    {
+        "pointer": "/rod_background_remeshing_radius",
+        "type": "float",
+        "default": 0.0,
+        "doc": "Nonnegative outward distance from the actual rod surface in mesh coordinate units. Zero uses rod_radius. Select background tets with at least one vertex within this distance; fix patch boundary and existing points farther away."
+    },
+    {
+        "pointer": "/rod_background_remeshing_target_length",
+        "type": "float",
+        "default": 0.0,
+        "doc": "Nonnegative TetWild target edge length at the rod surface, graded up to twice this value at the neighborhood boundary. Zero uses rod_radius."
+    },
+    {
+        "pointer": "/rod_background_remeshing_passes",
+        "type": "int",
+        "default": 2,
+        "doc": "Number of local split/collapse/swap/smooth passes, in [1,20], subject to the time limit and a 2000-split budget."
+    },
+    {
+        "pointer": "/rod_background_remeshing_time_limit",
+        "type": "float",
+        "default": 30.0,
+        "doc": "Positive time budget in seconds for rod-local background remeshing. A current operation and final validation can finish beyond the limit; accepted valid work is retained."
     },
     {
         "pointer": "/rod_radius",
@@ -203,7 +343,7 @@
         "pointer": "/quality_improvement",
         "type": "bool",
         "default": false,
-        "doc": "Enable post-build region remeshing and native AMIPS-plus-thickness smoothing. Requires prism_dominant and a positive target thickness; rod frames are not supported. Replaces the separate Jacobian/background quality stages and transition/thickness smoothing. False disables this postprocess; there is no legacy relocation fallback. Nonzero min_tet_volume or relative_tet_volume_floor are rejected: this stage enforces strict positivity of actual cells."
+        "doc": "Enable post-build region remeshing and native AMIPS-plus-thickness smoothing. Requires prism_dominant and a positive target thickness for the shell stage. With rod_mode, reserve rod tets/frames during shell optimization, then run dedicated rod geometry and construction while completed shell cells remain fixed. Replaces the separate Jacobian/background quality stages and transition/thickness smoothing. False disables this postprocess; there is no legacy relocation fallback. Nonzero min_tet_volume or relative_tet_volume_floor are rejected: this stage enforces strict positivity of actual cells."
     },
     {
         "pointer": "/quality_improvement_options",

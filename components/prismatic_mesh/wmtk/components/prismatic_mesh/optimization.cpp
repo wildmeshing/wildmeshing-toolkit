@@ -360,6 +360,10 @@ double smooth_offset_vertex(
 
 void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOptions& options)
 {
+    const bool defer_rod_geometry =
+        input.rod_state && input.rod_state->options.edge_based && has_shell_region(input);
+    if (input.rod_state)
+        input.rod_state->report["shared_construction_rod_geometry_deferred"] = defer_rod_geometry;
     validate_threshold(options.min_tet_volume);
     input.relative_tet_volume_floor = options.relative_tet_volume_floor;
     if (!std::isfinite(options.relative_tet_volume_floor) ||
@@ -470,6 +474,7 @@ void optimize_prismatic_mesh(PrismaticMeshInput& input, const OptimizationOption
         std::sort(offset_vertices.begin(), offset_vertices.end());
         for (size_t v : offset_vertices) {
             if (!active(input, v)) continue;
+            if (defer_rod_geometry && is_rod_offset_vertex(input, v)) continue;
             if (input.vertex_tags[v] != 2 || input.vertex_component_ids[v] < 0) continue;
             if (input.singular_vertex_tags[v] == 1) {
                 ++stats.singular_skipped;

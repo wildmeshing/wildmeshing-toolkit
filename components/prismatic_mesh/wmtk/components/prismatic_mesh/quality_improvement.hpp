@@ -50,16 +50,23 @@ struct ImprovedHybridMesh
     MatrixXd reference_normals;
     std::vector<double> target_heights; // zero where no active reference-height constraint exists
     std::vector<double> target_edge_lengths;
+    std::vector<int> construction_regions, rod_regions, joint_one_ring;
     nlohmann::json report;
 };
 
 // Does not mutate the construction/reference mesh. Preserves material interfaces,
 // retained input geometry, positive actual cells, and the exterior domain. The
-// returned checkpoint minimizes combined AMIPS and thickness energy over valid stages.
+// returned checkpoint minimizes the global maximum native AMIPS over valid stages.
 ImprovedHybridMesh improve_prismatic_mesh_quality(
     const PrismaticMeshInput& input,
     const PrismDominantMesh& hybrid,
     const QualityImprovementOptions& options = {});
+
+ImprovedHybridMesh finalize_staged_mixed_mesh(
+    const PrismaticMeshInput& input,
+    const PrismDominantMesh& hybrid,
+    const ImprovedHybridMesh* shell_stage = nullptr,
+    bool improve_background = false);
 
 void write_improved_prismatic_mesh(
     const ImprovedHybridMesh& mesh,

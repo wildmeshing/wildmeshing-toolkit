@@ -198,7 +198,8 @@ struct ThicknessEnergy
             {"maximum_neighbor_height_jump", max_jump},
             {"neighbor_pairs", pairs.size()},
             {"feature_edges_excluded", feature_edges},
-            {"unreferenced_interface_vertices_fixed", missing},
+            {"unreferenced_interface_vertices", missing},
+            {"unreferenced_interface_vertices_fixed", 0},
             {"point_energy", point_energy.to_double()},
             {"neighbor_energy", pair_energy.to_double()},
             {"target_met", result.target_met}};

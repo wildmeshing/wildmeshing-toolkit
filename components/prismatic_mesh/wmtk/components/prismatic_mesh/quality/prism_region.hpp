@@ -228,7 +228,7 @@ inline void require_link(
 }
 inline Json collapse_prism_column(Mesh& m, Rules& rules, size_t a, size_t b)
 {
-    if (!m.input[a] || !m.input[b] || m.outer[a] || m.outer[b])
+    if (!m.input[a] || !m.input[b] || m.outer[a] || m.outer[b] || m.fixed(a) || m.fixed(b))
         throw std::runtime_error("column_collapse_not_input_edge");
     InputFreedom freedom(m, rules);
     const V delta = m.p[b] - m.p[a];
@@ -254,7 +254,8 @@ inline Json collapse_prism_column(Mesh& m, Rules& rules, size_t a, size_t b)
             throw std::runtime_error("column_collapse_unmatched_offset_child");
     std::set<size_t> patch;
     for (auto [u, v] : mapping) {
-        if (u == v || m.input[u] != m.input[v] || m.outer[u] || mapping.count(v))
+        if (u == v || m.input[u] != m.input[v] || m.outer[u] || m.fixed(u) || m.fixed(v) ||
+            mapping.count(v))
             throw std::runtime_error("column_collapse_bad_pair");
         for (int region : {0, 2, 3})
             require_link(

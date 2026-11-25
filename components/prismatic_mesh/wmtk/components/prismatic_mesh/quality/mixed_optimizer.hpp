@@ -105,7 +105,7 @@ struct InputFreedom
         for (const auto& [k, f] : rules.kept)
             for (size_t v : f.v) faces[v].push_back(f);
         for (size_t v = 0; v < m.p.size(); ++v) {
-            if (m.outer[v]) tangent[v].setZero();
+            if (m.outer[v] || m.fixed(v)) tangent[v].setZero();
             if (!m.input[v]) {
                 if (m.correspondence[v] >= 0 && m.input.at(m.correspondence[v]))
                     children[m.correspondence[v]].push_back(v);
@@ -139,12 +139,10 @@ inline bool mixed_vertex_step(
     const ThicknessEnergy* thickness = nullptr)
 {
     if (m.outer[v] || m.star[v].empty() || freedom.tangent[v].squaredNorm() < .1) return false;
-    if (thickness && thickness->unreferenced_interface(m, v)) return false;
     std::vector<size_t> group{v};
     if (m.input[v])
         for (size_t child : freedom.children[v]) {
             if (m.outer[child]) return false;
-            if (thickness && thickness->unreferenced_interface(m, child)) return false;
             group.push_back(child);
         }
     std::set<size_t> patch;
@@ -309,8 +307,6 @@ inline Json smooth_mixed(
         thickness_smoothing_weight,
         thickness_tolerance,
         thickness_feature_angle);
-    for (size_t v = 0; v < m.p.size(); ++v)
-        if (thickness.unreferenced_interface(m, v)) freedom.tangent[v].setZero();
     const auto before_thickness = thickness.score(m);
     Json history = Json::array();
     size_t total = 0, input_moves = 0, native_moves = 0;
