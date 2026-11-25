@@ -166,6 +166,8 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     // the tolerance, and to the midpoint when the trace leaves the edge.
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
+        cache.split_from = cache.v1_id;
+        cache.split_fraction = Rational(0.5);
     } else if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
         const bool in1 = m_vertex_extra[cache.v1_id].label != 0;
         const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
@@ -177,8 +179,9 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
         const size_t k =
             in1 ? edge_entry(cache.v1_id, cache.v2_id) : edge_entry(cache.v2_id, cache.v1_id);
         if (in1 != in2 && k < m_construction_traced.size() && m_construction_traced[k]) {
-            on_level = in1 ? edge_split_sphere_trace(k, p1, p2, p_new, steps)
-                           : edge_split_sphere_trace(k, p2, p1, p_new, steps);
+            on_level = in1 ? edge_split_sphere_trace(k, p1, p2, p_new, steps, cache.split_fraction)
+                           : edge_split_sphere_trace(k, p2, p1, p_new, steps, cache.split_fraction);
+            if (on_level) cache.split_from = in1 ? cache.v1_id : cache.v2_id;
         }
         m_marching_trace_steps += steps;
         m_marching_trace_steps_max = std::max(m_marching_trace_steps_max, steps);
@@ -186,6 +189,8 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
             ++m_marching_root_splits;
         } else {
             p_new = (p1 + p2) / 2.0;
+            cache.split_from = cache.v1_id;
+            cache.split_fraction = Rational(0.5);
             ++m_marching_midpoint_splits;
         }
     } else {
@@ -269,7 +274,8 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
     const Vector3d& p_in,
     const Vector3d& p_out,
     Vector3d& p_new,
-    size_t& steps) const
+    size_t& steps,
+    Rational& fraction) const
 {
     // Sphere tracing to D = m_construction_distances[k] (entry k's target_distance, or the
     // construction_mode fallback; see the marching), on d the distance to entry k's complex
@@ -292,6 +298,7 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
         ++steps;
         if (std::abs(d - D) <= tol) {
             p_new = p;
+            fraction = Rational(t) / Rational(L);
             return true;
         }
         t += D - d;
@@ -338,20 +345,20 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
 
     const std::vector<Tuple> locs = get_one_ring_tets_for_vertex(t);
 
-    /// check inversion & rounding
-    set_vertex_position(
-        v_id,
-        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2);
-
-    for (const Tuple& tt : locs) {
-        if (is_inverted(tt)) {
-            return false;
-        }
-    }
-
     // vertex attribute
     m_vertex_extra[v_id] = cache.new_v_extra;
-    set_vertex_position(v_id, cache.new_v_pos);
+    // At the double point marching_split_edge_before() computed if it inverts no child, else at
+    // the exact point of the edge it stands for, un-rounded (place_split_vertex_at()): an end
+    // handed on in V_rational can make the double one invert a child. Until 2026-11-25 the split
+    // was refused when the double MIDPOINT inverted a child, whatever point the trace found, and
+    // the march threw.
+    place_split_vertex_at(
+        v_id,
+        cache.split_from,
+        cache.split_from == v1_id ? v2_id : v1_id,
+        cache.split_fraction,
+        locs,
+        &cache.new_v_pos);
     m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
     m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
         m_vertex_attribute[v1_id].on_bbox_faces,

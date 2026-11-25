@@ -1663,10 +1663,12 @@ public:
      * entry k's complex (offset_distance()). From t = 0 the trace evaluates d at the current
      * point and steps forward by D - d, the largest step that cannot cross the level set (d is
      * 1-Lipschitz); it stops when |d - D| <= sphere_trace_target_rel_tol x D and returns true
-     * with p_new there. It returns
-     * false, p_new untouched, as soon as the current point reaches or passes p_out (t >= L: the
-     * level set is not on the edge) or would move behind p_in (d(p_in) already beyond the target);
-     * the caller then places the plain midpoint. Every step taken is longer than the tolerance, so
+     * with p_new there, and in `fraction` the point's parameter t / L along the edge from p_in
+     * (the exact point the march falls back on, place_split_vertex_at()). It returns
+     * false, p_new and `fraction` untouched, as soon as the current point reaches or passes p_out
+     * (t >= L: the level set is not on the edge) or would move behind p_in (d(p_in) already beyond
+     * the target); the caller then places the plain midpoint. Every step taken is longer than the
+     * tolerance, so
      * the trace ends within L / (tol x D) steps; `steps` returns how many it took.
      * No snapping away from the endpoints: a point found arbitrarily close to p_out is used as is.
      * Same as 3D.
@@ -1676,7 +1678,8 @@ public:
         const Vector2d& p_in,
         const Vector2d& p_out,
         Vector2d& p_new,
-        size_t& steps) const;
+        size_t& steps,
+        Rational& fraction) const;
     /// marching_tris() tallies for the construction log: edges placed on the level set / at the
     /// midpoint because the trace left the edge, and the trace steps (total, max). Reset at the
     /// start of marching_tris().
@@ -3613,6 +3616,10 @@ private:
         size_t v2_id;
         Vector2d new_v_pos;
         VertexExtra2d new_v_extra;
+        // Where on the edge: `split_fraction` of the way from `split_from` (an end) to the other
+        // end, exactly; new_v_pos is the double the march computed for it.
+        size_t split_from;
+        Rational split_fraction;
 
         // cache edge attributes
         EdgeSnapshot2d split_eattr;

@@ -129,6 +129,8 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
     // the tolerance, and to the midpoint when the trace leaves the edge.
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
+        cache.split_from = cache.v1_id;
+        cache.split_fraction = Rational(0.5);
     } else if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
         const bool in1 = m_vertex_extra[cache.v1_id].label != 0;
         const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
@@ -140,8 +142,9 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
         const size_t k =
             in1 ? edge_entry(cache.v1_id, cache.v2_id) : edge_entry(cache.v2_id, cache.v1_id);
         if (in1 != in2 && k < m_construction_traced.size() && m_construction_traced[k]) {
-            on_level = in1 ? edge_split_sphere_trace(k, p1, p2, p_new, steps)
-                           : edge_split_sphere_trace(k, p2, p1, p_new, steps);
+            on_level = in1 ? edge_split_sphere_trace(k, p1, p2, p_new, steps, cache.split_fraction)
+                           : edge_split_sphere_trace(k, p2, p1, p_new, steps, cache.split_fraction);
+            if (on_level) cache.split_from = in1 ? cache.v1_id : cache.v2_id;
         }
         m_marching_trace_steps += steps;
         m_marching_trace_steps_max = std::max(m_marching_trace_steps_max, steps);
@@ -149,6 +152,8 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
             ++m_marching_root_splits;
         } else {
             p_new = (p1 + p2) / 2.0;
+            cache.split_from = cache.v1_id;
+            cache.split_fraction = Rational(0.5);
             ++m_marching_midpoint_splits;
         }
     } else {
@@ -211,7 +216,8 @@ bool TopoOffsetTriMesh::edge_split_sphere_trace(
     const Vector2d& p_in,
     const Vector2d& p_out,
     Vector2d& p_new,
-    size_t& steps) const
+    size_t& steps,
+    Rational& fraction) const
 {
     // Sphere tracing to D = m_construction_distances[k] (entry k's target_distance, or the
     // construction_mode fallback; see the marching), on d the distance to entry k's complex
@@ -234,6 +240,7 @@ bool TopoOffsetTriMesh::edge_split_sphere_trace(
         ++steps;
         if (std::abs(d - D) <= tol) {
             p_new = p;
+            fraction = Rational(t) / Rational(L);
             return true;
         }
         t += D - d;
@@ -289,7 +296,17 @@ bool TopoOffsetTriMesh::marching_split_edge_after(const Tuple& t)
     // }
     // size_t v_id = edge_split_get_new_vid(cache.v1_id, cache.v2_id, opp_vids);
     m_vertex_extra[v_id] = cache.new_v_extra;
-    set_vertex_position(v_id, cache.new_v_pos);
+    // At the double point marching_split_edge_before() computed if it inverts no child, else at
+    // the exact point of the edge it stands for, un-rounded (place_split_vertex_at()): an end
+    // handed on in V_rational can make the double one invert a child, which invariants() then
+    // refused and the march threw. As in 3D.
+    place_split_vertex_at(
+        v_id,
+        cache.split_from,
+        cache.split_from == cache.v1_id ? cache.v2_id : cache.v1_id,
+        cache.split_fraction,
+        get_one_ring_tris_for_vertex(t.switch_vertex(*this)),
+        &cache.new_v_pos);
 
     // split edge attributes: (v1, v2) -> (v1, v) + (v, v2), each half carrying the parent's
     // direction, its orientation converted as the engine's split converts it
