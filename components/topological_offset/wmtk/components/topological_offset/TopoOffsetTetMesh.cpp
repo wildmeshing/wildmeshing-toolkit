@@ -575,6 +575,7 @@ void TopoOffsetTetMesh::build_envelopes()
         m_envelope->init(verts, tris, m_envelope_eps);
         init_input_envelopes(verts, tris, sets, m_envelope_eps, /*exact=*/true);
     }
+    if (m_offset_params.star_retreat && !m_has_reference) build_region_sides();
     logger().info(
         "\t[envelope] {} of {} tracked faces held (every region boundary, the input complex's "
         "included), around {}, {} label envelopes, eps {:.6g}, EXACT",
@@ -584,6 +585,121 @@ void TopoOffsetTetMesh::build_envelopes()
                         : std::string("themselves"),
         m_input_envelopes.size(),
         m_envelope_eps);
+}
+
+void TopoOffsetTetMesh::build_region_sides()
+{
+    // See the declaration. Every tracked face with a cell on each side (no front yet: the march
+    // comes later), once per tag one side carries and the other lacks, oriented out of that side.
+    std::map<int64_t, std::pair<std::vector<std::array<size_t, 3>>, std::vector<Vector3d>>> by_tag;
+    for (const Tuple& f : get_faces()) {
+        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+        const std::optional<Tuple> o = f.switch_tetrahedron(*this);
+        if (!o) continue;
+        const std::array<size_t, 3> fv = get_face_vids(f);
+        const Vector3d& p0 = m_vertex_attribute[fv[0]].m_posf;
+        const Vector3d n =
+            (m_vertex_attribute[fv[1]].m_posf - p0).cross(m_vertex_attribute[fv[2]].m_posf - p0);
+        if (!(n.squaredNorm() > 0.)) continue;
+        const std::array<size_t, 2> cells{{f.tid(*this), o->tid(*this)}};
+        for (int k = 0; k < 2; ++k) {
+            const CellTag& in = m_tet_attribute[cells[size_t(k)]].tag;
+            const CellTag& out = m_tet_attribute[cells[size_t(1 - k)]].tag;
+            // the inside cell's corner off the face: the normal points away from it
+            Vector3d apex = Vector3d::Zero();
+            for (const size_t x : oriented_tet_vids(cells[size_t(k)]))
+                if (x != fv[0] && x != fv[1] && x != fv[2]) apex = m_vertex_attribute[x].m_posf;
+            const Vector3d nk = (n.dot(apex - p0) > 0. ? -n : n).normalized();
+            for (const int64_t t : in) {
+                if (t <= 0 || out.count(t)) continue;
+                auto& e = by_tag[t];
+                e.first.push_back(fv);
+                e.second.push_back(nk);
+            }
+        }
+    }
+    m_region_sides.clear();
+    for (auto& [tag, fs] : by_tag) {
+        RegionSide R;
+        R.tag = tag;
+        std::map<size_t, int> local;
+        std::vector<Eigen::Vector3d> V;
+        std::vector<Eigen::Vector3i> F;
+        for (const auto& fv : fs.first) {
+            Eigen::Vector3i tri;
+            for (int i = 0; i < 3; ++i) {
+                auto [it, fresh] = local.emplace(fv[size_t(i)], int(V.size()));
+                if (fresh) V.push_back(m_vertex_attribute[fv[size_t(i)]].m_posf);
+                tri[i] = it->second;
+            }
+            F.push_back(tri);
+        }
+        R.n_vertices = V.size();
+        R.face_n = fs.second;
+        R.vert_n.assign(V.size(), Vector3d::Zero());
+        for (size_t i = 0; i < F.size(); ++i) {
+            for (int a = 0; a < 3; ++a) {
+                R.vert_n[size_t(F[i][a])] += R.face_n[i];
+                const size_t x = size_t(F[i][a]), y = size_t(F[i][(a + 1) % 3]);
+                R.edge_n[{{std::min(x, y), std::max(x, y)}}] += R.face_n[i];
+            }
+        }
+        R.env = std::make_shared<Envelope>(/*exact=*/true);
+        R.env->init(V, F, m_envelope_eps);
+        logger().info(
+            "\t[region sides] tet tag {}: {} boundary faces, oriented out of the region",
+            tag,
+            F.size());
+        m_region_sides.push_back(std::move(R));
+    }
+}
+
+double TopoOffsetTetMesh::region_excess(const size_t vid, const Vector3d& p) const
+{
+    // See the declaration.
+    if (m_region_sides.empty() || !m_vertex_extra[vid].m_is_on_offset) return 0.;
+    std::vector<const CellTag*> sets;
+    for (const size_t t : get_one_ring_tids_for_vertex(vid))
+        if (m_tet_attribute[t].label != 2) sets.push_back(&m_tet_attribute[t].tag);
+    if (sets.empty()) return 0.;
+    double worst = 0.;
+    for (const RegionSide& R : m_region_sides) {
+        Vector3d y, dir;
+        int dim = -1;
+        long long id = -1;
+        const double dist = std::sqrt(R.env->nearest_point_feature(p, y, dim, dir, id));
+        if (!(dist > m_envelope_eps)) continue; // on the boundary, to the envelope's width
+        Vector3d N = Vector3d::Zero();
+        if (dim == 2) {
+            N = R.face_n[size_t(id)];
+        } else if (dim == 1) {
+            const size_t a = size_t(id) / R.n_vertices, b = size_t(id) % R.n_vertices;
+            const auto it = R.edge_n.find({{std::min(a, b), std::max(a, b)}});
+            if (it != R.edge_n.end()) N = it->second;
+        } else if (dim == 0) {
+            N = R.vert_n[size_t(id)];
+        }
+        const double s = (p - y).dot(N);
+        if (s == 0.) continue;
+        const double out = s > 0. ? dist : -dist; // > 0 outside the region
+        for (const CellTag* T : sets) {
+            const double wrong = T->count(R.tag) ? out : -out;
+            worst = std::max(worst, wrong - m_envelope_eps);
+        }
+    }
+    return worst;
+}
+
+bool TopoOffsetTetMesh::smoothing_position_is_allowed(const size_t vid, const Vector3d& p) const
+{
+    // See the declaration. The excess where the move started, recorded by smooth_before().
+    if (!TetOptimizerMesh::smoothing_position_is_allowed(vid, p)) return false;
+    if (m_region_sides.empty()) return true;
+    if (region_excess(vid, p) > std::max(0., m_region_excess_pre.local())) {
+        ++m_region_side_refused;
+        return false;
+    }
+    return true;
 }
 
 std::string TopoOffsetTetMesh::label_name(const size_t bit) const
@@ -835,40 +951,48 @@ void TopoOffsetTetMesh::audit_input_curves() const
         worst);
 }
 
-void TopoOffsetTetMesh::assign_face_labels()
+LabelIds TopoOffsetTetMesh::tag_boundary_labels(const CellTag& a, const CellTag& b) const
 {
     // See the declaration. Label ids past the face tags, one per tet tag; refused past LabelId's
     // width rather than wrapped onto another label.
     const size_t F = m_face_tag_names.size();
+    LabelIds bits;
+    const auto add = [&](const CellTag& x, const CellTag& y) {
+        for (const int64_t t : x) {
+            if (t <= 0 || y.count(t)) continue; // ambient carries no label
+            const size_t bit = F + size_t(t) - 1;
+            if (bit >= max_labels) {
+                log_and_throw_error(
+                    "{} face tags and tet tag {} need more than the {} labels an input set "
+                    "holds",
+                    F,
+                    t,
+                    max_labels);
+            }
+            bits.insert(LabelId(bit));
+        }
+    };
+    add(a, b);
+    add(b, a);
+    return bits;
+}
+
+void TopoOffsetTetMesh::assign_face_labels()
+{
+    // See the declaration.
     size_t n_labelled = 0;
     for (const Tuple& f : get_faces()) {
         const size_t fid = f.fid(*this);
         if (!m_face_attribute[fid].m_is_surface_fs) continue;
         const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
         if (!opp) continue; // a face-tagged boundary face, which the driver refuses
-        const CellTag& a = m_tet_attribute[f.tid(*this)].tag;
-        const CellTag& b = m_tet_attribute[opp->tid(*this)].tag;
-        LabelIds bits;
-        const auto add = [&](const CellTag& x, const CellTag& y) {
-            for (const int64_t t : x) {
-                if (t <= 0 || y.count(t)) continue; // ambient carries no label
-                const size_t bit = F + size_t(t) - 1;
-                if (bit >= max_labels) {
-                    log_and_throw_error(
-                        "{} face tags and tet tag {} need more than the {} labels an input set "
-                        "holds",
-                        F,
-                        t,
-                        max_labels);
-                }
-                bits.insert(LabelId(bit));
-            }
-        };
-        add(a, b);
-        add(b, a);
+        LabelIds bits = tag_boundary_labels(
+            m_tet_attribute[f.tid(*this)].tag,
+            m_tet_attribute[opp->tid(*this)].tag);
         // The envelope surface group, when the .msh has one (m_sheet_tag): its faces lie on it,
         // matched geometrically, with the same tags on both sides, so it is a label of its own.
-        if (m_sheet_tag > 0 && m_face_extra[fid].on_sheet) add(CellTag{m_sheet_tag}, CellTag{});
+        if (m_sheet_tag > 0 && m_face_extra[fid].on_sheet)
+            bits.merge(tag_boundary_labels(CellTag{m_sheet_tag}, CellTag{}));
         if (bits.none()) continue;
         m_face_attribute[fid].labels_mut().merge(bits);
         ++n_labelled;

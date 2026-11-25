@@ -623,6 +623,45 @@ public:
     /// covers, and with no front yet every tracked face is captured, so every face held later has
     /// its labels' envelopes.
     void build_envelopes();
+    /**
+     * @brief THE REGION SIDES (EXPERIMENTAL_star_retreat, 2026-11-24): each tet tag's region as
+     * the input bounds it -- the held faces between a cell carrying the tag and one without it,
+     * at build_envelopes() (before the march), each oriented out of the region -- for its side
+     * of a point: outside by more than envelope_size, inside by more, or on it. The band
+     * overwrites an unprotected region (its cells take the band's tags) and the faces it covers
+     * are untracked, so nothing else keeps the cells outside the band, at the front, inside the
+     * regions their tags name: a free front vertex the smoother or a collapse moves past such a
+     * region's boundary takes the region with it. MEASURED (2026-11-24, double_sphere in 0.05,
+     * tag_1 unprotected): front vertices more than eps past B for their non-band cells' tags, 0
+     * at the loop's start, 103 at turn 15 (worst 21 eps); every fold left sits where the region
+     * inside B reaches past B, and the retreat there is refused (no face between the two tag
+     * sets can be held in B's envelope). Protected, B stays tracked under the band and holds
+     * them as a wall.
+     */
+    struct RegionSide
+    {
+        int64_t tag = 0;
+        std::shared_ptr<Envelope> env; // around the region's boundary faces, for nearest points
+        std::vector<Vector3d> face_n; // per boundary face, unit, out of the region
+        std::vector<Vector3d> vert_n; // per boundary vertex, the sum of its faces' normals
+        std::map<std::array<size_t, 2>, Vector3d> edge_n; // per boundary edge, its faces' sum
+        size_t n_vertices = 0;
+    };
+    std::vector<RegionSide> m_region_sides;
+    void build_region_sides();
+    /// How far past its region's boundary, beyond envelope_size, vertex vid at p takes the
+    /// non-band cells at it: for each such cell and each region side, the distance p lies on the
+    /// wrong side of the region's input (inside a region its tags lack, outside one they name),
+    /// less envelope_size; the largest, 0 when none. Front vertices only (elsewhere tracked
+    /// faces hold the regions); 0 without region sides.
+    double region_excess(size_t vid, const Vector3d& p) const;
+    /// The smoother's per-vertex constraint (the base's hook, the feature-point ball): also, a
+    /// front vertex's move may not take a cell outside the band further past its region
+    /// (region_excess() above what it was where the move started, or above 0).
+    bool smoothing_position_is_allowed(const size_t vid, const Vector3d& p) const override;
+    mutable wmtk::threading::enumerable_thread_specific<double> m_region_excess_pre;
+    mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_region_pre;
+    mutable std::atomic<size_t> m_region_side_refused{0};
     /// Give every tracked face its labels, as input-set bits beside its face tags:
     /// bit F + t - 1 (F face tags) for each tet tag t in the tag set of exactly one of its two
     /// tets, ambient (0) carrying none -- simwild's labels (SimWildMesh::init_label_envelopes()) --
@@ -876,9 +915,47 @@ public:
     /// `loop` (EXPERIMENTAL_label_cleanup "growth"): both directions -- the band advancing (as
     /// growth) and retreating (band cells at a front vertex beyond) -- and only from front vertices
     /// more than front_conv from the level set.
-    /// `retreat_only` (EXPERIMENTAL_star_retreat): the loop's retreat splits alone.
+    /// `retreat_only` (EXPERIMENTAL_star_retreat): the loop's retreat splits alone, and only at the
+    /// vertices the star retreat listed (m_retreat_splits).
     std::array<size_t, 3>
     growth_splits(const std::string& where, bool loop = false, bool retreat_only = false);
+    /**
+     * @brief THE HELD SURFACE at a held vertex v (EXPERIMENTAL_star_retreat's surface cut, see
+     * label_cleanup()): the held region face at v with the least sorted corner ids (any one,
+     * deterministically), the envelope of its labels -- around that surface's input, built before
+     * the march (build_envelopes()) -- and its normal n, which only orients the sides. None when no
+     * region face holds v, or the face carries more than one label with per-input envelopes (an
+     * intersection of envelopes, which has no nearest point to ask).
+     */
+    struct HeldSurface
+    {
+        Vector3d n;
+        std::shared_ptr<Envelope> env;
+    };
+    std::optional<HeldSurface> held_surface_at(size_t v) const;
+    /// The side of the held surface's input a point x is on: 0 inside its envelope (on the
+    /// surface), else the sign of n . (x - y), y the input's nearest point to x. Never a sign near
+    /// zero: |x - y| is at least the envelope's width, along the input's normal at y, which turns
+    /// little from n over one vertex's star. MEASURED (2026-11-24, double_sphere in 0.05 and 0.1):
+    /// the plane of the face at v instead (n . (x - x_v)) gave a corner on the plane to the last
+    /// double outside the envelope, and the cut an edge of length 1.4e-17.
+    int held_surface_side(const HeldSurface& S, const Vector3d& x) const;
+    /// The surface cut's splits (EXPERIMENTAL_star_retreat): at each vertex label_cleanup()'s star
+    /// retreat listed (m_surface_cuts), every edge of its band cells from one side of its held
+    /// surface to the other split at a point inside the surface's envelope, found by bisection on
+    /// the side (as bisection_on_edge() finds the level set): the exact point growth_point() of a
+    /// dyadic fraction, its rounding where that inverts no cell (split_adjust_position()). An edge
+    /// whose bracket closes with no point inside is not split. Serial; clears the list. Returns
+    /// {splits, refused, edges with no point inside}.
+    std::array<size_t, 3> surface_cut_splits(const std::string& where);
+    std::vector<size_t> m_surface_cuts;
+    /// The held front vertices label_cleanup()'s star retreat listed for the next round's retreat
+    /// splits (growth_splits() `retreat_only`): their stars pass every test but the corners
+    /// inside the level set, which the splits put on it. Cleared by growth_splits().
+    std::vector<size_t> m_retreat_splits;
+    /// The labels a face between cells tagged a and b carries (assign_face_labels()'s rule): each
+    /// tet tag of one side the other side lacks, ambient none.
+    LabelIds tag_boundary_labels(const CellTag& a, const CellTag& b) const;
     /**
      * @brief The bisection of growth_splits(): x(s) = u + s (w - u) exact (growth_point()), d
      * read at its rounding, keeping d(x(lo)) < delta <= d(x(hi)) until the bracket's two points

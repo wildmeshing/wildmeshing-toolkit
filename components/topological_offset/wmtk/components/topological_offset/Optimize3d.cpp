@@ -1651,6 +1651,13 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
         ++m_repulsion_embed_refused;
         return false;
     }
+    // The region sides (region_excess()): the survivor takes the removed vertex's cells, and may
+    // not take them, or its own, further past their regions than either end was.
+    if (!m_region_sides.empty() && region_excess(v2_id, m_vertex_attribute[v2_id].m_posf) >
+                                       std::max(0., m_collapse_region_pre.local())) {
+        ++m_region_side_refused;
+        return false;
+    }
     // The energy rule has run by now, inside the base's call above (collapse_after_connectivity(),
     // which says why there); a collapse that reaches this line has passed it.
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
@@ -1671,6 +1678,13 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     // collapse_cache is the base's, filled by the call above; v2 survives.
     m_collapse_survivor_sizing.local() =
         m_vertex_attribute[collapse_cache.local().v2_id].m_sizing_scalar;
+    // the region sides' excess at the two ends before (collapse_edge_after())
+    {
+        const auto& cc = collapse_cache.local();
+        m_collapse_region_pre.local() = std::max(
+            region_excess(cc.v1_id, m_vertex_attribute[cc.v1_id].m_posf),
+            region_excess(cc.v2_id, m_vertex_attribute[cc.v2_id].m_posf));
+    }
     // Applied unconditionally, where the base asks only when both endpoints already sit on a
     // tracked simplex: the offset region is a thin shell, so a collapse with one endpoint in the
     // interior can still pinch its two sides together while every tracked surface survives.
@@ -2163,6 +2177,8 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
     // counted, and smooth_after() reads this back.
     auto& pre = m_needle_pre.local();
     pre = {ring_max_quality(vid), m_vertex_attribute[vid].m_posf};
+    // the region sides' excess where the move starts (smoothing_position_is_allowed())
+    m_region_excess_pre.local() = region_excess(vid, m_vertex_attribute[vid].m_posf);
     if (pre.first >= kNeedleQuality) ++m_needle_smooth_offered;
 
     // The base's smooth_before, counted: rounding has to happen, and its failure refuses the
@@ -5934,15 +5950,30 @@ void TopoOffsetTetMesh::loop_group(const std::array<int, 4>& ops, const std::str
         } else {
             label_cleanup(where);
             // EXPERIMENTAL_star_retreat: after the clean-up, rounds of the retreat splits at held
-            // front vertices beyond the level set and the whole-star retreat (see label_cleanup()),
-            // until a round splits and retreats nothing.
+            // front vertices beyond the level set, the surface cut's splits at the stars the last
+            // round listed, and the whole-star retreat (see label_cleanup()), until a round
+            // splits, retreats and lists nothing.
             if (m_offset_params.star_retreat && m_offset_params.label_growth) {
                 for (int round = 0; round < 8; ++round) {
                     const std::string w = fmt::format("{}, star round {}", where, round);
                     const std::array<size_t, 3> sp = growth_splits(w, true, true);
+                    const std::array<size_t, 3> sc = surface_cut_splits(w);
+                    if (sp[0] + sp[1] + sp[2] > 0) {
+                        logger().info(
+                            "\t[retreat splits] {}: {} split at the level set, {} refused, {} at "
+                            "an end",
+                            w,
+                            sp[0],
+                            sp[1],
+                            sp[2]);
+                    }
                     const size_t f = label_cleanup(w, FlipSide::Star);
-                    if (sp[0] == 0 && f == 0) break;
+                    if (sp[0] == 0 && sc[0] == 0 && f == 0 && m_surface_cuts.empty() &&
+                        m_retreat_splits.empty())
+                        break;
                 }
+                m_surface_cuts.clear(); // listed in the last round, not split
+                m_retreat_splits.clear();
             }
         }
         held_topology_check("label_cleanup");
@@ -7669,11 +7700,34 @@ size_t TopoOffsetTetMesh::label_cleanup(const std::string& where, const FlipSide
     // touch them nowhere else; (4) E falls (their band terms sum positive); (5) the non-band across
     // their boundary faces that are not held carries one tag set without its protected tags, which
     // each cell takes with its own protected tags, as a single cell leaving the band does
-    // (joined_tag()); unprotected, the two sides of a held surface disagree there and the star is
-    // refused. MEASURED before it (same case): every stuck held vertex passed (2) and (4), 40 -
-    // 77% also (1).
+    // (joined_tag()). MEASURED before it (same case): every stuck held vertex passed (2) and (4),
+    // 40 - 77% also (1).
+    // THE SURFACE CUT (2026-11-24), where (5) refuses: unprotected, the band's tags replaced a
+    // held surface B's two sides under it and untrack_covered_boundaries() untracked B there, so
+    // v's star has the two sides of B across it and no face of B inside (MEASURED, double_sphere in
+    // 0.1: 4 of 549 faces through the stuck vertices in B's envelope). B is made again in the star
+    // from its input (held_surface_at()): every corner inside B's envelope is on B, every other on
+    // one side of it (held_surface_side()). While an edge of the star runs from one side to the
+    // other, the star is listed and the next round's split pass cuts every such edge at a point
+    // on B (surface_cut_splits()); the cut star is a cone at v whose every cell has corners on one
+    // side or on B. Then each cell takes the one tag set of the non-band across the star's
+    // boundary faces with a corner on its side (with its own protected tags), and the faces the
+    // retreat leaves between two tag sets -- on B -- become held faces of B, each inside the
+    // envelope of the labels it takes. Topology: (1) - (4) hold for the cut star as for any star;
+    // taking out first one side's cells H, the other's still in the band, then the other's, is two
+    // whole-star retreats, each with one tag set: (2) and (3) are asked of each in turn (either
+    // order), and the second's (5) reads the faces between them as the held faces they then are.
+    // MEASURED before it (same case, the stars (5) refused at the first turns with stars, sides by
+    // the plane of B's face at v): 12 of 14 pass, 17 of 24 at in 0.05, 7 of 7 at the simwild mesh.
     size_t n_star_cand = 0, n_star = 0, n_star_cells = 0;
     std::array<size_t, 5> n_star_refused{}; // (1) side, (2) cone, (3) contact, (4) energy, (5) tags
+    size_t n_cut = 0, n_two = 0, n_two_cells = 0, n_two_held = 0;
+    // no held surface, a face across it, a side's tags, a cell on it, the halves, the envelope
+    std::array<size_t, 6> n_two_refused{};
+    size_t n_listed = 0, n_dry_refused = 0; // stars with a corner inside: listed, refused
+    // ... refused by: cone, contact, energy, no held surface, a face across it, a side's tags, a
+    // cell on it, the halves, the envelope, a split onto an end
+    std::array<size_t, 10> n_dry_by{};
     if ((energy_side || star_side) && !surface_energy()) {
         std::vector<size_t> cand;
         for (const Tuple& vt : get_vertices()) {
@@ -7700,158 +7754,273 @@ size_t TopoOffsetTetMesh::label_cleanup(const std::string& where, const FlipSide
             const auto in_U = [&](const size_t t) {
                 return std::binary_search(U.begin(), U.end(), t);
             };
-            // (1), and the cone's link: its vertices, edges, triangles
-            bool side = true;
-            std::set<size_t> lv;
-            std::set<std::array<size_t, 2>> le;
-            std::vector<std::array<size_t, 3>> base; // the face of each cell of U opposite v
+            // (1), a corner inside: more than front_conv inside the level set, as the retreat
+            // splits read it (growth_splits()); one within front_conv is at it
+            const double fc = front_conv_of(pc);
+            const auto inside_corner = [&](const size_t u) {
+                return delta - be.distance(m_vertex_attribute[u].m_posf) > fc;
+            };
+            bool blocked = false, inside = false;
             double bsum = 0.;
             for (const size_t t : U) {
-                if (flipped[t] || cell_is_plastic(t)) side = false;
+                if (flipped[t] || cell_is_plastic(t)) blocked = true;
                 const std::array<size_t, 4> vs = oriented_tet_vids(t);
-                std::array<size_t, 3> o{};
-                int k = 0;
                 for (const size_t u : vs) {
-                    if (u == v) continue;
-                    o[size_t(k++)] = u;
-                    lv.insert(u);
-                    if (be.distance(m_vertex_attribute[u].m_posf) < delta) side = false;
+                    if (u != v && inside_corner(u)) inside = true;
                 }
-                std::sort(o.begin(), o.end());
-                base.push_back(o);
-                for (int a = 0; a < 3; ++a)
-                    for (int b = a + 1; b < 3; ++b) le.insert({{o[size_t(a)], o[size_t(b)]}});
                 bsum += band_cell_term(vs);
             }
-            if (!side) {
+            if (blocked || (inside && !star_side)) {
                 ++n_star_refused[0];
                 continue;
             }
-            // (2) one cone over a disk: the link connected (cells joined across faces through v)
-            // with Euler characteristic 1
-            {
-                std::vector<int> comp(U.size(), -1);
-                int nc = 0;
-                for (size_t i = 0; i < U.size(); ++i) {
-                    if (comp[i] >= 0) continue;
-                    std::vector<size_t> st{i};
-                    comp[i] = nc;
-                    while (!st.empty()) {
-                        const size_t a = st.back();
-                        st.pop_back();
-                        for (size_t j = 0; j < U.size(); ++j) {
-                            if (comp[j] >= 0) continue;
-                            int shared = 0;
-                            for (int x = 0; x < 3; ++x)
-                                shared += std::binary_search(
-                                    base[j].begin(),
-                                    base[j].end(),
-                                    base[a][size_t(x)]);
-                            if (shared == 2) {
-                                comp[j] = nc;
-                                st.push_back(j);
-                            }
-                        }
+            // A corner inside (the star rounds): the rest of the test is asked of the star now,
+            // and a star that passes it is listed for the next round's retreat splits
+            // (growth_splits(), m_retreat_splits), which put those corners at the level set; one
+            // that fails it is not split. MEASURED before (2026-11-24, double_sphere unprotected,
+            // every held front vertex beyond split): in 0.05 retreated no star in 31 rounds and
+            // ended with 40 folds against 4 with the star rounds off, in 0.1 13 against 6;
+            // without the splits no star ever retreated (folds as with the rounds off).
+            const bool dry = inside;
+            if (dry) ++n_star_refused[0];
+            // The star as the splits would leave it: each corner inside moved to the point its
+            // split takes (bisection_on_edge() toward v, as growth_splits() asks it), the same
+            // cone at v over the same link; the base face of a cell with a moved corner faces the
+            // band piece the split leaves beyond it. (4) is asked of those cells.
+            std::map<size_t, Vector3d> moved;
+            bool unsplittable = false;
+            if (dry) {
+                for (const size_t t : U) {
+                    for (const size_t u : oriented_tet_vids(t)) {
+                        if (u == v || moved.count(u) || !inside_corner(u)) continue;
+                        const double sb = bisection_on_edge(u, v, be, delta, true);
+                        if (sb == 0. || sb == 1.) unsplittable = true;
+                        moved[u] = to_double(growth_point(u, v, sb));
                     }
-                    ++nc;
                 }
-                const long chi = long(lv.size()) - long(le.size()) + long(U.size());
-                if (nc != 1 || chi != 1) {
-                    ++n_star_refused[1];
-                    continue;
+                bsum = 0.;
+                for (const size_t t : U) {
+                    const std::array<size_t, 4> vs = oriented_tet_vids(t);
+                    std::array<Vector3d, 4> p;
+                    for (size_t k = 0; k < 4; ++k) {
+                        const auto it = moved.find(vs[k]);
+                        p[k] = it != moved.end() ? it->second : m_vertex_attribute[vs[k]].m_posf;
+                    }
+                    // band_cell_term()'s rule, at these positions
+                    if (m_offset_params.band_volume_rule == "exact" ||
+                        m_offset_params.band_volume_rule == "front_flux" || swept_rule()) {
+                        bsum += be.value(p, delta) / delta;
+                    } else {
+                        int64_t best = -1;
+                        const double vol =
+                            std::abs((p[1] - p[0]).dot((p[2] - p[0]).cross(p[3] - p[0]))) / 6.;
+                        const double md = min_mean_distance(
+                            *envelope_for(pc),
+                            m_input_complex_pad,
+                            p.data(),
+                            4,
+                            best);
+                        bsum += vol * ((md - delta) / delta);
+                    }
                 }
             }
-            // (3) D: the cone's base faces with a band cell across, one closed disk; no other
-            // contact
-            std::vector<std::array<size_t, 3>> D;
-            for (size_t i = 0; i < U.size(); ++i) {
-                const auto found = try_tuple_from_face(base[i]);
-                if (!found) continue;
-                const Tuple& f = std::get<0>(*found);
-                const size_t t0 = f.tid(*this);
-                const std::optional<Tuple> o = f.switch_tetrahedron(*this);
-                const size_t across = t0 == U[i] ? (o ? o->tid(*this) : size_t(-1)) : t0;
-                if (across != size_t(-1) && !in_U(across) && label_of(across) == 2)
-                    D.push_back(base[i]);
-            }
-            bool contact = !D.empty();
-            std::set<size_t> dv;
-            std::map<std::array<size_t, 2>, int> de;
-            for (const auto& f : D) {
-                for (const size_t u : f) dv.insert(u);
-                for (int a = 0; a < 3; ++a)
-                    for (int b = a + 1; b < 3; ++b) ++de[{{f[size_t(a)], f[size_t(b)]}}];
-            }
-            if (contact) {
-                // D connected with Euler characteristic 1
-                std::vector<int> comp(D.size(), -1);
-                int nc = 0;
-                for (size_t i = 0; i < D.size(); ++i) {
-                    if (comp[i] >= 0) continue;
-                    std::vector<size_t> st{i};
-                    comp[i] = nc;
-                    while (!st.empty()) {
-                        const size_t a = st.back();
-                        st.pop_back();
-                        for (size_t j = 0; j < D.size(); ++j) {
-                            if (comp[j] >= 0) continue;
-                            int shared = 0;
-                            for (int x = 0; x < 3; ++x)
-                                shared += std::find(D[j].begin(), D[j].end(), D[a][size_t(x)]) !=
-                                          D[j].end();
-                            if (shared == 2) {
-                                comp[j] = nc;
-                                st.push_back(j);
-                            }
-                        }
-                    }
-                    ++nc;
+            const auto has_moved = [&](const size_t t) {
+                for (const size_t u : oriented_tet_vids(t))
+                    if (moved.count(u)) return true;
+                return false;
+            };
+            const auto is_base = [&](const Tuple& f) {
+                const auto fv = get_face_vids(f);
+                return fv[0] != v && fv[1] != v && fv[2] != v;
+            };
+            const auto refuse = [&](size_t& counter, const size_t k) {
+                // k 9: a corner inside whose split rounds onto an end
+                if (!dry) {
+                    ++counter;
+                    return;
                 }
-                const long chi = long(dv.size()) - long(de.size()) + long(D.size());
-                contact = nc == 1 && chi == 1;
-            }
-            if (contact) {
-                // D's boundary (edges on one D face) and interior
-                std::set<size_t> dbv;
-                for (const auto& [e, n] : de)
-                    if (n == 1) {
-                        dbv.insert(e[0]);
-                        dbv.insert(e[1]);
-                    }
-                const auto other_cells_at = [&](const std::vector<size_t>& sig, const bool band) {
-                    // a cell outside U holding every vertex of sig, of the band (band) or not
-                    for (const size_t c : get_one_ring_tids_for_vertex(sig[0])) {
-                        if (in_U(c) || (label_of(c) == 2) != band) continue;
-                        const auto cv = oriented_tet_vids(c);
-                        bool all = true;
-                        for (const size_t x : sig)
-                            all = all && std::find(cv.begin(), cv.end(), x) != cv.end();
-                        if (all) return true;
-                    }
-                    return false;
+                ++n_dry_refused;
+                ++n_dry_by[k];
+            };
+            // (2) and (3) for cells H at v (sorted, each a cone at v), the cells of X (sorted)
+            // counted out of the band, as taken out before H: 0 passes, 1 not one cone over a
+            // disk, 2 the contact. For H = U, X empty, the contact is the base faces' alone: a face
+            // through v with a band cell across has that cell in U.
+            const auto cone_contact = [&](const std::vector<size_t>& H,
+                                          const std::vector<size_t>& X) -> int {
+                const auto in_H = [&](const size_t t) {
+                    return std::binary_search(H.begin(), H.end(), t);
                 };
-                // the rest of the band touches U only on D's closure
-                for (const size_t u : lv) {
-                    if (!dv.count(u) && other_cells_at({u}, true)) contact = false;
+                const auto band = [&](const size_t t) {
+                    return label_of(t) == 2 && !std::binary_search(X.begin(), X.end(), t);
+                };
+                // the cone's link: its vertices, edges, triangles
+                std::set<size_t> lv;
+                std::set<std::array<size_t, 2>> le;
+                std::vector<std::array<size_t, 3>> base; // the face of each cell opposite v
+                for (const size_t t : H) {
+                    std::array<size_t, 3> o{};
+                    int k = 0;
+                    for (const size_t u : oriented_tet_vids(t)) {
+                        if (u == v) continue;
+                        o[size_t(k++)] = u;
+                        lv.insert(u);
+                    }
+                    std::sort(o.begin(), o.end());
+                    base.push_back(o);
+                    for (int a = 0; a < 3; ++a)
+                        for (int b = a + 1; b < 3; ++b) le.insert({{o[size_t(a)], o[size_t(b)]}});
                 }
-                for (const auto& e : le) {
-                    if (!de.count(e) && other_cells_at({e[0], e[1]}, true)) contact = false;
+                // (2) one cone over a disk: the link connected (cells joined across faces
+                // through v) with Euler characteristic 1
+                {
+                    std::vector<int> comp(H.size(), -1);
+                    int nc = 0;
+                    for (size_t i = 0; i < H.size(); ++i) {
+                        if (comp[i] >= 0) continue;
+                        std::vector<size_t> st{i};
+                        comp[i] = nc;
+                        while (!st.empty()) {
+                            const size_t a = st.back();
+                            st.pop_back();
+                            for (size_t j = 0; j < H.size(); ++j) {
+                                if (comp[j] >= 0) continue;
+                                int shared = 0;
+                                for (int x = 0; x < 3; ++x)
+                                    shared += std::binary_search(
+                                        base[j].begin(),
+                                        base[j].end(),
+                                        base[a][size_t(x)]);
+                                if (shared == 2) {
+                                    comp[j] = nc;
+                                    st.push_back(j);
+                                }
+                            }
+                        }
+                        ++nc;
+                    }
+                    const long chi = long(lv.size()) - long(le.size()) + long(H.size());
+                    if (nc != 1 || chi != 1) return 1;
                 }
-                // the non-band touches U only off D's interior
-                for (const size_t u : dv) {
-                    if (!dbv.count(u) && other_cells_at({u}, false)) contact = false;
+                // (3) D: H's faces with a band cell across, one closed disk; no other contact. On
+                // the star as the retreat splits would leave it (moved), the base face of a cell
+                // with a moved corner is D's (the band piece beyond it), and the contact is asked
+                // at the link's other simplices only: a moved corner's split point is touched
+                // only by the cells around its edge to v, on D's closure (every link triangle at
+                // it is D's) and, if the edge is on the front, on the link's boundary.
+                std::vector<std::array<size_t, 3>> D;
+                for (const size_t t : H) {
+                    for (int j = 0; j < 4; ++j) {
+                        const Tuple f = tuple_from_face(t, j);
+                        const std::optional<Tuple> o = f.switch_tetrahedron(*this);
+                        if (!(is_base(f) && has_moved(t)) &&
+                            (!o || in_H(o->tid(*this)) || !band(o->tid(*this))))
+                            continue;
+                        std::array<size_t, 3> fv = get_face_vids(f);
+                        std::sort(fv.begin(), fv.end());
+                        D.push_back(fv);
+                    }
                 }
-                for (const auto& [e, n] : de) {
-                    if (n == 2 && other_cells_at({e[0], e[1]}, false)) contact = false;
+                bool contact = !D.empty();
+                std::set<size_t> dv;
+                std::map<std::array<size_t, 2>, int> de;
+                for (const auto& f : D) {
+                    for (const size_t u : f) dv.insert(u);
+                    for (int a = 0; a < 3; ++a)
+                        for (int b = a + 1; b < 3; ++b) ++de[{{f[size_t(a)], f[size_t(b)]}}];
                 }
+                if (contact) {
+                    // D connected with Euler characteristic 1
+                    std::vector<int> comp(D.size(), -1);
+                    int nc = 0;
+                    for (size_t i = 0; i < D.size(); ++i) {
+                        if (comp[i] >= 0) continue;
+                        std::vector<size_t> st{i};
+                        comp[i] = nc;
+                        while (!st.empty()) {
+                            const size_t a = st.back();
+                            st.pop_back();
+                            for (size_t j = 0; j < D.size(); ++j) {
+                                if (comp[j] >= 0) continue;
+                                int shared = 0;
+                                for (int x = 0; x < 3; ++x)
+                                    shared +=
+                                        std::find(D[j].begin(), D[j].end(), D[a][size_t(x)]) !=
+                                        D[j].end();
+                                if (shared == 2) {
+                                    comp[j] = nc;
+                                    st.push_back(j);
+                                }
+                            }
+                        }
+                        ++nc;
+                    }
+                    const long chi = long(dv.size()) - long(de.size()) + long(D.size());
+                    contact = nc == 1 && chi == 1;
+                }
+                if (contact) {
+                    // D's boundary (edges on one D face) and interior
+                    std::set<size_t> dbv;
+                    for (const auto& [e, n] : de)
+                        if (n == 1) {
+                            dbv.insert(e[0]);
+                            dbv.insert(e[1]);
+                        }
+                    const auto other_cells_at = [&](const std::vector<size_t>& sig,
+                                                    const bool want_band) {
+                        // a cell outside H holding every vertex of sig, of the band or not
+                        for (const size_t c : get_one_ring_tids_for_vertex(sig[0])) {
+                            if (in_H(c) || band(c) != want_band) continue;
+                            const auto cv = oriented_tet_vids(c);
+                            bool all = true;
+                            for (const size_t x : sig)
+                                all = all && std::find(cv.begin(), cv.end(), x) != cv.end();
+                            if (all) return true;
+                        }
+                        return false;
+                    };
+                    // the rest of the band touches H only on D's closure; v and its edges too,
+                    // where H is one side of the cut star
+                    std::set<size_t> hv = lv;
+                    hv.insert(v);
+                    std::set<std::array<size_t, 2>> he = le;
+                    for (const size_t u : lv) he.insert({{std::min(u, v), std::max(u, v)}});
+                    const auto at_moved = [&](const size_t a, const size_t b) {
+                        return moved.count(a) > 0 || moved.count(b) > 0;
+                    };
+                    for (const size_t u : hv) {
+                        if (moved.count(u)) continue;
+                        if (!dv.count(u) && other_cells_at({u}, true)) contact = false;
+                    }
+                    for (const auto& e : he) {
+                        if (at_moved(e[0], e[1])) continue;
+                        if (!de.count(e) && other_cells_at({e[0], e[1]}, true)) contact = false;
+                    }
+                    // the non-band touches H only off D's interior
+                    for (const size_t u : dv) {
+                        if (moved.count(u)) continue;
+                        if (!dbv.count(u) && other_cells_at({u}, false)) contact = false;
+                    }
+                    for (const auto& [e, n] : de) {
+                        if (at_moved(e[0], e[1])) continue;
+                        if (n == 2 && other_cells_at({e[0], e[1]}, false)) contact = false;
+                    }
+                }
+                return contact ? 0 : 2;
+            };
+            if (unsplittable) {
+                ++n_dry_refused;
+                ++n_dry_by[9];
+                continue;
             }
-            if (!contact) {
-                ++n_star_refused[2];
+            const int cc = cone_contact(U, {});
+            if (cc != 0) {
+                refuse(n_star_refused[size_t(cc)], size_t(cc) - 1);
                 continue;
             }
             // (4)
             if (!(bsum > 0.)) {
-                ++n_star_refused[3];
+                refuse(n_star_refused[3], 2);
                 continue;
             }
             // (5) the tags: the non-band's across U's boundary faces that are not held, without
@@ -7861,7 +8030,7 @@ size_t TopoOffsetTetMesh::label_cleanup(const std::string& where, const FlipSide
             for (const size_t t : U) {
                 for (int j = 0; j < 4 && tags_ok; ++j) {
                     const Tuple f = tuple_from_face(t, j);
-                    if (held_face(f)) continue;
+                    if (held_face(f) || (is_base(f) && has_moved(t))) continue;
                     const std::optional<Tuple> o = f.switch_tetrahedron(*this);
                     if (!o || in_U(o->tid(*this)) || label_of(o->tid(*this)) == 2) continue;
                     const CellTag b = without_protected(m_tet_attribute[o->tid(*this)].tag);
@@ -7869,27 +8038,229 @@ size_t TopoOffsetTetMesh::label_cleanup(const std::string& where, const FlipSide
                     base_tag = b;
                 }
             }
-            std::vector<CellTag> new_tags;
-            if (tags_ok && base_tag) {
-                for (const size_t t : U) {
-                    CellTag g = *base_tag;
-                    const CellTag kept = m_offset_params.protected_kept(m_tet_attribute[t].tag);
-                    g.insert(kept.begin(), kept.end());
-                    new_tags.push_back(g);
-                }
-            }
-            if (!tags_ok || !base_tag) {
-                ++n_star_refused[4];
+            const auto with_kept = [&](const size_t t, CellTag g) {
+                const CellTag kept = m_offset_params.protected_kept(m_tet_attribute[t].tag);
+                g.insert(kept.begin(), kept.end());
+                return g;
+            };
+            if (tags_ok && base_tag && dry) {
+                m_retreat_splits.push_back(v);
+                ++n_listed;
                 continue;
             }
-            for (size_t i = 0; i < U.size(); ++i) {
-                flipped[U[i]] = 1;
-                flip(U[i], new_tags[i]);
-                for (const size_t u : oriented_tet_vids(U[i])) corners.push_back(u);
+            if (tags_ok && base_tag) {
+                for (const size_t t : U) {
+                    const CellTag g = with_kept(t, *base_tag);
+                    flipped[t] = 1;
+                    flip(t, g);
+                    for (const size_t u : oriented_tet_vids(t)) corners.push_back(u);
+                }
+                to_non += U.size();
+                ++n_star;
+                n_star_cells += U.size();
+                continue;
+            }
+            if (!dry) ++n_star_refused[4];
+            // THE SURFACE CUT (see above): the star rounds' alone, whose split pass cuts
+            if (!star_side) continue;
+            const std::optional<HeldSurface> S = held_surface_at(v);
+            if (!S) {
+                refuse(n_two_refused[0], 3);
+                continue;
+            }
+            // The sides; with a corner inside, B is cut first, at the corners where they are, and
+            // the retreat splits come after: their split points then lie on B's new edges from v
+            // where those cross the level set -- on the crossing curve, as the march puts them
+            // (growth's crossing vertices). Split first, the cut's points would lie on chords
+            // between two split points, off the curve by the chord's sag, the cause of the folds
+            // at a crossing (findings 2026-11-24). So a star is asked as the retreat splits would
+            // leave it (virt) only when no edge of it runs across B now.
+            std::map<size_t, int> sd;
+            bool across = false, virt = false;
+            for (int pass = 0; pass < 2; ++pass) {
+                sd.clear();
+                for (const size_t t : U)
+                    for (const size_t u : oriented_tet_vids(t))
+                        if (!sd.count(u)) {
+                            const auto it = virt ? moved.find(u) : moved.end();
+                            sd[u] = u == v ? 0
+                                           : held_surface_side(
+                                                 *S,
+                                                 it != moved.end() ? it->second
+                                                                   : m_vertex_attribute[u].m_posf);
+                        }
+                across = false;
+                for (const size_t t : U) {
+                    const std::array<size_t, 4> vs = oriented_tet_vids(t);
+                    for (size_t a = 0; a < 4; ++a)
+                        for (size_t b = a + 1; b < 4; ++b)
+                            if (sd[vs[a]] * sd[vs[b]] < 0) across = true;
+                }
+                if (pass == 1 || !dry || across) break;
+                virt = true;
+            }
+            // per side of B, the non-band across U's boundary faces that are not held, with a
+            // corner on that side; a face with corners on both is not cut, and refuses
+            std::array<std::optional<CellTag>, 2> side_tag;
+            bool straddle = false, agree = true;
+            for (const size_t t : U) {
+                for (int j = 0; j < 4; ++j) {
+                    const Tuple f = tuple_from_face(t, j);
+                    if (held_face(f) || (virt && is_base(f) && has_moved(t))) continue;
+                    const std::optional<Tuple> o = f.switch_tetrahedron(*this);
+                    if (!o || in_U(o->tid(*this)) || label_of(o->tid(*this)) == 2) continue;
+                    bool pos = false, neg = false;
+                    for (const size_t x : get_face_vids(f)) {
+                        pos = pos || sd[x] > 0;
+                        neg = neg || sd[x] < 0;
+                    }
+                    if (pos && neg) straddle = true;
+                    if (pos == neg) continue;
+                    const CellTag b = without_protected(m_tet_attribute[o->tid(*this)].tag);
+                    std::optional<CellTag>& st = side_tag[pos ? 0 : 1];
+                    if (st && *st != b) agree = false;
+                    st = b;
+                }
+            }
+            if (straddle) {
+                refuse(n_two_refused[1], 4);
+                continue;
+            }
+            if (!agree || (across && (!side_tag[0] || !side_tag[1]))) {
+                refuse(n_two_refused[2], 5);
+                continue;
+            }
+            if (across && virt) {
+                // the retreat splits first: the edge across B appears on the star they leave
+                m_retreat_splits.push_back(v);
+                ++n_listed;
+                continue;
+            }
+            if (across) {
+                m_surface_cuts.push_back(v);
+                ++n_cut;
+                continue;
+            }
+            if (dry) {
+                m_retreat_splits.push_back(v);
+                ++n_listed;
+                continue;
+            }
+            // the cut star: each cell on one side, its corners there or on B. A cell with every
+            // corner on B (inside its envelope: the cut and the retreat splits along B's new edges
+            // from v leave such slivers) is on neither; either side is the surface's, its faces to
+            // the other inside the envelope, so it takes the side of a cell of the star it shares a
+            // face with (the first in tid order, passes until none changes), the halves' and the
+            // envelope's tests deciding as for any cell. One with no such neighbour refuses.
+            std::map<size_t, int> cs;
+            for (const size_t t : U) {
+                int s = 0;
+                for (const size_t u : oriented_tet_vids(t))
+                    if (sd[u] != 0) s = sd[u];
+                cs[t] = s;
+            }
+            for (bool changed = true; changed;) {
+                changed = false;
+                for (const size_t t : U) {
+                    if (cs[t] != 0) continue;
+                    for (int j = 0; j < 4 && cs[t] == 0; ++j) {
+                        const std::optional<Tuple> o =
+                            tuple_from_face(t, j).switch_tetrahedron(*this);
+                        if (o && in_U(o->tid(*this)) && cs[o->tid(*this)] != 0) {
+                            cs[t] = cs[o->tid(*this)];
+                            changed = true;
+                        }
+                    }
+                }
+            }
+            std::array<std::vector<size_t>, 2> Hs;
+            bool flat = false;
+            for (const size_t t : U) {
+                if (cs[t] == 0)
+                    flat = true;
+                else
+                    Hs[cs[t] > 0 ? 0 : 1].push_back(t);
+            }
+            if (flat) {
+                refuse(n_two_refused[3], 6);
+                continue;
+            }
+            if ((!Hs[0].empty() && !side_tag[0]) || (!Hs[1].empty() && !side_tag[1])) {
+                refuse(n_two_refused[2], 5);
+                continue;
+            }
+            const bool halves = Hs[0].empty() || Hs[1].empty() ||
+                                (cone_contact(Hs[1], {}) == 0 && cone_contact(Hs[0], Hs[1]) == 0) ||
+                                (cone_contact(Hs[0], {}) == 0 && cone_contact(Hs[1], Hs[0]) == 0);
+            if (!halves) {
+                refuse(n_two_refused[4], 7);
+                continue;
+            }
+            std::map<size_t, CellTag> nt;
+            for (size_t s = 0; s < 2; ++s)
+                for (const size_t t : Hs[s]) nt[t] = with_kept(t, *side_tag[s]);
+            // the faces the retreat leaves between two tag sets, not held yet: B's from here
+            struct NewHeld
+            {
+                size_t fid;
+                std::array<size_t, 3> vids;
+                LabelIds bits;
+            };
+            std::vector<NewHeld> nh;
+            std::set<size_t> seen_f;
+            bool in_env = true;
+            for (const size_t t : U) {
+                for (int j = 0; j < 4 && in_env; ++j) {
+                    const Tuple f = tuple_from_face(t, j);
+                    const size_t fid = f.fid(*this);
+                    if (!seen_f.insert(fid).second || face_is_region(fid)) continue;
+                    const std::optional<Tuple> o = f.switch_tetrahedron(*this);
+                    if (!o) continue;
+                    const size_t c = o->tid(*this);
+                    if (!in_U(c) && label_of(c) == 2) continue; // the front
+                    const CellTag& other = in_U(c) ? nt[c] : m_tet_attribute[c].tag;
+                    if (other == nt[t]) continue;
+                    NewHeld h{fid, get_face_vids(f), tag_boundary_labels(nt[t], other)};
+                    FaceAttributes attr;
+                    attr.labels_mut() = h.bits;
+                    const std::shared_ptr<Envelope> env =
+                        h.bits.none() ? nullptr
+                                      : TetOptimizerMesh::surface_envelope_for_face(h.vids, attr);
+                    const auto& VA = m_vertex_attribute;
+                    if (!env || env->is_outside(
+                                    std::array<Vector3d, 3>{
+                                        {VA[h.vids[0]].m_posf,
+                                         VA[h.vids[1]].m_posf,
+                                         VA[h.vids[2]].m_posf}})) {
+                        in_env = false;
+                    }
+                    nh.push_back(h);
+                }
+            }
+            if (!in_env) {
+                refuse(n_two_refused[5], 8);
+                continue;
+            }
+            for (const size_t t : U) {
+                flipped[t] = 1;
+                flip(t, nt[t]);
+                for (const size_t u : oriented_tet_vids(t)) corners.push_back(u);
+            }
+            // tracked as the construction tracks a region boundary (assign_face_labels())
+            for (const NewHeld& h : nh) {
+                FaceAttributes& attr = m_face_attribute[h.fid];
+                attr.m_is_surface_fs = true;
+                attr.m_surface_class = INPUT_SURFACE_CLASS;
+                attr.labels_mut() = h.bits;
+                for (const size_t u : h.vids) {
+                    m_vertex_extra[u].m_is_on_region = true;
+                    m_vertex_attribute[u].m_is_on_surface = true;
+                }
             }
             to_non += U.size();
-            ++n_star;
-            n_star_cells += U.size();
+            ++n_two;
+            n_two_cells += U.size();
+            n_two_held += nh.size();
         }
         logger().info(
             "\t[label cleanup growth] {}: whole-star retreats at held front vertices over "
@@ -7906,6 +8277,47 @@ size_t TopoOffsetTetMesh::label_cleanup(const std::string& where, const FlipSide
             n_star_refused[2],
             n_star_refused[3],
             n_star_refused[4]);
+        if (star_side) {
+            logger().info(
+                "\t[retreat splits] {}: of the {} stars with a corner inside, {} pass every other "
+                "test and are listed for the next round's splits, {} do not (not one cone {}, "
+                "contact {}, E would not fall {}; tags, then: no held surface {}, a face across it "
+                "{}, a side's tags {}, a cell on it {}, the halves {}, the envelope {}; a split "
+                "onto an end {})",
+                where,
+                n_listed + n_dry_refused,
+                n_listed,
+                n_dry_refused,
+                n_dry_by[0],
+                n_dry_by[1],
+                n_dry_by[2],
+                n_dry_by[3],
+                n_dry_by[4],
+                n_dry_by[5],
+                n_dry_by[6],
+                n_dry_by[7],
+                n_dry_by[8],
+                n_dry_by[9]);
+        }
+        if (n_star_refused[4] > 0) {
+            logger().info(
+                "\t[surface cut] {}: of the {} stars refused on tags, {} listed for the cut, {} "
+                "retreated ({} cells, {} faces of the held surface made); refused: no held surface "
+                "{}, a boundary face across it {}, a side's tags {}, a cell on it {}, the halves "
+                "{}, outside the envelope {}",
+                where,
+                n_star_refused[4],
+                n_cut,
+                n_two,
+                n_two_cells,
+                n_two_held,
+                n_two_refused[0],
+                n_two_refused[1],
+                n_two_refused[2],
+                n_two_refused[3],
+                n_two_refused[4],
+                n_two_refused[5]);
+        }
     }
     m_unreachable_cells = n_unreachable;
     m_unreachable_where = unreachable_where;
@@ -8170,6 +8582,13 @@ bool TopoOffsetTetMesh::optimize_offset_loop(
         // front_conv of the level set, within 13.1 degrees of the field, on a level set 7.7 to 31.4
         // degrees sharp there; the 27 released none and exited with no fold. The counts are logged
         // every turn, the key on or off, so a run without it shows what it exited with.
+        if (!m_region_sides.empty()) {
+            logger().info(
+                "\t[region sides] turn {}: moves and collapses refused so far for taking a cell "
+                "outside the band past its region's input: {}",
+                turn,
+                m_region_side_refused.load());
+        }
         {
             const FoldCount fc = count_folds();
             logger().info(
@@ -9251,6 +9670,12 @@ TopoOffsetTetMesh::growth_splits(const std::string& where, const bool loop, cons
     };
     std::vector<Pending> todo;
     std::set<std::array<size_t, 2>> seen;
+    // `retreat_only`: from the vertices label_cleanup()'s star retreat listed alone
+    std::vector<size_t> listed;
+    if (retreat_only) {
+        listed.swap(m_retreat_splits);
+        std::sort(listed.begin(), listed.end());
+    }
     for (const Tuple& t : get_tets()) {
         const size_t tid = t.tid(*this);
         const int label = m_tet_attribute[tid].label;
@@ -9268,8 +9693,16 @@ TopoOffsetTetMesh::growth_splits(const std::string& where, const bool loop, cons
                     m_vertex_extra[vs[a]].m_growth_split_point)
                     continue;
                 if (!vertex_is_held(vs[a]) || !(d[a] - delta > fc)) continue;
+                if (retreat_only && !std::binary_search(listed.begin(), listed.end(), vs[a]))
+                    continue;
+                // to a corner more than front_conv inside, as the advance splits from a vertex
+                // more than front_conv inside: one within it is at the level set to the loop's
+                // tolerance, and its crossing a sliver from it. MEASURED (2026-11-24,
+                // double_sphere in 0.1, every corner below delta split): needles of volume 1e-21
+                // from turn 4 (none with the star rounds off), 195 of 431 splits refused by the
+                // orientation invariant -- corners growth left the last double inside.
                 for (size_t b = 0; b < 4; ++b) {
-                    if (b == a || !(d[b] < delta)) continue;
+                    if (b == a || !(delta - d[b] > fc)) continue;
                     const std::array<size_t, 2> key{
                         {std::min(vs[a], vs[b]), std::max(vs[a], vs[b])}};
                     if (!seen.insert(key).second) continue;
@@ -9343,6 +9776,135 @@ TopoOffsetTetMesh::growth_splits(const std::string& where, const bool loop, cons
         ++(ok ? n_split : n_refused);
     }
     return {{n_split, n_refused, n_at_u}};
+}
+
+std::optional<TopoOffsetTetMesh::HeldSurface> TopoOffsetTetMesh::held_surface_at(
+    const size_t v) const
+{
+    // See the declaration.
+    std::optional<std::array<size_t, 3>> best;
+    size_t best_fid = 0;
+    for (const size_t t : get_one_ring_tids_for_vertex(v)) {
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(t, j);
+            const size_t fid = f.fid(*this);
+            if (!f.switch_tetrahedron(*this) || !face_is_region(fid)) continue;
+            std::array<size_t, 3> fv = get_face_vids(f);
+            if (fv[0] != v && fv[1] != v && fv[2] != v) continue;
+            std::sort(fv.begin(), fv.end());
+            if (!best || fv < *best) {
+                best = fv;
+                best_fid = fid;
+            }
+        }
+    }
+    if (!best) return std::nullopt;
+    const FaceAttributes& attr = m_face_attribute[best_fid];
+    if (!m_input_envelopes.empty() && attr.labels().count() != 1) return std::nullopt;
+    const auto& VA = m_vertex_attribute;
+    const Vector3d& a = VA[(*best)[0]].m_posf;
+    HeldSurface S;
+    S.n = (VA[(*best)[1]].m_posf - a).cross(VA[(*best)[2]].m_posf - a);
+    S.env = TetOptimizerMesh::surface_envelope_for_face(*best, attr);
+    if (!S.env || !(S.n.squaredNorm() > 0.)) return std::nullopt;
+    return S;
+}
+
+int TopoOffsetTetMesh::held_surface_side(const HeldSurface& S, const Vector3d& x) const
+{
+    // See the declaration.
+    if (!S.env->is_outside(x)) return 0;
+    Vector3d y;
+    S.env->nearest_point(x, y);
+    const double s = S.n.dot(x - y);
+    return s > 0. ? 1 : s < 0. ? -1 : 0;
+}
+
+std::array<size_t, 3> TopoOffsetTetMesh::surface_cut_splits(const std::string& where)
+{
+    // See the declaration. The edges first, each once, then the splits, as growth_splits(): a
+    // split replaces the cells at its edge, not the other listed edges.
+    std::vector<size_t> at;
+    at.swap(m_surface_cuts);
+    struct Pending
+    {
+        size_t a, b;
+        HeldSurface S;
+        int side_a;
+    };
+    std::vector<Pending> todo;
+    std::set<std::array<size_t, 2>> seen;
+    for (const size_t v : at) {
+        if (!m_vertex_extra[v].m_is_on_offset) continue;
+        const std::optional<HeldSurface> S = held_surface_at(v);
+        if (!S) continue;
+        for (const size_t t : get_one_ring_tids_for_vertex(v)) {
+            if (m_tet_attribute[t].label != 2) continue;
+            const std::array<size_t, 4> vs = oriented_tet_vids(t);
+            std::array<int, 4> sd{};
+            for (size_t k = 0; k < 4; ++k)
+                sd[k] = vs[k] == v ? 0 : held_surface_side(*S, m_vertex_attribute[vs[k]].m_posf);
+            for (size_t a = 0; a < 4; ++a) {
+                for (size_t b = a + 1; b < 4; ++b) {
+                    if (sd[a] * sd[b] >= 0) continue;
+                    const std::array<size_t, 2> key{
+                        {std::min(vs[a], vs[b]), std::max(vs[a], vs[b])}};
+                    if (!seen.insert(key).second) continue;
+                    todo.push_back({vs[a], vs[b], *S, sd[a]});
+                }
+            }
+        }
+    }
+    size_t n_split = 0, n_refused = 0, n_none = 0;
+    for (const Pending& p : todo) {
+        if (get_incident_tids_for_edge(p.a, p.b).empty()) continue;
+        // x(lo) on a's side and x(hi) on b's throughout, read at the rounding of the exact point,
+        // until a midpoint is inside the envelope or rounds onto an end; s dyadic, exact in a
+        // double
+        double lo = 0., hi = 1., s = -1.;
+        Vector3d p_lo = to_double(growth_point(p.a, p.b, lo));
+        Vector3d p_hi = to_double(growth_point(p.a, p.b, hi));
+        for (int n = 0; n < 64; ++n) {
+            const double mid = 0.5 * (lo + hi);
+            const Vector3d x = to_double(growth_point(p.a, p.b, mid));
+            if (x == p_lo || x == p_hi) break;
+            const int sx = held_surface_side(p.S, x);
+            if (sx == 0) {
+                s = mid;
+                break;
+            }
+            if (sx == p.side_a) {
+                lo = mid;
+                p_lo = x;
+            } else {
+                hi = mid;
+                p_hi = x;
+            }
+        }
+        if (s < 0.) {
+            ++n_none;
+            continue;
+        }
+        m_growth_split = {p.a, s, true};
+        std::vector<Tuple> new_tets;
+        const Tuple t = tuple_from_edge({{p.a, p.b}});
+        reserve_free_slots(cell_slot_bound(t), 1); // serial: grow rather than refuse
+        const bool ok = split_edge(t, new_tets);
+        m_growth_split.active = false;
+        ++(ok ? n_split : n_refused);
+    }
+    if (!at.empty()) {
+        logger().info(
+            "\t[surface cut] {}: {} stars, {} edges across their held surfaces split, {} refused, "
+            "{} "
+            "with no point inside the envelope",
+            where,
+            at.size(),
+            n_split,
+            n_refused,
+            n_none);
+    }
+    return {{n_split, n_refused, n_none}};
 }
 
 void TopoOffsetTetMesh::label_growth()

@@ -348,7 +348,8 @@ struct Parameters : public wmtk::OptimizerParameters
     bool resolve_crossing = false;
     /// EXPERIMENTAL_star_retreat (see the spec), 3D, under label_growth: after the loop's label
     /// clean-up, the march's retreat splits at held front vertices beyond the level set and the
-    /// whole-star retreat.
+    /// whole-star retreat; where the non-band across a star carries two tag sets, the surface cut;
+    /// and the region sides (TopoOffsetTetMesh::region_excess()).
     bool star_retreat = false;
     /// 3D (2026-10-21; "linear" was EXPERIMENTAL_incremental_growth): how the loop grows the
     /// offset when the march traces the front below target_distance (construction_mode
