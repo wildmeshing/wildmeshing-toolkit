@@ -405,7 +405,8 @@ private:
     // by 20 bisection steps between the ends (which must have opposite signs); if that inverts a
     // child, the vertex goes back to the edge's midpoint. Set before split_edge(), cleared after,
     // by seal_connected_components (tight_seal_topo, resolve_overlaps) and tight_seal_geom's
-    // march. m_edge_split_at takes precedence.
+    // march. The engine's m_edge_split_at (TriOptimizerMesh) takes precedence; tight_seal_geom's
+    // fill sets it.
     std::function<double(const Vector2d&)> m_voronoi_split_fn = nullptr;
     // The vertex the calling thread's last split made, per thread as 3D's
     // SplitTagCache::v_new: every thread of the parallel split pass writes it, and the serial
@@ -413,17 +414,6 @@ private:
     // was a write-write race, reported by ThreadSanitizer in 3 of 3 simwild 2D remeshing runs at
     // 8 threads (2026-11-05).
     wmtk::threading::enumerable_thread_specific<size_t> m_last_split_vertex;
-
-    // Where split_edge() puts the new vertex, if set: at `fraction` of the way from the end
-    // `from` to the other, exactly; rounded if that inverts no child, else kept exact and
-    // unrounded. It takes precedence over m_voronoi_split_fn. Set before split_edge(), cleared
-    // after; only tight_seal_geom's fill sets it.
-    struct EdgeSplitAt
-    {
-        size_t from;
-        Rational fraction;
-    };
-    std::optional<EdgeSplitAt> m_edge_split_at;
 
     // tight_seal_geom's helpers that need the mesh, defined in TightSealGeom.cpp
     /// BVH of the boundary of the faces of `fids` for which in_set holds: their interfaces with

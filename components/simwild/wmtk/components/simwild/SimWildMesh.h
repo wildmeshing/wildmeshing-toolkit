@@ -178,7 +178,8 @@ public:
     // by 20 bisection steps between the ends (which must have opposite signs); if that inverts a
     // child, the vertex goes back to the edge's midpoint. Set before split_edge(), cleared after,
     // by seal_connected_components (tight_seal_topo, resolve_overlaps) and tight_seal_geom's
-    // march. m_edge_split_at takes precedence.
+    // march. The engine's m_edge_split_at (TetOptimizerMesh) takes precedence; tight_seal_geom's
+    // fill sets it.
     std::function<double(const Vector3d&)> m_voronoi_split_fn = nullptr;
 
     SimWildMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
@@ -408,17 +409,6 @@ private:
         const std::vector<char>& filled) const;
 
     ////// Operations
-
-    // Where split_edge() puts the new vertex, if set: at `fraction` of the way from the end
-    // `from` to the other, exactly; rounded if that inverts no child, else kept exact and
-    // unrounded. It takes precedence over m_voronoi_split_fn. Set before split_edge(), cleared
-    // after; only tight_seal_geom's fill sets it.
-    struct EdgeSplitAt
-    {
-        size_t from;
-        Rational fraction;
-    };
-    std::optional<EdgeSplitAt> m_edge_split_at;
 
     struct SplitTagCache
     {

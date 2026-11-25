@@ -432,7 +432,7 @@ void SimWildMeshTri::tight_seal_fill(
     // Component c's function k: the distance to its color k. Each split goes exactly where the
     // pair's difference, linear along the edge, vanishes: delta_a / (delta_a - delta_b) of the
     // way from a, exact for the doubles given (split_adjust_position).
-    tight_seal::ClearOnExit<std::optional<EdgeSplitAt>> clear_split_at{m_edge_split_at};
+    tight_seal::ClearOnExit<std::optional<EdgeSplitAt>> clear_split_at{m_edge_split_at.local()};
     tight_seal::PairFill<3>::Mesh mesh;
     mesh.corners = [&](const size_t id) { return oriented_tri_vids(id); };
     mesh.value = [&](const size_t c, const size_t k, const size_t v) {
@@ -446,9 +446,9 @@ void SimWildMeshTri::tight_seal_fill(
                      const double delta_b,
                      std::vector<std::pair<size_t, size_t>>& children) {
         const Rational ra(delta_a);
-        m_edge_split_at = EdgeSplitAt{a, ra / (ra - Rational(delta_b))};
+        m_edge_split_at.local() = EdgeSplitAt{a, ra / (ra - Rational(delta_b))};
         const size_t v = tight_seal_split_tracked(simplex::Edge(a, b), cells, filled, &children);
-        m_edge_split_at.reset();
+        m_edge_split_at.local().reset();
         return v;
     };
     tight_seal::PairFill<3> fill(mesh, comp_cells, n_functions);
@@ -834,7 +834,7 @@ void SimWildMesh::tight_seal_fill(
     // Component c's function k: the distance to its color k. Each split goes exactly where the
     // pair's difference, linear along the edge, vanishes: delta_a / (delta_a - delta_b) of the
     // way from a, exact for the doubles given (split_adjust_position).
-    tight_seal::ClearOnExit<std::optional<EdgeSplitAt>> clear_split_at{m_edge_split_at};
+    tight_seal::ClearOnExit<std::optional<EdgeSplitAt>> clear_split_at{m_edge_split_at.local()};
     tight_seal::PairFill<4>::Mesh mesh;
     mesh.corners = [&](const size_t id) { return oriented_tet_vids(id); };
     mesh.value = [&](const size_t c, const size_t k, const size_t v) {
@@ -848,9 +848,9 @@ void SimWildMesh::tight_seal_fill(
                      const double delta_b,
                      std::vector<std::pair<size_t, size_t>>& children) {
         const Rational ra(delta_a);
-        m_edge_split_at = EdgeSplitAt{a, ra / (ra - Rational(delta_b))};
+        m_edge_split_at.local() = EdgeSplitAt{a, ra / (ra - Rational(delta_b))};
         const size_t v = tight_seal_split_tracked(simplex::Edge(a, b), cells, filled, &children);
-        m_edge_split_at.reset();
+        m_edge_split_at.local().reset();
         return v;
     };
     tight_seal::PairFill<4> fill(mesh, comp_cells, n_functions);

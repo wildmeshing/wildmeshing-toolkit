@@ -52,46 +52,9 @@ bool SimWildMesh::split_after_cells(
 
 bool SimWildMesh::split_adjust_position(const size_t v_new, const std::vector<Tuple>& children)
 {
-    if (m_edge_split_at) {
-        // exactly at the fraction asked for: rounded if that inverts no child, else exact
-        const auto& cache = split_cache.local();
-        const size_t from = m_edge_split_at->from;
-        if (from != cache.v1_id && from != cache.v2_id) {
-            log_and_throw_error(
-                "split_adjust_position: vertex {} is no end of the edge ({}, {})",
-                from,
-                cache.v1_id,
-                cache.v2_id);
-        }
-        const size_t to = from == cache.v1_id ? cache.v2_id : cache.v1_id;
-        const Vector3r a = m_vertex_attribute[from].pos();
-        const Vector3r b = m_vertex_attribute[to].pos();
-        Vector3r exact;
-        for (int k = 0; k < 3; ++k) {
-            exact[k] = a[k] + (b[k] - a[k]) * m_edge_split_at->fraction;
-        }
-        VertexAttributes& va = m_vertex_attribute[v_new];
-        const auto inverts = [&] {
-            return std::any_of(children.begin(), children.end(), [&](const Tuple& t) {
-                return is_inverted(t);
-            });
-        };
-        va.m_posf = to_double(exact);
-        va.m_is_rounded = true;
-        va.set_pos_to_posf();
-        if (inverts()) {
-            va.set_pos(exact);
-            va.m_is_rounded = false;
-            m_all_rounded.store(false, std::memory_order_relaxed);
-            if (inverts()) {
-                log_and_throw_error(
-                    "split_adjust_position: the exact split point of ({}, {}) inverts a tet",
-                    cache.v1_id,
-                    cache.v2_id);
-            }
-        }
-        return true;
-    }
+    // Placed by the engine (place_split_vertex_at()) when the caller asked for a point:
+    // that takes precedence over the Voronoi split.
+    if (m_edge_split_at.local()) return true;
     if (!m_voronoi_split_fn || !m_vertex_attribute[v_new].m_is_rounded) return true;
 
     const auto& shared_cache = split_cache.local();

@@ -1,4 +1,5 @@
 #include <wmtk/TetOptimizerMesh.h>
+#include <algorithm>
 #include <limits>
 
 #include <igl/Timer.h>
@@ -253,69 +254,83 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
     size_t v1_id = cache.v1_id;
     size_t v2_id = cache.v2_id;
 
-    /// check inversion & rounding
-    m_vertex_attribute[v_id].m_posf =
-        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
-    m_vertex_attribute[v_id].m_is_rounded = true;
-
-    // this has to be done before the inversion check
-    m_vertex_attribute[v_id].set_pos_to_posf();
-
-    for (const Tuple& loc : locs) {
-        if (is_inverted(loc)) {
-            m_vertex_attribute[v_id].m_is_rounded = false;
-            break;
-        }
-    }
     if (is_force_split_edge(v1_id, v2_id)) {
         std::atomic_ref<size_t>(m_force_split_count).fetch_add(1, std::memory_order_relaxed);
     }
-    if (!m_vertex_attribute[v_id].m_is_rounded) {
-        // The rounded (double) midpoint inverts an incident tet, so place the new vertex at
-        // the EXACT rational midpoint of the two endpoints instead. That midpoint lies on the
-        // shared edge, so it can never invert a previously-valid incident tet: the split
-        // always succeeds and a stuck region can keep being refined. The vertex stays
-        // un-rounded (exact position stored, m_is_rounded = false) until a later round() reclaims
-        // it.
-        //
-        // This used to apply only when an endpoint was already rational, to stop a split
-        // between two rounded endpoints from reintroducing exact coordinates into a
-        // fully-rounded mesh. That restriction is what stalled the optimizer: it rejected the
-        // split outright exactly where the mesh is degenerate, which is where refinement is
-        // needed, and the stuck-refine machinery then hammered the region from outside,
-        // driving the max energy up by orders of magnitude per pass. On Thingi10K 509315 the
-        // restriction cost 5 of 8 runs, which diverged to 1e16..1e20 and hit the sweep's
-        // one-hour timeout; without it 8 of 8 converge, in 2-5 iterations, and healthy models
-        // are unchanged in both time and quality.
-        //
-        // Exact coordinates reaching the output is prevented by the iteration, not here: a
-        // split is the only operation that can un-round a vertex (collapse, all four swaps
-        // and smoothing never do), the post-optimization pass is collapse-only, and the loop
-        // does not stop until every vertex is rounded as well as the energy target being met.
-        m_vertex_attribute[v_id].set_pos(
-            (m_vertex_attribute[v1_id].pos() + m_vertex_attribute[v2_id].pos()) / 2);
-        // Keep m_posf in step with the exact position. It was left holding the double
-        // midpoint, which is a different point -- and specifically the one just found to
-        // invert an incident tet. Every un-guarded m_posf read (edge length, the envelope
-        // tests, the smoothing seed) then works from a position the vertex does not have.
-        // When an endpoint is itself un-rounded the gap is not a rounding step but the whole
-        // distance between that endpoint's exact and approximate positions.
-        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].pos());
-        // Guard against a pre-existing inverted incident tet: re-check in exact
-        // arithmetic (un-rounded v_id => is_inverted uses the rational path).
-        for (const Tuple& t : locs) {
-            if (is_inverted(t)) {
-                log_and_throw_error(
-                    "split_edge_after: split of ({},{}) produced inverted triangle {}",
-                    v1_id,
-                    v2_id,
-                    t.fid(*this));
-                return false;
+
+    /// check inversion & rounding
+    // A caller's EdgeSplitAt, on this thread, in place of the midpoint.
+    if (const auto& split_at = m_edge_split_at.local()) {
+        if (split_at->from != v1_id && split_at->from != v2_id) {
+            log_and_throw_error(
+                "split_edge_after: EdgeSplitAt's vertex {} is no end of the edge ({}, {})",
+                split_at->from,
+                v1_id,
+                v2_id);
+        }
+        const size_t to = split_at->from == v1_id ? v2_id : v1_id;
+        place_split_vertex_at(v_id, split_at->from, to, split_at->fraction, locs);
+    } else {
+        m_vertex_attribute[v_id].m_posf =
+            (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+        m_vertex_attribute[v_id].m_is_rounded = true;
+
+        // this has to be done before the inversion check
+        m_vertex_attribute[v_id].set_pos_to_posf();
+
+        for (const Tuple& loc : locs) {
+            if (is_inverted(loc)) {
+                m_vertex_attribute[v_id].m_is_rounded = false;
+                break;
             }
         }
-        // This split keeps an un-rounded vertex, so the sweep must not skip the next
-        // pass. Set after the rollback checks above, which leave the mesh unchanged.
-        m_all_rounded.store(false, std::memory_order_relaxed);
+        if (!m_vertex_attribute[v_id].m_is_rounded) {
+            // The rounded (double) midpoint inverts an incident tet, so place the new vertex at
+            // the EXACT rational midpoint of the two endpoints instead. That midpoint lies on the
+            // shared edge, so it can never invert a previously-valid incident tet: the split
+            // always succeeds and a stuck region can keep being refined. The vertex stays
+            // un-rounded (exact position stored, m_is_rounded = false) until a later round()
+            // reclaims it.
+            //
+            // This used to apply only when an endpoint was already rational, to stop a split
+            // between two rounded endpoints from reintroducing exact coordinates into a
+            // fully-rounded mesh. That restriction is what stalled the optimizer: it rejected the
+            // split outright exactly where the mesh is degenerate, which is where refinement is
+            // needed, and the stuck-refine machinery then hammered the region from outside,
+            // driving the max energy up by orders of magnitude per pass. On Thingi10K 509315 the
+            // restriction cost 5 of 8 runs, which diverged to 1e16..1e20 and hit the sweep's
+            // one-hour timeout; without it 8 of 8 converge, in 2-5 iterations, and healthy models
+            // are unchanged in both time and quality.
+            //
+            // Exact coordinates reaching the output is prevented by the iteration, not here: a
+            // split is the only operation that can un-round a vertex (collapse, all four swaps
+            // and smoothing never do), the post-optimization pass is collapse-only, and the loop
+            // does not stop until every vertex is rounded as well as the energy target being met.
+            m_vertex_attribute[v_id].set_pos(
+                (m_vertex_attribute[v1_id].pos() + m_vertex_attribute[v2_id].pos()) / 2);
+            // Keep m_posf in step with the exact position. It was left holding the double
+            // midpoint, which is a different point -- and specifically the one just found to
+            // invert an incident tet. Every un-guarded m_posf read (edge length, the envelope
+            // tests, the smoothing seed) then works from a position the vertex does not have.
+            // When an endpoint is itself un-rounded the gap is not a rounding step but the whole
+            // distance between that endpoint's exact and approximate positions.
+            m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].pos());
+            // Guard against a pre-existing inverted incident tet: re-check in exact
+            // arithmetic (un-rounded v_id => is_inverted uses the rational path).
+            for (const Tuple& t : locs) {
+                if (is_inverted(t)) {
+                    log_and_throw_error(
+                        "split_edge_after: split of ({},{}) produced inverted triangle {}",
+                        v1_id,
+                        v2_id,
+                        t.fid(*this));
+                    return false;
+                }
+            }
+            // This split keeps an un-rounded vertex, so the sweep must not skip the next
+            // pass. Set after the rollback checks above, which leave the mesh unchanged.
+            m_all_rounded.store(false, std::memory_order_relaxed);
+        }
     }
 
     if (!split_adjust_position(v_id, locs)) return false;
@@ -470,6 +485,46 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
     // }
 
     return true;
+}
+
+void TetOptimizerMesh::place_split_vertex_at(
+    const size_t v_id,
+    const size_t from,
+    const size_t to,
+    const Rational& fraction,
+    const std::vector<Tuple>& children,
+    const Vector3d* posf)
+{
+    const Vector3r a = m_vertex_attribute[from].pos();
+    const Vector3r b = m_vertex_attribute[to].pos();
+    Vector3r exact;
+    for (int k = 0; k < exact.size(); ++k) {
+        exact[k] = a[k] + (b[k] - a[k]) * fraction;
+    }
+    VertexAttributes& va = m_vertex_attribute[v_id];
+    const auto inverts = [&] {
+        return std::any_of(children.begin(), children.end(), [&](const Tuple& t) {
+            return is_inverted(t);
+        });
+    };
+    // The double position, if it inverts no child (is_inverted(): exact whenever a corner is
+    // un-rounded) ...
+    va.m_posf = posf ? *posf : to_double(exact);
+    va.m_is_rounded = true;
+    va.set_pos_to_posf();
+    if (!inverts()) return;
+    // ... else the exact point itself, m_posf its rounding.
+    va.set_pos(exact);
+    va.m_posf = to_double(exact);
+    va.m_is_rounded = false;
+    if (inverts()) {
+        log_and_throw_error(
+            "place_split_vertex_at: the exact split point of ({}, {}) inverts a tet",
+            from,
+            to);
+    }
+    // An un-rounded vertex is left: the sweep must not skip the next pass. After the check above.
+    m_all_rounded.store(false, std::memory_order_relaxed);
 }
 
 } // namespace wmtk

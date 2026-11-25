@@ -1683,6 +1683,31 @@ protected:
     /// Application metadata not represented by the shared vertex attributes.
     virtual void split_after_vertex(size_t, bool) {}
 
+    /// Where split_edge() puts the new vertex in place of the midpoint: `fraction` of the way
+    /// from the end `from` to the other, exactly. Rounded if that rounding inverts no child, else
+    /// kept exact and un-rounded (place_split_vertex_at()).
+    struct EdgeSplitAt
+    {
+        size_t from;
+        Rational fraction;
+    };
+    /// Per thread: set on the thread that calls split_edge(), right before it, and cleared
+    /// after; a split on any other thread does not see it. Unset: the midpoint.
+    wmtk::threading::enumerable_thread_specific<std::optional<EdgeSplitAt>> m_edge_split_at;
+    /// Places split vertex v_id at `fraction` of the way from vertex `from` to vertex `to`
+    /// (the split edge's ends), exactly: at `posf` -- by default the rounding of that point -- if
+    /// it inverts no child, else at the exact point, un-rounded. A point on the edge inverts no
+    /// child of a parent that was not inverted already; if the exact one does, this throws.
+    /// split_edge_after() calls it when m_edge_split_at is set; a split that does not go through
+    /// split_edge_after() (topological_offset's march) calls it itself.
+    void place_split_vertex_at(
+        size_t v_id,
+        size_t from,
+        size_t to,
+        const Rational& fraction,
+        const std::vector<Tuple>& children,
+        const Vector3d* posf = nullptr);
+
     virtual bool allow_surface_swap() const = 0;
     virtual bool check_surface_topology() const = 0;
 
