@@ -1,4 +1,5 @@
 #include "Envelope.hpp"
+#include <wmtk/utils/Profiler.hpp>
 
 #include <limits>
 #include <vector>
@@ -406,6 +407,7 @@ void Envelope::require_exact_built(const char* query) const
 
 bool Envelope::is_outside(const Eigen::Vector3d& pts) const
 {
+    WMTK_PROF_CALL("envelope/is_outside_point");
     if (disabled) return false;
     if (empty()) return true;
     if (use_exact) {
@@ -477,6 +479,7 @@ bool Envelope::samples_outside_parallel(const std::vector<Vector3d>& ps) const
 
 bool Envelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 {
+    WMTK_PROF_CALL("envelope/is_outside_triangle");
     if (disabled) return false;
     if (empty()) return true;
     if (use_exact) {
@@ -543,6 +546,7 @@ bool Envelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 
 bool Envelope::is_outside(const std::array<Vector3d, 2>& edge) const
 {
+    WMTK_PROF_CALL("envelope/is_outside_edge");
     if (disabled) return false;
     if (empty()) return true;
     if (use_exact) {
@@ -598,6 +602,7 @@ bool Envelope::is_outside(const std::array<Vector2d, 2>& edge) const
 
 double Envelope::nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const
 {
+    WMTK_PROF_CALL("envelope/nearest_point");
     require_primitives("nearest point");
     double dist;
     m_bvh->nearest_facet(pts, result, dist);
@@ -820,6 +825,7 @@ double Envelope::nearest_point_feature(
 
 double Envelope::squared_distance(const Eigen::Vector3d& p) const
 {
+    WMTK_PROF_CALL("envelope/squared_distance");
     require_primitives("nearest point");
     double d2;
     SimpleBVH::Vector3d out;

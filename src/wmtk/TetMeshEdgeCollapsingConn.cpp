@@ -1,4 +1,5 @@
 #include <wmtk/TetMesh.h>
+#include <wmtk/utils/Profiler.hpp>
 #include <wmtk/history/History.hpp>
 #include <wmtk/history/VolumeHistory.hpp>
 
@@ -265,7 +266,7 @@ namespace wmtk {
 bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
     op_event(OpKind::collapse, OpEvent::attempt);
-    if (!collapse_edge_before(loc0)) {
+    if (!WMTK_PROF_TIMED("hook/collapse_edge_before", collapse_edge_before(loc0))) {
         return op_refused(OpKind::collapse, OpEvent::before_hook);
     }
     // The link condition and the connectivity change are one step (collapse_edge_conn), so a dry
@@ -302,8 +303,12 @@ bool TetMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     // !invariants`.
     const OpEvent refused =
         !collapse_edge_check_topology(new_tet_id)                             ? OpEvent::topology
-        : !collapse_edge_after(new_loc)                                       ? OpEvent::after_hook
-        : !invariants(get_one_ring_tets_for_vertex(new_loc))                  ? OpEvent::invariants
+        : !WMTK_PROF_TIMED("hook/collapse_edge_after", collapse_edge_after(new_loc))
+            ? OpEvent::after_hook
+        : !WMTK_PROF_TIMED(
+              "hook/collapse_edge_invariants",
+              invariants(get_one_ring_tets_for_vertex(new_loc)))
+            ? OpEvent::invariants
         : checks_tracked_surface() && !tracked_surface_after({v_kept}, false) ? OpEvent::after_hook
                                                                               : OpEvent::committed;
     if (refused != OpEvent::committed) {

@@ -9,6 +9,7 @@
 #include <wmtk/threading/spin_mutex.hpp>
 #include <wmtk/threading/task_group.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/Profiler.hpp>
 
 // clang-format off
 #include <array>
@@ -543,14 +544,23 @@ private:
     {
         std::vector<const Op*> name;
         std::vector<OpFn*> fn;
+        /// Profiler counters per operation (-1 when not profiling): committed or refused runs,
+        /// and the screened passes' dry runs. See wmtk/utils/Profiler.hpp.
+        std::vector<int> prof_ok, prof_fail, prof_screen;
 
         explicit OpTable(std::map<Op, OpFn>& ops)
         {
             name.reserve(ops.size());
             fn.reserve(ops.size());
+            const bool prof = ::wmtk::prof::enabled();
             for (auto& kv : ops) {
                 name.push_back(&kv.first);
                 fn.push_back(&kv.second);
+                prof_ok.push_back(prof ? ::wmtk::prof::counter_id("op/" + kv.first + "/ok") : -1);
+                prof_fail.push_back(
+                    prof ? ::wmtk::prof::counter_id("op/" + kv.first + "/fail") : -1);
+                prof_screen.push_back(
+                    prof ? ::wmtk::prof::counter_id("op/" + kv.first + "/screen") : -1);
             }
         }
 
@@ -697,6 +707,7 @@ private:
                                 std::tuple<double, Op, Tuple>(priority(m, name, t), name, t))) {
                             continue;
                         }
+                        const ::wmtk::prof::CallTimer prof_timer(ops.prof_screen[op]);
                         verdict[i] = (*ops.fn[op])(m, t) ? kSurvives : kRefused;
                     }
                 });
@@ -795,7 +806,12 @@ private:
                     }
                     // Serial here, as in the queues' serial drain: the storage may grow first.
                     m.reserve_free_slots(m.cell_slot_bound(t), 1);
-                    auto newtup = (*ops.fn[op])(m, t);
+                    std::optional<std::vector<Tuple>> newtup;
+                    {
+                        ::wmtk::prof::CallTimer prof_timer(ops.prof_ok[op]);
+                        newtup = (*ops.fn[op])(m, t);
+                        if (!newtup) prof_timer.retarget(ops.prof_fail[op]);
+                    }
                     done(key);
                     ++attempts;
                     ++committed_attempts;
@@ -856,6 +872,24 @@ private:
             m_waits.load() - waits_before,
             secs(screen_time),
             secs(commit_time));
+        {
+            ::wmtk::prof::ExecStats ps;
+            ps.attempts = double(attempts);
+            ps.successes = double(successes);
+            ps.failures = double(failures);
+            ps.lock_failures = double(m_stats.lock_failures);
+            ps.overflowed = double(m_stats.overflowed);
+            ps.final_queue = double(m_stats.final_queue_size);
+            ps.parallel_seconds = m_stats.parallel_seconds;
+            ps.serial_tail_seconds = m_stats.serial_tail_seconds;
+            ps.busiest_task_seconds = m_stats.busiest_task_seconds;
+            ps.idlest_task_seconds = m_stats.idlest_task_seconds;
+            ps.rounds = double(rounds);
+            ps.screened = true;
+            ps.screen_seconds = secs(screen_time);
+            ps.commit_seconds = secs(commit_time);
+            ::wmtk::prof::executor_pass(ps);
+        }
         // Ring-acquisition failures are a property of the commits, not of the screen refusals.
         log_contention(committed_attempts);
         check_queued_drained();
@@ -1085,6 +1119,8 @@ private:
         const OpTable table(edit_operation_maps);
         const auto& op_name = table.name;
         const auto& op_fn = table.fn;
+        const auto& prof_ok = table.prof_ok;
+        const auto& prof_fail = table.prof_fail;
         const auto id_of = [&table](const Op& name) -> OpId { return table.rank(name); };
 
         std::atomic<bool> stop(false);
@@ -1258,10 +1294,12 @@ private:
 
                 std::vector<Elem> renewed_elements;
                 {
-                    auto locked_vid = lock_vertices(
-                        m,
-                        tup,
-                        task_id); // Note that returning `Tuples` would be invalid.
+                    auto locked_vid = WMTK_PROF_TIMED(
+                        "exec/lock_vertices",
+                        lock_vertices(
+                            m,
+                            tup,
+                            task_id)); // Note that returning `Tuples` would be invalid.
                     if (!locked_vid) {
                         counts.lock_failure++;
                         retry++;
@@ -1333,7 +1371,11 @@ private:
                         std::optional<std::vector<Tuple>> newtup;
                         if (!repeat) {
                             const auto usage_before = AppMesh::slot_usage_of_this_thread();
-                            newtup = (*op_fn[op])(m, tup);
+                            {
+                                ::wmtk::prof::CallTimer prof_timer(prof_ok[op]);
+                                newtup = (*op_fn[op])(m, tup);
+                                if (!newtup) prof_timer.retarget(prof_fail[op]);
+                            }
                             if (budget != nullptr) {
                                 const auto usage = AppMesh::slot_usage_of_this_thread();
                                 budget->cells -= usage.cells - usage_before.cells;
@@ -1345,7 +1387,9 @@ private:
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) {
                             have_last_failed = false;
-                            renewed_tuples = renew_neighbor_tuples(m, op_str, newtup.value());
+                            renewed_tuples = WMTK_PROF_TIMED(
+                                "exec/renew_neighbor_tuples",
+                                renew_neighbor_tuples(m, op_str, newtup.value()));
                             counts.success++;
                             if (track_live_success) {
                                 live_success.fetch_add(1, std::memory_order_relaxed);
@@ -1535,6 +1579,19 @@ private:
             m_stats += st; // a round of a screened call: the call adds its rounds up
         } else {
             m_stats = st;
+            ::wmtk::prof::ExecStats ps;
+            ps.attempts = double((int)cnt_success + (int)cnt_fail);
+            ps.successes = double((int)cnt_success);
+            ps.failures = double((int)cnt_fail);
+            ps.lock_failures = double(st.lock_failures);
+            ps.overflowed = double(st.overflowed);
+            ps.final_queue = double(st.final_queue_size);
+            ps.parallel_seconds = st.parallel_seconds;
+            ps.serial_tail_seconds = st.serial_tail_seconds;
+            ps.busiest_task_seconds = st.busiest_task_seconds;
+            ps.idlest_task_seconds = st.idlest_task_seconds;
+            ps.rounds = double(st.rounds);
+            ::wmtk::prof::executor_pass(ps);
         }
 
         if (!sink) {

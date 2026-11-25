@@ -1,4 +1,5 @@
 #include <wmtk/TetMesh.h>
+#include <wmtk/utils/Profiler.hpp>
 #include <wmtk/history/History.hpp>
 
 #include <algorithm>
@@ -7,7 +8,7 @@
 bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 {
     op_event(OpKind::split, OpEvent::attempt);
-    if (!split_edge_before(loc0)) {
+    if (!WMTK_PROF_TIMED("hook/split_edge_before", split_edge_before(loc0))) {
         return op_refused(OpKind::split, OpEvent::before_hook);
     }
     if (dry_run()) return op_screened(OpKind::split);
@@ -98,8 +99,11 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 
     start_protect_attributes();
     // The two tests in the order and with the short-circuit of `!after || !invariants`.
-    const OpEvent refused = !split_edge_after(new_loc) ? OpEvent::after_hook
-                            : !invariants(get_one_ring_tets_for_vertex(new_loc))
+    const OpEvent refused =
+        !WMTK_PROF_TIMED("hook/split_edge_after", split_edge_after(new_loc)) ? OpEvent::after_hook
+        : !WMTK_PROF_TIMED(
+              "hook/split_edge_invariants",
+              invariants(get_one_ring_tets_for_vertex(new_loc)))
                                 ? OpEvent::invariants
                                 : OpEvent::committed;
     if (refused != OpEvent::committed) {

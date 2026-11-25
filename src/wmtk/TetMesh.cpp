@@ -1,4 +1,5 @@
 #include "TetMesh.h"
+#include <wmtk/utils/Profiler.hpp>
 
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/history/TrackedRecorder.hpp>
@@ -428,13 +429,16 @@ std::vector<TetMesh::Tuple> TetMesh::get_vertices() const
 
 bool TetMesh::smooth_vertex(const Tuple& loc0)
 {
-    if (!smooth_before(loc0)) return false;
+    if (!WMTK_PROF_TIMED("hook/smooth_before", smooth_before(loc0))) return false;
     if (dry_run()) return true;
     const bool check = checks_tracked_surface();
     if (check) tracked_surface_before({loc0.vid(*this)}, false);
     if (m_volume_history) volume_history_before({loc0.vid(*this)});
     start_protect_attributes();
-    const bool ok = smooth_after(loc0) && invariants(get_one_ring_tets_for_vertex(loc0)) &&
+    const bool ok = WMTK_PROF_TIMED("hook/smooth_after", smooth_after(loc0)) &&
+                    WMTK_PROF_TIMED(
+                        "hook/smooth_invariants",
+                        invariants(get_one_ring_tets_for_vertex(loc0))) &&
                     (!check || tracked_surface_after({loc0.vid(*this)}, false));
     if (m_check_smoothing_stays_in_star) check_smoothing_stayed_in_star(loc0.vid(*this));
     if (!ok) {
@@ -1046,6 +1050,7 @@ std::vector<TetMesh::Tuple> TetMesh::get_one_ring_tets_for_edge(const Tuple& t) 
 
 void TetMesh::consolidate_mesh()
 {
+    WMTK_PROF_SCOPE("consolidate_mesh");
     // The slots handed out since the last consolidation: past them the attributes are already
     // default (see reset_range), unless the mesh was initialized since (m_attr_tail_clean).
     constexpr size_t kAll = std::numeric_limits<size_t>::max();

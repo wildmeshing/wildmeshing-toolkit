@@ -1,4 +1,5 @@
 #include <wmtk/RationalPositions.h>
+#include <wmtk/utils/Profiler.hpp>
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -12,13 +13,14 @@ size_t RationalPositions::round_all_vertices()
     if (m_all_rounded.load(std::memory_order_relaxed)) {
         return 0;
     }
+    WMTK_PROF_SCOPE_NOSIZE("round_all_vertices");
 
     size_t reclaimed = 0, still_unrounded = 0;
     for (const size_t vid : all_vertex_ids()) {
         if (vertex_is_rounded(vid)) {
             continue;
         }
-        if (round_vertex(vid)) {
+        if (WMTK_PROF_TIMED("round/round_vertex", round_vertex(vid))) {
             ++reclaimed;
         } else {
             ++still_unrounded;

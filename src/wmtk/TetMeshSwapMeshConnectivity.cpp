@@ -1,5 +1,6 @@
 
 #include <wmtk/TetMesh.h>
+#include <wmtk/utils/Profiler.hpp>
 #include <wmtk/history/History.hpp>
 #include <wmtk/history/VolumeHistory.hpp>
 
@@ -140,7 +141,7 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     // only swap internal edges, not on boundary.
     // if (t.is_boundary_edge(*this)) return false;
     op_event(OpKind::swap_32, OpEvent::attempt);
-    if (!swap_edge_before(t)) {
+    if (!WMTK_PROF_TIMED("hook/swap_edge_before", swap_edge_before(t))) {
         return op_refused(OpKind::swap_32, OpEvent::before_hook);
     }
     const size_t v1_id = t.vid(*this);
@@ -249,8 +250,10 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     }
     start_protect_attributes();
     // The two tests in the order and with the short-circuit of `!after || !invariants`.
-    const OpEvent refused = !swap_edge_after(newt)        ? OpEvent::after_hook
-                            : !invariants(new_tet_tuples) ? OpEvent::invariants
+    const OpEvent refused =
+        !WMTK_PROF_TIMED("hook/swap_edge_after", swap_edge_after(newt)) ? OpEvent::after_hook
+        : !WMTK_PROF_TIMED("hook/swap_edge_invariants", invariants(new_tet_tuples))
+            ? OpEvent::invariants
                             : checks_tracked_surface() && !tracked_surface_after(ring_vs, true)
                                 ? OpEvent::after_hook
                                 : OpEvent::committed;
@@ -283,7 +286,7 @@ bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         return op_refused(OpKind::swap_face, OpEvent::boundary);
     }
 
-    if (!swap_face_before(t)) {
+    if (!WMTK_PROF_TIMED("hook/swap_face_before", swap_face_before(t))) {
         return op_refused(OpKind::swap_face, OpEvent::before_hook);
     }
 
@@ -366,8 +369,10 @@ bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 
         start_protect_attributes();
         // The two tests in the order and with the short-circuit of `!after || !invariants`.
-        const OpEvent refused = !swap_face_after(newt)        ? OpEvent::after_hook
-                                : !invariants(new_tet_tuples) ? OpEvent::invariants
+        const OpEvent refused =
+            !WMTK_PROF_TIMED("hook/swap_face_after", swap_face_after(newt)) ? OpEvent::after_hook
+            : !WMTK_PROF_TIMED("hook/swap_face_invariants", invariants(new_tet_tuples))
+                ? OpEvent::invariants
                                 : checks_tracked_surface() && !tracked_surface_after(ring_vs, true)
                                     ? OpEvent::after_hook
                                     : OpEvent::committed;
@@ -548,7 +553,7 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     // only swap internal edges, not on boundary.
     // if (t.is_boundary_edge(*this)) return false;
     op_event(OpKind::swap_44, OpEvent::attempt);
-    if (!swap_edge_44_before(t)) {
+    if (!WMTK_PROF_TIMED("hook/swap_edge_44_before", swap_edge_44_before(t))) {
         return op_refused(OpKind::swap_44, OpEvent::before_hook);
     }
     const SmartTuple tt(*this, t);
@@ -669,8 +674,11 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 
         start_protect_attributes();
         // The two tests in the order and with the short-circuit of `!after || !invariants`.
-        const OpEvent refused = !swap_edge_44_after(newt)     ? OpEvent::after_hook
-                                : !invariants(new_tet_tuples) ? OpEvent::invariants
+        const OpEvent refused =
+            !WMTK_PROF_TIMED("hook/swap_edge_44_after", swap_edge_44_after(newt))
+                ? OpEvent::after_hook
+            : !WMTK_PROF_TIMED("hook/swap_edge_44_invariants", invariants(new_tet_tuples))
+                ? OpEvent::invariants
                                 : checks_tracked_surface() && !tracked_surface_after(ring_vs, true)
                                     ? OpEvent::after_hook
                                     : OpEvent::committed;
@@ -807,7 +815,7 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     // only swap internal edges, not on boundary.
     // if (t.is_boundary_edge(*this)) return false;
     op_event(OpKind::swap_56, OpEvent::attempt);
-    if (!swap_edge_56_before(t)) {
+    if (!WMTK_PROF_TIMED("hook/swap_edge_56_before", swap_edge_56_before(t))) {
         return op_refused(OpKind::swap_56, OpEvent::before_hook);
     }
     const SmartTuple tt(*this, t);
@@ -924,8 +932,11 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         }
         start_protect_attributes();
         // The two tests in the order and with the short-circuit of `!after || !invariants`.
-        const OpEvent refused = !swap_edge_56_after(newt)     ? OpEvent::after_hook
-                                : !invariants(new_tet_tuples) ? OpEvent::invariants
+        const OpEvent refused =
+            !WMTK_PROF_TIMED("hook/swap_edge_56_after", swap_edge_56_after(newt))
+                ? OpEvent::after_hook
+            : !WMTK_PROF_TIMED("hook/swap_edge_56_invariants", invariants(new_tet_tuples))
+                ? OpEvent::invariants
                                 : checks_tracked_surface() && !tracked_surface_after(ring_vs, true)
                                     ? OpEvent::after_hook
                                     : OpEvent::committed;

@@ -1,4 +1,5 @@
 #include "TopoOffsetTetMesh.h"
+#include <wmtk/utils/Profiler.hpp>
 
 #include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/WindingNumberHierarchy.hpp>
@@ -271,6 +272,7 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
     Vector3d& p_new,
     size_t& steps) const
 {
+    WMTK_PROF_CALL("construct/sphere_trace");
     // Sphere tracing to D = m_construction_distances[k] (entry k's target_distance, or the
     // construction_mode fallback; see the marching), on d the distance to entry k's complex
     // (offset_distance()): d is 1-Lipschitz, so from a point at distance d the level set
@@ -327,6 +329,7 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 
 bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
 {
+    WMTK_PROF_CALL("construct/marching_split_edge_after");
     if (!TetMesh::split_edge_after(t)) {
         return false;
     } // why do we need this?
@@ -838,6 +841,7 @@ void TopoOffsetTetMesh::edge_label_assign(
 
 void TopoOffsetTetMesh::close_labels(const std::vector<size_t>& tids)
 {
+    WMTK_PROF_CALL("offset/close_labels");
     // An In entry's complex, its selection's boundary, has no cell to close a face from: a face
     // between a band cell of an In entry and a cell outside that entry's selection that is no
     // band cell (or the outside of the mesh) is that boundary, label 1, as label_input_complex()
@@ -946,6 +950,7 @@ void TopoOffsetTetMesh::close_labels(const std::vector<size_t>& tids)
  */
 bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<Tuple>& parents)
 {
+    WMTK_PROF_CALL("offset/split_before_cells");
     auto& cache = m_opt_split_cache.local();
     cache.tets.clear();
     cache.is_edge_on_region = is_edge_on_region(edge);
@@ -993,6 +998,7 @@ bool TopoOffsetTetMesh::split_after_cells(
     const size_t v_id,
     const std::vector<Tuple>&)
 {
+    WMTK_PROF_CALL("offset/split_after_cells");
     // Every field of the new vertex's VertexExtra is written here, as the base writes every field
     // of its VertexAttributes (TetOptimizerMesh::split_edge_after()): v_id may be a slot past a
     // consolidation's end, which still holds a dead vertex's values.

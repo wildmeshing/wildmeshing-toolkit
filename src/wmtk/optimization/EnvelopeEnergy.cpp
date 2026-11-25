@@ -1,4 +1,5 @@
 #include "EnvelopeEnergy.hpp"
+#include <wmtk/utils/Profiler.hpp>
 
 namespace wmtk::optimization {
 
@@ -88,12 +89,14 @@ ExactDistanceEnergy3D::ExactDistanceEnergy3D(
 
 double ExactDistanceEnergy3D::value(const TVector& x)
 {
+    WMTK_PROF_CALL("smooth_energy/envelope3d_value");
     assert(x.size() == 3);
     return m_weight * m_envelope->squared_distance(Vector3d(x));
 }
 
 void ExactDistanceEnergy3D::gradient(const TVector& x, TVector& gradv)
 {
+    WMTK_PROF_CALL("smooth_energy/envelope3d_gradient");
     assert(x.size() == 3);
     Vector3d r(x);
     Vector3d n;
@@ -103,6 +106,7 @@ void ExactDistanceEnergy3D::gradient(const TVector& x, TVector& gradv)
 
 void ExactDistanceEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
 {
+    WMTK_PROF_CALL("smooth_energy/envelope3d_hessian");
     Vector3d n, dir;
     int dim = -1;
     long long feature_id = -1;

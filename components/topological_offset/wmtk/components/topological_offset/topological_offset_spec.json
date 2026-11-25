@@ -55,6 +55,7 @@
       "DEBUG_output",
       "log_file",
       "report",
+      "profile_output",
       "throw_on_fail",
       "num_threads",
       "num_smoothing_passes",
@@ -523,6 +524,12 @@
     "type": "string",
     "default": "",
     "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/profile_output",
+    "type": "string",
+    "default": "",
+    "doc": "Profiling (branch spenbert/offset-profile): a JSON file, relative to input_dir, with the run time and mesh size of every step of the run (stages, turns, operation groups, passes) and the call counts and summed thread time of the hot calls (energy evaluations, Newton solves, envelope queries, operations). Rewritten at the end of every turn, so a killed run keeps its profile up to there. Empty: no profiling."
   },
   {
     "pointer": "/throw_on_fail",

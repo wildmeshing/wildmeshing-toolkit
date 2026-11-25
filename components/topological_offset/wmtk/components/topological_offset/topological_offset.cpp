@@ -13,6 +13,7 @@
 #include <wmtk/io/mesh_io.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/Profiler.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 #include "Parameters.h"
 #include "TopoOffsetTetMesh.h"
@@ -54,8 +55,18 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
     }
 
+    // Profiling (branch spenbert/offset-profile): profile_output, relative to input_dir like
+    // log_file; empty is off. Open from here to the end of the run; written when the run ends,
+    // an exception included (wmtk/utils/Profiler.hpp).
+    std::string profile_path = json_params["profile_output"];
+    if (!profile_path.empty()) profile_path = resolve_path(root, profile_path).string();
+    wmtk::prof::Session prof_session(profile_path, "topological_offset");
+    prof_session.meta_json("params", json_params.dump());
+    prof_session.meta("route", component_io.memory() ? "memory" : "file");
+
     // load input file path
     std::string input_path = component_io.path(root, json_params["input"]);
+    prof_session.meta("input", input_path);
 
     // load params
     Parameters params(json_params);
@@ -99,9 +110,14 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                                    : nullptr;
 
     // read input data, init params from bounding box
+    wmtk::prof::Scope prof_read("read_input", false);
     InputData input_data = component_io.memory()
                                ? read_mesh_data(component_io.mesh(input_path), envelope)
                                : read_image_msh(input_path, envelope);
+    prof_read.attr("input_V", double(input_data.V_input.rows()))
+        .attr("input_T", double(input_data.T_input.rows()));
+    prof_read.end();
+    prof_session.meta("num_threads", double(NUM_THREADS));
     // After the output: a labelled reference goes on with `offset`, the band's boundary, each face
     // under the labels of the regions it separates, added (with_offset_surface()), so that a chain
     // keeps passing the first component's input -- the band's boundary is new, so it is its own
@@ -163,6 +179,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 "to yet (the envelope-passing step of the 2D lock-step port); give no envelope, or "
                 "one without labels");
         }
+        prof_session.meta("dimension", 2.);
+        wmtk::prof::Scope prof_init("init_mesh", false);
         TopoOffsetTriMesh mesh(params, NUM_THREADS);
         // Before init_from_image(): the input points' labels, as triwild and simwild set them,
         // which it makes selectable and which the anchors keep
@@ -193,6 +211,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // the band grows through, and a tube built afterwards would pin the junction where a
         // region meets the offset. See TopoOffsetTriMesh::init_surfaces_and_boundaries().
 
+        prof_init.end();
         // label input complex
         for (Parameters::Offset& o : mesh.m_offset_params.offsets)
             o.expression = expression_parser::parse(o.selection, mesh.m_tag_name_to_id);
@@ -272,7 +291,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // execute offset
         igl::Timer timer;
         timer.start();
-        mesh.construct_offset(output_filename);
+        {
+            WMTK_PROF_SCOPE("construct_offset");
+            mesh.construct_offset(output_filename);
+        }
+        wmtk::prof::checkpoint();
 
         // checks
         {
@@ -315,7 +338,10 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             mesh.init_offset_potential();
             mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
 
-            mesh.optimize_offset(output_filename);
+            {
+                WMTK_PROF_SCOPE("optimize_offset");
+                mesh.optimize_offset(output_filename);
+            }
             mesh.audit_input_curves();
 
             // As in 3D: the check above ran on the offset as constructed, and optimization
@@ -448,6 +474,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // initialize mesh. A labelled reference is held to (below), not the envelope surface
         // group: its triangles are the first component's input, not a sheet of this mesh.
         const bool reference = input_data.envelope_reference.has_value();
+        prof_session.meta("dimension", 3.);
+        wmtk::prof::Scope prof_init("init_mesh", false);
         TopoOffsetTetMesh mesh(params, NUM_THREADS);
         // Before init_from_image(): the input points' labels, as simwild sets them, which it makes
         // tags of and which the anchors keep (TopoOffsetTetMesh::hold_curves_and_points()).
@@ -473,6 +501,11 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // and never tracked: a mesh that does not fill its box -- a filtered tetwild output, its
         // boundary its tracked faces -- is refused (require_box_boundary()).
         mesh.require_box_boundary("topological_offset");
+        prof_init.end();
+        // The steps' mesh sizes from here on (TopoOffsetTetMesh::profile_size()); cleared before
+        // the mesh goes.
+        const wmtk::prof::ProbeGuard prof_probe([&mesh]() { return mesh.profile_size(); });
+        wmtk::prof::Scope prof_reference("hold_reference", false);
         // A reference, the first component's labelled input, held to as simwild holds one
         // (simwild.cpp's run_3D): the envelopes around its triangles of this mesh's labels
         // (io::held_rows(); TopoOffsetTetMesh::build_envelopes() builds them and runs the two
@@ -502,11 +535,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 input_data.reference_point_labels);
         }
 
+        prof_reference.end();
+
         // label input complex
+        wmtk::prof::Scope prof_label("label_input_complex", false);
         for (Parameters::Offset& o : mesh.m_offset_params.offsets)
             o.expression = expression_parser::parse(o.selection, mesh.m_tag_name_to_id);
         mesh.m_offset_params.parse_protected_tags(mesh.m_tag_name_to_id);
         mesh.label_input_complex();
+        prof_label.end();
 
         // A correspondence handed on from an earlier offset is carried: its offset vertices keep
         // their values (vertex i is V_input row i), and the march adds this run's. Construction
@@ -542,6 +579,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // V is their rounding, in which a tet that is valid exactly can be inverted or flat, and
         // the input is taken as given.
         if (input_data.V_input_r.size() == 0) {
+            WMTK_PROF_SCOPE_NOSIZE("check_input_inversion");
             const auto tets = mesh.get_tets();
             const size_t n_inverted = std::count_if(tets.begin(), tets.end(), [&](const auto& t) {
                 return mesh.is_inverted_f(t);
@@ -558,23 +596,32 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
 
         // initial number of connected components
-        size_t initial_num_comps = mesh.flood_fill();
+        size_t initial_num_comps = [&] {
+            WMTK_PROF_SCOPE_NOSIZE("flood_fill");
+            return mesh.flood_fill();
+        }();
 
         // The BVH is needed by construction; the potential is not -- construct_offset() and
         // everything it calls reference m_offset_potential zero times, since marching places
         // vertices at plain edge midpoints. So the potential is built after the offset exists,
         // and only when the optimization runs.
-        mesh.init_input_complex_bvh();
+        {
+            WMTK_PROF_SCOPE_NOSIZE("init_input_complex_bvh");
+            mesh.init_input_complex_bvh();
+        }
         mesh.consolidate_mesh();
 
         // record counts (mostly debugging, this is probably really slow)
+        wmtk::prof::Scope prof_counts("init_counts", false);
         mesh.m_init_counts[0] = mesh.vertex_size();
         mesh.m_init_counts[1] = mesh.get_edges().size();
         mesh.m_init_counts[2] = mesh.get_faces().size();
         mesh.m_init_counts[3] = mesh.tet_size();
+        prof_counts.end();
 
         // output input complex and entire mesh as vtu (DEBUG_remote_output: the complex alone)
         if (mesh.m_offset_params.debug_output) {
+            WMTK_PROF_SCOPE_NOSIZE("debug_input_output");
             if (mesh.stage_frames()) mesh.write_debug_frame("input");
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
@@ -582,10 +629,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // execute offset
         igl::Timer timer;
         timer.start();
-        mesh.construct_offset(output_filename);
+        {
+            WMTK_PROF_SCOPE("construct_offset");
+            mesh.construct_offset(output_filename);
+        }
+        wmtk::prof::checkpoint();
 
         // checks
         {
+            WMTK_PROF_SCOPE_NOSIZE("construction_checks");
             // Did conservative growth run out of room? Reported here, not inside the
             // optimization, because it is a property of the offset as constructed: the
             // optimization cannot move vertices off the bounding box, so a band clipped here
@@ -622,17 +674,32 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (mesh.m_offset_params.optimize_offset) {
             // The potential, against the constructed offset. Only the optimization reads it, so
             // a construction-only run builds none.
-            mesh.init_offset_potential();
-            mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
+            {
+                WMTK_PROF_SCOPE_NOSIZE("init_offset_potential");
+                mesh.init_offset_potential();
+            }
+            {
+                WMTK_PROF_SCOPE_NOSIZE("write_phi_grid");
+                mesh.write_phi_grid(
+                    output_filename.string(),
+                    mesh.m_offset_params.phi_grid_resolution);
+            }
 
-            mesh.optimize_offset(output_filename);
-            mesh.audit_input_curves();
+            {
+                WMTK_PROF_SCOPE("optimize_offset");
+                mesh.optimize_offset(output_filename);
+            }
+            {
+                WMTK_PROF_SCOPE_NOSIZE("audit_input_curves");
+                mesh.audit_input_curves();
+            }
 
             // The manifoldness check above ran on the offset as constructed. Optimization then
             // re-triangulates it -- splits, collapses and four kinds of swap all touch the
             // offset surface -- so the property has to be re-established afterwards, not
             // assumed to survive.
             if (check_manifoldness) {
+                WMTK_PROF_SCOPE_NOSIZE("manifold_check_after");
                 if (mesh.offset_is_manifold()) {
                     logger().info("Offset region manifold check passed after optimization.");
                 } else {
@@ -652,13 +719,17 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         }
         // The last debug frame is written in the background (write_debug_frame()); no frame
         // follows, so the run waits for it here.
-        mesh.wait_debug_frame_write();
+        {
+            WMTK_PROF_SCOPE_NOSIZE("wait_debug_frame_write");
+            mesh.wait_debug_frame_write();
+        }
 
         double time = timer.getElapsedTime();
         wmtk::logger().info("total time {}s", time);
 
         // inversion check
         {
+            WMTK_PROF_SCOPE_NOSIZE("final_inversion_check");
             auto tets = mesh.get_tets();
             bool noninverted = mesh.invariants(tets);
             if (!noninverted) {
@@ -677,6 +748,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // report
         // Un-rounded output vertices: logged as an error, thrown with throw_on_fail (after the
         // report), their exact positions returned on the memory route (V_rational).
+        wmtk::prof::Scope prof_report("report", false);
         const size_t unrounded = mesh.count_unrounded();
         const std::string report_file = json_params["report"];
         if (component_io.memory() || !report_file.empty()) {
@@ -737,12 +809,23 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             component_io.memory(),
             json_params["throw_on_fail"]);
 
+        prof_report.end();
+
         // mesh.write_msh(output_filename.string()); // write .msh
-        topological_offset::collect_memory_output(mesh, component_io);
-        if (!component_io.memory())
+        {
+            WMTK_PROF_SCOPE_NOSIZE("collect_memory_output");
+            topological_offset::collect_memory_output(mesh, component_io);
+        }
+        if (!component_io.memory()) {
+            WMTK_PROF_SCOPE_NOSIZE("write_mesh");
             io::write_mesh(output_filename.string() + ".msh", component_io.result.first.at("mesh"));
-        hand_on_envelope(offset_rows(mesh));
+        }
+        {
+            WMTK_PROF_SCOPE_NOSIZE("hand_on_envelope");
+            hand_on_envelope(offset_rows(mesh));
+        }
         if (mesh.m_offset_params.save_vtu) { // write .vtu: the result, as the .msh
+            WMTK_PROF_SCOPE_NOSIZE("write_vtu");
             mesh.write_vtu(output_filename.string(), nullptr, /*result=*/true);
         }
 

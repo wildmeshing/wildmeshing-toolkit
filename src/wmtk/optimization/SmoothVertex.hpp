@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/optimization/AMIPSEnergy.hpp>
+#include <wmtk/utils/Profiler.hpp>
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/EnvelopeEnergy.hpp>
 #include <wmtk/optimization/solver.hpp>
@@ -377,7 +378,7 @@ bool smooth_vertex_3d(
     // which leaves `base_energy` as `amips_energy` and every expression below exactly what it
     // was.
     const std::shared_ptr<polysolve::nonlinear::Problem> extra_energy =
-        m.smoothing_extra_energy(vid);
+        WMTK_PROF_TIMED("smooth/build_extra_energy", m.smoothing_extra_energy(vid));
     std::shared_ptr<polysolve::nonlinear::Problem> base_energy = amips_energy;
     if (extra_energy) {
         auto sum = std::make_shared<EnergySum>();
@@ -393,6 +394,7 @@ bool smooth_vertex_3d(
         VectorXd x = VA[vid].m_posf;
         bool threw = false;
         try {
+            WMTK_PROF_CALL("smooth/newton_minimize");
             solver->minimize(*total_energy, x);
         } catch (const std::exception&) {
             // polysolve reports a failed line search by throwing; the position it reached
@@ -415,6 +417,7 @@ bool smooth_vertex_3d(
         (VA[vid].m_is_on_surface || on_tagged_curve) ? m.smoothing_energy_envelope(vid) : nullptr;
 
     if (pull_env && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
+        WMTK_PROF_CALL("smooth/projected_step");
         // Smooth as if the vertex were interior, then walk back onto the input. The ring's value
         // before the move is read here, before the solve moves the vertex (see
         // smoothing_ring_energy()); by default it is max_quality.

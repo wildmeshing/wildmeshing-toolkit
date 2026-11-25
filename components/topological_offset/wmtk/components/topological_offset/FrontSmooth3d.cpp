@@ -1,4 +1,5 @@
 #include "TopoOffsetTetMesh.h"
+#include <wmtk/utils/Profiler.hpp>
 
 #include <wmtk/optimization/AMIPSEnergy.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
@@ -24,6 +25,7 @@ namespace wmtk::components::topological_offset {
 
 bool TopoOffsetTetMesh::smooth_repulsion_vertex(const Tuple& t)
 {
+    WMTK_PROF_CALL("smooth/repulsion_vertex");
     // The front's path with the repulsion term in place of the band term: the whole objective
     // arrives through smoothing_extra_energy() -- the AMIPS term over the ring and
     // repulsion_energy(vid) -- and w_amips 0 keeps the smoother from adding an AMIPS term of its
@@ -159,6 +161,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_objectiv
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
     const size_t vid) const
 {
+    WMTK_PROF_CALL("smooth/build_front_energy");
     // The vertex's part of the energy's band term; see band_volume_energy_at().
     auto sum = std::make_shared<optimization::EnergySum>();
     // EXPERIMENTAL_band_volume_rule "surface": the face term of the live offset faces through
@@ -200,6 +203,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::front_energy(
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::band_volume_energy_at(
     const size_t vid) const
 {
+    WMTK_PROF_CALL("smooth/build_band_volume_energy");
     // band_cell_term() of each band cell of the ring, x moving (BandVolumeEnergy3D), and under
     // "exact_swept" its piece. EXPERIMENTAL_band_volume_rule "surface": no cell carries a band
     // term.

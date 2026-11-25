@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/MeshData.hpp>
+#include <wmtk/utils/Profiler.hpp>
 
 #include <array>
 #include <atomic>
@@ -1789,6 +1790,28 @@ public:
     }
     /// Whether tet `tid` is part of the offset BAND (as opposed to the input complex).
     bool cell_is_offset_band(const size_t tid) const { return m_tet_attribute[tid].label == 2; }
+    /// The mesh size the profiler's steps record (wmtk/utils/Profiler.hpp): live vertices and
+    /// tets, band cells, offset-surface vertices. One pass over the slots.
+    wmtk::prof::MeshSize profile_size() const
+    {
+        wmtk::prof::MeshSize m;
+        int64_t v = 0, t = 0, band = 0, front = 0;
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            if (!vertex_slot_live(i)) continue;
+            ++v;
+            if (i < m_vertex_extra.size() && m_vertex_extra[i].m_is_on_offset) ++front;
+        }
+        for (size_t i = 0; i < tet_capacity(); ++i) {
+            if (!tet_slot_live(i)) continue;
+            ++t;
+            if (i < m_tet_attribute.size() && m_tet_attribute[i].label == 2) ++band;
+        }
+        m.V = v;
+        m.T = t;
+        m.band_T = band;
+        m.front_V = front;
+        return m;
+    }
 
     // ------- the plastic medium (use_rest_pose) -------
 
@@ -3463,6 +3486,7 @@ public:
     {
         // DEBUG_remote_output: no per-operation or per-smoothing-pass frame (remote_frames()).
         if (remote_frames() && path.rfind("debug_", 0) == 0) return;
+        WMTK_PROF_SCOPE_NOSIZE("write_debug_output");
         const char ph = m_tetwild_pass ? 'F' : 'S'; // a TetWild pass, or the loop
         if (m_round != m_debug_last_round || ph != m_debug_last_tag ||
             m_frame_prefix != m_debug_last_prefix) {

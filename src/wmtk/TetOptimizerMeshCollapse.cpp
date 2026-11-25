@@ -1,4 +1,5 @@
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/utils/Profiler.hpp>
 #include "TetOptimizerMesh.h"
 #include "wmtk/TetMesh.h"
 
@@ -31,6 +32,7 @@ size_t TetOptimizerMesh::collapse_all_edges_impl(
     igl::Timer timer;
     double time;
     timer.start();
+    wmtk::prof::Scope prof_collect("collect", false);
 
     // Build the collapse op list in parallel (both edge directions). Filtering of
     // too-long edges still happens in is_weight_up_to_date.
@@ -42,6 +44,8 @@ size_t TetOptimizerMesh::collapse_all_edges_impl(
             out.emplace_back("edge_collapse", e.switch_vertex(m));
         });
     logger().info("#edges = {}", collect_all_ops.size() / 2);
+    prof_collect.attr("candidates", double(collect_all_ops.size()));
+    prof_collect.end();
     time = timer.getElapsedTime();
     logger().info("edge collapse prepare time: {:.4}s", time);
     size_t accepted = 0;
@@ -765,12 +769,16 @@ size_t TetOptimizerMesh::coarsen_mesh()
     logger().info("========coarsening========");
     igl::Timer timer;
     timer.start();
+    WMTK_PROF_SCOPE("coarsen_mesh");
 
     const size_t cells_before = get_tets().size();
     const double max_before = std::get<0>(optimization_quality_stats());
 
     size_t total = 0;
     for (int round = 0; round < m_params.coarsen_max_rounds; ++round) {
+        wmtk::prof::Scope prof_round("coarsen_round");
+        prof_round.attr("round", round);
+        wmtk::prof::Scope prof_collapse("coarsen_collapse_pass");
         m_coarsen_mode = true;
         // The lock claims one ring more than coarsen_smooth_ring. With smoothing on that is
         // what the writes reach (smoothing a vertex at distance r reads its one-ring and
@@ -788,6 +796,8 @@ size_t TetOptimizerMesh::coarsen_mesh()
             /*exact_ball_lock=*/true);
         m_coarsen_mode = false;
         total += accepted;
+        prof_collapse.attr("accepted", double(accepted));
+        prof_collapse.end();
 
         const double e_after_collapse = std::get<0>(optimization_quality_stats());
 

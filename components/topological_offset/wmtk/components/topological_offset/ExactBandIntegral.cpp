@@ -1,4 +1,5 @@
 #include "ExactBandIntegral.hpp"
+#include <wmtk/utils/Profiler.hpp>
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -3601,6 +3602,7 @@ void ExactBandIntegral::localize(const Eigen::Vector3d* t, const int n, Local& w
 bool ExactBandIntegral::partition(const std::array<Eigen::Vector3d, 4>& T, Work& w, Stats* stats)
     const
 {
+    WMTK_PROF_CALL("band_exact/partition");
     Ctx cx;
     cx.st = stats;
     cx.timing = stats && stats->timing;
@@ -3671,6 +3673,7 @@ const ExactBandIntegral::Work* ExactBandIntegral::cell_partition(
     Work* own,
     Partition* keep) const
 {
+    WMTK_PROF_CALL("band_exact/cell_partition");
     if (stats && keep) {
         // value(t, delta, stats, keep): partitioned afresh (counted), and kept for
         // value_grad_hess() of the same t
@@ -3776,6 +3779,7 @@ void ExactBandIntegral::tri_partition(const std::array<Eigen::Vector3d, 3>& f, T
 
 double ExactBandIntegral::max_distance(const std::array<Eigen::Vector3d, 3>& f, MaxInfo* info) const
 {
+    WMTK_PROF_CALL("band_exact/max_distance");
     TriWork w;
     tri_partition(f, w);
     Ctx cx; // the sub-pieces' clips: no tolerance budget (as the Python)
@@ -3878,6 +3882,7 @@ double ExactBandIntegral::value(
     const double delta,
     Stats* stats) const
 {
+    WMTK_PROF_CALL("band_exact/value");
     if (m_values.empty() || stats) return evaluate(T, delta, stats, nullptr);
     return value_tabled(T, delta, nullptr);
 }
@@ -3887,6 +3892,7 @@ double ExactBandIntegral::value(
     const double delta,
     Partition& keep) const
 {
+    WMTK_PROF_CALL("band_exact/value");
     if (m_values.empty()) return evaluate(T, delta, nullptr, &keep);
     return value_tabled(T, delta, &keep);
 }
@@ -3938,6 +3944,7 @@ double ExactBandIntegral::evaluate(
     Stats* stats,
     Partition* keep) const
 {
+    WMTK_PROF_CALL("band_exact/evaluate");
     Ctx cx;
     cx.st = stats;
     cx.timing = stats && stats->timing;
@@ -4394,6 +4401,7 @@ double ExactBandIntegral::value_grad_hess_impl(
     Partition* keep,
     const bool want_value) const
 {
+    WMTK_PROF_CALL("band_exact/value_grad_hess");
     G.setZero();
     H.setZero();
     Ctx cx;
@@ -5012,6 +5020,7 @@ ExactBandIntegral::FaceParts& ExactBandIntegral::FaceParts::operator=(FaceParts&
 
 void ExactBandIntegral::label_face(const std::array<Eigen::Vector3d, 3>& f, FaceWork& fw) const
 {
+    WMTK_PROF_CALL("band_exact/label_face");
     TriWork& w = fw.w;
     fw.parts.clear();
     fw.rule_a = 0;
@@ -5222,6 +5231,7 @@ double ExactBandIntegral::front_face(
     const double delta,
     FaceParts* keep) const
 {
+    WMTK_PROF_CALL("band_exact/front_face");
     const FaceWork& fw = face_parts(f, keep);
     if (fw.n.isZero(0.)) return 0.; // a flat face: no area
     Ctx cx;
@@ -5241,6 +5251,7 @@ void ExactBandIntegral::front_face_derivs(
     int* rule_a,
     Eigen::Matrix3d* hess_swept) const
 {
+    WMTK_PROF_CALL("band_exact/front_face_derivs");
     grad.setZero();
     hess.setZero();
     if (hess_swept) hess_swept->setZero();

@@ -1,4 +1,5 @@
 #include <wmtk/TetOptimizerMesh.h>
+#include <wmtk/utils/Profiler.hpp>
 #include <limits>
 
 #include <igl/Timer.h>
@@ -37,10 +38,13 @@ void TetOptimizerMesh::split_all_edges()
     m_high_valence_rejects = 0;
 
     timer.start();
+    wmtk::prof::Scope prof_collect("collect", false);
     auto collect_all_ops = wmtk::parallel_collect_edge_ops(
         *this,
         NUM_THREADS,
         [](TetOptimizerMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
+    prof_collect.attr("candidates", double(collect_all_ops.size()));
+    prof_collect.end();
     time = timer.getElapsedTime();
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
     wmtk::run_pass(

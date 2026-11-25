@@ -1,4 +1,5 @@
 #include <wmtk/TetMesh.h>
+#include <wmtk/utils/Profiler.hpp>
 #include <wmtk/TetOptimizerMesh.h>
 
 #include <igl/Timer.h>
@@ -86,12 +87,15 @@ size_t TetOptimizerMesh::swap_all_edges_32()
     igl::Timer timer;
     double time;
     timer.start();
+    WMTK_PROF_SCOPE("swap_all_edges_32");
+    wmtk::prof::Scope prof_collect("collect", false);
     auto collect_all_ops = wmtk::parallel_collect_edge_ops(
         *this,
         NUM_THREADS,
         [](TetOptimizerMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_swap", e); });
     time = timer.getElapsedTime();
     logger().info("edge swap prepare time: {:.4}s", time);
+    prof_collect.end();
     size_t total_success = 0;
     SurfaceTopoSignature sig_before;
     if (check_surface_topology()) {
@@ -502,12 +506,15 @@ size_t TetOptimizerMesh::swap_all_faces()
     igl::Timer timer;
     double time;
     timer.start();
+    WMTK_PROF_SCOPE("swap_all_faces");
+    wmtk::prof::Scope prof_collect("collect", false);
     auto collect_all_ops =
         wmtk::parallel_collect_face_ops(*this, NUM_THREADS, [](auto&, const auto& f, auto& out) {
             out.emplace_back("face_swap", f);
         });
     time = timer.getElapsedTime();
     logger().info("face swap prepare time: {:.4}s", time);
+    prof_collect.end();
     size_t total_success = 0;
     wmtk::run_pass(
         *this,
@@ -619,6 +626,8 @@ size_t TetOptimizerMesh::swap_all_edges_all()
     igl::Timer timer;
     double time;
     timer.start();
+    WMTK_PROF_SCOPE("swap_all_edges_all");
+    wmtk::prof::Scope prof_collect("collect", false);
     auto collect_all_ops =
         wmtk::parallel_collect_edge_ops(*this, NUM_THREADS, [](auto&, const auto& e, auto& out) {
             out.emplace_back("edge_swap", e);
@@ -627,6 +636,7 @@ size_t TetOptimizerMesh::swap_all_edges_all()
         });
     time = timer.getElapsedTime();
     logger().info("edge swap prepare time: {:.4}s", time);
+    prof_collect.end();
     size_t total_success = 0;
     SurfaceTopoSignature sig_before;
     if (check_surface_topology()) {
@@ -672,12 +682,15 @@ size_t TetOptimizerMesh::swap_all_edges_44()
     igl::Timer timer;
     double time;
     timer.start();
+    WMTK_PROF_SCOPE("swap_all_edges_44");
+    wmtk::prof::Scope prof_collect("collect", false);
     auto collect_all_ops =
         wmtk::parallel_collect_edge_ops(*this, NUM_THREADS, [](auto&, const auto& e, auto& out) {
             out.emplace_back("edge_swap_44", e);
         });
     time = timer.getElapsedTime();
     logger().info("edge swap 44 prepare time: {:.4}s", time);
+    prof_collect.end();
     size_t total_success = 0;
     SurfaceTopoSignature sig_before;
     if (check_surface_topology()) sig_before = surface_topology_signature();
@@ -826,12 +839,15 @@ size_t TetOptimizerMesh::swap_all_edges_56()
     igl::Timer timer;
     double time;
     timer.start();
+    WMTK_PROF_SCOPE("swap_all_edges_56");
+    wmtk::prof::Scope prof_collect("collect", false);
     auto collect_all_ops =
         wmtk::parallel_collect_edge_ops(*this, NUM_THREADS, [](auto&, const auto& e, auto& out) {
             out.emplace_back("edge_swap_56", e);
         });
     time = timer.getElapsedTime();
     logger().info("edge swap 56 prepare time: {:.4}s", time);
+    prof_collect.end();
     size_t total_success = 0;
     SurfaceTopoSignature sig_before;
     if (check_surface_topology()) sig_before = surface_topology_signature();

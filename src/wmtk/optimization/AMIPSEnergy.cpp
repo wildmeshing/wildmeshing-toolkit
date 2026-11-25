@@ -1,4 +1,5 @@
 #include "AMIPSEnergy.hpp"
+#include <wmtk/utils/Profiler.hpp>
 
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/AMIPS2D.h>
@@ -103,6 +104,7 @@ AMIPSEnergy3D::TVector AMIPSEnergy3D::initial_position() const
 
 double AMIPSEnergy3D::value(const TVector& x)
 {
+    WMTK_PROF_CALL("smooth_energy/amips3d_value");
     assert(x.size() == 3);
     if (m_last_value.matches(x)) return m_last_value.result;
 
@@ -120,6 +122,7 @@ double AMIPSEnergy3D::value(const TVector& x)
 
 void AMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
 {
+    WMTK_PROF_CALL("smooth_energy/amips3d_gradient");
     assert(x.size() == 3);
     if (m_last_gradient.matches(x)) {
         gradv = m_last_gradient.result;
@@ -144,6 +147,7 @@ void AMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
 
 void AMIPSEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
 {
+    WMTK_PROF_CALL("smooth_energy/amips3d_hessian");
     assert(x.size() == 3);
     hessian.resize(3, 3);
     hessian.setZero();

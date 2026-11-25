@@ -413,6 +413,12 @@ public:
         }
         return cnt;
     }
+    /// Whether vertex slot vid / tet slot tid holds a live element (profiling's size probe).
+    bool vertex_slot_live(const size_t vid) const
+    {
+        return !m_vertex_connectivity[vid].m_is_removed;
+    }
+    bool tet_slot_live(const size_t tid) const { return !m_tet_connectivity[tid].m_is_removed; }
     /**
      * @brief get the number of unremoved tets
      *

@@ -1,4 +1,5 @@
 #include "OffsetPotential.hpp"
+#include <wmtk/utils/Profiler.hpp>
 #include "ExactBandIntegral.hpp"
 
 #include <wmtk/utils/AMIPS.h>
@@ -238,6 +239,7 @@ void SmoothOffsetPotential<DIM>::build(
 template <int DIM>
 double SmoothOffsetPotential<DIM>::value(const VecD& p) const
 {
+    WMTK_PROF_CALL("potential/smooth_value");
     return (*m_impl->esp)(m_impl->V, esp_query<DIM>(p));
 }
 
@@ -245,6 +247,7 @@ double SmoothOffsetPotential<DIM>::value(const VecD& p) const
 template <int DIM>
 typename SmoothOffsetPotential<DIM>::VecD SmoothOffsetPotential<DIM>::gradient(const VecD& p) const
 {
+    WMTK_PROF_CALL("potential/smooth_gradient");
     return m_impl->esp->gradient(m_impl->V, esp_query<DIM>(p));
 }
 
@@ -252,6 +255,7 @@ typename SmoothOffsetPotential<DIM>::VecD SmoothOffsetPotential<DIM>::gradient(c
 template <int DIM>
 typename SmoothOffsetPotential<DIM>::MatD SmoothOffsetPotential<DIM>::hessian(const VecD& p) const
 {
+    WMTK_PROF_CALL("potential/smooth_hessian");
     // The true Hessian, for the caller to project or not: the smoothing energy squares the
     // residual and takes its own Gauss-Newton approximation, which is a better-motivated route to
     // a PSD matrix than clamping this one. ESP could not be projected per term in any case,
@@ -274,6 +278,7 @@ std::string SmoothOffsetPotential<DIM>::describe_active(const VecD& p) const
 template <int DIM>
 void SmoothOffsetPotential<DIM>::value_gradient(const VecD& p, double& v, VecD& g) const
 {
+    WMTK_PROF_CALL("potential/smooth_value_gradient");
     // value() and gradient() from ONE collision build: the build, not the per-pair barrier
     // evaluation, dominates an evaluation's cost (ipc's ArbitraryPointESP::evaluate() says so;
     // measured on the cube, value 1.07 us, gradient 1.11 us, value+gradient+Hessian 1.06 us), and
@@ -452,6 +457,7 @@ double SmoothOffsetPotential<DIM>::residual_length(const VecD& p) const
 template <int DIM>
 double SmoothOffsetPotential<DIM>::relative_residual(const VecD& p) const
 {
+    WMTK_PROF_CALL("potential/smooth_relative_residual");
     double t;
     return level_set_distance(p, t) ? t / m_delta : std::numeric_limits<double>::quiet_NaN();
 }
@@ -506,6 +512,7 @@ void OffsetEnergy<DIM>::residual(const VecD& p, double& r, VecD& dr) const
 template <int DIM>
 double OffsetEnergy<DIM>::value(const TVector& x)
 {
+    WMTK_PROF_CALL("smooth_energy/offset_value");
     double r;
     VecD dr;
     residual(VecD(x.head(DIM)), r, dr);
@@ -515,6 +522,7 @@ double OffsetEnergy<DIM>::value(const TVector& x)
 template <int DIM>
 void OffsetEnergy<DIM>::gradient(const TVector& x, TVector& gradv)
 {
+    WMTK_PROF_CALL("smooth_energy/offset_gradient");
     double r;
     VecD dr;
     residual(VecD(x.head(DIM)), r, dr);
@@ -524,6 +532,7 @@ void OffsetEnergy<DIM>::gradient(const TVector& x, TVector& gradv)
 template <int DIM>
 void OffsetEnergy<DIM>::hessian(const TVector& x, MatrixXd& hessian)
 {
+    WMTK_PROF_CALL("smooth_energy/offset_hessian");
     const VecD p = x.head(DIM);
     double r;
     VecD dr;
@@ -634,6 +643,7 @@ void EuclideanOffsetPotential<DIM>::nearest_feature(const VecD& p, VecD& foot, i
 template <int DIM>
 double EuclideanOffsetPotential<DIM>::value(const VecD& p) const
 {
+    WMTK_PROF_CALL("potential/euclidean_value");
     if constexpr (DIM == 2) {
         if (m_bvh) {
             // The distance to the complex's curve, through the feature query -- never
@@ -656,6 +666,7 @@ template <int DIM>
 typename EuclideanOffsetPotential<DIM>::VecD EuclideanOffsetPotential<DIM>::gradient(
     const VecD& p) const
 {
+    WMTK_PROF_CALL("potential/euclidean_gradient");
     VecD foot = VecD::Zero(), dir = VecD::Zero();
     int dim = -1;
     nearest_feature(p, foot, dim, dir);
@@ -676,6 +687,7 @@ template <int DIM>
 typename EuclideanOffsetPotential<DIM>::MatD EuclideanOffsetPotential<DIM>::hessian(
     const VecD& p) const
 {
+    WMTK_PROF_CALL("potential/euclidean_hessian");
     VecD foot = VecD::Zero(), dir = VecD::Zero();
     int dim = -1;
     nearest_feature(p, foot, dim, dir);
@@ -916,6 +928,7 @@ void CubedAMIPSEnergy3D::at_point(const TVector& x)
 
 double CubedAMIPSEnergy3D::value(const TVector& x)
 {
+    WMTK_PROF_CALL("smooth_energy/cubed_amips3d_value");
     at_point(x);
     if (m_value_set) return m_value;
     double res = 0.;
@@ -934,6 +947,7 @@ double CubedAMIPSEnergy3D::value(const TVector& x)
 
 void CubedAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
 {
+    WMTK_PROF_CALL("smooth_energy/cubed_amips3d_gradient");
     at_point(x);
     if (m_grad_set) {
         gradv = m_grad;
@@ -957,6 +971,7 @@ void CubedAMIPSEnergy3D::gradient(const TVector& x, TVector& gradv)
 
 void CubedAMIPSEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
 {
+    WMTK_PROF_CALL("smooth_energy/cubed_amips3d_hessian");
     at_point(x);
     hessian.setZero(3, 3);
     Eigen::Vector3d g;
@@ -1085,6 +1100,7 @@ double VolAMIPSEnergy3D::eval(
 
 double VolAMIPSEnergy3D::value(const TVector& xv)
 {
+    WMTK_PROF_CALL("smooth_energy/vol_amips3d_value");
     Eigen::Vector3d g;
     Eigen::Matrix3d H;
     return eval(xv.head<3>(), 0, g, H);
@@ -1092,6 +1108,7 @@ double VolAMIPSEnergy3D::value(const TVector& xv)
 
 void VolAMIPSEnergy3D::gradient(const TVector& xv, TVector& gradv)
 {
+    WMTK_PROF_CALL("smooth_energy/vol_amips3d_gradient");
     Eigen::Vector3d g;
     Eigen::Matrix3d H;
     eval(xv.head<3>(), 1, g, H);
@@ -1100,6 +1117,7 @@ void VolAMIPSEnergy3D::gradient(const TVector& xv, TVector& gradv)
 
 void VolAMIPSEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
 {
+    WMTK_PROF_CALL("smooth_energy/vol_amips3d_hessian");
     Eigen::Vector3d g;
     Eigen::Matrix3d H;
     eval(xv.head<3>(), 2, g, H);
@@ -1131,6 +1149,7 @@ double input_pad(const Eigen::MatrixXd& V)
 
 int64_t nearest_primitive(const Envelope& env, const double pad, const Eigen::Vector3d& p)
 {
+    WMTK_PROF_CALL("distance/nearest_primitive");
     // The BVH's nearest_facet reports its own (reordered) primitive index; its box query reports
     // the input's. So: the distance d from the BVH; every primitive at distance d from p has a
     // point within d of p, so its box meets p's box grown by d (and pad, for the rounding of the
@@ -1157,6 +1176,7 @@ double min_mean_distance(
     int64_t& best,
     const int64_t hint)
 {
+    WMTK_PROF_CALL("distance/min_mean_distance");
     double m = std::numeric_limits<double>::infinity();
     best = -1;
     const auto offer = [&](const int64_t t) {
@@ -1775,6 +1795,7 @@ double BandVolumeEnergy3D::eval(
 
 double BandVolumeEnergy3D::value(const TVector& xv)
 {
+    WMTK_PROF_CALL("smooth_energy/band_volume3d_value");
     Eigen::Vector3d g;
     Eigen::Matrix3d H;
     return eval(xv.head(3), 0, g, H);
@@ -1782,6 +1803,7 @@ double BandVolumeEnergy3D::value(const TVector& xv)
 
 void BandVolumeEnergy3D::gradient(const TVector& xv, TVector& gradv)
 {
+    WMTK_PROF_CALL("smooth_energy/band_volume3d_gradient");
     Eigen::Vector3d g;
     Eigen::Matrix3d H;
     eval(xv.head(3), 1, g, H);
@@ -1790,6 +1812,7 @@ void BandVolumeEnergy3D::gradient(const TVector& xv, TVector& gradv)
 
 void BandVolumeEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
 {
+    WMTK_PROF_CALL("smooth_energy/band_volume3d_hessian");
     Eigen::Vector3d g;
     Eigen::Matrix3d H;
     eval(xv.head(3), 2, g, H);
@@ -2531,6 +2554,7 @@ double SurfaceOffsetError3D::eval(
 
 double SurfaceOffsetError3D::value(const TVector& xv)
 {
+    WMTK_PROF_CALL("smooth_energy/surface_offset3d_value");
     // face_value()'s arithmetic, face by face, so a veto that reads the faces through
     // TopoOffsetTetMesh::surface_face_term() sees the same numbers up to the summation order.
     double e = 0.;
@@ -2542,6 +2566,7 @@ double SurfaceOffsetError3D::value(const TVector& xv)
 
 void SurfaceOffsetError3D::gradient(const TVector& xv, TVector& gradv)
 {
+    WMTK_PROF_CALL("smooth_energy/surface_offset3d_gradient");
     Eigen::Vector3d g;
     Eigen::Matrix3d H;
     eval(xv.head<3>(), 1, g, H);
@@ -2550,6 +2575,7 @@ void SurfaceOffsetError3D::gradient(const TVector& xv, TVector& gradv)
 
 void SurfaceOffsetError3D::hessian(const TVector& xv, MatrixXd& hess)
 {
+    WMTK_PROF_CALL("smooth_energy/surface_offset3d_hessian");
     Eigen::Vector3d g;
     Eigen::Matrix3d H;
     eval(xv.head<3>(), 2, g, H);

@@ -1,4 +1,5 @@
 #include <wmtk/io/ComponentIO.hpp>
+#include <wmtk/utils/Profiler.hpp>
 #include <wmtk/io/DataWriter.hpp>
 #include <wmtk/io/tagged_mesh_data.hpp>
 
@@ -405,6 +406,7 @@ bool TopoOffsetTetMesh::face_is_tag_boundary(const Tuple& f) const
 
 void TopoOffsetTetMesh::untrack_covered_boundaries()
 {
+    WMTK_PROF_SCOPE_NOSIZE("untrack_covered_boundaries");
     // See the declaration. m_is_on_region and the base's m_is_on_surface are recomputed for the
     // corners of the faces untracked: a vertex is on a region boundary iff a face of it is still
     // tracked, and the front is not tracked yet (label_offset_boundary() runs later), so the two
@@ -511,6 +513,7 @@ bool TopoOffsetTetMesh::vertex_is_held(const size_t vid) const
 
 void TopoOffsetTetMesh::build_envelopes()
 {
+    WMTK_PROF_SCOPE_NOSIZE("build_envelopes");
     // See m_envelope's declaration: the envelopes around every held face, built once.
     m_envelope_eps = m_offset_params.envelope_size;
     // Always the exact envelope. An eps that is not a positive length has no exact envelope to
@@ -587,6 +590,7 @@ std::string TopoOffsetTetMesh::label_name(const size_t bit) const
 
 void TopoOffsetTetMesh::hold_curves_and_points()
 {
+    WMTK_PROF_SCOPE_NOSIZE("hold_curves_and_points");
     // See the declaration. As simwild after its insertion: the base's rule for which edges are
     // order-2 (1 tracked face, or 3 and more), tagged here once and carried by the operations,
     // each held in a tube around itself, one tube per label; the anchors where they end.
@@ -964,6 +968,7 @@ bool TopoOffsetTetMesh::vertex_has_point(const size_t vid, const int bit) const
 
 void TopoOffsetTetMesh::label_input_complex()
 {
+    WMTK_PROF_SCOPE_NOSIZE("label_input_complex_impl");
     classify_sheet_faces(); // the mesh may have been refined since the last call
     const std::vector<Parameters::Offset>& offsets = m_offset_params.offsets;
     if (offsets.empty()) log_and_throw_error("offsets: no offset to make");
@@ -2008,6 +2013,7 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
 
 double TopoOffsetTetMesh::offset_distance(const size_t k, const Vector3d& p) const
 {
+    WMTK_PROF_CALL("distance/offset_distance");
     // See the declaration.
     if (m_offset_queries.empty()) return input_complex_distance(p);
     const double d = side_distance(k, p);
@@ -2038,6 +2044,7 @@ double TopoOffsetTetMesh::side_distance(const size_t k, const Vector3d& p) const
 
 double TopoOffsetTetMesh::input_complex_distance(const Vector3d& p) const
 {
+    WMTK_PROF_CALL("distance/input_complex_distance");
     // Several entries: the nearest entry's own distance on its side (side_distance()), whatever
     // kinds they hold; m_input_complex_envelope holds one kind (euclidean_query_envelope()). An
     // In entry has no distance outside its selection (+infinity there, not its 0, which would
@@ -2059,6 +2066,7 @@ double TopoOffsetTetMesh::input_complex_distance(const Vector3d& p) const
 
 void TopoOffsetTetMesh::init_band_exact()
 {
+    WMTK_PROF_SCOPE_NOSIZE("init_band_exact");
     // EXPERIMENTAL_band_volume_rule "exact" (or "front_flux"): the exact integral's structure,
     // beside the offset field. It also gives the settle loop's max test its exact max of d over a
     // front face (ExactBandIntegral::max_distance()). DEBUG_output builds it too, for the debug
@@ -2275,6 +2283,7 @@ void TopoOffsetTetMesh::init_offset_potential()
 
 void TopoOffsetTetMesh::init_region_potentials(const double delta, const double effective_factor)
 {
+    WMTK_PROF_SCOPE_NOSIZE("init_region_potentials");
     // See m_region_potentials. A connected input complex is one region, and that region's field
     // is the union field itself -- nothing to build.
     m_region_potentials.clear();
@@ -2395,6 +2404,7 @@ size_t TopoOffsetTetMesh::get_order_of_vertex(const size_t vid) const
 
 void TopoOffsetTetMesh::init_vertex_order()
 {
+    WMTK_PROF_SCOPE_NOSIZE("init_vertex_order");
     std::array<size_t, 4> count{{0, 0, 0, 0}};
 
     for (const Tuple& t : get_vertices()) {
@@ -2515,6 +2525,7 @@ wmtk::utils::TetComplex labelled_complex(const TopoOffsetTetMesh& m)
 
 bool TopoOffsetTetMesh::is_simplicially_embedded() const
 {
+    WMTK_PROF_SCOPE_NOSIZE("is_simplicially_embedded");
     const size_t bad_tets = wmtk::utils::count_embedding_violations(*this, labelled_complex(*this));
     if (bad_tets == 0) {
         logger().info("\tInput complex/offset simplicially embedded: TRUE");
@@ -2534,6 +2545,7 @@ bool TopoOffsetTetMesh::tet_is_simp_emb(const Tuple& t) const
 
 void TopoOffsetTetMesh::simplicial_embedding()
 {
+    WMTK_PROF_SCOPE("simplicial_embedding");
     // the shared embedding (wmtk/utils/SimplicialEmbedding.hpp) with respect to the labelled
     // complex (labelled_complex()): tets outside the complex whose faces are all in it, then faces
     // whose edges are, then edges whose vertices are; the split hooks give the new simplices the
@@ -2561,6 +2573,7 @@ void TopoOffsetTetMesh::relabel_input_complex()
 
 void TopoOffsetTetMesh::repulsion_smoothing()
 {
+    WMTK_PROF_SCOPE("repulsion_smoothing");
     // The march traces every marched edge to target_distance only if every outer end is farther
     // than it (the maximum marchable distance, see marching_tets()); otherwise it falls back to
     // half that distance and the loop has to carry the front out. These passes push the outer
@@ -2882,6 +2895,8 @@ bool TopoOffsetTetMesh::repulsion_embedding_kept(const std::vector<size_t>& tids
 
 void TopoOffsetTetMesh::marching_tets()
 {
+    WMTK_PROF_SCOPE("marching_tets");
+    wmtk::prof::Scope prof_mark("mark_edges", false);
     m_marching_root_splits = 0;
     m_marching_midpoint_splits = 0;
     m_marching_trace_steps = 0;
@@ -3180,6 +3195,9 @@ void TopoOffsetTetMesh::marching_tets()
     }
 
     // actually split edges
+    prof_mark.end();
+    wmtk::prof::Scope prof_split("split_edges");
+    prof_split.attr("edges", double(e_to_split.size()));
     std::vector<Tuple> garbage;
     std::vector<size_t> frontier_verts; // one ring of these verts are in offset
     for (const simplex::Edge& e : e_to_split) {
@@ -3220,6 +3238,8 @@ void TopoOffsetTetMesh::marching_tets()
     // optimization sets its own mode.
     m_edge_split_mode = EdgeSplitMode::Midpoint;
 
+    prof_split.end();
+    WMTK_PROF_SCOPE_NOSIZE("mark_band");
     // mark all offset tets and children. Several entries: a band cell is one entry's. Every edge
     // from a frontier vertex to the background was split above (or lies in a protected cell, or
     // leads out of an In entry's selection, and the cells around it no band takes), so a band
@@ -3306,6 +3326,7 @@ size_t TopoOffsetTetMesh::band_cell_entry(const size_t tid) const
 
 void TopoOffsetTetMesh::set_offset_tet_tags()
 {
+    WMTK_PROF_SCOPE_NOSIZE("set_offset_tet_tags");
     // Each entry's output tags, by id: init_from_image() added the new ones to the mesh.
     const std::vector<Parameters::Offset>& offsets = m_offset_params.offsets;
     std::vector<CellTag> output_ids(offsets.size());
@@ -3399,6 +3420,7 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
 
 bool TopoOffsetTetMesh::offset_is_manifold()
 {
+    WMTK_PROF_SCOPE_NOSIZE("offset_is_manifold");
     // collect tets in closed offset (labelled 1 or 2)
     auto tets = get_tets();
     std::vector<Vector4i> offset_tets;
@@ -3535,6 +3557,7 @@ void TopoOffsetTetMesh::write_input_complex(const std::string& path)
 
 void TopoOffsetTetMesh::write_vtu(const std::string& path, MeshMap* output, const bool result)
 {
+    WMTK_PROF_SCOPE_NOSIZE("write_vtu");
     if (!m_params.output_enabled && !output) return;
     write_vtu_frame(gather_vtu_frame(path), output, result);
 }
@@ -4229,6 +4252,7 @@ void TopoOffsetTetMesh::write_vtu_frame(const VtuFrame& fr, MeshMap* output, con
 
 void TopoOffsetTetMesh::write_phi_grid(const std::string& path, const int n) const
 {
+    WMTK_PROF_SCOPE_NOSIZE("write_phi_grid_impl");
     if (!m_params.output_enabled) return;
     // A plane slice of the offset potential, carrying Phi per grid vertex. A dense volume is
     // unaffordable in 3D, so the slice is the plane through the box centre with the shortest

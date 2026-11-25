@@ -1,4 +1,5 @@
 #include <wmtk/TetOptimizerMesh.h>
+#include <wmtk/utils/Profiler.hpp>
 #include <wmtk/history/TrackedRecorder.hpp>
 
 #include <wmtk/utils/AMIPS.h>
@@ -42,6 +43,8 @@ std::tuple<double, double> TetOptimizerMesh::optimization_quality_stats()
 
 void TetOptimizerMesh::mesh_improvement(int max_its)
 {
+    wmtk::prof::Scope prof_scope("mesh_improvement");
+    prof_scope.attr("max_its", max_its);
     m_iterations_used = 0;
     if (optimization_stop_at_float() && round_and_check_all_rounded()) {
         logger().info("===== All vertices are rounded. Stop. =====");
@@ -52,6 +55,7 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
 
     if (optimization_bare_coarsen_passes()) {
         // Performing swaps after the initial collapse improves quality and convergence.
+        WMTK_PROF_SCOPE("bare_coarsen_pre");
         local_operations({{0, 1, 1, 0}}, false);
     }
 
@@ -64,6 +68,8 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; ++it) {
         m_iterations_used = it + 1;
         logger().info("\n========it {}========", it);
+        wmtk::prof::Scope prof_it("tetwild_iteration");
+        prof_it.attr("it", it);
 
         double max_metric = 0.;
         double avg_metric = 0.;
@@ -81,6 +87,7 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
         }
 
         logger().info("max energy {:.6} | stop {:.6}", max_metric, optimization_stop_metric());
+        prof_it.attr("max_energy", max_metric).attr("avg_energy", avg_metric);
         optimization_iteration_done(it);
 
         std::atomic<int> n_round = 0;
@@ -124,6 +131,7 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
             it > 0 && max_metric > optimization_stop_metric() &&
             optimization_stalled(pre_max_metric, max_metric)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_metric);
+            WMTK_PROF_SCOPE_NOSIZE("stuck_refine");
             refine_sizing_around_worst(max_metric);
             logger().info(">>>>stuck-refine finished...");
             refine_cooldown = m_params.stuck_refine_cooldown;
@@ -133,6 +141,7 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
 
     if (optimization_bare_coarsen_passes()) {
         logger().info("========it post========");
+        WMTK_PROF_SCOPE("bare_coarsen_post");
         local_operations({{0, 1, 1, 0}});
     }
 
@@ -157,11 +166,16 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
     bool collapse_limit_length)
 {
     igl::Timer timer;
+    wmtk::prof::Scope prof_scope("local_operations");
+    prof_scope.attr("split", ops[0]).attr("collapse", ops[1]).attr("swap", ops[2]).attr(
+        "smooth",
+        ops[3]);
 
     static constexpr std::array<const char*, 4> names = {{"split", "collapse", "swap", "smooth"}};
 
     auto sanity_checks = [this]() {
         if (!m_params.perform_sanity_checks) return;
+        WMTK_PROF_SCOPE_NOSIZE("sanity_checks");
 
         logger().info("Perform sanity checks...");
         for (const Tuple& f : get_faces()) {
@@ -185,7 +199,10 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
     };
 
     sanity_checks();
-    update_attributes_and_history();
+    {
+        WMTK_PROF_SCOPE_NOSIZE("update_attributes_and_history");
+        update_attributes_and_history();
+    }
     size_t retry_count = 0;
     for (int i = 0; i < int(ops.size()); ++i) {
         if (retry_count > 0) {
@@ -200,6 +217,8 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
             for (int n = 0; n < ops[i]; ++n) {
                 ++m_op_epoch; // see m_op_epoch: one epoch per split pass
                 logger().info("==splitting {}==", n);
+                wmtk::prof::Scope prof_pass("split_pass");
+                prof_pass.attr("n", n).attr("retry", double(retry_count));
                 split_all_edges();
                 logger().info(
                     "#V = {}, #T = {} after split",
@@ -209,6 +228,8 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; ++n) {
                 logger().info("==collapsing {}==", n);
+                wmtk::prof::Scope prof_pass("collapse_pass");
+                prof_pass.attr("n", n).attr("retry", double(retry_count));
                 collapse_all_edges(collapse_limit_length);
                 logger().info(
                     "#V = {}, #T = {} after collapse",
@@ -218,13 +239,18 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; ++n) {
                 logger().info("==swapping {}==", n);
+                wmtk::prof::Scope prof_pass("swap_pass");
+                prof_pass.attr("n", n).attr("retry", double(retry_count));
                 const size_t cnt_success = swap_all_edges_all() + swap_all_faces();
+                prof_pass.attr("successes", double(cnt_success));
                 if (cnt_success == 0) break;
             }
         } else {
             smooth_all_vertices(size_t(ops[i]));
             if (ops[i] > 0) round_all_vertices();
         }
+        wmtk::prof::Scope prof_after("after_pass", false);
+        prof_after.tag("pass", names[size_t(i)]);
 
         if (ops[i] > 0) {
             if (m_params.debug_output && i < 3) {
@@ -246,8 +272,10 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
                     cnt_surface_swap_56.load());
             }
             sanity_checks();
+            WMTK_PROF_SCOPE_NOSIZE("update_attributes_and_history");
             update_attributes_and_history();
         }
+        prof_after.end();
 
         // A pass that ran out of preallocated slots abandoned operations for want of storage.
         // Consolidating both reclaims the slots removed elements still hold -- the counter only
@@ -261,6 +289,7 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
         if (slots_exhausted()) {
             const size_t live_before = tet_capacity();
             const size_t store_before = tet_storage_capacity();
+            wmtk::prof::attr_add("slot_exhausted_retries", 1.);
             consolidate_mesh();
             clear_slots_exhausted();
             logger().info(
@@ -404,8 +433,11 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
 
         igl::Timer timer;
         timer.start();
+        wmtk::prof::Scope prof_pass("smooth_pass");
+        prof_pass.attr("i", double(i));
         m_smooth_rejects.reset();
         m_newton.reset();
+        wmtk::prof::Scope prof_collect("collect", false);
         std::vector<std::pair<std::string, Tuple>> collect_all_ops;
         if (m_params.skip_good_regions) {
             for (const size_t v : active_vertices()) {
@@ -417,6 +449,8 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
             }
         }
         logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTime());
+        prof_collect.end();
+        prof_pass.attr("vertices", double(collect_all_ops.size()));
         logger().debug("#V = {}", collect_all_ops.size());
         if (use_colored_smoothing()) {
             smooth_vertices_colored(collect_all_ops);
@@ -430,7 +464,10 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
         logger().info("\tnewton, smooth_after: {}", m_newton.to_string());
         log_smoothing_pass_accounting();
-        smoothing_pass_done();
+        {
+            WMTK_PROF_SCOPE_NOSIZE("smoothing_pass_done");
+            smoothing_pass_done();
+        }
 
         if (m_params.debug_output) {
             write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
@@ -455,6 +492,7 @@ void TetOptimizerMesh::smooth_vertices_colored(
     for (const auto& op : ops) {
         vids.push_back(op.second.vid(*this));
     }
+    wmtk::prof::Scope prof_color("vertex_coloring", false);
     auto classes = utils::greedy_vertex_coloring(
         vids,
         vert_capacity(),
@@ -464,6 +502,8 @@ void TetOptimizerMesh::smooth_vertices_colored(
             out.insert(out.end(), ring.begin(), ring.end());
         });
     const double coloring_time = timer.getElapsedTime();
+    prof_color.attr("classes", double(classes.size()));
+    prof_color.end();
 
     // Each class runs fully in parallel: its vertices share no edge and no cell, so smoothing one
     // neither moves a vertex another reads nor writes a cell attribute another writes -- as long
@@ -480,8 +520,14 @@ void TetOptimizerMesh::smooth_vertices_colored(
         });
         n_total += cls.size();
     }
+    wmtk::prof::Scope prof_smooth("smooth_classes", false);
     const size_t successes = utils::smooth_classes_checked(*this, classes, 16);
     const size_t failures = n_total - successes;
+    prof_smooth.attr("vertices", double(n_total)).attr("successes", double(successes));
+    prof_smooth.end();
+    wmtk::prof::attr_add("exec.attempts", double(n_total));
+    wmtk::prof::attr_add("exec.successes", double(successes));
+    wmtk::prof::attr_add("exec.failures", double(failures));
 
     logger().info("executed: {} | success / fail: {} / {}", n_total, successes, failures);
     logger().info(
@@ -534,6 +580,7 @@ void TetOptimizerMesh::output_faces(
 
 std::tuple<double, double> TetOptimizerMesh::get_max_avg_energy()
 {
+    WMTK_PROF_CALL("quality/get_max_avg_energy");
     double max_energy = -1.;
     double avg_energy = 0.;
     auto cnt = 0;
