@@ -11,9 +11,13 @@ var searchData=
   ['replacedsurface_8',['ReplacedSurface',['../structwmtk_1_1components_1_1isotropic__remeshing_1_1_replaced_surface.html',1,'wmtk::components::isotropic_remeshing']]],
   ['restamipsenergy2d_9',['RestAMIPSEnergy2D',['../classwmtk_1_1components_1_1topological__offset_1_1_rest_a_m_i_p_s_energy2_d.html',1,'wmtk::components::topological_offset']]],
   ['ringlockscratch_10',['ringlockscratch',['../structwmtk_1_1_tet_mesh_1_1_ring_lock_scratch.html',1,'wmtk::TetMesh::RingLockScratch'],['../structwmtk_1_1_tri_mesh_1_1_ring_lock_scratch.html',1,'wmtk::TriMesh::RingLockScratch']]],
-  ['rodedgeframe_11',['RodEdgeFrame',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_edge_frame.html',1,'wmtk::components::prismatic_mesh']]],
-  ['rodframe_12',['RodFrame',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_frame.html',1,'wmtk::components::prismatic_mesh']]],
-  ['rodmeshstate_13',['RodMeshState',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_mesh_state.html',1,'wmtk::components::prismatic_mesh']]],
-  ['rodoptions_14',['RodOptions',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_options.html',1,'wmtk::components::prismatic_mesh']]],
-  ['rules_15',['Rules',['../structwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_rules.html',1,'wmtk::components::prismatic_mesh::quality']]]
+  ['rodbackgroundneighborhood_11',['RodBackgroundNeighborhood',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_background_neighborhood.html',1,'wmtk::components::prismatic_mesh']]],
+  ['rodbackgroundremeshingoptions_12',['RodBackgroundRemeshingOptions',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_background_remeshing_options.html',1,'wmtk::components::prismatic_mesh']]],
+  ['rodedgeframe_13',['RodEdgeFrame',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_edge_frame.html',1,'wmtk::components::prismatic_mesh']]],
+  ['rodfairingrow_14',['RodFairingRow',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_fairing_row.html',1,'wmtk::components::prismatic_mesh']]],
+  ['rodframe_15',['RodFrame',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_frame.html',1,'wmtk::components::prismatic_mesh']]],
+  ['rodjointradiussample_16',['RodJointRadiusSample',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_joint_radius_sample.html',1,'wmtk::components::prismatic_mesh']]],
+  ['rodmeshstate_17',['RodMeshState',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_mesh_state.html',1,'wmtk::components::prismatic_mesh']]],
+  ['rodoptions_18',['RodOptions',['../structwmtk_1_1components_1_1prismatic__mesh_1_1_rod_options.html',1,'wmtk::components::prismatic_mesh']]],
+  ['rules_19',['Rules',['../structwmtk_1_1components_1_1prismatic__mesh_1_1quality_1_1_rules.html',1,'wmtk::components::prismatic_mesh::quality']]]
 ];
