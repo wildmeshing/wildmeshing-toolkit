@@ -431,6 +431,8 @@ public:
             return false;
         };
         if (plan.reason != "ok") return reject(plan.reason);
+        for (size_t ci : plan.patch)
+            if (mesh.fixed(mesh.cells[ci])) return reject("split_touches_reserved_rod_cell");
         const size_t old_n = mesh.p.size();
         std::map<Edge, size_t> mid;
         std::map<size_t, Edge> parents;

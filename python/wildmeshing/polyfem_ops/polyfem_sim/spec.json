@@ -1,0 +1,23 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": ["input", "bodies"],
+    "optional": ["scale", "transformation", "materials", "boundary_conditions", "initial_conditions", "contact", "time", "solver", "space", "output"],
+    "doc": "A PolyFEM simulation of the cells of `bodies`, in this process (polyfem_sim.simulation). The mesh is cut to those cells and to the faces (2D: edges) of the selections the boundary conditions name; its frames are the displacement at each kept time step, in mesh units. The objects from `transformation` on go to PolyFEM as polyfem_sim.run passes them, and PolyFEM checks them."
+  },
+  {"pointer": "/input", "type": "string", "doc": "The mesh simulated."},
+  {"pointer": "/bodies", "type": "list", "min": 1, "doc": "The tags simulated, one body each; every other cell, the background too, is dropped. A cell may be in one body only."},
+  {"pointer": "/bodies/*", "type": "string", "labels": "existing", "doc": "A tag of the mesh."},
+  {"pointer": "/scale", "type": ["float", "list"], "default": 0.001, "doc": "Mesh-to-solver unit scale; a list: one per axis. transformation's scale, if set, replaces it."},
+  {"pointer": "/scale/*", "type": "float", "doc": "The scale of one axis."},
+  {"pointer": "/transformation", "type": "object", "default": {}, "doc": "PolyFEM's geometry transformation, merged over the scale: scale and translation only, since a rotation would turn the displacements."},
+  {"pointer": "/materials", "type": "object", "default": {}, "doc": "{body tag: PolyFEM material fields}, e.g. {\"tag_0\": {\"type\": \"NeoHookean\", \"E\": 1e6, \"nu\": 0.4, \"rho\": 1000}}."},
+  {"pointer": "/boundary_conditions", "type": "object", "default": {}, "doc": "PolyFEM's boundary conditions. An item of dirichlet_boundary, neumann_boundary, pressure_boundary or obstacle_displacements names its faces by \"selection\": {\"region\": expression, \"filter\": expression}, the boundary of region where the outside cell satisfies filter."},
+  {"pointer": "/initial_conditions", "type": "object", "default": {}, "doc": "PolyFEM's initial conditions; an item's \"id\" may be a body's tag."},
+  {"pointer": "/contact", "type": "object", "default": {}, "doc": "PolyFEM's contact settings, over polyfem_sim's defaults."},
+  {"pointer": "/time", "type": "object", "default": {}, "doc": "PolyFEM's time settings (tend, dt, integrator), over polyfem_sim's defaults."},
+  {"pointer": "/solver", "type": "object", "default": {}, "doc": "PolyFEM's solver settings, over polyfem_sim's defaults."},
+  {"pointer": "/space", "type": "object", "default": {}, "doc": "PolyFEM's discretization settings, over polyfem_sim's defaults."},
+  {"pointer": "/output", "type": "object", "default": {}, "doc": "PolyFEM's output settings. paraview.skip_frame (default 1) keeps every skip_frame-th step as a frame. PolyFEM writes files only if this sets advanced.save_time_sequence."}
+]

@@ -1,6 +1,6 @@
 #pragma once
 #include <Eigen/SVD>
-#include "common.hpp"
+#include "thickness_energy.hpp"
 namespace wmtk::components::prismatic_mesh::quality {
 inline double mixed_loss(double q, double target, double* derivative = nullptr)
 {
@@ -23,6 +23,43 @@ inline Json mixed_score(const Mesh& m, double target)
         {"over_target", bad},
         {"target", target},
         {"tail_energy", double(loss)}};
+}
+struct MixedEnergyScore
+{
+    native::Rat value;
+    ThicknessEnergy::Score thickness;
+    Json report;
+};
+inline MixedEnergyScore mixed_energy_score(
+    const Mesh& m,
+    const MixedReference& reference,
+    double target,
+    double thickness_weight,
+    double thickness_smoothing_weight,
+    double thickness_tolerance,
+    double thickness_feature_angle)
+{
+    const ThicknessEnergy energy(
+        m,
+        reference,
+        thickness_weight,
+        thickness_smoothing_weight,
+        thickness_tolerance,
+        thickness_feature_angle);
+    MixedEnergyScore score;
+    score.thickness = energy.score(m);
+    native::Rat amips;
+    // A constant extreme tet must not hide a small thickness improvement at
+    // unrelated vertices. Sum the floating-point contributions exactly for
+    // checkpoint comparisons; the local derivatives remain floating point.
+    for (const auto& c : m.cells) amips = amips + energy_contribution(mixed_loss(c.energy, target));
+    score.value = amips + score.thickness.energy;
+    score.report = {
+        {"total", score.value.to_double()},
+        {"AMIPS", amips.to_double()},
+        {"point_thickness", score.thickness.report["point_energy"]},
+        {"neighbor_thickness", score.thickness.report["neighbor_energy"]}};
+    return score;
 }
 inline std::vector<V> cell_gradient(const Mesh& m, const Cell& c)
 {
@@ -55,78 +92,6 @@ inline std::vector<V> cell_gradient(const Mesh& m, const Cell& c)
     }
     return grad;
 }
-struct MixedReference
-{
-    double h = 0, base_length = 0;
-    std::vector<V> normal;
-    std::vector<double> height;
-    MixedReference() = default;
-    MixedReference(
-        const Mesh& m,
-        double thickness,
-        double length,
-        const std::vector<V>& supplied_normals)
-        : h(thickness)
-        , base_length(length)
-        , normal(m.p.size(), V::Zero())
-        , height(m.p.size(), 0)
-    {
-        if (!supplied_normals.empty()) {
-            if (supplied_normals.size() != m.p.size())
-                throw std::runtime_error("invalid_offset_normals_size");
-            normal = supplied_normals;
-            for (auto& n : normal) {
-                if (!n.allFinite()) throw std::invalid_argument("nonfinite_reference_normal");
-                if (n.norm() > 1e-10) n.normalize();
-            }
-        }
-        extend(m);
-    }
-    void extend(const Mesh& m)
-    {
-        normal.resize(m.p.size(), V::Zero());
-        height.resize(m.p.size(), 0);
-        for (size_t v = 0; v < m.p.size(); ++v)
-            if (std::isfinite(m.thickness[v]) && m.thickness[v] > 0) {
-                if (normal[v].norm() < .5) {
-                    V n = m.initial[v] - m.base[v];
-                    if (n.norm() > 1e-12) normal[v] = n.normalized();
-                }
-                if (height[v] == 0) height[v] = h;
-            }
-    }
-    bool offset(const Mesh& m, size_t v) const
-    {
-        return !m.input[v] && !m.outer[v] && std::isfinite(m.thickness[v]) && m.thickness[v] > 0 &&
-               normal[v].norm() > .5 && height[v] > 0;
-    }
-    void midpoint(const Mesh& m, size_t v, Edge parents)
-    {
-        normal.resize(m.p.size(), V::Zero());
-        height.resize(m.p.size(), 0);
-        const double a = m.input[parents[0]] ? 0 : height[parents[0]],
-                     b = m.input[parents[1]] ? 0 : height[parents[1]];
-        height[v] = .5 * (a + b);
-        V n = a * normal[parents[0]] + b * normal[parents[1]];
-        if (n.norm() > 1e-12) normal[v] = n.normalized();
-    }
-    V anchor(const Mesh& m, size_t v) const
-    {
-        return m.correspondence[v] >= 0 ? m.p.at(m.correspondence[v]) : m.base[v];
-    }
-    double height_error(const Mesh& m, size_t v) const
-    {
-        return normal[v].dot(m.p[v] - anchor(m, v)) / height[v] - 1;
-    }
-    V project(const Mesh& m, size_t v, const V& raw) const
-    {
-        if (!offset(m, v)) return raw;
-        const V n = normal[v], a = anchor(m, v);
-        const double band = std::max(.25, std::abs(height_error(m, v))),
-                     lo = height[v] * (1 - band), hi = height[v] * (1 + band), z = n.dot(raw - a);
-        return raw + (std::clamp(z, lo, hi) - z) * n;
-    }
-};
 struct InputFreedom
 {
     std::vector<M> tangent;
@@ -140,7 +105,7 @@ struct InputFreedom
         for (const auto& [k, f] : rules.kept)
             for (size_t v : f.v) faces[v].push_back(f);
         for (size_t v = 0; v < m.p.size(); ++v) {
-            if (m.outer[v]) tangent[v].setZero();
+            if (m.outer[v] || m.fixed(v)) tangent[v].setZero();
             if (!m.input[v]) {
                 if (m.correspondence[v] >= 0 && m.input.at(m.correspondence[v]))
                     children[m.correspondence[v]].push_back(v);
@@ -170,7 +135,8 @@ inline bool mixed_vertex_step(
     size_t v,
     double target,
     double thickness_weight,
-    Json* detail = nullptr)
+    Json* detail = nullptr,
+    const ThicknessEnergy* thickness = nullptr)
 {
     if (m.outer[v] || m.star[v].empty() || freedom.tangent[v].squaredNorm() < .1) return false;
     std::vector<size_t> group{v};
@@ -194,7 +160,9 @@ inline bool mixed_vertex_step(
             if (members.count(c.v[j])) gradient += derivative * g[j];
     }
     const bool constrained = reference.offset(m, v);
-    if (constrained) {
+    if (thickness)
+        before += thickness->local(m, group, &gradient);
+    else if (constrained) {
         const double e = reference.height_error(m, v);
         before += thickness_weight * e * e;
         gradient += 2 * thickness_weight * e / reference.height[v] * reference.normal[v];
@@ -287,7 +255,9 @@ inline bool mixed_vertex_step(
                 after += mixed_loss(c.energy, target);
                 next.push_back(std::move(c));
             }
-        if (constrained) {
+        if (thickness)
+            after += thickness->local(m, group);
+        else if (constrained) {
             const double e = reference.height_error(m, v);
             after += thickness_weight * e * e;
         }
@@ -323,10 +293,21 @@ inline Json smooth_mixed(
     double optimize_target,
     double stop_target,
     double thickness_weight,
-    Deadline& deadline)
+    Deadline& deadline,
+    double thickness_smoothing_weight = 10,
+    double thickness_tolerance = .05,
+    double thickness_feature_angle = 30)
 {
     reference.extend(m);
     InputFreedom freedom(m, rules);
+    const ThicknessEnergy thickness(
+        m,
+        reference,
+        thickness_weight,
+        thickness_smoothing_weight,
+        thickness_tolerance,
+        thickness_feature_angle);
+    const auto before_thickness = thickness.score(m);
     Json history = Json::array();
     size_t total = 0, input_moves = 0, native_moves = 0;
     std::vector<uint8_t> native_vertex(m.p.size(), false);
@@ -346,7 +327,8 @@ inline Json smooth_mixed(
                             std::max(priority[m.correspondence[v]], c.energy);
                 }
             }
-        if (!bad) break;
+        const size_t thickness_bad = thickness.activate(m, priority);
+        if (!bad && !thickness_bad) break;
         std::vector<size_t> active;
         for (size_t v = 0; v < m.p.size(); ++v)
             if (priority[v] > 0 && !m.outer[v] && freedom.tangent[v].squaredNorm() > .1)
@@ -364,7 +346,9 @@ inline Json smooth_mixed(
                     freedom,
                     v,
                     optimize_target,
-                    thickness_weight)) {
+                    thickness_weight,
+                    nullptr,
+                    &thickness)) {
                 ++accepted;
                 input_moves += bool(m.input[v]);
                 native_moves += native_vertex[v];
@@ -372,14 +356,16 @@ inline Json smooth_mixed(
         }
         total += accepted;
         const auto score = mixed_score(m, stop_target);
+        const auto height_score = thickness.score(m);
         history.push_back(
             {{"sweep", pass + 1},
              {"active", active.size()},
              {"accepted", accepted},
              {"all_mixed", score},
+             {"thickness", height_score.report},
              {"seconds", deadline.seconds()}});
         logger().debug("Mixed smoothing: {}", history.back().dump());
-        if (!accepted || score["over_target"] == 0) break;
+        if (!accepted || (score["over_target"] == 0 && height_score.target_met)) break;
     }
     return {
         {"method",
@@ -390,6 +376,8 @@ inline Json smooth_mixed(
         {"native_corner_moves", native_moves},
         {"optimize_target", optimize_target},
         {"stop_target", stop_target},
+        {"initial_thickness", before_thickness.report},
+        {"final_thickness", thickness.score(m).report},
         {"history", history}};
 }
 } // namespace wmtk::components::prismatic_mesh::quality

@@ -1,6 +1,7 @@
 #include <mshio/mshio.h>
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
+#include <wmtk/components/prismatic_mesh/quality/background_optimizer.hpp>
 #include <wmtk/components/prismatic_mesh/quality/bulk.hpp>
 #include <wmtk/components/prismatic_mesh/quality/prism_region.hpp>
 #include <wmtk/components/prismatic_mesh/quality/region_state.hpp>
@@ -259,11 +260,15 @@ TEST_CASE(
 TEST_CASE("region quality options reject invalid and wrapped budgets", "[prismatic_quality]")
 {
     using Options = wmtk::components::prismatic_mesh::QualityImprovementOptions;
-    REQUIRE(Options{}.thickness_weight == 10);
+    REQUIRE(Options{}.thickness_weight == 100);
     REQUIRE_THROWS(Options::from_json({{"surface_split_budget", -1}}));
     REQUIRE_THROWS(Options::from_json({{"quality_target", 18}, {"smoothing_target", 20}}));
     REQUIRE_THROWS(Options::from_json({{"time_limit", 0}}));
     REQUIRE_THROWS(Options::from_json({{"thickness_weight", -1}}));
+    REQUIRE_THROWS(Options::from_json({{"thickness_smoothing_weight", -1}}));
+    REQUIRE_THROWS(Options::from_json({{"thickness_tolerance", 0}}));
+    REQUIRE_THROWS(Options::from_json({{"thickness_feature_angle", 0}}));
+    REQUIRE_THROWS(Options::from_json({{"thickness_feature_angle", 91}}));
     REQUIRE_NOTHROW(Options::from_json({{"cycles", 0}, {"topology_enabled", false}}));
 }
 
@@ -354,6 +359,9 @@ TEST_CASE(
     const auto& data = output.at("mesh.vtu");
     REQUIRE_NOTHROW(data.validate());
     REQUIRE(data.cells.at(wmtk::CellType::Prism).connectivity.rows() == 1);
+    for (size_t j = 0; j < 6; ++j)
+        REQUIRE(
+            data.cells.at(wmtk::CellType::Prism).connectivity(0, j) == int64_t(native_vertices[j]));
     const auto& fields = data.cells.at(wmtk::CellType::Prism).attributes;
     REQUIRE(fields.count("AMIPS_native") == 1);
     REQUIRE(fields.count("cell_type") == 1);
@@ -361,7 +369,7 @@ TEST_CASE(
     REQUIRE(data.vertex_attributes.at("vid").integers()(0, 0) == 100);
     REQUIRE(data.vertex_attributes.at("reference_height_error_ratio").doubles().allFinite());
     REQUIRE(data.vertex_attributes.count("thickness_constrained") == 1);
-    REQUIRE(report["quality_improvement"]["configuration"]["thickness_weight"] == 10);
+    REQUIRE(report["quality_improvement"]["configuration"]["thickness_weight"] == 100);
     struct TemporaryExport
     {
         std::filesystem::path path;
@@ -394,6 +402,13 @@ TEST_CASE(
     REQUIRE(retried.report["stages"][2]["operations"]["skipped"] == "no_tetrahedra");
     REQUIRE(retried.cells.size() == result.cells.size());
     REQUIRE(retried.vertices == result.vertices);
+    REQUIRE(retried.report["checkpoint_selection"] == "minimum global maximum AMIPS");
+    double minimum_maximum = 0;
+    for (const auto& row : retried.report["baseline_quality"])
+        minimum_maximum = std::max(minimum_maximum, row["maximum"].get<double>());
+    for (const auto& stage : retried.report["stages"])
+        minimum_maximum = std::min(minimum_maximum, stage["after"]["maximum_AMIPS"].get<double>());
+    REQUIRE(retried.report["final_all_mixed"]["maximum_AMIPS"].get<double>() == minimum_maximum);
 }
 
 TEST_CASE(
@@ -416,7 +431,13 @@ TEST_CASE(
         {"quality_improvement_options", {{"cycles", 0}}}};
     const auto result = prismatic_mesh(options, meshes);
     REQUIRE(
-        result.second["hybrid"]["quality_improvement"]["configuration"]["thickness_weight"] == 10);
+        result.second["hybrid"]["quality_improvement"]["configuration"]["thickness_weight"] == 100);
+    const auto& configuration = result.second["hybrid"]["quality_improvement"]["configuration"];
+    REQUIRE(configuration["thickness_smoothing_weight"] == 10);
+    REQUIRE(configuration["thickness_tolerance"] == .05);
+    REQUIRE(configuration["thickness_feature_angle"] == 30);
+    REQUIRE(result.second["hybrid"]["quality_improvement"].contains("final_energy"));
+    REQUIRE(result.second["hybrid"]["quality_improvement"].contains("thickness_target_met"));
     REQUIRE(result.second["hybrid"]["quality_improvement"]["stages"].empty());
     REQUIRE(
         result.first.at("mesh").cells.at(wmtk::CellType::Prism).attributes.count("AMIPS_native") ==
@@ -455,8 +476,237 @@ TEST_CASE(
     REQUIRE_THROWS(prismatic_mesh(options, meshes));
     options["prism_dominant"] = true;
     options["rod_mode"] = true;
-    REQUIRE_THROWS(prismatic_mesh(options, meshes));
+    const auto staged = prismatic_mesh(options, meshes);
+    REQUIRE(
+        staged.second["hybrid"]["quality_improvement"]["method"] ==
+        "shell_construction_quality_then_rod_geometry_and_construction");
     options["rod_mode"] = false;
     options["min_tet_volume"] = 1e-8;
     REQUIRE_THROWS(prismatic_mesh(options, meshes));
+}
+
+namespace {
+t::Mesh thickness_fixture()
+{
+    return mesh(
+        {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, .5}, {1, 0, .5}, {0, 1, .5}},
+        {{6, 2, {0, 1, 2, 3, 4, 5}}},
+        {0, 1, 2},
+        {{3, 0}, {4, 1}, {5, 2}});
+}
+} // namespace
+
+TEST_CASE("good AMIPS does not stop thickness repair", "[prismatic_quality][prismatic_thickness]")
+{
+    auto m = thickness_fixture();
+    const auto before = m;
+    REQUIRE(m.cells[0].energy < 20);
+    t::Rules rules(m, t::faces_of(m.cells));
+    t::MixedReference reference(m, .25, .5, {});
+    t::Deadline deadline(10);
+    const auto result = t::smooth_mixed(m, rules, reference, 32, 18, 20, 100, deadline);
+    REQUIRE(result["accepted"].get<size_t>() > 0);
+    REQUIRE(result["history"].size() > 1);
+    REQUIRE(result["initial_thickness"]["points_over_tolerance"] == 3);
+    REQUIRE(result["final_thickness"]["target_met"] == true);
+    REQUIRE(result["final_thickness"]["maximum_absolute_height_error"].get<double>() <= .05);
+    REQUIRE(m.cells[0].energy < 20);
+    for (size_t v = 0; v < 3; ++v) REQUIRE(m.p[v] == before.p[v]);
+    REQUIRE(std::isfinite(native::quality(m.p, m.cells[0])));
+
+    auto disabled = before;
+    t::MixedReference disabled_reference(disabled, .25, .5, {});
+    t::Deadline disabled_deadline(10);
+    const auto skipped =
+        t::smooth_mixed(disabled, rules, disabled_reference, 32, 18, 20, 0, disabled_deadline, 0);
+    REQUIRE(skipped["accepted"] == 0);
+    REQUIRE(skipped["final_thickness"]["target_met"] == true);
+    REQUIRE(disabled.p == before.p);
+}
+
+TEST_CASE(
+    "height gradients include moved anchors and coupled columns",
+    "[prismatic_quality][prismatic_thickness]")
+{
+    auto m = thickness_fixture();
+    t::MixedReference reference(m, .25, .5, {});
+    m.p[3][2] = .6;
+    m.p[4][2] = .45;
+    m.p[5][2] = .55;
+    t::ThicknessEnergy energy(m, reference, 100);
+    REQUIRE(energy.pairs.size() == 3);
+    for (const std::vector<size_t> group :
+         {std::vector<size_t>{3}, {0}, {0, 3}, {3, 4}, {0, 3, 4}}) {
+        const auto original = m.p;
+        t::V gradient = t::V::Zero();
+        energy.local(m, group, &gradient);
+        for (int d = 0; d < 3; ++d) {
+            const double step = 1e-6;
+            for (size_t v : group) m.p[v][d] = original[v][d] + step;
+            const double plus = energy.local(m, group);
+            for (size_t v : group) m.p[v][d] = original[v][d] - step;
+            const double minus = energy.local(m, group);
+            m.p = original;
+            const double numerical = (plus - minus) / (2 * step);
+            REQUIRE(
+                std::abs(numerical - gradient[d]) <
+                1e-5 * std::max({1., std::abs(numerical), std::abs(gradient[d])}));
+        }
+    }
+}
+
+TEST_CASE(
+    "height neighbors keep sheets features and reference levels separate",
+    "[prismatic_quality][prismatic_thickness]")
+{
+    auto m = thickness_fixture();
+    t::MixedReference reference(m, .25, .5, {});
+    reference.normal[5] = t::V::UnitX();
+    t::ThicknessEnergy crease(m, reference, 100);
+    REQUIRE(crease.pairs.size() == 1);
+    REQUIRE(crease.feature_edges == 2);
+    reference.normal[4] = -t::V::UnitZ();
+    t::ThicknessEnergy opposite(m, reference, 100);
+    REQUIRE(opposite.pairs.empty());
+
+    reference.normal[4] = reference.normal[5] = t::V::UnitZ();
+    reference.height[4] = .125;
+    t::ThicknessEnergy transition(m, reference, 100);
+    REQUIRE(transition.pairs.size() == 1);
+    REQUIRE(transition.feature_edges == 2);
+
+    const size_t orphan = t::append_volume_vertex(m, {100, 100, 100});
+    m.thickness[orphan] = .25;
+    reference.extend(m);
+    reference.normal[orphan] = t::V::UnitZ();
+    reference.height[orphan] = .25;
+    m.rebuild();
+    t::ThicknessEnergy rebuilt(m, reference, 100);
+    REQUIRE(rebuilt.referenced.size() == m.p.size());
+    REQUIRE_FALSE(rebuilt.referenced[orphan]);
+    REQUIRE(rebuilt.score(m).report["referenced_vertices"] == 3);
+}
+
+TEST_CASE(
+    "missing height references do not freeze otherwise movable interface vertices",
+    "[prismatic_quality][prismatic_thickness]")
+{
+    auto m = thickness_fixture();
+    for (size_t v = 3; v < 6; ++v) {
+        m.correspondence[v] = -1;
+        m.thickness[v] = NAN;
+    }
+    const auto original = m;
+    t::Rules rules(m, t::faces_of(m.cells));
+    t::MixedReference reference(m, .25, .5, {});
+    t::Deadline deadline(10);
+    const auto result = t::smooth_mixed(m, rules, reference, 4, 3, 3.1, 100, deadline);
+    REQUIRE(result["initial_thickness"]["unreferenced_interface_vertices"] == 3);
+    REQUIRE(result["initial_thickness"]["unreferenced_interface_vertices_fixed"] == 0);
+    REQUIRE(result["accepted"].get<size_t>() > 0);
+    bool moved = false;
+    for (size_t v = 3; v < 6; ++v) moved |= m.p[v] != original.p[v];
+    REQUIRE(moved);
+    REQUIRE(std::isfinite(native::quality(m.p, m.cells[0])));
+
+    auto reserved = original;
+    reserved.fixed_vertices.assign(reserved.p.size(), false);
+    for (size_t v = 3; v < 6; ++v) reserved.fixed_vertices[v] = true;
+    t::MixedReference reserved_reference(reserved, .25, .5, {});
+    t::Deadline reserved_deadline(10);
+    t::smooth_mixed(reserved, rules, reserved_reference, 4, 3, 3.1, 100, reserved_deadline);
+    for (size_t v = 3; v < 6; ++v) REQUIRE(reserved.p[v] == original.p[v]);
+}
+
+TEST_CASE(
+    "energy diagnostics distinguish thickness changes beside an unchanged extreme tet",
+    "[prismatic_quality][prismatic_thickness]")
+{
+    auto m = mesh(
+        {{0, 0, 0},
+         {1, 0, 0},
+         {0, 1, 0},
+         {0, 0, .5},
+         {1, 0, .5},
+         {0, 1, .5},
+         {3, 0, 0},
+         {4, 0, 0},
+         {3, 1, 0},
+         {3, 0, 1e-30}},
+        {{6, 2, {0, 1, 2, 3, 4, 5}}, {4, 3, {6, 7, 8, 9}}},
+        {0, 1, 2},
+        {{3, 0}, {4, 1}, {5, 2}});
+    t::MixedReference reference(m, .25, .5, {});
+    REQUIRE(m.cells[1].energy > 1e18);
+    const auto before = t::mixed_energy_score(m, reference, 18, 100, 10, .05, 30);
+    const auto maximum = t::mixed_score(m, 20)["maximum_AMIPS"];
+    for (size_t v = 3; v < 6; ++v) m.p[v][2] = .25;
+    REQUIRE(std::isfinite(native::quality(m.p, m.cells[0])));
+    const auto after = t::mixed_energy_score(m, reference, 18, 100, 10, .05, 30);
+    REQUIRE(t::mixed_score(m, 20)["maximum_AMIPS"] == maximum);
+    REQUIRE(before.report["total"] == after.report["total"]);
+    REQUIRE(after.value < before.value);
+    REQUIRE(after.thickness.report["point_energy"] == 0);
+    REQUIRE(before.thickness.report["point_energy"].get<double>() > 0);
+}
+
+TEST_CASE(
+    "background relocation improves native pyramids and tets without moving boundaries",
+    "[prismatic_quality][prismatic_background]")
+{
+    std::vector<t::V> points{
+        {-1, -1, 0},
+        {1, -1, 0},
+        {1, 1, 0},
+        {-1, 1, 0},
+        {0, 0, 1e-9},
+        {0, 0, 2},
+        {4, 0, 0},
+        {5, 0, 0},
+        {4, 1, 0},
+        {4, 0, 1}};
+    std::vector<t::Cell> cells{{7, 3, {0, 1, 2, 3, 4}}, {4, 2, {6, 7, 8, 9}}};
+    for (size_t i = 0; i < 4; ++i) {
+        std::vector<size_t> vertices{i, (i + 1) % 4, 5, 4};
+        if (native::determinant(points, vertices) < 0) std::swap(vertices[0], vertices[1]);
+        cells.push_back({4, 3, std::move(vertices)});
+    }
+    auto m = mesh(points, cells, {});
+    for (size_t v = 0; v < m.p.size(); ++v) m.outer[v] = v != 4;
+    const auto before = m;
+    const double volume = native::volume(m);
+    const double initial_pyramid = m.cells[0].energy;
+    REQUIRE(initial_pyramid > 100);
+    t::Rules rules(m, t::faces_of(m.cells));
+    t::MixedReference reference(m, .1, .2, {});
+    t::BackgroundRelocationOptions options;
+    options.time_limit = 5;
+    options.joint_sweeps = options.neighborhood_sweeps = 32;
+    const auto report = t::relocate_background_quality(m, rules, reference, 18, 10, options);
+    REQUIRE(report["accepted"].get<size_t>() > 0);
+    REQUIRE(m.cells[0].energy < 100);
+    REQUIRE(m.p[4] != before.p[4]);
+    for (size_t v = 0; v < m.p.size(); ++v)
+        if (v != 4) REQUIRE(m.p[v] == before.p[v]);
+    REQUIRE(std::abs(native::volume(m) - volume) < 1e-10);
+    for (size_t i = 0; i < m.cells.size(); ++i) {
+        REQUIRE(m.cells[i].v == before.cells[i].v);
+        REQUIRE(std::isfinite(native::quality(m.p, m.cells[i])));
+    }
+
+    auto reserved = before;
+    reserved.fixed_vertices.assign(reserved.p.size(), false);
+    reserved.fixed_vertices[4] = true;
+    t::Rules reserved_rules(reserved, t::faces_of(reserved.cells));
+    t::MixedReference reserved_reference(reserved, .1, .2, {});
+    const auto fixed = t::relocate_background_quality(
+        reserved,
+        reserved_rules,
+        reserved_reference,
+        18,
+        10,
+        options);
+    REQUIRE(fixed["accepted"] == 0);
+    REQUIRE(reserved.p == before.p);
+    REQUIRE(fixed["final"]["bad_cells_with_no_movable_vertices"].get<size_t>() > 0);
 }

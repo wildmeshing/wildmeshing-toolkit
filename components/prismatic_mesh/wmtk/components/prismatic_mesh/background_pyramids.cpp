@@ -1,5 +1,6 @@
 #include "background_pyramids.hpp"
 #include "junction_protection.hpp"
+#include "rod_mesh.hpp"
 
 #include <Eigen/Geometry>
 #include <Eigen/LU>
@@ -190,6 +191,7 @@ std::string make_plan(
         return "non_spherical_cavity";
     for (const auto& f : quad.triangles)
         if (!boundary_keys.count(sorted(f))) return "missing_cavity_base";
+    if (boundary.size() < cavity.size()) return "cavity_partition_requires_compaction";
     if (boundary.size() + 4 > 64) return "kernel_search_limit";
 
     Vector3d lo = input.vertices.row(*vertices.begin());
@@ -248,18 +250,168 @@ std::string make_plan(
     plan = {quad, {cavity.begin(), cavity.end()}, std::move(boundary), p, scale * (*solution)[3]};
     return {};
 }
+
+struct BackgroundIndex
+{
+    FaceOwners all_faces;
+    std::map<Edge, std::vector<size_t>> edge_stars;
+
+    void add(const PrismaticMeshInput& input, size_t tid, bool locked)
+    {
+        const auto t = tet(input, tid);
+        for (const auto& f : faces(t)) all_faces[sorted(f)].push_back({tid, f});
+        if (locked || input.offset_tet_tags[tid] == 1 || input.input_cells[tid] == 1) return;
+        for (int a = 0; a < 4; ++a)
+            for (int b = a + 1; b < 4; ++b) edge_stars[sorted(Edge{t[a], t[b]})].push_back(tid);
+    }
+
+    void remove(size_t tid, const Tet& t)
+    {
+        for (const auto& f : faces(t)) {
+            auto it = all_faces.find(sorted(f));
+            if (it == all_faces.end())
+                throw std::runtime_error("sequential pyramids: missing indexed face");
+            auto& owners = it->second;
+            owners.erase(
+                std::remove_if(
+                    owners.begin(),
+                    owners.end(),
+                    [&](const auto& x) { return x.first == tid; }),
+                owners.end());
+            if (owners.empty()) all_faces.erase(it);
+        }
+        for (int a = 0; a < 4; ++a)
+            for (int b = a + 1; b < 4; ++b) {
+                auto it = edge_stars.find(sorted(Edge{t[a], t[b]}));
+                if (it == edge_stars.end()) continue; // Pyramid reference tets are locked.
+                auto& rows = it->second;
+                rows.erase(std::remove(rows.begin(), rows.end(), tid), rows.end());
+                if (rows.empty()) edge_stars.erase(it);
+            }
+    }
+};
+
+struct ScratchEdit
+{
+    size_t vertices_before, tets_before;
+    std::vector<std::pair<size_t, Tet>> old_tets;
+    std::vector<size_t> new_rows, locked_rows;
+};
+
+// Materialize only on the planner's private mesh. The two cones below the quad
+// are the pyramid body; all other new cones remain reusable background tets.
+ScratchEdit materialize_scratch(
+    PrismaticMeshInput& work,
+    const BackgroundPyramidPlan& plan,
+    std::set<size_t>& locked,
+    BackgroundIndex* index)
+{
+    if (plan.boundary.size() < plan.cavity.size())
+        throw std::runtime_error("sequential pyramids: invalid cavity partition");
+    ScratchEdit edit{size_t(work.vertices.rows()), size_t(work.tetrahedra.rows()), {}, {}, {}};
+    for (size_t tid : plan.cavity) {
+        if (locked.count(tid))
+            throw std::runtime_error("sequential pyramids: consuming an existing pyramid");
+        edit.old_tets.push_back({tid, tet(work, tid)});
+        if (index) index->remove(tid, edit.old_tets.back().second);
+    }
+    const int region = work.input_cells.at(plan.cavity.front());
+    const int band = work.offset_tet_tags.at(plan.cavity.front());
+    const size_t p = work.vertices.rows();
+    work.vertices.conservativeResize(p + 1, 3);
+    work.vertices.row(p) = plan.point.transpose();
+    const size_t count = edit.tets_before + plan.boundary.size() - plan.cavity.size();
+    work.tetrahedra.conservativeResize(count, 4);
+    work.input_cells.resize(count, region);
+    work.offset_tet_tags.resize(count, band);
+    for (size_t k = 0; k < plan.boundary.size(); ++k) {
+        const auto& f = plan.boundary[k];
+        const size_t tid =
+            k < plan.cavity.size() ? plan.cavity[k] : edit.tets_before + k - plan.cavity.size();
+        work.tetrahedra.row(tid) << p, f[0], f[1], f[2];
+        edit.new_rows.push_back(tid);
+        if (sorted(f) == sorted(plan.quad.triangles[0]) ||
+            sorted(f) == sorted(plan.quad.triangles[1])) {
+            locked.insert(tid);
+            edit.locked_rows.push_back(tid);
+        }
+    }
+    if (edit.locked_rows.size() != 2)
+        throw std::runtime_error("sequential pyramids: invalid pyramid reference split");
+    if (index)
+        for (size_t tid : edit.new_rows) index->add(work, tid, locked.count(tid));
+    return edit;
+}
+
+void undo_scratch(
+    PrismaticMeshInput& work,
+    const ScratchEdit& edit,
+    std::set<size_t>& locked,
+    BackgroundIndex& index)
+{
+    for (size_t tid : edit.new_rows) index.remove(tid, tet(work, tid));
+    for (size_t tid : edit.locked_rows) locked.erase(tid);
+    for (const auto& [tid, t] : edit.old_tets) {
+        for (int j = 0; j < 4; ++j) work.tetrahedra(tid, j) = t[j];
+        index.add(work, tid, locked.count(tid));
+    }
+    work.vertices.conservativeResize(edit.vertices_before, 3);
+    work.tetrahedra.conservativeResize(edit.tets_before, 4);
+    work.input_cells.resize(edit.tets_before);
+    work.offset_tet_tags.resize(edit.tets_before);
+}
+
+size_t append_background_point(PrismaticMeshInput& reference, const Vector3d& point, int64_t id)
+{
+    const size_t p = reference.vertices.rows();
+    reference.vertices.conservativeResize(p + 1, 3);
+    reference.vertices.row(p) = point.transpose();
+    reference.vertex_tags.push_back(-1);
+    reference.source_vertex_ids.push_back(id);
+    reference.corr_input_vid.push_back(-1);
+    reference.corr_input_vertex.push_back(-1);
+    reference.input_to_offset_vertices.resize(p + 1);
+    if (!reference.fixed_background_vertices.empty())
+        reference.fixed_background_vertices.push_back(false);
+    if (!reference.input_to_components.empty()) reference.input_to_components.resize(p + 1);
+    if (!reference.vertex_component_ids.empty()) reference.vertex_component_ids.push_back(-1);
+    if (!reference.singular_vertex_tags.empty()) reference.singular_vertex_tags.push_back(-1);
+    if (reference.optimal_normals.rows()) {
+        reference.optimal_normals.conservativeResize(p + 1, 3);
+        reference.optimal_normals.row(p).setZero();
+    }
+    if (reference.target_positions.rows()) {
+        reference.target_positions.conservativeResize(p + 1, 3);
+        reference.target_positions.row(p) = point.transpose();
+    }
+    return p;
+}
 } // namespace
 
 BackgroundPyramidPlans plan_background_pyramids(
     const PrismaticMeshInput& input,
     const std::vector<BackgroundQuad>& quads,
     double min_volume,
-    int max_cavity_growth)
+    int max_cavity_growth,
+    bool sequential_retry)
 {
     if (!std::isfinite(min_volume) || min_volume < 0)
         throw std::runtime_error("background pyramids: invalid volume floor");
     if (max_cavity_growth < 0 || max_cavity_growth > 2)
         throw std::runtime_error("background pyramids: invalid cavity growth limit");
+    if (sequential_retry) {
+        std::set<Quad> seen;
+        std::vector<std::vector<BackgroundQuad>> groups;
+        for (const auto& quad : quads)
+            if (seen.insert(sorted(quad.vertices)).second) groups.push_back({quad});
+        std::vector<std::string> reasons;
+        auto result =
+            plan_atomic_rod_layer_pyramids(input, groups, min_volume, reasons, max_cavity_growth);
+        result.report["method"] = "shell_quad_batch_then_sequential_overlap_retry";
+        result.report["rejections"].erase("not_background_interface");
+        result.report["initial_rejections"].erase("not_background_interface");
+        return result;
+    }
     FaceOwners all_faces;
     std::map<Edge, std::vector<size_t>> edge_stars;
     for (size_t tid = 0; tid < size_t(input.tetrahedra.rows()); ++tid) {
@@ -328,10 +480,16 @@ void apply_background_pyramids(
             selected.push_back(&plan);
             replaced.insert(plan.cavity.begin(), plan.cavity.end());
         }
-    if (selected.empty()) return;
+    if (selected.empty() && plans.sequential.empty()) return;
+    if (!plans.sequential.empty() && selected.size() != plans.accepted.size())
+        throw std::runtime_error("sequential pyramids: missing prerequisite exterior quad");
+    for (const auto& step : plans.sequential)
+        if (!active.count(sorted(step.plan.quad.vertices)))
+            throw std::runtime_error("sequential pyramids: missing retry exterior quad");
     int64_t next_id =
         *std::max_element(reference.source_vertex_ids.begin(), reference.source_vertex_ids.end());
-    if (next_id > std::numeric_limits<int64_t>::max() - int64_t(selected.size()))
+    if (next_id >
+        std::numeric_limits<int64_t>::max() - int64_t(selected.size() + plans.sequential.size()))
         throw std::runtime_error("background pyramids: vertex source ID overflow");
     std::vector<HybridCell> cells;
     for (auto& c : hybrid.cells) {
@@ -346,27 +504,7 @@ void apply_background_pyramids(
     double minimum_margin = std::numeric_limits<double>::infinity();
     for (const auto* ptr : selected) {
         const auto& plan = *ptr;
-        const size_t p = reference.vertices.rows();
-        reference.vertices.conservativeResize(p + 1, 3);
-        reference.vertices.row(p) = plan.point.transpose();
-        reference.vertex_tags.push_back(-1);
-        reference.source_vertex_ids.push_back(++next_id);
-        reference.corr_input_vid.push_back(-1);
-        reference.corr_input_vertex.push_back(-1);
-        reference.input_to_offset_vertices.resize(p + 1);
-        if (!reference.fixed_background_vertices.empty())
-            reference.fixed_background_vertices.push_back(false);
-        if (!reference.input_to_components.empty()) reference.input_to_components.resize(p + 1);
-        if (!reference.vertex_component_ids.empty()) reference.vertex_component_ids.push_back(-1);
-        if (!reference.singular_vertex_tags.empty()) reference.singular_vertex_tags.push_back(-1);
-        if (reference.optimal_normals.rows()) {
-            reference.optimal_normals.conservativeResize(p + 1, 3);
-            reference.optimal_normals.row(p).setZero();
-        }
-        if (reference.target_positions.rows()) {
-            reference.target_positions.conservativeResize(p + 1, 3);
-            reference.target_positions.row(p) = plan.point.transpose();
-        }
+        const size_t p = append_background_point(reference, plan.point, ++next_id);
         HybridCell pyramid;
         pyramid.type = HybridCellType::Pyramid;
         pyramid.vertices.assign(plan.quad.vertices.begin(), plan.quad.vertices.end());
@@ -409,6 +547,79 @@ void apply_background_pyramids(
              {"point_source_vid", next_id},
              {"margin", plan.margin}});
     }
+    // Replay only the successful private transactions. Existing pyramid bodies
+    // have merged owners and may never be consumed by a later cavity.
+    std::vector<size_t> owner(tets.size(), std::numeric_limits<size_t>::max());
+    std::vector<bool> live(cells.size(), true);
+    for (size_t ci = 0; ci < cells.size(); ++ci)
+        for (size_t tid : cells[ci].source_tets) owner.at(tid) = ci;
+    for (const auto& step : plans.sequential) {
+        const auto& plan = step.plan;
+        if (reference.vertices.rows() != step.point_vertex_row)
+            throw std::runtime_error("sequential pyramids: point replay order changed");
+        const int region = reference.input_cells.at(plan.cavity.front());
+        const int band = reference.offset_tet_tags.at(plan.cavity.front());
+        for (size_t tid : plan.cavity) {
+            const size_t ci = owner.at(tid);
+            if (ci >= cells.size() || !live[ci] || cells[ci].type != HybridCellType::Tetrahedron ||
+                cells[ci].source_tets.size() != 1 || reference.input_cells[tid] == 1 ||
+                reference.offset_tet_tags[tid] == 1 || reference.input_cells[tid] != region ||
+                reference.offset_tet_tags[tid] != band)
+                throw std::runtime_error("sequential pyramids: retry consumes a fixed cell");
+            live[ci] = false;
+        }
+        const size_t p = append_background_point(reference, plan.point, ++next_id);
+        HybridCell pyramid;
+        pyramid.type = HybridCellType::Pyramid;
+        pyramid.vertices.assign(plan.quad.vertices.begin(), plan.quad.vertices.end());
+        pyramid.vertices.push_back(p);
+        pyramid.background_transition = true;
+        std::vector<size_t> new_rows;
+        for (size_t k = 0; k < plan.boundary.size(); ++k) {
+            const auto& f = plan.boundary[k];
+            const Tet t = {p, f[0], f[1], f[2]};
+            size_t tid;
+            if (k < plan.cavity.size()) {
+                tid = plan.cavity[k];
+                tets.at(tid) = t;
+            } else {
+                tid = tets.size();
+                tets.push_back(t);
+                owner.push_back(std::numeric_limits<size_t>::max());
+                reference.input_cells.push_back(region);
+                reference.offset_tet_tags.push_back(band);
+            }
+            new_rows.push_back(tid);
+            if (sorted(f) == sorted(plan.quad.triangles[0]) ||
+                sorted(f) == sorted(plan.quad.triangles[1]))
+                pyramid.source_tets.push_back(tid);
+            else {
+                owner[tid] = cells.size();
+                cells.push_back(
+                    {HybridCellType::Tetrahedron, {t.begin(), t.end()}, {tid}, -1, true});
+                live.push_back(true);
+            }
+        }
+        if (pyramid.source_tets.size() != 2)
+            throw std::runtime_error("sequential pyramids: invalid replayed pyramid");
+        for (size_t tid : pyramid.source_tets) owner[tid] = cells.size();
+        cells.push_back(std::move(pyramid));
+        live.push_back(true);
+        minimum_margin = std::min(minimum_margin, plan.margin);
+        plans.report["regions"].push_back(
+            {{"quad_vertex_rows", plan.quad.vertices},
+             {"original_reference_tet_rows", plan.cavity},
+             {"new_reference_tet_rows", new_rows},
+             {"point_vertex_row", p},
+             {"point_source_vid", next_id},
+             {"margin", plan.margin},
+             {"sequential_retry_layer", step.layer}});
+    }
+    std::vector<HybridCell> retained;
+    retained.reserve(cells.size());
+    for (size_t ci = 0; ci < cells.size(); ++ci)
+        if (live[ci]) retained.push_back(std::move(cells[ci]));
+    cells = std::move(retained);
     reference.tetrahedra.resize(tets.size(), 4);
     for (size_t tid = 0; tid < tets.size(); ++tid)
         for (int j = 0; j < 4; ++j) reference.tetrahedra(tid, j) = tets[tid][j];
@@ -420,8 +631,9 @@ void apply_background_pyramids(
                 throw std::runtime_error("background pyramids: overlapping source ownership");
             hybrid.source_tet_to_cell[tid] = ci;
         }
-    plans.report["applied"] = selected.size();
-    plans.report["new_background_vertices"] = selected.size();
+    plans.report["applied"] = selected.size() + plans.sequential.size();
+    plans.report["sequential_applied"] = plans.sequential.size();
+    plans.report["new_background_vertices"] = selected.size() + plans.sequential.size();
     plans.report["minimum_margin"] = minimum_margin;
     plans.report["exact_positive_tets_and_pyramid_corners"] = true;
     plans.report["exact_cavity_volume_preserved"] = true;
@@ -430,7 +642,8 @@ BackgroundPyramidPlans plan_atomic_rod_layer_pyramids(
     const PrismaticMeshInput& input,
     const std::vector<std::vector<BackgroundQuad>>& layers,
     double floor,
-    std::vector<std::string>& reasons)
+    std::vector<std::string>& reasons,
+    int max_cavity_growth)
 {
     FaceOwners all_faces;
     std::map<Edge, std::vector<size_t>> edge_stars;
@@ -443,6 +656,8 @@ BackgroundPyramidPlans plan_atomic_rod_layer_pyramids(
     }
     BackgroundPyramidPlans result;
     std::set<size_t> claimed;
+    for (size_t tid = 0; tid < size_t(input.tetrahedra.rows()); ++tid)
+        if (is_fixed_shell_tet(input, tid)) claimed.insert(tid);
     std::map<std::string, size_t> rejected;
     reasons.assign(layers.size(), "");
     for (size_t i = 0; i < layers.size(); ++i) {
@@ -451,7 +666,7 @@ BackgroundPyramidPlans plan_atomic_rod_layer_pyramids(
         for (const auto& quad : layers[i]) {
             BackgroundPyramidPlan plan;
             std::string reason;
-            for (int growth = 0; growth <= 2; ++growth) {
+            for (int growth = 0; growth <= max_cavity_growth; ++growth) {
                 reason =
                     make_plan(input, quad, all_faces, edge_stars, transaction, floor, growth, plan);
                 if (reason != "no_positive_common_kernel") break;
@@ -468,12 +683,95 @@ BackgroundPyramidPlans plan_atomic_rod_layer_pyramids(
         claimed = std::move(transaction);
         for (auto& [q, plan] : plans) result.accepted.emplace(q, std::move(plan));
     }
+    result.planning_tet_count = input.tetrahedra.rows();
+    const auto initial_rejections = rejected;
+    nlohmann::json attempts = nlohmann::json::array();
+    size_t recovered = 0;
+    if (std::find(reasons.begin(), reasons.end(), "overlapping_cavity") != reasons.end()) {
+        PrismaticMeshInput work;
+        work.vertices = input.vertices;
+        work.tetrahedra = input.tetrahedra;
+        work.input_cells = input.input_cells;
+        work.offset_tet_tags = input.offset_tet_tags;
+        work.junction_protection = input.junction_protection;
+        work.rod_state = input.rod_state;
+        std::set<size_t> locked;
+        for (size_t tid = 0; tid < size_t(work.tetrahedra.rows()); ++tid)
+            if (is_fixed_shell_tet(work, tid)) locked.insert(tid);
+        std::set<Quad> emitted;
+        for (const auto& [q, plan] : result.accepted) {
+            materialize_scratch(work, plan, locked, nullptr);
+            emitted.insert(q);
+        }
+        BackgroundIndex index;
+        for (size_t tid = 0; tid < size_t(work.tetrahedra.rows()); ++tid)
+            index.add(work, tid, locked.count(tid));
+        for (size_t i = 0; i < layers.size(); ++i) {
+            if (reasons[i] != "overlapping_cavity") continue;
+            const size_t checkpoint = result.sequential.size();
+            std::vector<ScratchEdit> edits;
+            std::vector<Quad> new_quads;
+            std::string failure;
+            for (const auto& quad : layers[i]) {
+                const auto q = sorted(quad.vertices);
+                if (emitted.count(q)) {
+                    failure = "quad_already_emitted";
+                    break;
+                }
+                BackgroundPyramidPlan plan;
+                for (int growth = 0; growth <= max_cavity_growth; ++growth) {
+                    failure = make_plan(
+                        work,
+                        quad,
+                        index.all_faces,
+                        index.edge_stars,
+                        locked,
+                        floor,
+                        growth,
+                        plan);
+                    if (failure != "no_positive_common_kernel") break;
+                }
+                if (!failure.empty()) break;
+                const size_t point_row = work.vertices.rows();
+                edits.push_back(materialize_scratch(work, plan, locked, &index));
+                emitted.insert(q);
+                new_quads.push_back(q);
+                result.sequential.push_back({std::move(plan), point_row, i});
+            }
+            const size_t completed = edits.size();
+            if (!failure.empty()) {
+                for (auto it = edits.rbegin(); it != edits.rend(); ++it)
+                    undo_scratch(work, *it, locked, index);
+                for (const auto& q : new_quads) emitted.erase(q);
+                result.sequential.resize(checkpoint);
+            } else {
+                reasons[i].clear();
+                ++recovered;
+            }
+            attempts.push_back(
+                {{"layer", i},
+                 {"accepted", failure.empty()},
+                 {"reason", failure},
+                 {"quads_completed_before_failure_or_commit", completed}});
+        }
+    }
+    rejected.clear();
+    for (const auto& reason : reasons)
+        if (!reason.empty()) ++rejected[reason];
     result.report = {
         {"method", "atomic_per_rod_layer"},
         {"feasible_disjoint_cavities", result.accepted.size()},
         {"rejections", rejected},
         {"applied", 0},
-        {"max_cavity_growth", 2},
+        {"max_cavity_growth", max_cavity_growth},
+        {"initial_rejections", initial_rejections},
+        {"sequential_overlap_retry",
+         {{"attempted_layers", attempts.size()},
+          {"recovered_layers", recovered},
+          {"pyramids", result.sequential.size()},
+          {"protects_existing_pyramid_bodies", true},
+          {"rolls_back_failed_layers", true},
+          {"attempts", attempts}}},
         {"min_tet_volume", floor},
         {"regions", nlohmann::json::array()}};
     return result;

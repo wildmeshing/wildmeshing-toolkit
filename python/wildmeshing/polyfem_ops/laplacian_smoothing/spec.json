@@ -41,6 +41,7 @@
     },
     {
         "pointer": "/interfaces/*",
+        "labels": "expression",
         "type": [
             "string",
             "object"
@@ -55,11 +56,13 @@
     },
     {
         "pointer": "/interfaces/*/region",
+        "labels": "expression",
         "type": "string",
         "doc": "Boolean expression for the region whose boundary is smoothed."
     },
     {
         "pointer": "/interfaces/*/filter",
+        "labels": "expression",
         "type": "string",
         "doc": "Boolean expression the outside cell must satisfy (optional)."
     },
@@ -131,6 +134,7 @@
     },
     {
         "pointer": "/ambient_like_tags/*",
+        "labels": "existing",
         "type": "string",
         "doc": "A tag name."
     }

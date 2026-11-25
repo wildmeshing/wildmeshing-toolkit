@@ -1,7 +1,10 @@
 #include "quality_improvement.hpp"
+#include "junction_protection.hpp"
+#include "quality/background_optimizer.hpp"
 #include "quality/bulk.hpp"
 #include "quality/prism_region.hpp"
 #include "quality/region_state.hpp"
+#include "rod_mesh.hpp"
 
 #include <cmath>
 #include <limits>
@@ -30,6 +33,9 @@ QualityImprovementOptions QualityImprovementOptions::from_json(const nlohmann::j
     QUALITY_OPTION(quality_target);
     QUALITY_OPTION(smoothing_target);
     QUALITY_OPTION(thickness_weight);
+    QUALITY_OPTION(thickness_smoothing_weight);
+    QUALITY_OPTION(thickness_tolerance);
+    QUALITY_OPTION(thickness_feature_angle);
     QUALITY_OPTION(topology_enabled);
 #undef QUALITY_OPTION
     // Read operation budgets as signed values first: negative JSON integers must
@@ -61,6 +67,9 @@ nlohmann::json QualityImprovementOptions::json() const
         {"quality_target", quality_target},
         {"smoothing_target", smoothing_target},
         {"thickness_weight", thickness_weight},
+        {"thickness_smoothing_weight", thickness_smoothing_weight},
+        {"thickness_tolerance", thickness_tolerance},
+        {"thickness_feature_angle", thickness_feature_angle},
         {"topology_enabled", topology_enabled}};
 }
 
@@ -73,7 +82,10 @@ void QualityImprovementOptions::validate() const
         !std::isfinite(quality_target) ||
         !(smoothing_target >= 3 && smoothing_target < quality_target) ||
         !std::isfinite(smoothing_target) || thickness_weight < 0 ||
-        !std::isfinite(thickness_weight))
+        !std::isfinite(thickness_weight) || thickness_smoothing_weight < 0 ||
+        !std::isfinite(thickness_smoothing_weight) || !(thickness_tolerance > 0) ||
+        !std::isfinite(thickness_tolerance) || !(thickness_feature_angle > 0) ||
+        thickness_feature_angle > 90 || !std::isfinite(thickness_feature_angle))
         throw std::invalid_argument("Invalid quality improvement options.");
 }
 
@@ -83,8 +95,6 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
     const QualityImprovementOptions& options)
 {
     options.validate();
-    if (input.rod_state)
-        throw std::invalid_argument("Region quality improvement does not preserve rod frames.");
     if (input.vertices.rows() == 0 || hybrid.cells.empty() || !(input.target_thickness > 0) ||
         !std::isfinite(input.target_thickness))
         throw std::invalid_argument(
@@ -107,6 +117,16 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
     m.original_n = nv;
     m.input.resize(nv);
     m.outer.assign(nv, false);
+    m.fixed_vertices.assign(nv, false);
+    for (const auto& cell : hybrid.cells)
+        if (std::any_of(cell.source_tets.begin(), cell.source_tets.end(), [&](size_t tid) {
+                std::array<size_t, 4> t;
+                for (int j = 0; j < 4; ++j) t[j] = input.tetrahedra(tid, j);
+                return is_rod_band_tet(input, tid) ||
+                       (input.rod_state && input.offset_tet_tags[tid] == 1 &&
+                        junction_tet_protected(input, t));
+            }))
+            for (size_t v : cell.vertices) m.fixed_vertices[v] = true;
     m.correspondence = input.corr_input_vertex;
     m.thickness.assign(nv, std::numeric_limits<double>::quiet_NaN());
     m.radius.assign(nv, 0);
@@ -166,6 +186,18 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
         for (const auto& key : source_boundary)
             for (size_t j = 1; j <= key[0]; ++j) m.outer[key[j]] = true;
     }
+    std::set<std::pair<int, std::vector<size_t>>> reserved_cells;
+    for (const auto& c : m.cells)
+        if (m.fixed(c)) {
+            auto v = c.v;
+            std::sort(v.begin(), v.end());
+            reserved_cells.insert({c.type, std::move(v)});
+        }
+    for (size_t v = 0; v < nv; ++v)
+        if (m.fixed(v) && !m.input[v]) {
+            m.correspondence[v] = -1;
+            m.thickness[v] = NAN;
+        }
     q::Rules rules(m, initial_faces);
     rules.refresh_roles(m);
     std::set<n::Edge> offset_edges;
@@ -192,6 +224,17 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
     q::MixedReference reference(m, h, length, normals);
     const double volume0 = n::volume(m), target = options.quality_target;
     const auto validate = [&]() {
+        std::set<std::pair<int, std::vector<size_t>>> retained;
+        for (const auto& c : m.cells)
+            if (m.fixed(c)) {
+                auto v = c.v;
+                std::sort(v.begin(), v.end());
+                retained.insert({c.type, std::move(v)});
+            }
+        if (retained != reserved_cells) throw std::runtime_error("reserved_rod_cells_changed");
+        for (size_t v = 0; v < nv; ++v)
+            if (m.fixed(v) && m.p[v] != m.initial[v])
+                throw std::runtime_error("reserved_rod_vertex_moved");
         for (auto& c : m.cells)
             if (!std::isfinite(n::quality(m.p, c)))
                 throw std::runtime_error("nonpositive_mixed_cell");
@@ -219,20 +262,37 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
     auto best = m;
     auto best_rules = rules;
     auto best_reference = reference;
-    double best_max = q::mixed_score(m, target)["maximum_AMIPS"];
+    const auto energy_score = [&]() {
+        return q::mixed_energy_score(
+            m,
+            reference,
+            options.smoothing_target,
+            options.thickness_weight,
+            options.thickness_smoothing_weight,
+            options.thickness_tolerance,
+            options.thickness_feature_angle);
+    };
+    auto best_score = energy_score();
+    double best_maximum = q::mixed_score(m, target)["maximum_AMIPS"];
     nlohmann::json report = {
         {"configuration", options.json()},
+        {"reserved_rod_cells", reserved_cells.size()},
+        {"reserved_rod_vertices", std::count(m.fixed_vertices.begin(), m.fixed_vertices.end(), 1)},
         {"sizing_field", sizing},
         {"baseline_quality", q::quality(m)},
+        {"baseline_thickness", best_score.thickness.report},
+        {"baseline_energy", best_score.report},
         {"stages", nlohmann::json::array()},
         {"adaptive_refinements", nlohmann::json::array()},
         {"selected_checkpoint", {{"cycle", 0}, {"stage", -1}}},
         {"outer_boundary_policy",
          box_boundary ? "fixed_box_geometry" : "fixed_source_triangulation"},
         {"quality_definition", "Raw AMIPS ideal=3; native prism/pyramid order-4 integral"},
+        {"checkpoint_selection", "minimum global maximum AMIPS"},
+        {"energy_accumulation", "exact sum of floating-point contributions"},
         {"thickness_definition",
-         "Height projected along the original reference direction; no spatial thickness "
-         "regularizer"}};
+         "Relative projected height and neighbor-height differences on shell interfaces; "
+         "opposite reference normals, feature creases and target-height transitions excluded"}};
     for (int cycle = 0; cycle < options.cycles && !deadline.expired(); ++cycle) {
         if (cycle)
             report["adaptive_refinements"].push_back(
@@ -242,6 +302,7 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
             auto backup = m;
             auto backup_rules = rules;
             auto backup_reference = reference;
+            q::MixedEnergyScore candidate_score;
             nlohmann::json row = {
                 {"cycle", cycle + 1},
                 {"stage", stage},
@@ -256,7 +317,10 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
                         options.smoothing_target,
                         target,
                         options.thickness_weight,
-                        deadline);
+                        deadline,
+                        options.thickness_smoothing_weight,
+                        options.thickness_tolerance,
+                        options.thickness_feature_angle);
                 if (stage == 1) {
                     row["operations"]["column_collapses"] = q::prism_region_collapses(
                         m,
@@ -285,27 +349,64 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
                         options.volume_passes);
                 reference.extend(m);
                 row["validation"] = validate();
+                candidate_score = energy_score();
             } catch (const std::exception& e) {
                 m = std::move(backup);
                 rules = std::move(backup_rules);
                 reference = std::move(backup_reference);
                 row["rolled_back"] = e.what();
+                candidate_score = energy_score();
             }
             row["after"] = q::mixed_score(m, target);
+            row["energy"] = candidate_score.report;
+            row["thickness"] = candidate_score.thickness.report;
             row["seconds"] = deadline.seconds();
             report["stages"].push_back(row);
             const double maximum = row["after"]["maximum_AMIPS"];
-            if (maximum < best_max) {
+            if (maximum < best_maximum) {
                 best = m;
                 best_rules = rules;
                 best_reference = reference;
-                best_max = maximum;
+                best_score = candidate_score;
+                best_maximum = maximum;
                 report["selected_checkpoint"] = {{"cycle", cycle + 1}, {"stage", stage}};
             }
             logger()
                 .info("Hybrid quality cycle {} stage {}: max AMIPS {}", cycle + 1, stage, maximum);
         }
-        if (q::mixed_score(m, target)["over_target"] == 0) break;
+        if (q::mixed_score(m, target)["over_target"] == 0 && energy_score().thickness.target_met)
+            break;
+    }
+    if (options.cycles > 0) {
+        auto backup = m;
+        try {
+            report["background_relocation"] = q::relocate_background_quality(
+                m,
+                rules,
+                reference,
+                options.smoothing_target,
+                options.thickness_weight);
+            validate();
+            const double maximum = q::mixed_score(m, target)["maximum_AMIPS"];
+            const bool selected = maximum < best_maximum;
+            report["background_relocation"]["selected_after_relocation"] = selected;
+            if (selected) {
+                best = m;
+                best_rules = rules;
+                best_reference = reference;
+                best_score = energy_score();
+                best_maximum = maximum;
+                report["selected_checkpoint"] =
+                    report["stages"].empty() ? nlohmann::json{{"cycle", 0}, {"stage", -1}}
+                                             : nlohmann::json{
+                                                   {"cycle", report["stages"].back()["cycle"]},
+                                                   {"stage", report["stages"].back()["stage"]}};
+                report["selected_checkpoint"]["background_relocation"] = true;
+            }
+        } catch (const std::exception& e) {
+            m = std::move(backup);
+            report["background_relocation"] = {{"status", "rolled_back"}, {"reason", e.what()}};
+        }
     }
     m = std::move(best);
     rules = std::move(best_rules);
@@ -313,8 +414,17 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
     report["final_validation"] = validate();
     report["final_quality"] = q::quality(m);
     report["final_all_mixed"] = q::mixed_score(m, target);
+    report["initial_domain_volume"] = volume0;
+    report["final_domain_volume"] = n::volume(m);
+    report["final_material_topology"] = q::topology(m, q::faces_of(m.cells));
+    const auto final_score = energy_score();
+    report["final_energy"] = final_score.report;
+    report["final_thickness"] = final_score.thickness.report;
     report["seconds"] = deadline.seconds();
-    report["target_met"] = report["final_all_mixed"]["over_target"] == 0;
+    report["quality_target_met"] = report["final_all_mixed"]["over_target"] == 0;
+    report["thickness_target_met"] = final_score.thickness.target_met;
+    report["target_met"] =
+        report["quality_target_met"].get<bool>() && report["thickness_target_met"].get<bool>();
     report["status"] =
         report["target_met"].get<bool>() ? "complete_target_met" : "complete_target_not_reached";
     report["reference_tet_provenance"] =
@@ -332,6 +442,8 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
         next_id = std::max(next_id, id + 1);
     }
     result.correspondence = m.correspondence;
+    for (size_t v = 0; v < nv; ++v)
+        if (m.fixed(v)) result.correspondence[v] = input.corr_input_vertex[v];
     result.target_heights = reference.height;
     for (size_t v = 0; v < m.p.size(); ++v) {
         result.vertices.row(v) = m.p[v];
@@ -345,7 +457,8 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
         }
         result.original_vertex_rows.push_back(v < nv ? int64_t(v) : -1);
         result.vertex_tags.push_back(
-            m.input[v]
+            m.fixed(v) ? input.vertex_tags[v]
+            : m.input[v]
                 ? 1
                 : (m.shell[v] && std::isfinite(m.thickness[v]) && m.thickness[v] > 0 ? 2 : -1));
         result.target_edge_lengths.push_back(length * m.sizing[v]);
@@ -365,6 +478,119 @@ ImprovedHybridMesh improve_prismatic_mesh_quality(
              c.energy});
     }
     result.report = std::move(report);
+    return result;
+}
+ImprovedHybridMesh finalize_staged_mixed_mesh(
+    const PrismaticMeshInput& input,
+    const PrismDominantMesh& hybrid,
+    const ImprovedHybridMesh* shell_stage,
+    bool improve_background)
+{
+    ImprovedHybridMesh result;
+    if (shell_stage) result = *shell_stage;
+    const size_t old_n = result.vertices.rows(), nv = input.vertices.rows();
+    result.vertices = input.vertices;
+    result.source_vertex_ids = input.source_vertex_ids;
+    result.correspondence.resize(nv, -1);
+    result.original_vertex_rows.resize(nv, -1);
+    result.vertex_tags.resize(nv, -1);
+    result.target_heights.resize(nv, 0);
+    result.target_edge_lengths.resize(nv, input.rod_state->radius);
+    result.reference_base.conservativeResize(nv, 3);
+    result.reference_normals.conservativeResize(nv, 3);
+    for (size_t v = 0; v < nv; ++v) {
+        if (v >= old_n) {
+            result.reference_base.row(v) = input.vertices.row(v);
+            result.reference_normals.row(v).setZero();
+            result.vertex_tags[v] = input.vertex_tags[v];
+            result.correspondence[v] = input.corr_input_vertex[v];
+        }
+    }
+    result.cells.clear();
+    result.construction_regions.clear();
+    result.rod_regions.clear();
+    result.joint_one_ring.clear();
+    n::Mesh actual;
+    for (size_t v = 0; v < nv; ++v) actual.p.push_back(input.vertices.row(v));
+    for (const auto& c : hybrid.cells) {
+        const size_t tid = c.source_tets.front();
+        const int region = input.offset_tet_tags[tid] == 1 ? 2
+                           : input.input_cells[tid] == 1   ? 1
+                                                           : 3;
+        const int type = c.type == HybridCellType::Tetrahedron ? 4
+                         : c.type == HybridCellType::Prism     ? 6
+                                                               : 7;
+        n::Cell cell{type, region, c.vertices};
+        const double energy = n::quality(actual.p, cell);
+        if (!std::isfinite(energy)) throw std::runtime_error("invalid final staged mixed cell");
+        actual.cells.push_back(cell);
+        auto vertices = c.vertices;
+        if (type == 6) {
+            std::swap(vertices[1], vertices[2]);
+            std::swap(vertices[4], vertices[5]);
+        }
+        result.cells.push_back({c.type, std::move(vertices), region, energy});
+        const bool rod = std::any_of(c.source_tets.begin(), c.source_tets.end(), [&](size_t t) {
+            return is_rod_band_tet(input, t);
+        });
+        const bool joint = rod && std::any_of(c.vertices.begin(), c.vertices.end(), [&](size_t v) {
+                               return input.rod_state->joints.count(v);
+                           });
+        result.construction_regions.push_back(region == 2 ? rod ? 2 : 1 : 0);
+        result.rod_regions.push_back(!rod ? 0 : joint ? 3 : type == 6 ? 1 : type == 4 ? 2 : 4);
+        result.joint_one_ring.push_back(joint ? 1 : 0);
+    }
+    nlohmann::json background_report;
+    if (improve_background) {
+        actual.initial = actual.base = actual.p;
+        actual.original_n = nv;
+        actual.input.resize(nv);
+        actual.outer.assign(nv, false);
+        actual.fixed_vertices.assign(nv, false);
+        actual.correspondence.assign(nv, -1);
+        actual.thickness.assign(nv, NAN);
+        actual.radius.assign(nv, 0);
+        actual.sizing.assign(nv, 1);
+        actual.lo = actual.hi = actual.p.front();
+        for (size_t v = 0; v < nv; ++v) {
+            actual.input[v] = input.vertex_tags[v] == 1;
+            if (actual.input[v]) actual.thickness[v] = 0;
+            actual.fixed_vertices[v] = input.rod_state->fixed_shell_vertices.count(v) != 0;
+            actual.lo = actual.lo.cwiseMin(actual.p[v]);
+            actual.hi = actual.hi.cwiseMax(actual.p[v]);
+        }
+        actual.rebuild();
+        const auto faces = q::faces_of(actual.cells);
+        for (const auto& [key, face] : faces)
+            if (face.b == size_t(-1))
+                for (size_t v : face.v) actual.outer[v] = true;
+        const auto original_positions = actual.p;
+        try {
+            q::Rules rules(actual, faces);
+            const double radius = input.rod_state->radius;
+            q::MixedReference reference(actual, radius, radius, {});
+            background_report = q::relocate_background_quality(actual, rules, reference, 18, 0);
+            for (size_t v = 0; v < nv; ++v) result.vertices.row(v) = actual.p[v];
+            for (size_t i = 0; i < actual.cells.size(); ++i)
+                result.cells[i].amips = actual.cells[i].energy;
+        } catch (const std::exception& e) {
+            actual.p = original_positions;
+            for (auto& c : actual.cells) n::quality(actual.p, c);
+            background_report = {{"status", "rolled_back"}, {"reason", e.what()}};
+        }
+    }
+    const auto shell_report = result.report;
+    result.report = {
+        {"method", "shell_construction_quality_then_rod_geometry_and_construction"},
+        {"shell_stage", shell_stage ? shell_report : nlohmann::json(nullptr)},
+        {"rod_stage", input.rod_state->report},
+        {"final_quality", q::quality(actual)},
+        {"final_domain_volume", n::volume(actual)},
+        {"final_material_topology", q::topology(actual, q::faces_of(actual.cells))},
+        {"construction", hybrid.report},
+        {"reference_tet_provenance",
+         "Final native cells; pre-remeshing source rows are not exported"}};
+    if (improve_background) result.report["background_relocation"] = std::move(background_report);
     return result;
 }
 } // namespace wmtk::components::prismatic_mesh

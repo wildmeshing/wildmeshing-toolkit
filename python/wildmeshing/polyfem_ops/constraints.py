@@ -230,8 +230,8 @@ def _auto_interfaces(mesh: TaggedMesh):
     return faces3d, edges2d, tags
 
 
-def load_mesh(msh_path: str, selections: list | None = None):
-    """Load a multi-tag .msh and extract its material-interface surfaces —
+def load_mesh(msh_path, selections: list | None = None):
+    """Load a multi-tag .msh (or take a TaggedMesh) and extract its material-interface surfaces —
     every interface when `selections` is omitted, else those selected by the
     given {"region", "filter", "id"} specs (see mesh_core). Returns the 9-tuple
     (node_tag_to_idx, coords (n, mesh_dim) float64 in mesh units,
@@ -239,7 +239,7 @@ def load_mesh(msh_path: str, selections: list | None = None):
     collision_node_ids in collision-OBJ vertex order, collision_edges_local
     over those local IDs, collision_face_tags — per-face sorted id lists
     (interface ids when selected, phys tags in auto mode))."""
-    mesh = TaggedMesh(msh_path)
+    mesh = msh_path if isinstance(msh_path, TaggedMesh) else TaggedMesh(msh_path)
     if selections:
         faces3d, edges2d, face_tags = _selected_interfaces(mesh, selections)
     else:
@@ -295,11 +295,25 @@ def load_mesh(msh_path: str, selections: list | None = None):
 # Writers
 # ---------------------------------------------------------------------------
 
+def write_hdf5(path: str, data: dict) -> None:
+    """Write {dataset path: array} (a constraint, as fitting_constraint
+    returns it) to an HDF5 file; "A_triplets/rows" makes group A_triplets."""
+    with h5py.File(path, "w") as f:
+        for name, values in data.items():
+            f.create_dataset(name, data=values)
+
+
 def write_fitting_constraint_hdf5(path: str, node_ids: np.ndarray, dim: int = 2, coords: np.ndarray = None, interface_edges: list = None, graph: bool = False, normalize: bool = False, interface_faces: list = None) -> None:
-    """Write the fitting constraint HDF5 (local2global, A_triplets, b = 0)
-    with A = sqrt(M), so (1/2)||A u||^2 is a proper interface L2 norm;
-    `normalize` also divides A by sqrt(L_total) so a uniform displacement
-    u_ref costs w * u_ref^2."""
+    """Write fitting_constraint(...) to an HDF5 file."""
+    write_hdf5(path, fitting_constraint(node_ids, dim, coords, interface_edges, graph,
+                                        normalize, interface_faces))
+
+
+def fitting_constraint(node_ids: np.ndarray, dim: int = 2, coords: np.ndarray = None, interface_edges: list = None, graph: bool = False, normalize: bool = False, interface_faces: list = None) -> dict:
+    """The fitting constraint (local2global, A_triplets, b = 0) with A =
+    sqrt(M), so (1/2)||A u||^2 is a proper interface L2 norm; `normalize`
+    also divides A by sqrt(L_total) so a uniform displacement u_ref costs
+    w * u_ref^2. Returns {dataset path: array}, as an HDF5 file holds it."""
     n = len(node_ids)
     rows, cols, values = get_mass_matrix(coords, interface_edges, node_ids, graph, interface_faces=interface_faces)
     if normalize:
@@ -309,18 +323,24 @@ def write_fitting_constraint_hdf5(path: str, node_ids: np.ndarray, dim: int = 2,
     else:
         values = np.sqrt(values)
 
-    with h5py.File(path, "w") as f:
-        f.create_dataset("local2global", data=node_ids)
-        grp = f.create_group("A_triplets")
-        grp.create_dataset("rows",   data=rows)
-        grp.create_dataset("cols",   data=cols)
-        grp.create_dataset("values", data=values)
-        grp.create_dataset("shape",  data=np.array([n, n], dtype=np.int64))
-        f.create_dataset("b", data=np.zeros((n, dim), dtype=np.float64))
+    return {"local2global": node_ids,
+            "A_triplets/rows": rows,
+            "A_triplets/cols": cols,
+            "A_triplets/values": values,
+            "A_triplets/shape": np.array([n, n], dtype=np.int64),
+            "b": np.zeros((n, dim), dtype=np.float64)}
 
 def write_pin_constraint_hdf5(path: str, node_ids: np.ndarray, dim: int,
                               axes=None) -> None:
-    """Write a pin constraint (A u = 0 on node_ids): as a polyfem HARD
+    """Write pin_constraint(...) to an HDF5 file."""
+    data, what = pin_constraint(node_ids, dim, axes)
+    write_hdf5(path, data)
+    print(f"  pinned     : {path}  ({len(node_ids)} nodes, {what})")
+
+
+def pin_constraint(node_ids: np.ndarray, dim: int, axes=None) -> tuple:
+    """A pin constraint (A u = 0 on node_ids), as fitting_constraint returns
+    one, and which axes it holds ("all axes" or e.g. "xz"): as a polyfem HARD
     constraint (constraints/hard) it holds those nodes at rest via the
     augmented Lagrangian — used for min-sep protected_regions.
 
@@ -334,34 +354,28 @@ def write_pin_constraint_hdf5(path: str, node_ids: np.ndarray, dim: int,
     (node * dim + component), which is what lets a single axis be pinned.
     """
     n = len(node_ids)
+    # h5pp reads local2global as vector<int> — must be int32 on disk
     ids = np.asarray(node_ids, dtype=np.int32)
-    with h5py.File(path, "w") as f:
-        # h5pp reads local2global as vector<int> — must be int32 on disk
-        f.create_dataset("local2global", data=ids)
-        grp = f.create_group("A_triplets")
-        if axes is None:
-            grp.create_dataset("rows",   data=np.arange(n, dtype=np.int32))
-            grp.create_dataset("cols",   data=np.arange(n, dtype=np.int32))
-            grp.create_dataset("values", data=np.ones(n, dtype=np.float64))
-            grp.create_dataset("shape",  data=np.array([n, n], dtype=np.int64))
-            f.create_dataset("b", data=np.zeros((n, dim), dtype=np.float64))
-            what = "all axes"
-        else:
-            ax = sorted({int(a) for a in axes})
-            if not ax or any(a < 0 or a >= dim for a in ax):
-                raise ValueError(
-                    f"axes {axes!r} out of range for a {dim}D mesh")
-            m = n * len(ax)
-            cols = np.array([i * dim + a for i in range(n) for a in ax],
-                            dtype=np.int32)
-            grp.create_dataset("rows",   data=np.arange(m, dtype=np.int32))
-            grp.create_dataset("cols",   data=cols)
-            grp.create_dataset("values", data=np.ones(m, dtype=np.float64))
-            grp.create_dataset("shape",
-                               data=np.array([m, n * dim], dtype=np.int64))
-            f.create_dataset("b", data=np.zeros((m, 1), dtype=np.float64))
-            what = "".join("xyz"[a] for a in ax)
-    print(f"  pinned     : {path}  ({n} nodes, {what})")
+    if axes is None:
+        return {"local2global": ids,
+                "A_triplets/rows": np.arange(n, dtype=np.int32),
+                "A_triplets/cols": np.arange(n, dtype=np.int32),
+                "A_triplets/values": np.ones(n, dtype=np.float64),
+                "A_triplets/shape": np.array([n, n], dtype=np.int64),
+                "b": np.zeros((n, dim), dtype=np.float64)}, "all axes"
+    ax = sorted({int(a) for a in axes})
+    if not ax or any(a < 0 or a >= dim for a in ax):
+        raise ValueError(
+            f"axes {axes!r} out of range for a {dim}D mesh")
+    m = n * len(ax)
+    cols = np.array([i * dim + a for i in range(n) for a in ax],
+                    dtype=np.int32)
+    return {"local2global": ids,
+            "A_triplets/rows": np.arange(m, dtype=np.int32),
+            "A_triplets/cols": cols,
+            "A_triplets/values": np.ones(m, dtype=np.float64),
+            "A_triplets/shape": np.array([m, n * dim], dtype=np.int64),
+            "b": np.zeros((m, 1), dtype=np.float64)}, "".join("xyz"[a] for a in ax)
 
 
 def parse_axes(spec, dim: int):
@@ -466,7 +480,14 @@ def get_laplacian_matrix(coords: np.ndarray, interface_edges: list, node_ids: np
     return S_rows.copy(), S_cols.copy(), L_values
 
 def write_laplacian_constraint_hdf5(path: str, node_ids: np.ndarray, coords: np.ndarray, interface_edges: list, graph: bool = False, scale: float = 1.0, normalize: bool = False, interface_faces: list = None, smooth_positions: bool = False) -> None:
-    """Write the Laplacian smoothness constraint HDF5 with A = L. Default
+    """Write laplacian_constraint(...) to an HDF5 file."""
+    write_hdf5(path, laplacian_constraint(node_ids, coords, interface_edges, graph, scale,
+                                          normalize, interface_faces, smooth_positions))
+
+
+def laplacian_constraint(node_ids: np.ndarray, coords: np.ndarray, interface_edges: list, graph: bool = False, scale: float = 1.0, normalize: bool = False, interface_faces: list = None, smooth_positions: bool = False) -> dict:
+    """The Laplacian smoothness constraint with A = L, as fitting_constraint
+    returns one. Default
     b = 0 enforces harmonic displacements (L·u = 0; zero energy and gradient
     at rest, preserving equilibrium); smooth_positions instead sets
     b = -L·(scale * rest_coords) so absolute positions are harmonic (scale =
@@ -499,14 +520,12 @@ def write_laplacian_constraint_hdf5(path: str, node_ids: np.ndarray, coords: np.
     else:
         b = np.zeros((n, dim), dtype=np.float64)
 
-    with h5py.File(path, "w") as f:
-        f.create_dataset("local2global", data=node_ids)
-        grp = f.create_group("A_triplets")
-        grp.create_dataset("rows",   data=L_rows)
-        grp.create_dataset("cols",   data=L_cols)
-        grp.create_dataset("values", data=L_values)
-        grp.create_dataset("shape",  data=np.array([n, n], dtype=np.int64))
-        f.create_dataset("b", data=b)
+    return {"local2global": node_ids,
+            "A_triplets/rows": L_rows,
+            "A_triplets/cols": L_cols,
+            "A_triplets/values": L_values,
+            "A_triplets/shape": np.array([n, n], dtype=np.int64),
+            "b": b}
 
 def write_collision_mesh_obj(path: str, coords: np.ndarray,
                              node_ids: np.ndarray,
@@ -664,6 +683,70 @@ def make_interface_constraint(
         map_node_ids = np.array(collision_node_ids if collision_node_ids else node_ids, dtype=np.int32)
         write_linear_map_hdf5(linear_map_path, map_node_ids, total_n_nodes)
         write_collision_body_ids_txt(body_ids_path, collision_face_tags)
+
+
+def interface_resources(mesh, selections: list | None = None, use_graph: bool = False,
+                        normalize: bool = False, scale: float = 0.001,
+                        smooth_positions: bool = False, collision: bool = False) -> tuple:
+    """make_interface_constraint's artifacts, in memory: (resources,
+    attributes) for _core.polyfem_simulate, under the names
+    make_interface_constraint gives the files (those build_polyfem_json
+    references): the fitting and Laplacian constraints and, with `collision`,
+    the collision proxy (the OBJ, as a surface mesh group), its linear map and
+    its body IDs, which minimum separation's contact reads. `mesh` is a .msh
+    path or a TaggedMesh."""
+    from .polyfem_utils import mesh_group_resources
+    (_, coords, interface_edges, total_n_nodes, mesh_dim, interface_faces,
+     collision_node_ids, collision_edges_local, collision_face_tags) = load_mesh(
+        mesh, selections=selections)
+    if not interface_edges:
+        _error("no interface edges extracted — check selections and mesh physical groups")
+    node_ids = np.array(sorted({v for e in interface_edges for v in e}), dtype=np.int32)
+    print(f"Found {len(interface_edges)} interface edges, {len(node_ids)} interface nodes")
+    faces = interface_faces if interface_faces else None
+    constraints = {
+        "interface_constraint.hdf5": fitting_constraint(
+            node_ids, dim=mesh_dim, coords=coords, interface_edges=interface_edges,
+            graph=use_graph, normalize=normalize, interface_faces=faces),
+        "interface_constraint_laplacian.hdf5": laplacian_constraint(
+            node_ids, coords, interface_edges, graph=use_graph, scale=scale,
+            normalize=normalize, interface_faces=faces, smooth_positions=smooth_positions),
+    }
+    resources = {f"{name}/{field}": values
+                 for name, data in constraints.items() for field, values in data.items()}
+    attributes = {}
+    if not collision:
+        return resources, attributes
+
+    # As write_collision_mesh_obj, write_linear_map_hdf5 and write_collision_body_ids_txt.
+    proxy_ids = list(collision_node_ids) if collision_node_ids else list(node_ids)
+    local = {nid: i for i, nid in enumerate(proxy_ids)}
+    vertices = np.zeros((len(proxy_ids), 3))           # the OBJ's: z = 0 in 2D
+    vertices[:, :mesh_dim] = coords[proxy_ids]
+    if interface_faces:
+        surface = {"vertices": vertices, "faces": np.array(
+            [[local[a], local[b], local[c]] for a, b, c in interface_faces
+             if a in local and b in local and c in local], dtype=np.int64).reshape(-1, 3)}
+    elif collision_edges_local:
+        surface = {"vertices": vertices,
+                   "edges": np.array(collision_edges_local, dtype=np.int64).reshape(-1, 2)}
+    else:
+        surface = {"vertices": vertices, "edges": np.array(
+            [[local[a], local[b]] for a, b in interface_edges if a in local and b in local],
+            dtype=np.int64).reshape(-1, 2)}
+    r, a = mesh_group_resources("interface_collision.obj", surface, mesh_type="surface")
+    resources.update(r)
+    attributes.update(a)
+    n = len(proxy_ids)
+    resources.update({
+        "interface_linear_map.hdf5/weight_triplets/rows": np.arange(n, dtype=np.int32),
+        "interface_linear_map.hdf5/weight_triplets/cols": np.asarray(proxy_ids, dtype=np.int32),
+        "interface_linear_map.hdf5/weight_triplets/values": np.ones(n, dtype=np.float64),
+    })
+    attributes["interface_linear_map.hdf5/weight_triplets"] = {"shape": [n, int(total_n_nodes)]}
+    resources["collision_body_ids.txt"] = "".join(
+        " ".join(str(t) for t in tags) + "\n" for tags in collision_face_tags)
+    return resources, attributes
 
 
 # ---------------------------------------------------------------------------

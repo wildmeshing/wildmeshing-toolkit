@@ -17,8 +17,8 @@ import numpy as np
 import pytest
 
 import wildmeshing as wm
-from wildmeshing import checkpoint
-from wildmeshing.pipeline import Pipeline, StageFailed
+from wildmeshing import checkpoint, pipeline
+from wildmeshing.pipeline import Pipeline, StageFailed, read_input
 
 COMPONENTS = ["isotropic_remeshing", "qslim", "tracking"]
 
@@ -173,6 +173,24 @@ def test_an_edited_save_is_refused_and_the_stage_reruns(tmp_path, calls):
     assert not same(checkpoint.load(stem), {"mesh": mesh})
 
 
+def test_a_save_set_after_the_run_is_written_by_the_next(tmp_path, calls):
+    # A result in memory is taken while its save stem holds it: one set since is written from
+    # the cache, the component not run again, the stages reading it unchanged.
+    plain = stages()
+    del plain[0]["save"]
+    p = Pipeline.load(write(tmp_path, plain))
+    first = p.run()
+    calls.clear()
+    p.stages[0]["save"] = "out/later"
+    r = p.run()
+    assert not calls
+    assert sources(r)["remesh"] == "cache" and sources(r)["simplify_a"] == "memory"
+    stem = str(tmp_path / "out" / "later")
+    assert checkpoint.record(stem)["key"] == first["remesh"]["key"]
+    assert same(checkpoint.load(stem), first["remesh"]["outputs"])
+    assert sources(p.run())["remesh"] == "memory"
+
+
 def test_a_checkpoint_without_a_record_is_refused(tmp_path):
     write(tmp_path, [])
     stem = str(tmp_path / "old")
@@ -200,6 +218,30 @@ def test_a_failed_stage_stops_the_run_and_keeps_its_log(tmp_path, calls):
     with open(failed.value.log) as f:
         assert '"bogus"' in f.read()
     assert calls["isotropic_remeshing"] == 0 and "remesh" not in p.results
+
+
+def test_each_component_in_a_process_of_its_own(tmp_path):
+    # The same results as in this process; the log and a failure the same.
+    plain = stages()
+    del plain[0]["save"]  # each run its own
+    here = Pipeline.load(write(tmp_path, plain)).run()
+    p = Pipeline(plain, str(tmp_path), "apart", {"box": "box.obj"})
+    p.process = True
+    apart = p.run()
+    assert set(sources(apart).values()) == {"file", "run"}
+    for name in ["remesh", "simplify_a", "simplify_b"]:
+        assert same(here[name]["outputs"], apart[name]["outputs"]), name
+    assert apart["remesh"]["report"]["history"] == here["remesh"]["report"]["history"]
+    assert apart["map"]["report"]["edits"] == here["map"]["report"]["edits"]
+    with open(apart["remesh"]["log"]) as f:
+        assert "[wmtk] [info] remeshing on box" in f.read()
+    bad = {"name": "bad", "component": "tracking", "options": {"operation": "bogus"}}
+    p = Pipeline([bad], str(tmp_path), "apart_bad", {"box": "box.obj"})
+    p.process = True
+    with pytest.raises(StageFailed) as failed:
+        p.run()
+    with open(failed.value.log) as f:
+        assert '"bogus"' in f.read()
 
 
 def test_a_stage_refers_only_to_the_inputs_and_the_stages_above_it(tmp_path):
@@ -268,3 +310,65 @@ def test_prismatic_adapter_preserves_original_curves_faces_and_layer_links():
     # The adapter leaves the two layer links intact for C++ junction handling.
     assert converted['vertex_attributes']['corr_input_vid']['values'].tolist() == [-1,-1,-1,-1,0,4]
     assert converted['vertex_attributes']['labels']['values'][4] == 2
+
+
+def test_a_polyline_txt_input_is_read_as_its_curves(tmp_path):
+    # image-simulation's png_to_polylines: each "# ring" a closed loop, "x y" per line.
+    (tmp_path / "rings.txt").write_text("# bin: gray in [140, 220]\n# ring outer\n0 0\n1 0\n"
+                                        "1 1\n# ring hole\n0.2 0.2\n0.4 0.2\n0.4 0.4\n")
+    mesh = read_input(str(tmp_path / "rings.txt"))
+    assert mesh["V"].tolist() == [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0.2, 0.2, 0], [0.4, 0.2, 0],
+                                  [0.4, 0.4, 0]]
+    assert mesh["cells"]["edge"]["connectivity"].tolist() == [[0, 1], [1, 2], [2, 0], [3, 4],
+                                                               [4, 5], [5, 3]]
+    # As read_mesh reads an OBJ's 'l' records.
+    obj = tmp_path / "rings.obj"
+    obj.write_text("".join(f"v {x} {y} {z}\n" for x, y, z in mesh["V"])
+                   + "".join(f"l {a + 1} {b + 1}\n" for a, b in
+                             mesh["cells"]["edge"]["connectivity"]))
+    assert same(read_input(str(obj)), mesh)
+    r = Pipeline([], str(tmp_path), inputs={"rings": "rings.txt"}).run()["rings"]
+    assert r["source"] == "file" and same(r["outputs"]["mesh"], mesh)
+
+
+@pytest.mark.parametrize("built_in", [False, True])
+def test_the_polyfem_operations_are_components_only_with_polyfem_built_in(monkeypatch, built_in):
+    """laplacian_smoothing, minimum_separation and polyfem_sim are components while the module runs
+    PolyFEM in process; a stage naming one, on a module built without, says so."""
+    monkeypatch.setattr(pipeline, "_in_process", lambda: built_in)
+    listed = {"laplacian_smoothing", "minimum_separation", "polyfem_sim"} & set(
+        pipeline.components())
+    assert listed == ({"laplacian_smoothing", "minimum_separation", "polyfem_sim"}
+                      if built_in else set())
+    sim = [{"name": "sim", "component": "polyfem_sim",
+            "options": {"input": {"from": "m", "output": "mesh"}, "bodies": ["tag_0"]}}]
+    if built_in:
+        Pipeline(sim, inputs={"m": "m.msh"})
+    else:
+        with pytest.raises(ValueError, match="sim: polyfem_sim needs a wildmeshing built with "
+                                             "WMTK_WITH_POLYFEM"):
+            Pipeline(sim, inputs={"m": "m.msh"})
+
+
+def test_a_polyfem_stage_has_no_file_options_and_its_key_holds_the_ops_sources(monkeypatch):
+    """A stage has no file route: smoothing's and separation's output and save_vtu are not its
+    options, polyfem_sim's output (PolyFEM's own section) is. The polyfem_ops sources are in a
+    PolyFEM stage's key, not in another stage's."""
+    monkeypatch.setattr(pipeline, "_in_process", lambda: True)
+    for component in ["laplacian_smoothing", "minimum_separation"]:
+        rules = pipeline.spec(component)
+        root = next(r for r in rules if r["pointer"] == "/")
+        assert not {"output", "save_vtu"} & set(root["optional"] + root["required"])
+        assert not [r for r in rules if r["pointer"].split("/")[1] in ("output", "save_vtu")]
+    assert "output" in next(r for r in pipeline.spec("polyfem_sim") if r["pointer"] == "/")[
+        "optional"]
+
+    smooth = {"name": "s", "component": "laplacian_smoothing",
+              "options": {"input": {"from": "m", "output": "mesh"}}}
+    remesh = {"name": "r", "component": "isotropic_remeshing",
+              "options": {"input": {"from": "m", "output": "mesh"}}}
+    p = Pipeline([smooth, remesh], inputs={"m": "m.msh"})
+    keys = {"m": "input key"}
+    before = p._key(smooth, keys), p._key(remesh, keys)
+    monkeypatch.setattr(pipeline, "_polyfem_ops_hash", "other sources")
+    assert p._key(smooth, keys) != before[0] and p._key(remesh, keys) == before[1]

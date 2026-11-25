@@ -25,6 +25,18 @@ void average_rod_vertex_frames(RodMeshState& state)
             auto next = rotations[1];
             if (q.dot(next) < 0) next.coeffs() *= -1;
             q = q.slerp(.5, next).normalized();
+            if (state.options.edge_based) {
+                // The corner plane is geometric. A full quaternion midpoint
+                // couples its normal to unrelated in-plane ring phases.
+                const Vector3d normal =
+                    rotations[0] * Vector3d::UnitZ() + rotations[1] * Vector3d::UnitZ();
+                if (normal.norm() > 1e-12)
+                    q = (Eigen::Quaterniond::FromTwoVectors(
+                             q * Vector3d::UnitZ(),
+                             normal.normalized()) *
+                         q)
+                            .normalized();
+            }
         } else if (rotations.size() > 2) {
             Eigen::Matrix4d M = Eigen::Matrix4d::Zero();
             for (const auto& r : rotations) M += r.coeffs() * r.coeffs().transpose();
@@ -185,7 +197,8 @@ bool split_construction_edge(
         const Tet t = tet_at(input, i);
         const bool incident = std::find(t.begin(), t.end(), e[0]) != t.end() &&
                               std::find(t.begin(), t.end(), e[1]) != t.end();
-        if (incident && protected_tet(input, t)) return false;
+        if (incident && protected_tet(input, t) && !input.rod_state->options.edge_based)
+            return false;
         const auto add = [&](Tet child) {
             if (!tet_volume_above_threshold(
                     r.vertices,
@@ -217,6 +230,14 @@ bool split_construction_edge(
     r.offset_tet_tags = std::move(band);
     rebuild(r);
     input = std::move(r);
+    if (input.rod_state->options.edge_based) {
+        // A conforming refinement does not move the protected joint geometry.
+        // Capture its refined stars before any subsequent collapse/relocation.
+        input.junction_protection.reset();
+        initialize_junction_protection(input);
+        auto& state = *input.rod_state;
+        state.frozen_offset = input.junction_protection->offset_vertices;
+    }
     return true;
 }
 
@@ -224,7 +245,8 @@ bool split_ring_edge(PrismaticMeshInput& input, Edge e, double floor)
 {
     if (input.vertex_tags[e[0]] != 2 || input.vertex_tags[e[1]] != 2 ||
         input.corr_input_vertex[e[0]] != input.corr_input_vertex[e[1]] ||
-        input.rod_state->frozen_offset.count(e[0]) || input.rod_state->frozen_offset.count(e[1]))
+        (!input.rod_state->options.edge_based && (input.rod_state->frozen_offset.count(e[0]) ||
+                                                  input.rod_state->frozen_offset.count(e[1]))))
         return false;
     return split_construction_edge(input, e, 2, input.corr_input_vertex[e[0]], floor);
 }
@@ -232,6 +254,13 @@ bool split_ring_edge(PrismaticMeshInput& input, Edge e, double floor)
 void classify_graph(PrismaticMeshInput& input)
 {
     auto& s = *input.rod_state;
+    s.input_vertices.clear();
+    s.interface_vertices.clear();
+    s.joints.clear();
+    s.endpoints.clear();
+    s.free_endpoints.clear();
+    s.frozen_offset.clear();
+    s.rods.clear();
     std::set<Edge> edges, surface_edges;
     std::set<size_t> surface_vertices;
     std::set<Edge> explicit_surface_edges, volume_edges;
@@ -268,7 +297,8 @@ void classify_graph(PrismaticMeshInput& input)
         for (auto e : input.source_edges) {
             e = sorted(e);
             if (input.vertex_tags[e[0]] == 1 && input.vertex_tags[e[1]] == 1 &&
-                !explicit_surface_edges.count(e) && !volume_edges.count(e))
+                !explicit_surface_edges.count(e) && !surface_edges.count(e) &&
+                !volume_edges.count(e))
                 edges.insert(e);
         }
     }
@@ -411,6 +441,254 @@ std::vector<Tri> rod_offset_front(const PrismaticMeshInput& input)
     for (const auto& [f, count] : counts)
         if (count == 1) result.push_back(f);
     return result;
+}
+
+// Stellar splits change the complete volume star, including background. They
+// preserve the geometric domain and every existing point. Rebuild the mesh only
+// once: intermediate connectivity is used exclusively by this preparation.
+void prepare_edge_based_regions(PrismaticMeshInput& input)
+{
+    auto& state = *input.rod_state;
+    const auto axes = state.input_edges;
+    std::map<Edge, size_t> axis_index;
+    for (size_t i = 0; i < axes.size(); ++i) axis_index[axes[i]] = i;
+    std::vector<Tet> cells;
+    for (size_t tid = 0; tid < size_t(input.tetrahedra.rows()); ++tid)
+        cells.push_back(tet_at(input, tid));
+    auto regions = input.input_cells, band = input.offset_tet_tags;
+    std::vector<bool> rod_band(cells.size());
+    std::set<size_t> shell_offsets;
+    for (size_t tid = 0; tid < cells.size(); ++tid) {
+        rod_band[tid] = is_rod_band_tet(input, tid);
+        if (band[tid] == 1 && !rod_band[tid])
+            for (size_t v : cells[tid])
+                if (input.vertex_tags[v] == 2) shell_offsets.insert(v);
+    }
+    const auto links = [&]() {
+        std::vector<std::vector<Edge>> result(axes.size());
+        for (size_t tid = 0; tid < cells.size(); ++tid) {
+            const auto in = input_corners(input, cells[tid]);
+            if (in.size() != 2) continue;
+            const auto found = axis_index.find(sorted(Edge{in[0], in[1]}));
+            if (found == axis_index.end()) continue;
+            Edge off;
+            size_t n = 0;
+            for (size_t v : cells[tid])
+                if (input.vertex_tags[v] == 2) off[n++] = v;
+            require(n == 2 && band[tid] == 1, "source edge has a non-rod coface");
+            result[found->second].push_back(off);
+        }
+        return result;
+    };
+    const auto owners = [&](const std::vector<std::vector<Edge>>& edge_links) {
+        std::map<size_t, std::set<size_t>> result;
+        for (size_t i = 0; i < edge_links.size(); ++i) {
+            require(!ordered_ring(edge_links[i]).empty(), "source edge link is not a cycle");
+            for (const auto& e : edge_links[i])
+                for (size_t v : e) result[v].insert(i);
+        }
+        return result;
+    };
+    const auto excess = [](const auto& ownership) {
+        size_t count = 0;
+        for (const auto& [v, ids] : ownership) count += ids.size() - 1;
+        return count;
+    };
+    const auto split = [&](Edge edge, int label, int64_t parent) {
+        const size_t m = append_vertex(
+            input,
+            (position(input, edge[0]) + position(input, edge[1])) / 2,
+            label,
+            parent);
+        const size_t count = cells.size();
+        size_t changed = 0;
+        for (size_t tid = 0; tid < count; ++tid) {
+            const auto old = cells[tid];
+            if (std::find(old.begin(), old.end(), edge[0]) == old.end() ||
+                std::find(old.begin(), old.end(), edge[1]) == old.end())
+                continue;
+            Tet a = old, b = old;
+            *std::find(a.begin(), a.end(), edge[0]) = m;
+            *std::find(b.begin(), b.end(), edge[1]) = m;
+            require(
+                tet_volume_above_threshold(input.vertices, a, 0) &&
+                    tet_volume_above_threshold(input.vertices, b, 0),
+                "nonpositive stellar split");
+            cells[tid] = a;
+            cells.push_back(b);
+            regions.push_back(regions[tid]);
+            band.push_back(band[tid]);
+            rod_band.push_back(rod_band[tid]);
+            ++changed;
+        }
+        require(changed > 0, "split edge is absent");
+        return m;
+    };
+    auto ownership = owners(links());
+    // A shell-owned offset must keep its correspondence. Move the rod link to
+    // a new point on its radial edge, before native shell cells are constructed.
+    size_t shell_port_splits = 0;
+    for (size_t u : shell_offsets) {
+        while (ownership.count(u)) {
+            const auto edge = axes[*ownership.at(u).begin()];
+            const size_t end = edge[0] == size_t(input.corr_input_vertex[u]) ? edge[1] : edge[0];
+            split({end, u}, 2, end);
+            ++shell_port_splits;
+            ownership = owners(links());
+        }
+    }
+    const size_t shared_before = excess(ownership);
+    auto operations = nlohmann::json::array();
+    while (excess(ownership)) {
+        const auto found = std::find_if(ownership.begin(), ownership.end(), [](const auto& item) {
+            return item.second.size() > 1;
+        });
+        const size_t u = found->first;
+        const size_t a = *found->second.begin(), b = *std::next(found->second.begin());
+        size_t endpoint = axes[a][0];
+        if (endpoint == axes[b][0] || endpoint == axes[b][1]) endpoint = axes[a][1];
+        require(endpoint != axes[b][0] && endpoint != axes[b][1], "duplicate source edges");
+        const size_t previous = excess(ownership);
+        const size_t m = split({endpoint, u}, 2, endpoint);
+        operations.push_back(
+            {{"split_edge_vids", {input.source_vertex_ids[endpoint], input.source_vertex_ids[u]}},
+             {"new_vertex_vid", input.source_vertex_ids[m]}});
+        ownership = owners(links());
+        require(excess(ownership) < previous, "frame separation did not reduce overlap");
+    }
+    // An offset point belonging to an edge port must not remain attached to an
+    // unrelated centerline vertex. Such an attachment is split outside the port
+    // cofaces, without changing the complete port cycle.
+    size_t attachment_splits = 0;
+    while (true) {
+        std::set<Edge> incompatible;
+        for (const auto& tet : cells)
+            for (size_t v : tet) {
+                if (input.vertex_tags[v] != 1) continue;
+                for (size_t u : tet) {
+                    const auto found = ownership.find(u);
+                    if (found == ownership.end()) continue;
+                    const auto axis = axes[*found->second.begin()];
+                    if (axis[0] != v && axis[1] != v) incompatible.insert({v, u});
+                }
+            }
+        if (incompatible.empty()) break;
+        const auto edge = *incompatible.begin();
+        split(edge, 2, edge[0]);
+        ++attachment_splits;
+    }
+    const auto separated_links = links();
+    std::vector<size_t> centers;
+    input.source_edges.erase(
+        std::remove_if(
+            input.source_edges.begin(),
+            input.source_edges.end(),
+            [&](Edge e) { return axis_index.count(sorted(e)); }),
+        input.source_edges.end());
+    for (size_t i = 0; i < axes.size(); ++i) {
+        const auto axis = axes[i];
+        const size_t center = split(axis, 1, -1);
+        centers.push_back(center);
+        input.source_edges.push_back({axis[0], center});
+        input.source_edges.push_back({center, axis[1]});
+        state.section_edges[center] = sorted(Edge{center, axis[1]});
+        for (const auto& e : separated_links[i])
+            for (size_t v : e) {
+                input.corr_input_vertex[v] = center;
+                input.corr_input_vid[v] = input.source_vertex_ids[center];
+            }
+    }
+    // Non-port front points have one incident original centerline vertex. Keep
+    // this None region between adjacent ports; do not invent a fitted circle.
+    std::map<size_t, std::set<size_t>> incident;
+    for (const auto& tet : cells)
+        for (size_t v : tet) {
+            if (input.vertex_tags[v] != 1 || !state.input_vertices.count(v)) continue;
+            for (size_t u : tet)
+                if (input.vertex_tags[u] == 2 && !ownership.count(u) && !shell_offsets.count(u) &&
+                    input.corr_input_vertex[u] >= 0 &&
+                    state.input_vertices.count(size_t(input.corr_input_vertex[u])))
+                    incident[u].insert(v);
+        }
+    for (const auto& [u, parents] : incident) {
+        require(parents.size() == 1, "ambiguous None-region input vertex");
+        input.corr_input_vertex[u] = *parents.begin();
+        input.corr_input_vid[u] = input.source_vertex_ids[*parents.begin()];
+    }
+    // Split direct L--R front edges. Their new None point is owned by the
+    // common original input endpoint. The defining edge-link cycles are intact.
+    std::map<size_t, Edge> original_axis;
+    for (size_t i = 0; i < axes.size(); ++i) original_axis[centers[i]] = axes[i];
+    std::set<Edge> cross_edges;
+    for (const auto& tet : cells)
+        for (size_t a : tet)
+            for (size_t b : tet) {
+                if (a >= b || !ownership.count(a) || !ownership.count(b)) continue;
+                if (*ownership.at(a).begin() != *ownership.at(b).begin())
+                    cross_edges.insert({a, b});
+            }
+    size_t cross_splits = 0;
+    for (const auto& edge : cross_edges) {
+        const auto a = original_axis.at(input.corr_input_vertex[edge[0]]);
+        const auto b = original_axis.at(input.corr_input_vertex[edge[1]]);
+        std::vector<size_t> common;
+        std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), std::back_inserter(common));
+        if (common.size() != 1) continue; // Unrelated exterior/background adjacency.
+        split(edge, 2, common[0]);
+        ++cross_splits;
+    }
+    double old_volume = 0, new_volume = 0;
+    size_t returned = 0;
+    const auto volume = [&](const Tet& t) {
+        const Vector3d a = position(input, t[1]) - position(input, t[0]);
+        const Vector3d b = position(input, t[2]) - position(input, t[0]);
+        const Vector3d c = position(input, t[3]) - position(input, t[0]);
+        return a.dot(b.cross(c)) / 6;
+    };
+    for (size_t tid = 0; tid < cells.size(); ++tid) {
+        if (band[tid] != 1 || !rod_band[tid]) continue;
+        old_volume += volume(cells[tid]);
+        if (input_corners(input, cells[tid]).empty()) {
+            band[tid] = -1;
+            ++returned;
+        } else
+            new_volume += volume(cells[tid]);
+    }
+    input.tetrahedra.resize(cells.size(), 4);
+    for (size_t tid = 0; tid < cells.size(); ++tid)
+        for (int j = 0; j < 4; ++j) input.tetrahedra(tid, j) = cells[tid][j];
+    input.input_cells = std::move(regions);
+    input.offset_tet_tags = std::move(band);
+    input.input_to_offset_vertices.assign(input.vertices.rows(), {});
+    for (size_t v : input.offset_vertices)
+        input.input_to_offset_vertices.at(input.corr_input_vertex[v]).push_back(v);
+    rebuild(input);
+    // Structural refinement is allowed at junctions, but later collapse/swap
+    // operations must preserve the refined joint stars and their coordinates.
+    input.junction_protection.reset();
+    initialize_junction_protection(input);
+    state.report["edge_based_preparation"] = {
+        {"original_source_edges", axes.size()},
+        {"shared_frame_vertex_incidences_before", shared_before},
+        {"shared_frame_vertex_incidences_after", 0},
+        {"frame_separation_splits", operations.size()},
+        {"operations", operations},
+        {"incompatible_attachment_splits", attachment_splits},
+        {"midpoint_sections", centers.size()},
+        {"shell_port_separation_splits", shell_port_splits},
+        {"direct_port_edge_splits", cross_splits},
+        {"returned_outer_tets_to_background", returned},
+        {"original_band_volume", old_volume},
+        {"reselected_band_volume", new_volume},
+        {"existing_coordinates_preserved", true}};
+    logger().info(
+        "Edge-based rod preparation: {} closed sections, {} separation splits, {} cross splits; "
+        "band volume {} -> {}",
+        centers.size(),
+        operations.size(),
+        cross_splits,
+        old_volume,
+        new_volume);
 }
 
 struct VertexRegion
@@ -748,7 +1026,7 @@ void extract_frames(PrismaticMeshInput& input, bool preserve_rotations = false)
         bool preserved_cycle = false;
         const auto previous = material_cycles.find({f.center, sorted(f.ring)});
         if (previous != material_cycles.end() &&
-            previous->second.first.angularDistance(f.rotation) < 1e-12) {
+            (s.options.edge_based || previous->second.first.angularDistance(f.rotation) < 1e-12)) {
             const auto& expected = previous->second.second;
             const auto zero = std::find(f.ring.begin(), f.ring.end(), expected.front());
             if (zero != f.ring.end()) {
@@ -778,14 +1056,17 @@ void extract_frames(PrismaticMeshInput& input, bool preserve_rotations = false)
         std::rotate(f.ring.begin(), f.ring.begin() + shift, f.ring.end());
         if (s.protected_input.count(f.center))
             f.reason = "protected_rod_connection";
-        else if (std::any_of(f.ring.begin(), f.ring.end(), [&](size_t v) {
-                     return s.frozen_offset.count(v) || !junction_collapse_allowed(input, v);
-                 }))
+        else if (
+            !s.section_edges.count(f.center) &&
+            std::any_of(f.ring.begin(), f.ring.end(), [&](size_t v) {
+                return s.frozen_offset.count(v) || !junction_collapse_allowed(input, v);
+            }))
             f.reason = "protected_joint_one_ring";
         else
             f.valid = true;
     };
-    const auto surface = region_surface(input);
+    auto surface = region_surface(input);
+    for (const auto& [center, edge] : s.section_edges) surface.regions[center];
     // A free end's region is a disk, including its offset cone cap. Its material
     // ring is the boundary against the neighboring region, not the whole disk.
     std::map<size_t, std::set<Edge>> end_rims;
@@ -818,6 +1099,10 @@ void extract_frames(PrismaticMeshInput& input, bool preserve_rotations = false)
         frame.rod = rod[e];
         frame.order = order[e];
         frame.ring = region_ring(region);
+        if (s.section_edges.count(center)) {
+            const auto found = links.find(s.section_edges.at(center));
+            frame.ring = found == links.end() ? std::vector<size_t>{} : ordered_ring(found->second);
+        }
         if (frame.ring.empty() && s.free_endpoints.count(center)) {
             const auto& rim = end_rims[center];
             frame.ring = ordered_ring(std::vector<Edge>(rim.begin(), rim.end()));
@@ -839,6 +1124,62 @@ size_t equalize_degrees(PrismaticMeshInput& input, bool preserve_rotations = fal
     const auto eligible = [&](const RodFrame& f) { return f.valid; };
     for (const auto& f : s.frames)
         if (eligible(f)) target[f.rod] = std::max(target[f.rod], f.ring.size());
+    if (s.options.edge_based && s.options.iterations > 0) {
+        // Use the typical section degree, instead of refining an entire path
+        // to the largest transitional ring. First try checked local collapses;
+        // sections that cannot reach the target remain explicit tet fallbacks.
+        std::vector<std::vector<size_t>> degrees(s.rods.size());
+        for (const auto& f : s.frames)
+            if (f.valid && s.section_edges.count(f.center)) degrees[f.rod].push_back(f.ring.size());
+        for (size_t r = 0; r < degrees.size(); ++r) {
+            auto& d = degrees[r];
+            if (d.empty()) continue;
+            std::sort(d.begin(), d.end());
+            target[r] = std::max(size_t(3), d[d.size() / 2]);
+        }
+        evaluate_target_positions(input, s.options.thicknessratio);
+        s.collapsing_regions = true;
+        size_t collapsed = 0;
+        for (size_t index = 0; index < s.frames.size(); ++index) {
+            while (index < s.frames.size() && s.frames[index].valid &&
+                   s.frames[index].ring.size() > target[s.frames[index].rod]) {
+                const auto f = s.frames[index];
+                std::vector<std::pair<double, Edge>> candidates;
+                for (size_t k = 0; k < f.ring.size(); ++k) {
+                    const Edge e{f.ring[k], f.ring[(k + 1) % f.ring.size()]};
+                    candidates.push_back(
+                        {(position(input, e[0]) - position(input, e[1])).squaredNorm(), e});
+                }
+                std::sort(candidates.begin(), candidates.end());
+                bool accepted = false;
+                for (const auto& [cost, edge] : candidates) {
+                    for (int direction = 0; direction < 2; ++direction) {
+                        if (!try_collapse_offset_edge(
+                                input,
+                                edge[direction],
+                                edge[1 - direction],
+                                s.options.min_tet_volume))
+                            continue;
+                        ++collapsed;
+                        accepted = true;
+                        extract_frames(input, preserve_rotations);
+                        break;
+                    }
+                    if (accepted) break;
+                }
+                if (!accepted) break;
+            }
+        }
+        s.collapsing_regions = false;
+        s.report["ring_degree_collapses"] =
+            s.report.value("ring_degree_collapses", size_t(0)) + collapsed;
+        // A collapse target is only a coarsening preference. The surviving
+        // largest ring defines the actual common degree, reached by full-star
+        // refinement of smaller rings, including fixed-geometry joint ports.
+        std::fill(target.begin(), target.end(), 0);
+        for (const auto& f : s.frames)
+            if (eligible(f)) target[f.rod] = std::max(target[f.rod], f.ring.size());
+    }
     s.report["target_degrees"] = target;
     nlohmann::json operations = nlohmann::json::array();
     size_t splits = 0, blocked = 0;
@@ -995,7 +1336,10 @@ void flatten_rod_frames(PrismaticMeshInput& input)
 void record_rod_frames(const PrismaticMeshInput& input)
 {
     auto& s = *input.rod_state;
-    s.report["vertex_frame_rule"] = "equal_weight_incident_edge_quaternion_mean";
+    s.report["vertex_frame_rule"] = s.mapping_locked ? "continuous_transported_material_direction"
+                                                     : "equal_weight_incident_edge_quaternion_mean";
+    s.report["edge_frame_field_role"] =
+        "initial_geometry_reference; corrected section poses are stored in frames";
     s.report["edge_frames"] = nlohmann::json::array();
     std::map<size_t, std::vector<size_t>> incident;
     for (size_t i = 0; i < s.edge_frames.size(); ++i) {
@@ -1029,6 +1373,10 @@ void record_rod_frames(const PrismaticMeshInput& input)
               {input.source_vertex_ids[f.edge[0]], input.source_vertex_ids[f.edge[1]]}},
              {"center", f.center},
              {"center_vid", nlohmann::json(input.source_vertex_ids[f.center])},
+             {"role",
+              s.options.edge_based
+                  ? (s.mapping_controls.count(f.center) ? "section_control" : "transition_ring")
+                  : "vertex_frame"},
              {"degree", f.ring.size()},
              {"rod", f.rod},
              {"edge_order", f.order},
@@ -1059,8 +1407,11 @@ void update_frame_targets(PrismaticMeshInput& input)
                 const double angle = 2 * pi * k / frame.ring.size();
                 s.retained_ring_vertices.insert(frame.ring[k]);
                 s.frame_targets[frame.ring[k]] =
-                    position(input, frame.center) +
-                    s.radius * (frame.rotation * Vector3d(std::cos(angle), std::sin(angle), 0));
+                    s.options.edge_based
+                        ? position(input, frame.ring[k])
+                        : position(input, frame.center) +
+                              s.radius *
+                                  (frame.rotation * Vector3d(std::cos(angle), std::sin(angle), 0));
             }
     s.report["rod_target_vertices"] = s.frame_targets.size();
 }
@@ -1115,6 +1466,27 @@ nlohmann::json analyze_rod_tau(const PrismaticMeshInput& input)
 void preprocess_rod_mesh(PrismaticMeshInput& input, const RodOptions& options)
 {
     require(std::isfinite(options.radius) && options.radius >= 0, "invalid radius");
+    require(
+        options.coupled_rounds >= 0 && options.coupled_rounds <= 3 &&
+            options.coupled_iterations > 0 && options.coupled_iterations <= 200 &&
+            std::isfinite(options.coupled_smoothing_weight) &&
+            options.coupled_smoothing_weight >= 0 &&
+            std::isfinite(options.coupled_geometry_weight) && options.coupled_geometry_weight >= 0,
+        "invalid coupled rod/background optimization options");
+    require(
+        options.joint_smoothing_iterations >= 0 && options.joint_smoothing_iterations <= 200 &&
+            std::isfinite(options.joint_smoothing_weight) && options.joint_smoothing_weight >= 0 &&
+            std::isfinite(options.joint_geometry_weight) && options.joint_geometry_weight >= 0 &&
+            std::isfinite(options.joint_blend_radius_ratio) &&
+            options.joint_blend_radius_ratio >= 0 && options.joint_blend_radius_ratio <= 1,
+        "invalid joint smoothing options");
+    const auto& background = options.background_remeshing;
+    require(
+        std::isfinite(background.radius) && background.radius >= 0 &&
+            std::isfinite(background.target_length) && background.target_length >= 0 &&
+            background.passes > 0 && background.passes <= 20 &&
+            std::isfinite(background.time_limit) && background.time_limit > 0,
+        "invalid rod background remeshing options");
     initialize_junction_protection(input);
     require(
         std::isfinite(options.thicknessratio) && options.thicknessratio > 0,
@@ -1123,6 +1495,21 @@ void preprocess_rod_mesh(PrismaticMeshInput& input, const RodOptions& options)
         options.iterations >= 0 && std::isfinite(options.min_tet_volume) &&
             options.min_tet_volume >= 0,
         "invalid iteration count or volume floor");
+    require(
+        options.position_iterations >= 0 && options.position_iterations <= 200 &&
+            std::isfinite(options.position_weight) && options.position_weight >= 0 &&
+            std::isfinite(options.laplace_weight) && options.laplace_weight >= 0,
+        "invalid rod position optimization options");
+    require(
+        options.position_smoothing_iterations >= 0 &&
+            options.position_smoothing_iterations <= 200 &&
+            std::isfinite(options.position_smoothing_weight) &&
+            options.position_smoothing_weight >= 0,
+        "invalid rod position smoothing weight");
+    require(
+        std::isfinite(options.position_smoothing_geometry_weight) &&
+            options.position_smoothing_geometry_weight >= 0,
+        "invalid rod smoothing geometry weight");
     for (size_t v = 0; v < static_cast<size_t>(input.vertices.rows()); ++v) {
         if (input.vertex_tags[v] != 2) {
             require(
@@ -1145,10 +1532,14 @@ void preprocess_rod_mesh(PrismaticMeshInput& input, const RodOptions& options)
     s.options = options;
     s.report = nlohmann::json::object();
     classify_graph(input);
+    if (options.edge_based) {
+        prepare_edge_based_regions(input);
+        classify_graph(input);
+    }
     s.report["tau_before"] = analyze_rod_tau(input);
     require(
         s.report["tau_before"]["invalid_correspondence"] == 0 &&
-            s.report["tau_before"]["edge_parent_mismatch"] == 0,
+            (options.edge_based || s.report["tau_before"]["edge_parent_mismatch"] == 0),
         "input edge cofaces have inconsistent correspondence");
     if (options.iterations > 0) collapse_vertex_regions(input);
     extract_frames(input);
@@ -1156,8 +1547,10 @@ void preprocess_rod_mesh(PrismaticMeshInput& input, const RodOptions& options)
     for (const auto& frame : s.frames)
         s.report["initial_frame_degrees"].push_back(frame.ring.size());
     equalize_degrees(input);
-    transport_rod_frame_mapping(input);
-    extract_frames(input, true);
+    if (!options.edge_based) {
+        transport_rod_frame_mapping(input);
+        extract_frames(input, true);
+    }
     update_frame_targets(input);
     // These are surface-normal optimizer diagnostics, used temporarily to reuse
     // the same-parent collapse checks. Rod frames have their own targets/report.
@@ -1189,6 +1582,103 @@ bool is_rod_offset_vertex(const PrismaticMeshInput& input, size_t v)
     return input.rod_state && v < input.vertex_tags.size() && input.vertex_tags[v] == 2 &&
            input.corr_input_vertex[v] >= 0 &&
            input.rod_state->input_vertices.count(static_cast<size_t>(input.corr_input_vertex[v]));
+}
+
+bool is_rod_band_tet(const PrismaticMeshInput& input, size_t tid)
+{
+    if (!input.rod_state || input.offset_tet_tags.at(tid) != 1 || input.input_cells.at(tid) == 1)
+        return false;
+    for (size_t v : tet_at(input, tid)) {
+        const int64_t parent = input.vertex_tags[v] == 1 ? int64_t(v) : input.corr_input_vertex[v];
+        if (parent < 0 || !input.rod_state->input_vertices.count(size_t(parent))) return false;
+    }
+    return true;
+}
+
+bool is_fixed_shell_tet(const PrismaticMeshInput& input, size_t tid)
+{
+    return input.rod_state && input.rod_state->fixed_shell_tets.count(sorted(tet_at(input, tid)));
+}
+
+bool has_shell_region(const PrismaticMeshInput& input)
+{
+    return !input.source_faces.empty() ||
+           std::any_of(input.input_vertices.begin(), input.input_vertices.end(), [&](size_t v) {
+               if (input.rod_state && input.rod_state->input_vertices.count(v)) return false;
+               return std::any_of(
+                   input.input_to_offset_vertices.at(v).begin(),
+                   input.input_to_offset_vertices.at(v).end(),
+                   [&](size_t u) { return input.vertex_tags[u] == 2; });
+           });
+}
+
+void reserve_shell_cells(PrismaticMeshInput& input, const PrismDominantMesh& hybrid)
+{
+    auto& state = *input.rod_state;
+    state.fixed_shell_vertices.clear();
+    state.fixed_shell_tets.clear();
+    state.fixed_shell_cells.clear();
+    for (const auto& c : hybrid.cells) {
+        const bool shell =
+            input.offset_tet_tags.at(c.source_tets.front()) == 1 &&
+            std::none_of(c.source_tets.begin(), c.source_tets.end(), [&](size_t tid) {
+                return is_rod_band_tet(input, tid);
+            });
+        if (!shell && c.type == HybridCellType::Tetrahedron) continue;
+        std::vector<Tet> partition;
+        for (size_t tid : c.source_tets) {
+            partition.push_back(sorted(tet_at(input, tid)));
+            state.fixed_shell_tets.insert(partition.back());
+        }
+        state.fixed_shell_cells.push_back({c, std::move(partition)});
+        state.fixed_shell_vertices.insert(c.vertices.begin(), c.vertices.end());
+    }
+    state.report["shell_stage_reserved_cells"] = state.fixed_shell_cells.size();
+}
+
+void restore_shell_cells(const PrismaticMeshInput& input, PrismDominantMesh& hybrid)
+{
+    if (!input.rod_state || input.rod_state->fixed_shell_cells.empty()) return;
+    std::map<Tet, size_t> rows;
+    for (size_t tid = 0; tid < size_t(input.tetrahedra.rows()); ++tid)
+        rows.emplace(sorted(tet_at(input, tid)), tid);
+    std::set<size_t> reserved;
+    std::vector<HybridCell> restored;
+    int64_t candidate = 0;
+    for (const auto& c : hybrid.cells) candidate = std::max(candidate, c.prism_candidate + 1);
+    for (const auto& [cell, partition] : input.rod_state->fixed_shell_cells) {
+        auto c = cell;
+        c.source_tets.clear();
+        if (c.prism_candidate >= 0) c.prism_candidate = candidate++;
+        for (const auto& key : partition) {
+            require(rows.count(key), "rod stage changed a completed shell cell");
+            const size_t tid = rows.at(key);
+            require(reserved.insert(tid).second, "overlapping completed shell cells");
+            c.source_tets.push_back(tid);
+        }
+        restored.push_back(std::move(c));
+    }
+    for (auto& c : hybrid.cells) {
+        const bool overlaps =
+            std::any_of(c.source_tets.begin(), c.source_tets.end(), [&](size_t tid) {
+                return reserved.count(tid);
+            });
+        if (!overlaps)
+            restored.push_back(std::move(c));
+        else
+            require(
+                c.type == HybridCellType::Tetrahedron && c.source_tets.size() == 1,
+                "rod reconstruction overlaps a completed shell cell");
+    }
+    hybrid.cells = std::move(restored);
+    hybrid.source_tet_to_cell.assign(input.tetrahedra.rows(), size_t(-1));
+    for (size_t ci = 0; ci < hybrid.cells.size(); ++ci)
+        for (size_t tid : hybrid.cells[ci].source_tets) {
+            require(
+                hybrid.source_tet_to_cell[tid] == size_t(-1),
+                "overlapping mixed source ownership");
+            hybrid.source_tet_to_cell[tid] = ci;
+        }
 }
 
 bool rod_collapse_allowed(const PrismaticMeshInput& input, size_t removed, size_t survivor)
@@ -1251,19 +1741,46 @@ void apply_rod_targets(PrismaticMeshInput& input)
         {"protected_vertices", fixed}};
 }
 
+void finalize_rod_frame_mapping(PrismaticMeshInput& input)
+{
+    if (!input.rod_state || !input.rod_state->options.edge_based || input.rod_state->mapping_locked)
+        return;
+    transport_rod_section_mapping(input);
+    record_rod_frames(input);
+}
+
+std::pair<std::vector<size_t>, std::vector<size_t>> rod_layer_rings(
+    const PrismaticMeshInput& input,
+    const std::array<size_t, 2>& axis)
+{
+    const auto& state = *input.rod_state;
+    auto a = state.frames.at(state.vertex_frame.at(axis[0])).ring;
+    auto b = state.frames.at(state.vertex_frame.at(axis[1])).ring;
+    const auto found = state.layer_slot_shifts.find(sorted(axis));
+    if (found != state.layer_slot_shifts.end() && a.size() == b.size() && !b.empty()) {
+        const size_t shift =
+            axis[0] < axis[1] ? found->second : (b.size() - found->second) % b.size();
+        std::rotate(b.begin(), b.begin() + shift, b.end());
+    }
+    return {std::move(a), std::move(b)};
+}
+
 void construct_rod_frame_topology(PrismaticMeshInput& input)
 {
     if (!input.rod_state || input.rod_state->options.iterations == 0) return;
+    input.rod_state->mapping_locked = false;
     const size_t collapses = collapse_vertex_regions(input);
     extract_frames(input, true);
     const size_t splits = equalize_degrees(input, true);
-    if (splits) {
+    if (splits && !input.rod_state->options.edge_based) {
         transport_rod_frame_mapping(input);
         extract_frames(input, true);
     }
     update_frame_targets(input);
-    relocate_frames(input);
-    flatten_rod_frames(input);
+    if (!input.rod_state->options.edge_based) {
+        relocate_frames(input);
+        flatten_rod_frames(input);
+    }
     extract_frames(input, true);
     verify_junction_one_rings(input);
     record_rod_frames(input);
