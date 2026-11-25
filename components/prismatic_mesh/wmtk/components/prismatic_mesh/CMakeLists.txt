@@ -19,6 +19,10 @@ set(SRC_FILES
     prism_main.cpp
     rod_mesh.hpp
     rod_mesh.cpp
+    rod_tet_positions.cpp
+    rod_background_remeshing.cpp
+    rod_fairing.hpp
+    rod_joint_radius.hpp
     rod_ends.cpp
     rod_frame_mapping.cpp
     rod_interface_swaps.cpp

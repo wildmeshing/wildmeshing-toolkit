@@ -34,8 +34,11 @@ AMIPS-plus-thickness smoothing after the hybrid build. When enabled, its mixed
 smoothing replaces the separate Jacobian/background quality stages and transition
 and thickness smoothing. Disabling it does not select another quality pipeline.
 The original collapse/target construction iterations and hybrid build still run.
-Rod mode is rejected because these operations do not maintain rod material frames.
-A finite positive nominal thickness is required.
+In rod mode, shell construction and this quality stage run first with rod tets,
+vertices and attachment stars reserved. Rod geometry and native prism construction
+then run while completed shell cells stay fixed. Rods use their own frame/radius
+energy rather than shell height constraints. A finite positive nominal shell
+thickness is required when a shell quality stage is present.
 
 To run only the new native AMIPS/thickness smoothing, keep
 `quality_improvement: true` and set
@@ -79,8 +82,9 @@ pairs exclude opposite sheets, reference-normal changes above
 `thickness_feature_angle` (default 30 degrees), and target-height ratios above 1.5.
 It smooths the scalar height field rather than applying a position Laplacian across
 features. Input feature constraints remain in force. Interface points without a
-valid height reference are fixed during mixed smoothing and counted in the report;
-no nearest-surface reference is invented for them.
+valid height reference remain eligible for AMIPS relocation under the existing
+geometry, exterior and rod-reservation constraints. Their missing references are
+counted in the report; no nearest-surface reference is invented for them.
 
 Smoothing stops when no move is accepted or both AMIPS and enabled height criteria
 are met. Zero weight disables its corresponding height criterion; setting both
@@ -96,11 +100,31 @@ input patch geometry, exterior preservation, and domain volume. Failed stages
 roll back. A non-box exterior keeps its exact initial triangulation and fixed
 vertices; this also fixes an exposed offset boundary if background was removed.
 The time limit is soft and checked between operations. Output selects the valid
-stage with the lowest combined sum of AMIPS loss, point-height energy and
-neighbor-height energy. Checkpoint comparisons sum floating-point contributions
-exactly so an unchanged extreme tet cannot hide a small thickness improvement.
-This is an unnormalized sum across the current mesh, not a refinement-invariant
-functional. Reports include baseline/final energies and thickness errors, and
+stage with the lowest global maximum native AMIPS. The combined AMIPS,
+point-height and neighbor-height energies remain available as diagnostics, with
+exact accumulation of floating-point contributions. This energy sum is not a
+refinement-invariant functional and does not select the output checkpoint.
+
+A final background-only cleanup targets native background tet/pyramid AMIPS above
+100. It first relocates individual vertices, then jointly relocates a bad cell's
+free vertices with a direction projected against the volume gradients of extreme
+neighboring tets. A final pass expands to one ring of movable background vertices
+(at most 48 per block). Every accepted step lowers incident AMIPS loss and preserves
+positive native cells. Shell/input/exterior vertices and rod reservations remain
+fixed, and connectivity is unchanged. The phase uses up to 80 vertex sweeps, 1000
+joint sweeps and 1000 expanded sweeps, with a separate 120-second soft cap for the
+whole cleanup. Its timing and residuals appear in `background_relocation`; it does
+not guarantee that every background cell reaches 100. The repaired candidate is
+compared with earlier valid stages using the same maximum-AMIPS checkpoint rule.
+With `cycles: 0`, the shell quality API remains an export-only operation.
+
+Rod runs retaining background perform this cleanup after rod construction even
+when shell `quality_improvement` is disabled. Rod/frame geometry stays fixed; a
+changed background is exported as native improved cells without stale construction
+reference-tet IDs. The original radius, frame, joint and local remeshing options
+continue to control the rod construction stages.
+
+Reports include baseline/final energies and thickness errors, and
 separate `quality_target_met` and `thickness_target_met` flags; `target_met` requires
 both. Finite budgets do not guarantee AMIPS below the target or height convergence,
 sizing convergence, or a global nonadjacent-cell intersection certificate.
@@ -159,7 +183,7 @@ boundary of its disk region supplies the terminal ring. A complete planar prism
 fan defines a flat end; its exterior offset cap is returned to background.
 Unsuccessful endpoint fans retain their supplied valid tet caps.
 
-The rod pipeline has one construction path:
+The default rod pipeline uses this construction path:
 
 1. Group offset-front vertices by their original input correspondence. Collapse
    legal same-region surface edges until each ordinary region is a single cycle.
@@ -203,6 +227,154 @@ AMIPS. Input/protected points, correspondence and connectivity stay fixed.
 Tet and pyramid shape quality is not optimized: positivity alone permits very
 poor shapes. The final smoothing stage is opt-in and defaults to zero.
 
+`rod_edge_based: true` selects the edge-link alternative for pure or mixed inputs
+with `rod_mode: true`. Every source edge must be internal to the supplied
+manifold tet mesh and have a complete offset-vertex link cycle. This topological
+cycle does not imply that a geometrically valid prism pairing exists.
+
+The preparation separates shared link vertices by stellar splits of complete
+radial edge stars, including background cofaces. Each split strictly reduces
+the excess frame ownership. It inserts an exact centerline midpoint for each
+source edge and uses its half-edge link as the section, independently of whether
+the corresponding offset-front region has already collapsed to a cycle.
+Additional splits create the original-vertex transition regions between ports.
+The rod domain is reselected as the remaining input-vertex stars; outer children
+stay in the background. `edge_based_preparation` reports both band volumes, the
+split operations and the removed frame overlap. All existing point coordinates
+and the original embedded centerline are preserved during preparation.
+
+The typical edge-section degree on each path supplies a coarsening preference.
+After checked collapses, the largest surviving ring sets the common degree;
+smaller rings are split until the valid section degrees agree. These full-star
+splits can refine a protected joint port without moving its existing points;
+the refined protection snapshot is refreshed before later operations.
+Oriented ring cycles are extracted before material mapping. After all topology
+and degree work, continuous rays are transported from the first actual section
+control to the last, through geometric section planes. Edge-midpoint normals
+follow their source edge; corner normals use the normalized sum of the incoming
+and outgoing directed tangents, independent of ring phases. Only the terminal
+section is rounded to its degree lattice. Its angular residual is wrapped to
+[-pi, pi] and distributed by centerline arc length. Once this continuous field
+is complete, intermediate rings choose their closest cyclic vertex origin
+against it. This only assigns material indices; it does not rotate or refit
+the transported poses. An arbitrary pre-transport vertex zero therefore cannot
+force the optimizer to twist the physical mesh by a whole ring sector. There
+is no cyclic-shift DP. An open path keeps its first origin fixed and applies
+the terminal rounding permutation at its last ring. A closed path records
+that terminal permutation on one seam without relabeling the shared first
+section. `material_mapping` reports
+the controls, terminal permutation and correction at each station.
+
+Before constructing native prisms, `rod_position_iterations` (default 20) sweeps
+optimize positions throughout the still-tetrahedral rod volume. Ring order and
+connectivity are fixed. The energy combines AMIPS of all coupled rod/background
+tets with transported circular-section and carrier-radius targets; `rod_position_weight`
+(default 100) weights the radius-normalized geometric error against mean AMIPS.
+Every valid prism-cap ring, including intermediate transition rings, receives
+full frame targets directly from the corrected transported pose. Radial edge
+`k` has angle `2*pi*k/n` for a ring with `n` edges (`k=0,...,n-1`). Their phase
+is not refitted to current vertex positions. Points outside those rings use `rod_laplace_weight`
+(default 10) penalizes Laplace residuals. Front vertices use surface neighbors
+and a carrier-radius penalty to avoid shrinkage; other intermediate rod points
+use their volume neighbors. One adjacent layer of pure-background interior
+vertices can relax, while the outer boundary stays fixed. Damped
+Newton directions with backtracking must decrease the combined energy and keep
+every affected tet strictly positive. Input vertices and protected joint points
+stay fixed. The `tet_position_optimization` report records energy history,
+mapping/connectivity preservation and candidate prism geometry before/after.
+Zero sweeps provides a comparison with degree alignment alone. Local interface
+swaps and atomic layer/background-pyramid construction then use the same native
+positivity and conformity checks as the default pipeline. Infeasible layers
+retain tets. Structural refinement precedes junction protection; subsequent
+operations preserve the refined junction stars. Rod edges are maximal input edges
+with no input-face or solid cofaces; sharing an attachment vertex with a sheet is
+allowed. Shell-owned link points are separated by radial splits before native
+construction, retaining their shell correspondence. Input faces and solid cells
+are retained. A particular prism percentage is not guaranteed.
+
+Mixed processing orders the stages as shell construction, shell quality improvement
+(when enabled), rod frame/radius geometry optimization, and atomic rod prism
+construction. Shell remeshing reserves rod tets and attachment stars. Its native
+result is handed back through compatible positive reference splits, preserving
+the original rod vertex rows and mapping. If no compatible handoff exists, the
+shell quality checkpoint is rejected and the valid shell construction is retained;
+the report records the reason. During rod geometry, swaps, local BG remeshing and
+pyramid reconstruction, completed shell cells and their BG pyramid bodies remain
+fixed. The final mesh is validated together. Mixed quality exports retain
+`construction_region`, `rod_region`, `joint_one_ring`, and native AMIPS fields.
+
+`rod_background_remeshing` (default false) optionally remeshes pure background
+after the rod position solve and before interface swaps/prism construction.
+`rod_background_remeshing_radius` is the outward Euclidean distance from the
+actual rod surface in mesh units; zero uses the rod radius. Background tets
+with a vertex in that neighborhood form the patch. Rod cells, rod points,
+the patch boundary faces, and existing points farther than the radius stay
+fixed during this stage. TetWild split, collapse, swap and AMIPS smoothing
+operate inside the patch; no CDT is used. The later interface swaps can then
+adjust the rod/background triangulation using the updated background stars.
+`rod_background_remeshing_target_length` defaults to the rod radius and grades
+to twice that length away from the rod. `rod_background_remeshing_passes`
+(default 2), `rod_background_remeshing_time_limit` (default 30 seconds), and
+a 2000-split budget bound the experiment. The rod report includes the selected
+neighborhood, operation counts, quality before/after and time-limit status.
+This stage preserves the interface during remeshing; it does not guarantee
+that the subsequent prism/pyramid construction will succeed on every layer.
+
+`rod_coupled_optimization_rounds` (default 0, maximum 3) adds alternating
+background-remeshing and simultaneous rod/joint/background geometry rounds.
+It requires edge-based rods, retained background and local background
+remeshing. A round first remeshes the background with the current rod fixed,
+then optimizes the whole rod surface together with free pure-background
+vertices throughout the surface-distance neighborhood. The neighborhood outer
+boundary and input centerline stay fixed. `rod_coupled_optimization_iterations`
+(default 20), `rod_coupled_geometry_weight` (default 100), and
+`rod_coupled_smoothing_weight` (default 10) control each geometry round. Shared
+surface Laplace rows include mapped ring points and tet/joint regions, without
+a split by the eventual native cell type. Every move decreases combined energy
+and retains positive incident tets. The joint displacement bound is measured
+from its initial geometry across all rounds. Native prism/pyramid reconstruction
+runs after the final round. `coupled_optimization` records each remeshing/geometry
+report and how many newly created background points actually moved. Zero rounds
+retains the prior single background-remeshing stage without this coupled solve.
+
+`rod_joint_smoothing_iterations` (default 0) enables a separate joint geometry
+pass between regular rod positions and background remeshing. Only branching
+joint offset stars and their neighboring pure-background interior points move;
+input positions, frame labels, and all tet connectivity remain fixed. The
+energy combines incident rod/background AMIPS, transported port-frame targets,
+joint-core radius fitting, and surface Laplace energy. `rod_joint_smoothing_weight`
+(default 20) weights Laplace energy and `rod_joint_geometry_weight` (default 100)
+weights geometry. The core reference is the union of incident capsules;
+`rod_joint_blend_radius_ratio` (default 0) optionally smooths that union, with
+a positive blend width in rod-radius units. Each accepted move decreases total energy
+and keeps all incident tets positive. Joint offsets have no cumulative radius-based
+displacement cap; frame/radius energy, descent and per-step backtracking control
+movement. This pass explicitly refreshes the protected coordinate
+snapshot after validation; joint collapse/swap protection remains in force.
+`joint_smoothing` reports the released/moved points and energy history, and
+`junction_protection` distinguishes initial coordinates from the accepted
+protected geometry snapshot. The default zero iterations retains frozen joints.
+
+`rod_position_smoothing_weight` enables optional surface fairing after the
+existing tet position pass. Its default is zero, preserving that pass alone.
+The extra pass uses `rod_position_smoothing_iterations` (default 20) and is
+warm-started from the original pass. One layer of neighboring pure-background
+interior vertices can relax with the surface; the outer boundary stays fixed.
+Its `rod_position_smoothing_geometry_weight` (default 1000) fits physical radius
+and section planes, with a weaker material-slot tether to discourage angular
+crowding. This weight is separate from the unchanged original position pass.
+It penalizes longitudinal second differences of the fixed mapped radial vectors
+after parallel transport between section planes, with weights for nonuniform
+centerline spacing. Circular stencils also regularize spacing around each ring.
+Parallel-transported circular sections have zero fairing residual even at real
+centerline bends; the centerline itself is not smoothed. Radius/plane fitting
+and tet AMIPS stay in the energy, and the same positive-volume line search applies. Joint offsets
+remain protected. Reports label the additional energy as
+`surface_fairing_squared_error` in the separate `tet_surface_smoothing` report.
+The original `tet_position_optimization` report is retained. Fairing operates
+before prism reconstruction; it is distinct from the optional final `thickness_smoothing_iterations` pass,
+whose non-prism tet objective is validity only.
+
 `ignore_background_mesh: true` explicitly removes exterior cells before
 preparation and all optimization/conversion checks, retaining input volume and
 band. It overrides `keep_background_mesh`. Otherwise the supplied background
@@ -219,6 +391,34 @@ cells, coordinates and reference decompositions.
 
 Ring-edge splitting changes circumferential degree; centerline edges and input
 vertices stay fixed.
+
+Atomic rod-layer reconstruction first plans disjoint background pyramid cavities
+in a batch. Layers rejected specifically for `overlapping_cavity` then get a
+sequential retry on a private updated tet mesh: materialize the accepted batch,
+protect the two reference tets forming each pyramid body, and search again using
+the remaining/new background tets. Each successful quad updates the temporary
+face and edge-star indices before the next quad is planned. Any failed quad
+rolls back that retry's entire rod layer, including new points and connectivity.
+The successful retry sequence is replayed together with the original batch only
+when the final hybrid mesh is assembled and validated. Other failure categories
+are not retried by this stage. Existing coordinates, centerlines, input volumes,
+and already accepted pyramid bodies remain fixed; no CDT is used.
+
+`background_pyramid_reconstruction.initial_rejections` records the original
+batch failures. `sequential_overlap_retry` records attempted/recovered layers,
+per-layer retry failures and rollback progress; `sequential_applied` counts the
+additional pyramids. A retry can still fail when the remaining tet sector is
+disconnected, has no positive kernel, or needs an unsupported repartition. The
+report's reference-tet row lists describe the corresponding reconstruction step;
+later successful retries may reuse its supporting tet rows.
+
+Shell exterior quads use the same batch-plus-sequential overlap retry. After the
+shell marker solve selects the actual native cells, cavities are replanned for
+only their emitted quads, so a retry cannot depend on an inactive candidate.
+If the emitted set cannot be reconstructed, its affected offset corners become
+transition marks and shell reconstruction is retried. The original candidate
+diagnostics remain at the report root; `emitted_quad_planning` records the final
+active-quad plan.
 
 ## Surface construction
 

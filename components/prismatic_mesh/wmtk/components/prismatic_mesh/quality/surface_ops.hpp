@@ -127,6 +127,8 @@ inline void no_existing_edge_outside(const Mesh& m, Edge e, const std::set<size_
 }
 inline void replace_patch(Mesh& m, const std::set<size_t>& patch, std::vector<Cell> replacement)
 {
+    for (size_t ci : patch)
+        if (m.fixed(m.cells[ci])) throw std::runtime_error("patch_touches_reserved_rod_cell");
     std::vector<Cell> cells;
     cells.reserve(m.cells.size() - patch.size() + replacement.size());
     for (size_t i = 0; i < m.cells.size(); ++i)

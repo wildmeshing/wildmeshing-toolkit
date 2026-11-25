@@ -133,12 +133,13 @@ inline Json remesh_all_tets(
     std::map<Key, Seed> seeds;
     std::vector<std::array<size_t, 3>> barriers;
     std::vector<uint8_t> pins(m.p.size(), false);
-    for (size_t v = 0; v < m.p.size(); ++v) pins[v] = m.outer[v] || m.input[v];
+    for (size_t v = 0; v < m.p.size(); ++v) pins[v] = m.outer[v] || m.input[v] || m.fixed(v);
     for (const auto& c : m.cells)
         if (c.type != 4)
             for (size_t v : c.v) pins[v] = true;
     for (const auto& [key, f] : before_faces) {
-        const bool a = m.cells[f.a].type == 4, b = f.b != size_t(-1) && m.cells[f.b].type == 4;
+        const bool a = m.cells[f.a].type == 4 && !m.fixed(m.cells[f.a]),
+                   b = f.b != size_t(-1) && m.cells[f.b].type == 4 && !m.fixed(m.cells[f.b]);
         if (!a && !b) continue;
         if (a && b) {
             if (m.cells[f.a].region == m.cells[f.b].region && !rules.kept.count(key)) continue;
@@ -154,7 +155,8 @@ inline Json remesh_all_tets(
     }
     std::vector<Tet> input;
     for (const auto& c : m.cells)
-        if (c.type == 4) input.push_back({c.v[0], c.v[1], c.v[2], c.v[3]});
+        if (c.type == 4 && !m.fixed(c)) input.push_back({c.v[0], c.v[1], c.v[2], c.v[3]});
+    if (input.empty()) return {{"skipped", "no_movable_tet_domains"}};
     wmtk::OptimizerParameters params;
     params.l = length;
     params.l_min = length / 1000;
@@ -252,7 +254,7 @@ inline Json remesh_all_tets(
     std::vector<Cell> result;
     result.reserve(proposed.size() + m.cells.size() - input.size());
     for (auto& c : m.cells)
-        if (c.type != 4) result.push_back(std::move(c));
+        if (c.type != 4 || m.fixed(c)) result.push_back(std::move(c));
     result.insert(
         result.end(),
         std::make_move_iterator(proposed.begin()),

@@ -253,12 +253,19 @@ struct Mesh
     std::vector<V> p, initial, base;
     std::vector<double> thickness, radius, sizing;
     std::vector<uint8_t> input, outer, shell;
+    std::vector<uint8_t> fixed_vertices;
     std::vector<int64_t> correspondence;
     std::vector<Cell> cells, source_shell, source_input;
     std::vector<std::vector<size_t>> star;
     size_t original_n = 0;
     V lo, hi;
     double target_length = 0;
+
+    bool fixed(size_t v) const { return v < fixed_vertices.size() && fixed_vertices[v]; }
+    bool fixed(const Cell& c) const
+    {
+        return std::all_of(c.v.begin(), c.v.end(), [&](size_t v) { return fixed(v); });
+    }
 
     void rebuild()
     {

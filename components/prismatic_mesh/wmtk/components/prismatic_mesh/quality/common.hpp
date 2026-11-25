@@ -287,6 +287,7 @@ struct Rules
             if (f.b != size_t(-1) && m.cells[f.a].region != m.cells[f.b].region)
                 for (size_t v : f.v) interface[v] = true;
         for (size_t v = 0; v < m.p.size(); ++v) {
+            if (m.fixed(v)) continue;
             if (m.input[v]) {
                 m.correspondence[v] = -1;
                 m.thickness[v] = 0;
