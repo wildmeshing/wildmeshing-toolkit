@@ -21,7 +21,10 @@ Enable the mixed-cell remeshing pipeline with `quality_improvement: true`:
     "quality_target": 20,
     "smoothing_target": 18,
     "mixed_smoothing_sweeps": 120,
-    "thickness_weight": 10
+    "thickness_weight": 100,
+    "thickness_smoothing_weight": 10,
+    "thickness_tolerance": 0.05,
+    "thickness_feature_angle": 30
   }
 }
 ```
@@ -60,15 +63,32 @@ and graded propagation to nearby vertices and paired columns.
 
 Mixed smoothing minimizes squared excess native AMIPS above `smoothing_target`,
 with a small log-AMIPS regularizer, plus `thickness_weight` times squared relative
-reference-height error. Analytic gradients, projected input freedom and halving
+reference-height error. The default thickness weight is `100`; an explicit JSON
+value overrides it. Analytic gradients, projected input freedom and halving
 Armijo line searches require lower local combined energy and positive cells;
 individual cell qualities may worsen. Projection uses a slab whose relative width
 is `max(0.25, current_error)`. The height direction is the original optimal normal,
 or the initial column direction if unavailable. It is not nearest-surface distance
-or every incident input face's normal thickness, and there is no spatial thickness
-regularizer. Activation and stopping use AMIPS, so good-quality but noisy regions
-need not move. Topology operations have their own validity/acceptance rules and
-can temporarily increase the mixed energy.
+or every incident input face's normal thickness.
+
+Thickness error also activates vertices whose incident cells already meet the
+AMIPS target. `thickness_tolerance` defaults to a relative error of `0.05` (5%).
+The neighbor term, weighted by `thickness_smoothing_weight` (default `10`), penalizes
+differences of relative height error along shell-interface edges. Degree-normalized
+pairs exclude opposite sheets, reference-normal changes above
+`thickness_feature_angle` (default 30 degrees), and target-height ratios above 1.5.
+It smooths the scalar height field rather than applying a position Laplacian across
+features. Input feature constraints remain in force. Interface points without a
+valid height reference are fixed during mixed smoothing and counted in the report;
+no nearest-surface reference is invented for them.
+
+Smoothing stops when no move is accepted or both AMIPS and enabled height criteria
+are met. Zero weight disables its corresponding height criterion; setting both
+thickness weights to zero disables height energies and height-based activation.
+Topology operations have their
+own validity/acceptance rules and can temporarily increase the combined energy.
+Neighbor pairs are rebuilt after topology changes; split vertices retain interpolated
+reference directions and heights.
 
 Every completed stage checks positive actual cells, oriented conforming faces,
 region connectivity/adjacency and shell-background interface Euler signatures,
@@ -76,8 +96,13 @@ input patch geometry, exterior preservation, and domain volume. Failed stages
 roll back. A non-box exterior keeps its exact initial triangulation and fixed
 vertices; this also fixes an exposed offset boundary if background was removed.
 The time limit is soft and checked between operations. Output selects the valid
-stage with the lowest global maximum AMIPS, not necessarily the last stage or the
-lowest thickness energy. Finite budgets do not guarantee AMIPS below the target,
+stage with the lowest combined sum of AMIPS loss, point-height energy and
+neighbor-height energy. Checkpoint comparisons sum floating-point contributions
+exactly so an unchanged extreme tet cannot hide a small thickness improvement.
+This is an unnormalized sum across the current mesh, not a refinement-invariant
+functional. Reports include baseline/final energies and thickness errors, and
+separate `quality_target_met` and `thickness_target_met` flags; `target_met` requires
+both. Finite budgets do not guarantee AMIPS below the target or height convergence,
 sizing convergence, or a global nonadjacent-cell intersection certificate.
 
 `quality_improvement.hpp` exposes `QualityImprovementOptions`,
