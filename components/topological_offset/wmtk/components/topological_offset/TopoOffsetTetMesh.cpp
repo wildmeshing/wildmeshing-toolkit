@@ -3439,21 +3439,12 @@ bool TopoOffsetTetMesh::offset_is_manifold()
 
 bool TopoOffsetTetMesh::invariants(const std::vector<Tuple>& tets)
 {
-    wmtk::utils::predicates::exactinit();
-    // Const: smoothing runs this too, on a ring of neighbours a non-const read would record and a
-    // rejected smooth write back -- see TetOptimizerMesh::smooth_after().
-    const auto& VA = std::as_const(m_vertex_attribute);
+    // is_inverted(): orient3d on m_posf when every corner is rounded, the exact positions when one
+    // is not (an un-rounded vertex handed on in V_rational: m_posf is only its rounding, in which
+    // its cells can be flat or inverted). A flat tet is refused, as before. Const, so smoothing,
+    // which runs this on a ring of neighbours, records no read (TetOptimizerMesh::smooth_after()).
     for (const Tuple& t : tets) {
-        auto vs = oriented_tet_vids(t);
-        auto res = wmtk::utils::predicates::orient3d(
-            VA[vs[0]].m_posf,
-            VA[vs[1]].m_posf,
-            VA[vs[2]].m_posf,
-            VA[vs[3]].m_posf);
-
-        if (res != wmtk::utils::predicates::Orientation::NEGATIVE) {
-            return false;
-        }
+        if (is_inverted(oriented_tet_vids(t))) return false;
     }
     return true;
 }

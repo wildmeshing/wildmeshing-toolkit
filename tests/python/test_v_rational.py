@@ -2,9 +2,10 @@
 
 A square (2D) or its extrusion (3D) with an interior vertex P 2^-80 above the edge from (0, 0)
 to (3, 1): its rounding lies below that edge and inverts the sliver beside it, so P cannot be
-rounded. Given only the rounding, simwild refuses the mesh; given P exactly (V_rational), a tag
-operation or manifold_extraction keeps P exact, returns it in V_rational and warns
-(UnroundedVerticesWarning), and remeshing from that result rounds every vertex.
+rounded. Given only the rounding, simwild and topological_offset refuse the mesh; given P exactly
+(V_rational), a tag operation, manifold_extraction or topological_offset keeps P exact, returns it
+in V_rational and warns (UnroundedVerticesWarning), and remeshing from that result rounds every
+vertex.
 
 Needs the wildmeshing bindings; no external data."""
 import os
@@ -80,6 +81,15 @@ def _remesh(mesh):
     return wm.simwild({"operation": "remeshing", "input": ["m"]}, {"m": mesh})
 
 
+def _extract(mesh, **options):
+    return wm.manifold_extraction({"input": "m", "tag_selection": "a", **options}, {"m": mesh})
+
+
+def _offset(mesh, **options):
+    return wm.topological_offset({"input": "m", "offsets": [{"selection": "a"}], **options},
+                                 {"m": mesh})
+
+
 def _check_exact(mesh, positions):
     """mesh's V_rational is `positions`, each on the row of V that is its rounding."""
     exact = mesh["V_rational"]
@@ -95,6 +105,13 @@ def test_the_rounding_alone_is_refused(dim):
     rounded, _, _ = _mesh(dim)
     with pytest.raises(RuntimeError):
         _remesh(rounded)
+
+
+@pytest.mark.parametrize("dim", [2, 3])
+def test_the_offset_refuses_the_rounding_alone(dim):
+    rounded, _, _ = _mesh(dim)
+    with pytest.raises(RuntimeError, match="different orientations in the input"):
+        _offset(rounded)
 
 
 @pytest.mark.parametrize("dim", [2, 3])
@@ -122,13 +139,23 @@ def test_manifold_extraction_hands_the_exact_positions_on(dim):
     assert report["all_rounded"] and "V_rational" not in outputs["mesh"]
 
 
-def test_throw_on_fail_throws_on_unrounded_output():
+@pytest.mark.parametrize("dim", [2, 3])
+def test_topological_offset_hands_the_exact_positions_on(dim):
+    _, with_exact, positions = _mesh(dim)
+    (outputs, report), caught = _call(lambda: _offset(with_exact))
+    assert caught == [wm.UnroundedVerticesWarning]
+    assert not report["all_rounded"] and report["#unrounded"] == len(positions)
+    _check_exact(outputs["mesh"], positions)
+    (outputs, report), _ = _call(lambda: _remesh(outputs["mesh"]))
+    assert report["all_rounded"] and "V_rational" not in outputs["mesh"]
+
+
+@pytest.mark.parametrize("run", [_replace_tags, _extract, _offset],
+                         ids=["simwild", "manifold_extraction", "topological_offset"])
+def test_throw_on_fail_throws_on_unrounded_output(run):
     _, with_exact, _ = _mesh(3)
     with pytest.raises(RuntimeError, match="Not all vertices rounded"):
-        _replace_tags(with_exact, throw_on_fail=True)
-    with pytest.raises(RuntimeError, match="Not all vertices rounded"):
-        wm.manifold_extraction({"input": "m", "tag_selection": "a", "throw_on_fail": True},
-                               {"m": with_exact})
+        run(with_exact, throw_on_fail=True)
 
 
 def test_write_mesh_warns_that_the_exact_positions_are_lost(tmp_path):

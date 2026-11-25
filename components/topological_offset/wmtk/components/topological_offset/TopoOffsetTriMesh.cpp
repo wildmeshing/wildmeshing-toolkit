@@ -2586,18 +2586,12 @@ bool TopoOffsetTriMesh::offset_is_manifold()
 
 bool TopoOffsetTriMesh::invariants(const std::vector<Tuple>& tris)
 {
-    wmtk::utils::predicates::exactinit();
-    // Const: smoothing runs this too, on a ring of neighbours a non-const read would record and a
-    // rejected smooth write back -- see TriOptimizerMesh::smooth_after().
-    const auto& VA = std::as_const(m_vertex_attribute);
+    // is_inverted(): orient2d on m_posf when every corner is rounded, the exact positions when one
+    // is not (an un-rounded vertex handed on in V_rational: m_posf is only its rounding, in which
+    // its cells can be flat or inverted). A flat face is refused, as before. Const, so smoothing,
+    // which runs this on a ring of neighbours, records no read (TriOptimizerMesh::smooth_after()).
     for (const Tuple& t : tris) {
-        auto vs = oriented_tri_vids(t);
-
-        auto res =
-            wmtk::utils::predicates::orient2d(VA[vs[0]].m_posf, VA[vs[1]].m_posf, VA[vs[2]].m_posf);
-        if (res != wmtk::utils::predicates::Orientation::POSITIVE) {
-            return false;
-        }
+        if (is_inverted(oriented_tri_vids(t))) return false;
     }
     return true;
 }
