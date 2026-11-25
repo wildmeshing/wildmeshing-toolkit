@@ -122,10 +122,10 @@ RodBackgroundNeighborhood rod_background_neighborhood(const PrismaticMeshInput& 
     for (size_t i = 0; i < front.size(); ++i)
         for (int j = 0; j < 3; ++j) surface.faces(i, j) = front[i][j];
     surface.tree.init(surface.vertices, surface.faces);
-    std::vector<bool> near(input.vertices.rows(), false);
-    for (size_t v = 0; v < near.size(); ++v)
+    std::vector<bool> within_radius(input.vertices.rows(), false);
+    for (size_t v = 0; v < within_radius.size(); ++v)
         if (!incident[v].empty())
-            near[v] =
+            within_radius[v] =
                 surface.squared(input.vertices.row(v).transpose()) <= result.radius * result.radius;
     std::map<Tri, size_t> patch_faces;
     std::set<size_t> patch_vertices, boundary;
@@ -135,7 +135,7 @@ RodBackgroundNeighborhood rod_background_neighborhood(const PrismaticMeshInput& 
             continue;
         Tet t;
         for (int j = 0; j < 4; ++j) t[j] = input.tetrahedra(tid, j);
-        if (std::none_of(t.begin(), t.end(), [&](size_t v) { return near[v]; })) continue;
+        if (std::none_of(t.begin(), t.end(), [&](size_t v) { return within_radius[v]; })) continue;
         ++result.selected_tets;
         patch_vertices.insert(t.begin(), t.end());
         for (int omit = 0; omit < 4; ++omit) {
@@ -151,7 +151,7 @@ RodBackgroundNeighborhood rod_background_neighborhood(const PrismaticMeshInput& 
         if (count == 1) boundary.insert(f.begin(), f.end());
     result.boundary_vertices = boundary.size();
     for (size_t v : patch_vertices)
-        if (near[v] && input.vertex_tags[v] == -1 && !boundary.count(v) &&
+        if (within_radius[v] && input.vertex_tags[v] == -1 && !boundary.count(v) &&
             !state.fixed_shell_vertices.count(v) &&
             !(v < input.fixed_background_vertices.size() && input.fixed_background_vertices[v]) &&
             std::all_of(incident[v].begin(), incident[v].end(), [&](size_t tid) {
@@ -228,12 +228,12 @@ void remesh_rod_background(PrismaticMeshInput& input)
             is_fixed_shell_tet(input, tid))
             continue;
         Tet t;
-        bool near = false;
+        bool touches_neighborhood = false;
         for (int j = 0; j < 4; ++j) {
             t[j] = input.tetrahedra(tid, j);
-            near |= distances[t[j]] <= radius;
+            touches_neighborhood |= distances[t[j]] <= radius;
         }
-        if (!near) continue;
+        if (!touches_neighborhood) continue;
         selected[tid] = true;
         for (size_t& v : t) {
             const auto [it, inserted] = local.emplace(v, local.size());
