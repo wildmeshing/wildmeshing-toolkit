@@ -12226,3 +12226,123 @@ TEST_CASE("offset-direction-complement-out-is-in-2d", "[offset][2d]")
     CHECK(!in.empty());
     CHECK(run("!a", "out") == in);
 }
+
+namespace {
+/// y of P = (1, y), 2^-80 above the edge from A = (0, 0) to B = (3, 1): its rounding is below that
+/// edge, so the sliver (A, B, P) is inverted with P's double and not with P exact.
+Rational sliver_p_y()
+{
+    return Rational(1.) / Rational(3.) + Rational(std::ldexp(1., -80));
+}
+/// The one vertex of `mesh` whose id is not below `n`, the vertex count before a split: its new
+/// vertex.
+template <typename Mesh>
+size_t new_vertex(const Mesh& mesh, const size_t n)
+{
+    std::vector<size_t> found;
+    for (const auto& v : mesh.get_vertices())
+        if (v.vid(mesh) >= n) found.push_back(v.vid(mesh));
+    REQUIRE(found.size() == 1);
+    return found[0];
+}
+} // namespace
+
+// The simplicial embedding's face split, next to a vertex handed on exactly (V_rational): the
+// double centroid of the corners' m_posf inverts a child, so the new vertex goes to the face's
+// exact centroid, un-rounded (place_split_vertex()); before, invariants() refused the split and the
+// embedding threw. A face of rounded corners still gets the double centroid.
+TEST_CASE("face_split_2d_exact_centroid", "[split_op][2d][rational]")
+{
+    const auto load = [](TopoOffsetTriMesh& mesh) {
+        Eigen::MatrixXd V(3, 2);
+        V << 0, 0, 3, 1, 1, 0.5; // P at (1, 0.5) for the load
+        Eigen::MatrixXi F(1, 3);
+        F << 0, 1, 2;
+        MatrixSi Tags(1, 1);
+        Tags.coeffRef(0, 0) = 0;
+        MatrixXd V_env_dummy;
+        MatrixXi F_env_dummy;
+        mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, {"a"});
+    };
+    Parameters param;
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the build a real eps
+    std::vector<TriMesh::Tuple> new_t;
+
+    // rounded corners: the double centroid, as before
+    {
+        TopoOffsetTriMesh mesh(param, 0);
+        load(mesh);
+        REQUIRE(mesh.split_face(mesh.tuple_from_simplex(simplex::Face(0, 1, 2)), new_t));
+        const auto& va = mesh.m_vertex_attribute[new_vertex(mesh, 3)];
+        CHECK(va.m_is_rounded);
+        CHECK(va.m_posf == Vector2d((Vector2d(0, 0) + Vector2d(3, 1) + Vector2d(1, 0.5)) / 3));
+    }
+    // P exact
+    TopoOffsetTriMesh mesh(param, 0);
+    load(mesh);
+    const Vector2r P(Rational(1.), sliver_p_y());
+    mesh.set_exact_vertex_position(2, P);
+    REQUIRE_FALSE(mesh.m_vertex_attribute[2].m_is_rounded);
+    REQUIRE_FALSE(mesh.is_inverted(size_t(0)));
+    REQUIRE(mesh.split_face(mesh.tuple_from_simplex(simplex::Face(0, 1, 2)), new_t));
+    const auto& va = mesh.m_vertex_attribute[new_vertex(mesh, 3)];
+    CHECK_FALSE(va.m_is_rounded);
+    const Vector2r centroid =
+        (Vector2r(Rational(0.), Rational(0.)) + Vector2r(Rational(3.), Rational(1.)) + P) / 3;
+    CHECK(va.pos()[0] == centroid[0]);
+    CHECK(va.pos()[1] == centroid[1]);
+    for (const auto& f : mesh.get_faces()) CHECK_FALSE(mesh.is_inverted(f.fid(mesh)));
+}
+
+// As face_split_2d_exact_centroid, in 3D: the sliver face (A, B, P) shared by two tets, and the tet
+// (A, B, P, D) split at its centroid.
+TEST_CASE("face_and_tet_split_3d_exact_centroid", "[split_op][3d][rational]")
+{
+    // A, B, P (for the load at (1, 0.5, 0)), D above the plane z = 0, E below
+    Eigen::MatrixXd V(5, 3);
+    V << 0, 0, 0, 3, 1, 0, 1, 0.5, 0, 1, 1, 1, 1, 1, -1;
+    const Vector3r P(Rational(1.), sliver_p_y(), Rational(0.));
+    const auto load = [&](TopoOffsetTetMesh& mesh, const Eigen::MatrixXi& T) {
+        MatrixSi Tags(T.rows(), 1);
+        for (int i = 0; i < T.rows(); ++i) Tags.coeffRef(i, 0) = 0;
+        MatrixXd V_env_dummy;
+        MatrixXi F_env_dummy;
+        mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, {"a"});
+        mesh.set_exact_vertex_position(2, P);
+        REQUIRE_FALSE(mesh.m_vertex_attribute[2].m_is_rounded);
+        for (const auto& t : mesh.get_tets()) REQUIRE_FALSE(mesh.is_inverted(t));
+    };
+    const auto check_children =
+        [](const TopoOffsetTetMesh& mesh, const size_t v, const Vector3r& centroid) {
+            const auto& va = mesh.m_vertex_attribute[v];
+            CHECK_FALSE(va.m_is_rounded);
+            for (int k = 0; k < 3; ++k) CHECK(va.pos()[k] == centroid[k]);
+            for (const auto& t : mesh.get_tets()) CHECK_FALSE(mesh.is_inverted(t));
+        };
+    const Vector3r A(Rational(0.), Rational(0.), Rational(0.));
+    const Vector3r B(Rational(3.), Rational(1.), Rational(0.));
+    const Vector3r D(Rational(1.), Rational(1.), Rational(1.));
+    Parameters param;
+    std::vector<TetMesh::Tuple> new_t;
+
+    SECTION("face split")
+    {
+        Eigen::MatrixXi T(2, 4);
+        T << 0, 1, 2, 3, 0, 2, 1, 4;
+        TopoOffsetTetMesh mesh(param, 0);
+        load(mesh, T);
+        const size_t n = mesh.get_vertices().size();
+        REQUIRE(mesh.split_face(std::get<0>(mesh.tuple_from_face({{0, 1, 2}})), new_t));
+        check_children(mesh, new_vertex(mesh, n), Vector3r((A + B + P) / 3));
+    }
+    SECTION("tet split")
+    {
+        Eigen::MatrixXi T(1, 4);
+        T << 0, 1, 2, 3;
+        TopoOffsetTetMesh mesh(param, 0);
+        load(mesh, T);
+        const size_t n = mesh.get_vertices().size();
+        REQUIRE(mesh.split_tet(mesh.get_tets()[0], new_t));
+        check_children(mesh, new_vertex(mesh, n), Vector3r((A + B + P + D) / 4));
+    }
+}

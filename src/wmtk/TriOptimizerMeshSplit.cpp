@@ -440,6 +440,15 @@ void TriOptimizerMesh::place_split_vertex_at(
     for (int k = 0; k < exact.size(); ++k) {
         exact[k] = a[k] + (b[k] - a[k]) * fraction;
     }
+    place_split_vertex(v_id, exact, children, posf);
+}
+
+void TriOptimizerMesh::place_split_vertex(
+    const size_t v_id,
+    const Vector2r& exact,
+    const std::vector<Tuple>& children,
+    const Vector2d* posf)
+{
     VertexAttributes& va = m_vertex_attribute[v_id];
     const auto inverts = [&] {
         return std::any_of(children.begin(), children.end(), [&](const Tuple& t) {
@@ -458,9 +467,8 @@ void TriOptimizerMesh::place_split_vertex_at(
     va.m_is_rounded = false;
     if (inverts()) {
         log_and_throw_error(
-            "place_split_vertex_at: the exact split point of ({}, {}) inverts a triangle",
-            from,
-            to);
+            "place_split_vertex: the exact point of split vertex {} inverts a triangle",
+            v_id);
     }
     // An un-rounded vertex is left: the sweep must not skip the next pass. After the check above.
     m_all_rounded.store(false, std::memory_order_relaxed);

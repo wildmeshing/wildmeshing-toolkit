@@ -968,12 +968,19 @@ protected:
     /// Per thread: set on the thread that calls split_edge(), right before it, and cleared
     /// after; a split on any other thread does not see it. Unset: the midpoint.
     wmtk::threading::enumerable_thread_specific<std::optional<EdgeSplitAt>> m_edge_split_at;
-    /// Places split vertex v_id at `fraction` of the way from vertex `from` to vertex `to`
-    /// (the split edge's ends), exactly: at `posf` -- by default the rounding of that point -- if
-    /// it inverts no child, else at the exact point, un-rounded. A point on the edge inverts no
-    /// child of a parent that was not inverted already; if the exact one does, this throws.
-    /// split_edge_after() calls it when m_edge_split_at is set; a split that does not go through
-    /// split_edge_after() (topological_offset's march) calls it itself.
+    /// Places split vertex v_id at the point `exact` of the cell it splits: at `posf` -- by
+    /// default the rounding of `exact` -- if that inverts no child (is_inverted(): exact whenever
+    /// a corner is un-rounded), else at `exact`, un-rounded, m_posf its rounding. A point of the
+    /// split simplex (an edge's, a face's, a cell's interior) inverts no child of a parent that
+    /// was not inverted already; if `exact` does, this throws.
+    void place_split_vertex(
+        size_t v_id,
+        const Vector2r& exact,
+        const std::vector<Tuple>& children,
+        const Vector2d* posf = nullptr);
+    /// place_split_vertex() at `fraction` of the way from vertex `from` to vertex `to` (the split
+    /// edge's ends). split_edge_after() calls it when m_edge_split_at is set; a split that does
+    /// not go through split_edge_after() (topological_offset's march) calls it itself.
     void place_split_vertex_at(
         size_t v_id,
         size_t from,

@@ -568,12 +568,24 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
     size_t v3_id = cache.v3_id;
     std::array<size_t, 3> splitf_vids = {{v1_id, v2_id, v3_id}};
 
-    // new_vertex
-    set_vertex_position(
-        v_id,
-        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf +
-         m_vertex_attribute[v3_id].m_posf) /
-            3);
+    // new_vertex: at the double centroid of the corners' m_posf if it inverts no child, else at
+    // the face's exact centroid, un-rounded (place_split_vertex()), as the march places its edge
+    // splits. The exact centroid is inside the face, so it inverts no child of either tet; the
+    // double one can, next to a corner handed on in V_rational, and the embedding then refused
+    // the split and the run threw.
+    {
+        const Vector3d posf = (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf +
+                               m_vertex_attribute[v3_id].m_posf) /
+                              3;
+        const Vector3r exact = (m_vertex_attribute[v1_id].pos() + m_vertex_attribute[v2_id].pos() +
+                                m_vertex_attribute[v3_id].pos()) /
+                               3;
+        place_split_vertex(
+            v_id,
+            exact,
+            get_one_ring_tets_for_vertex(t.switch_vertex(*this)),
+            &posf);
+    }
     m_vertex_extra[v_id].label = cache.splitf_label;
     // The sizing field at the centroid, as marching_split_edge_after() carries it along an edge.
     m_vertex_attribute[v_id].m_sizing_scalar =
@@ -720,12 +732,21 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
     // As in split_face_after().
     const size_t v_id = t.switch_vertex(*this).vid(*this);
 
-    // new vertex
-    set_vertex_position(
-        v_id,
-        (m_vertex_attribute[cache.v_ids[0]].m_posf + m_vertex_attribute[cache.v_ids[1]].m_posf +
-         m_vertex_attribute[cache.v_ids[2]].m_posf + m_vertex_attribute[cache.v_ids[3]].m_posf) /
-            4);
+    // new vertex: at the double centroid if it inverts no child, else at the exact centroid,
+    // un-rounded, as split_face_after() places its vertex.
+    {
+        const auto& VA = m_vertex_attribute;
+        const auto& c = cache.v_ids;
+        const Vector3d posf =
+            (VA[c[0]].m_posf + VA[c[1]].m_posf + VA[c[2]].m_posf + VA[c[3]].m_posf) / 4;
+        const Vector3r exact =
+            (VA[c[0]].pos() + VA[c[1]].pos() + VA[c[2]].pos() + VA[c[3]].pos()) / 4;
+        place_split_vertex(
+            v_id,
+            exact,
+            get_one_ring_tets_for_vertex(t.switch_vertex(*this)),
+            &posf);
+    }
     m_vertex_extra[v_id].label = tet_label;
     // The sizing field at the centroid, as marching_split_edge_after() carries it along an edge.
     m_vertex_attribute[v_id].m_sizing_scalar =

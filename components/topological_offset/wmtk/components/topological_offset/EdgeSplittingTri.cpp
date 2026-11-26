@@ -409,9 +409,19 @@ bool TopoOffsetTriMesh::split_face_after(const Tuple& t)
     auto& cache = face_split_cache.local();
     // The returned tuple sits on an edge of the original face, so the new vertex is across the
     // other edge at its vertex. See marching_split_edge_after() for why not the last vertex.
-    const size_t v_id = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+    const Tuple v_tuple = t.switch_edge(*this).switch_vertex(*this);
+    const size_t v_id = v_tuple.vid(*this);
     m_vertex_extra[v_id] = cache.new_v_extra;
-    set_vertex_position(v_id, cache.new_v_pos);
+    // At the double centroid split_face_before() computed if it inverts no child, else at the
+    // face's exact centroid, un-rounded (place_split_vertex()), as the march places its edge
+    // splits. As in 3D (TopoOffsetTetMesh::split_face_after()).
+    place_split_vertex(
+        v_id,
+        (m_vertex_attribute[cache.v1_id].pos() + m_vertex_attribute[cache.v2_id].pos() +
+         m_vertex_attribute[cache.v3_id].pos()) /
+            3,
+        get_one_ring_tris_for_vertex(v_tuple),
+        &cache.new_v_pos);
 
     // existing edges
     for (const auto& pair : cache.existing_eattr) {
