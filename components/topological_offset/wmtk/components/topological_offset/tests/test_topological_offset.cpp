@@ -12560,11 +12560,11 @@ TEST_CASE("label-growth-keeps-held-contact-2d", "[offset][2d]")
     const MeshData& out = res.first.at("mesh");
     const auto touched = band_touched_2d(out);
     const Vector2d p = grid_point_2d(pc);
-    size_t far = 0;
+    size_t n_far = 0;
     for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
-        if (touched[size_t(v)] && (out.V.row(v).head<2>().transpose() - p).norm() > 0.2) ++far;
+        if (touched[size_t(v)] && (out.V.row(v).head<2>().transpose() - p).norm() > 0.2) ++n_far;
     }
-    CHECK(far > 0);
+    CHECK(n_far > 0);
     const std::vector<char> in_b = region ? band_touched_2d(out, "B") : std::vector<char>{};
     size_t n_held = 0;
     for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
@@ -12820,11 +12820,11 @@ TEST_CASE("label-growth-keeps-held-contact-3d", "[offset][3d]")
     const MeshData& out = res.first.at("mesh");
     const auto touched = band_touched(out);
     const Vector3d p = grid_point(pc);
-    size_t far = 0;
+    size_t n_far = 0;
     for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
-        if (touched[size_t(v)] && (out.V.row(v).transpose() - p).norm() > 0.2) ++far;
+        if (touched[size_t(v)] && (out.V.row(v).transpose() - p).norm() > 0.2) ++n_far;
     }
-    CHECK(far > 0);
+    CHECK(n_far > 0);
     if (held == "curve through p") {
         for (const int side : {-1, 1}) {
             INFO("side " << side);
