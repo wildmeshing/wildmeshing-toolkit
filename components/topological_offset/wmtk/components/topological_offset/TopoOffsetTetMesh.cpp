@@ -646,6 +646,8 @@ void TopoOffsetTetMesh::build_region_sides()
         }
         R.env = std::make_shared<Envelope>(/*exact=*/true);
         R.env->init(V, F, m_envelope_eps);
+        R.V = V;
+        R.F = F;
         logger().info(
             "\t[region sides] tet tag {}: {} boundary faces, oriented out of the region",
             tag,
@@ -2206,7 +2208,10 @@ void TopoOffsetTetMesh::init_band_exact()
     // reads d through the integral's searches (distance(), distance_bound()), nothing else.
     const bool surface_cleanup =
         m_offset_params.band_volume_rule == "surface" && m_offset_params.label_cleanup != "off";
-    if (exact_rule || surface_cleanup ||
+    // label_growth: growth's splits and flips read d through the integral's searches
+    // (growth_splits(), label_cleanup() under FlipSide::Corners); with it on by default
+    // (2026-11-25), a run under "corner_bound" threw at growth's first flip pass.
+    if (exact_rule || surface_cleanup || m_offset_params.label_growth ||
         (m_offset_params.settle_refinement && m_offset_params.settle_mark == "max") ||
         m_offset_params.debug_output) {
         // The band is on the offset side of the input only (ExactBandIntegral's class

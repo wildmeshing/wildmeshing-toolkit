@@ -21,6 +21,93 @@
 
 namespace wmtk::components::topological_offset {
 
+namespace {
+
+/// The crossing step's chart, 3D's ChartProblem (Optimize3d.cpp) one dimension down: B's input
+/// segments near a vertex, a simple path laid out by arc length u, so u names the point x(u) of
+/// the segment whose interval holds u. x is affine on each segment (x(u) = x_s + t_s (u - u_s),
+/// t_s its unit tangent), so the vertex's energy over u has gradient t^T g and Hessian t^T H t,
+/// with no further term; one-to-one, the path being simple.
+class ChartProblem1D : public polysolve::nonlinear::Problem
+{
+public:
+    struct Segment
+    {
+        double u0, u1; // its arc-length interval
+        Eigen::Vector2d x0; // x at u0
+        Eigen::Vector2d t; // dx/du, unit
+    };
+    ChartProblem1D(std::shared_ptr<polysolve::nonlinear::Problem> inner, std::vector<Segment> segs)
+        : m_inner(std::move(inner))
+        , m_segs(std::move(segs))
+    {}
+    /// The segment whose interval holds u, -1 for none.
+    int locate(const TVector& u) const
+    {
+        for (size_t i = 0; i < m_segs.size(); ++i)
+            if (u[0] >= m_segs[i].u0 && u[0] <= m_segs[i].u1) return int(i);
+        return -1;
+    }
+    bool map(const TVector& u, TVector& x, int* seg = nullptr) const
+    {
+        const int s = locate(u);
+        if (s < 0) return false;
+        const Segment& S = m_segs[size_t(s)];
+        x = S.x0 + S.t * (u[0] - S.u0);
+        if (seg) *seg = s;
+        return true;
+    }
+    double value(const TVector& u) override
+    {
+        TVector x;
+        if (!map(u, x)) return std::numeric_limits<double>::infinity();
+        return m_inner->value(x);
+    }
+    void gradient(const TVector& u, TVector& g) override
+    {
+        TVector x, gx;
+        int s = 0;
+        g = TVector::Zero(1);
+        if (!map(u, x, &s)) return;
+        m_inner->gradient(x, gx);
+        g[0] = m_segs[size_t(s)].t.dot(Eigen::Vector2d(gx[0], gx[1]));
+    }
+    void hessian(const TVector& u, TMatrix& h) override
+    {
+        TVector x;
+        int s = 0;
+        h = TMatrix::Identity(1, 1);
+        if (!map(u, x, &s)) return;
+        TMatrix hx;
+        m_inner->hessian(x, hx);
+        const Eigen::Vector2d& t = m_segs[size_t(s)].t;
+        h(0, 0) = t.dot(Eigen::Matrix2d(hx.topLeftCorner(2, 2)) * t);
+    }
+    void hessian(const TVector& u, THessian& h) override
+    {
+        TMatrix d;
+        hessian(u, d);
+        h = d.sparseView();
+    }
+    void solution_changed(const TVector& u) override
+    {
+        TVector x;
+        if (map(u, x)) m_inner->solution_changed(x);
+    }
+    bool is_step_valid(const TVector& u0, const TVector& u1) override
+    {
+        TVector x0, x1;
+        if (!map(u0, x0) || !map(u1, x1)) return false;
+        return m_inner->is_step_valid(x0, x1);
+    }
+
+private:
+    std::shared_ptr<polysolve::nonlinear::Problem> m_inner;
+    std::vector<Segment> m_segs;
+};
+
+} // namespace
+
 /**
  * The 2D optimization phase. The operations themselves -- split, collapse, the quality-driven
  * edge flip, and the driver that sequences them -- are wmtk::TriOptimizerMesh's. What is here
@@ -538,6 +625,14 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
         ++m_repulsion_embed_refused;
         return false;
     }
+    // The region sides (region_excess()): the survivor takes the removed vertex's triangles, and
+    // may not take them, or its own, further past their regions than either end was. As 3D, but
+    // before the base's hook for the reason the energy rule is.
+    if (!m_region_sides.empty() && region_excess(v2_id, m_vertex_attribute[v2_id].m_posf) >
+                                       std::max(0., m_collapse_region_pre.local())) {
+        ++m_region_side_refused;
+        return false;
+    }
     if (!TriOptimizerMesh::collapse_edge_after(t)) {
         return false;
     }
@@ -577,6 +672,13 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
     // collapse_cache is the base's, filled by the call above; v2 survives.
     m_collapse_survivor_sizing.local() =
         m_vertex_attribute[collapse_cache.local().v2_id].m_sizing_scalar;
+    // the region sides' excess at the two ends before (collapse_edge_after()), as 3D
+    {
+        const auto& cc = collapse_cache.local();
+        m_collapse_region_pre.local() = std::max(
+            region_excess(cc.v1_id, m_vertex_attribute[cc.v1_id].m_posf),
+            region_excess(cc.v2_id, m_vertex_attribute[cc.v2_id].m_posf));
+    }
     // Applied unconditionally, where the base asks only when both endpoints already sit on a
     // tracked simplex: the offset region is a thin band, so a collapse with one endpoint in the
     // interior can still pinch its two sides together while every tracked surface survives.
@@ -985,6 +1087,8 @@ bool TopoOffsetTriMesh::smooth_before(const Tuple& t)
     auto& pre = m_needle_pre.local();
     pre = {ring_max_quality(vid), m_vertex_attribute[vid].m_posf};
     if (pre.first >= kNeedleQuality) ++m_needle_smooth_offered;
+    // the region sides' excess where the move starts (smoothing_position_is_allowed()), as 3D
+    m_region_excess_pre.local() = region_excess(vid, m_vertex_attribute[vid].m_posf);
 
     // The base's smooth_before minus its bounding-box refusal, which is why this does not call
     // it: the base freezes every vertex on the domain wall. Here the wall is a region boundary
@@ -1280,54 +1384,166 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
             turned_before = int(f.size());
         }
         // THE CROSSING STEP, 3D's smooth_after() one dimension down: a vertex on the front and on a
-        // held curve -- a crossing of the front with it -- belongs where the curve meets the level
-        // set; it steps toward its nearest point there (alternating projections), halving t = 1,
-        // 1/2, ... (project_line_search_steps candidates); the first candidate that inverts no
-        // face, keeps its held segments in their tubes, and lowers E (the ring's AMIPS terms plus
-        // the exact swept band change) is taken; none, no move. It replaces the engine's
-        // projected step for these vertices, as in 3D, whose measurement motivates it. MEASURED
-        // here (double disk, tag_1 held regions, tag_0 offset to 0.05 by label growth,
-        // front_conv_rel 0.002, 2026-11-23): converged at turn 9 against 15. Under every band rule:
-        // E's change as that rule reads it. It also retired
-        // the held-segment split (2026-11-17 to 11-23), which split a held segment the projected
-        // step's move had pushed out of its tube: this step's candidates are contained.
+        // held curve B -- a crossing of the front with it -- belongs where B meets the level set,
+        // and E is lowest on B there. The step minimises E over B itself: the solver's unknown is
+        // the arc length along B's input near the vertex (ChartProblem1D), E's gradient and
+        // Hessian taken through the chart, affine on each segment. Then the tries, from the solved
+        // point back toward the start (t = 1, 1/2, ..., project_line_search_steps of them), each
+        // the chart's point, so on B: the first that inverts no triangle, keeps its held segments
+        // in their tubes and the region sides, and lowers E (the ring's AMIPS terms plus the exact
+        // swept band change) is taken; none, no move. The level set enters only through E. A
+        // vertex with no chart takes the engine's projected step. As 3D (Uday 2026-11-25: the
+        // chart in 2D too), whose measurement motivates it; where 2D differs: no max_step (2D
+        // damps no step) and containment asked of every try, the step going on to shorter ones,
+        // where 3D asks it of the chosen try alone. Until 2026-11-25 the step went toward the
+        // curve's crossing point, its nearest point on B projected along grad d onto the level set
+        // and back (MEASURED then, double disk, tag_1 held regions, tag_0 offset to 0.05 by label
+        // growth, front_conv_rel 0.002, 2026-11-23: converged at turn 9 against the engine's
+        // step's 15). It also retired the held-segment split (2026-11-17 to 11-23), which split a
+        // held segment the projected step's move had pushed out of its tube: this step's tries
+        // are contained.
         const auto crossing_step = [&]() -> bool {
             const int piece = place_piece(&vid, 1);
             const std::shared_ptr<const ExactBandIntegral2D>& be = band_exact_for(piece);
             const std::shared_ptr<Envelope> pull = smoothing_energy_envelope(vid);
-            if (!pull || (!be && !m_input_complex_bvh)) return smooth_vertex_under_energy(t, true);
-            // d and its gradient: the exact integral's where the band rule builds it, else the
-            // input complex's (input_complex_distance(), the direction from its nearest point).
-            const auto dist = [&](const Vector2d& x) {
-                return be ? be->distance(x) : input_complex_distance(x);
-            };
-            const auto dist_grad = [&](const Vector2d& x, Vector2d& g) {
-                if (be) return be->distance(x, g);
-                const Eigen::VectorXd n = m_input_complex_bvh->nearest_point(Eigen::VectorXd(x));
-                g = x - Vector2d(n[0], n[1]);
-                return input_complex_distance(x);
-            };
-            const double delta = region_delta(piece);
+            if (!pull) return smooth_vertex_under_energy(t, true);
             auto& va = m_vertex_attribute[vid];
             const Vector2d x0 = va.m_posf;
-            Vector2d x = x0, foot;
-            pull->nearest_point(x, foot);
-            Vector2d target = foot;
-            double gap = std::abs(dist(foot) - delta);
-            for (int k = 0; k < 64; ++k) {
-                x = target;
-                Vector2d g;
-                const double d = dist_grad(x, g);
-                const double gn = g.norm();
-                if (!(gn > 0.)) break;
-                x -= (d - delta) * (g / gn);
-                pull->nearest_point(x, foot);
-                const double gap_now = std::abs(dist(foot) - delta);
-                if (!(gap_now < gap)) break;
-                gap = gap_now;
-                target = foot;
+            // The chart. B: the region side (build_region_sides(): B's input, as the boundary of
+            // the regions it bounds) nearest the vertex, within the pull envelope's width of it.
+            // The patch: its segments meeting the one-ring's box and joined through shared corners
+            // to the segment under the vertex (the one nearest its nearest point on B) -- every
+            // point of B inside the one-ring is on a segment meeting the box, and no position
+            // outside the one-ring keeps every ring triangle positive. A simple path (every corner
+            // on at most two of its segments, one corner more than segments) is laid out by arc
+            // length, one-to-one however B bends. No region side within reach, no segment under
+            // the vertex, a patch not a simple path, or a degenerate segment: no chart (counted by
+            // reason, m_crossing_chart_why).
+            std::shared_ptr<ChartProblem1D> chart;
+            Eigen::VectorXd uv = Eigen::VectorXd::Zero(1), uv0 = Eigen::VectorXd::Zero(1);
+            [&]() {
+                const RegionSide* side = nullptr;
+                double best = std::numeric_limits<double>::infinity();
+                Vector2d foot = x0;
+                for (const RegionSide& S : m_region_sides) {
+                    Vector2d f;
+                    const double d2 = S.env->nearest_point(x0, f);
+                    if (d2 < best) {
+                        best = d2;
+                        side = &S;
+                        foot = f;
+                    }
+                }
+                if (!side || !(std::sqrt(best) <= pull->eps() * (1. + 1e-9))) {
+                    ++m_crossing_chart_why[0];
+                    return;
+                }
+                Vector2d lo = x0, hi = x0;
+                for (const size_t f : get_one_ring_fids_for_vertex(vid))
+                    for (const size_t u : oriented_tri_vids(f)) {
+                        lo = lo.cwiseMin(m_vertex_attribute[u].m_posf);
+                        hi = hi.cwiseMax(m_vertex_attribute[u].m_posf);
+                    }
+                const auto corner = [&](const size_t i, const int k) -> const Vector2d& {
+                    return side->V[size_t(side->E[i][k])];
+                };
+                // the segments meeting the one-ring's box, and among them the one nearest the foot
+                std::vector<size_t> near;
+                size_t under = 0;
+                double under_d = std::numeric_limits<double>::infinity();
+                for (size_t i = 0; i < side->E.size(); ++i) {
+                    const Vector2d &a = corner(i, 0), &b = corner(i, 1);
+                    if (!((a.cwiseMin(b).array() <= hi.array()).all() &&
+                          (a.cwiseMax(b).array() >= lo.array()).all()))
+                        continue;
+                    near.push_back(i);
+                    const Vector2d ab = b - a;
+                    const double L2 = ab.squaredNorm();
+                    if (!(L2 > 0.)) continue;
+                    const double s = std::clamp((foot - a).dot(ab) / L2, 0., 1.);
+                    const double dd = (a + s * ab - foot).norm();
+                    if (dd < under_d) {
+                        under_d = dd;
+                        under = i;
+                    }
+                }
+                if (!std::isfinite(under_d)) {
+                    ++m_crossing_chart_why[1];
+                    return;
+                }
+                // the patch: the segments of `near` joined to the one under the vertex
+                std::map<int, std::vector<size_t>> at;
+                for (const size_t i : near)
+                    for (int k = 0; k < 2; ++k) at[side->E[i][k]].push_back(i);
+                std::vector<size_t> patch{under};
+                std::set<size_t> in_patch{under};
+                for (size_t h = 0; h < patch.size(); ++h)
+                    for (int k = 0; k < 2; ++k)
+                        for (const size_t g : at[side->E[patch[h]][k]])
+                            if (in_patch.insert(g).second) patch.push_back(g);
+                // a simple path: every corner on at most two of its segments, one corner more
+                // than segments (a loop has as many)
+                std::map<int, std::vector<size_t>> deg;
+                for (const size_t i : patch)
+                    for (int k = 0; k < 2; ++k) deg[side->E[i][k]].push_back(i);
+                int start = -1;
+                for (const auto& [c, ss] : deg) {
+                    if (ss.size() > 2) {
+                        ++m_crossing_chart_why[2];
+                        return;
+                    }
+                    if (ss.size() == 1 && start < 0) start = c;
+                }
+                if (deg.size() != patch.size() + 1 || start < 0) {
+                    ++m_crossing_chart_why[2];
+                    return;
+                }
+                // laid out by arc length from one end
+                std::vector<ChartProblem1D::Segment> segs;
+                int cur = start;
+                size_t prev = std::numeric_limits<size_t>::max();
+                double u = 0.;
+                for (size_t n = 0; n < patch.size(); ++n) {
+                    const std::vector<size_t>& ss = deg[cur];
+                    const size_t sid = (ss.size() == 1 || ss[0] != prev) ? ss[0] : ss[1];
+                    const int nxt = side->E[sid][0] == cur ? side->E[sid][1] : side->E[sid][0];
+                    const Vector2d& a = side->V[size_t(cur)];
+                    const Vector2d& b = side->V[size_t(nxt)];
+                    const double L = (b - a).norm();
+                    if (!(L > 0.)) {
+                        ++m_crossing_chart_why[3];
+                        return;
+                    }
+                    segs.push_back({u, u + L, a, (b - a) / L});
+                    if (sid == under)
+                        uv0[0] = u + std::clamp((foot - a).dot(b - a) / (L * L), 0., 1.) * L;
+                    u += L;
+                    prev = sid;
+                    cur = nxt;
+                }
+                uv = uv0;
+                chart =
+                    std::make_shared<ChartProblem1D>(smoothing_extra_energy(vid), std::move(segs));
+            }();
+            if (!chart) {
+                ++m_crossing_engine_step;
+                return smooth_vertex_under_energy(t, true);
             }
-            if (!((target - x0).norm() > 0.)) return false;
+            ++m_crossing_chart_solved;
+            try {
+                smoothing_solver().minimize(*chart, uv);
+            } catch (const std::exception&) {
+                // a failed line search: the position reached is still the best found
+            }
+            va.m_posf = x0;
+            va.set_pos_to_posf();
+            // try k: the chart's point at 2^-k of the solved step from the start
+            const auto try_at = [&](const int k, Vector2d& y) {
+                Eigen::VectorXd xs;
+                if (!chart->map(uv0 + std::ldexp(1., -k) * (uv - uv0), xs)) return false;
+                y = Vector2d(xs[0], xs[1]);
+                return true;
+            };
             const std::vector<size_t> ring = get_one_ring_fids_for_vertex(vid);
             // E's change as the band rule reads it, as in 3D.
             const bool swept = swept_rule() && be;
@@ -1354,7 +1570,9 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
                 return true;
             };
             for (int k = 0; k < std::max(1, m_params.project_line_search_steps); ++k) {
-                va.m_posf = x0 + std::ldexp(1., -k) * (target - x0);
+                Vector2d y;
+                if (!try_at(k, y) || !((y - x0).norm() > 0.)) continue;
+                va.m_posf = y;
                 va.set_pos_to_posf();
                 bool inverted = false;
                 for (const size_t f : ring) inverted = inverted || is_inverted(f);
@@ -1384,7 +1602,10 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
             va.set_pos_to_posf();
             return false;
         };
-        bool ok = vertex_is_on_region(vid) ? crossing_step() : smooth_vertex_under_energy(t, true);
+        // smoothing_mode "penalty": no projection, the vertex's energy holding both pulls, as 3D.
+        bool ok = vertex_is_on_region(vid) && m_params.smoothing_mode != "penalty"
+                      ? crossing_step()
+                      : smooth_vertex_under_energy(t, true);
         if (ok && turned_before >= 0) {
             std::set<std::array<size_t, 2>> f;
             turned_front_edges_at(vid, f);
@@ -5494,18 +5715,169 @@ void TopoOffsetTriMesh::held_topology_check(const std::string& pass)
     m_held_vertex_touch = std::move(touch);
 }
 
+std::string TopoOffsetTriMesh::held_object_inside_level_set() const
+{
+    // See the declaration; 3D's one dimension down: held edges for held faces (the box, the
+    // boundary between two tag sets, the curve group and the edge tags), held points for 3D's
+    // curves and anchors, the exact integral's min over a segment (ExactBandIntegral2D::
+    // min_distance()) for the input envelope's over a triangle; a piece with no integral is not
+    // asked (the clean-up's cells alone then; 2D has no input envelope).
+    std::vector<char> band_corner(m_vertex_attribute.size(), 0);
+    for (const Tuple& t : get_faces()) {
+        const size_t fid = t.fid(*this);
+        if (!face_is_offset_band(fid)) continue;
+        for (const size_t v : oriented_tri_vids(fid)) band_corner[v] = 1;
+    }
+    struct Simplex
+    {
+        int key;
+        const char* kind;
+        std::array<size_t, 2> v; // a point (v, v)
+        int n;
+        std::array<long, 2> cells{{-1, -1}}; // an edge's
+    };
+    std::vector<Simplex> simplices;
+    std::map<std::string, int> keys;
+    const auto key_of = [&](const std::string& k) {
+        return keys.emplace(k, int(keys.size())).first->second;
+    };
+    const auto tag_string = [](const CellTag& g) {
+        std::string r;
+        for (const int64_t x : g) r += std::to_string(x) + ",";
+        return r;
+    };
+    for (const Tuple& e : get_edges()) {
+        if (!held_object_edge(e)) continue;
+        const size_t eid = e.eid(*this);
+        const std::optional<Tuple> opp = e.switch_face(*this);
+        if (m_edge_extra[eid].label == 1 || m_face_extra[e.fid(*this)].label == 1 ||
+            (opp && m_face_extra[opp->fid(*this)].label == 1)) {
+            continue;
+        }
+        const std::array<size_t, 2> ev = get_edge_vids(e);
+        if (!opp) {
+            simplices.push_back(
+                {key_of("box"), "the box", {{ev[0], ev[1]}}, 2, {{long(e.fid(*this)), -1}}});
+            continue;
+        }
+        std::string a = tag_string(m_face_attribute[e.fid(*this)].tags);
+        std::string b = tag_string(m_face_attribute[opp->fid(*this)].tags);
+        const std::array<long, 2> cells{{long(e.fid(*this)), long(opp->fid(*this))}};
+        if (a == b) {
+            simplices.push_back(
+                {key_of("curve"),
+                 "a held curve (the curve group or an edge tag)",
+                 {{ev[0], ev[1]}},
+                 2,
+                 cells});
+            continue;
+        }
+        if (b < a) std::swap(a, b);
+        simplices.push_back(
+            {key_of("region " + a + "|" + b), "a region boundary", {{ev[0], ev[1]}}, 2, cells});
+    }
+    if (m_track_feature_points) {
+        for (const Tuple& t : get_vertices()) {
+            const size_t v = t.vid(*this);
+            if (m_vertex_extra[v].m_is_on_input ||
+                m_feature_point_attribute[v].m_feature_point_id == NO_FEATURE_POINT) {
+                continue;
+            }
+            simplices.push_back(
+                {key_of("curve"),
+                 "an anchored point (an input point, a curve end or a junction)",
+                 {{v, v}},
+                 1});
+        }
+    }
+    std::map<std::pair<int, size_t>, size_t> node;
+    std::vector<size_t> parent;
+    const auto id = [&](const int key, const size_t v) {
+        const auto [it, fresh] = node.emplace(std::make_pair(key, v), parent.size());
+        if (fresh) parent.push_back(parent.size());
+        return it->second;
+    };
+    const auto root = [&](size_t x) {
+        while (parent[x] != x) x = parent[x] = parent[parent[x]];
+        return x;
+    };
+    for (const Simplex& sx : simplices) {
+        const size_t r0 = id(sx.key, sx.v[0]);
+        if (sx.n == 2) {
+            const size_t r = root(id(sx.key, sx.v[1])), q = root(r0);
+            if (r != q) parent[r] = q;
+        }
+    }
+    std::vector<char> touched(parent.size(), 0);
+    for (const auto& [kv, x] : node) {
+        if (band_corner[kv.second]) touched[root(x)] = 1;
+    }
+    const bool several = m_offset_params.offsets.size() > 1;
+    const size_t n_pieces = several ? m_region_offset.size() : 1;
+    double worst = 0.;
+    std::string where;
+    for (const Simplex& sx : simplices) {
+        if (touched[root(node.at({sx.key, sx.v[0]}))]) continue;
+        const std::array<Vector2d, 2> p = {
+            {m_vertex_attribute[sx.v[0]].m_posf, m_vertex_attribute[sx.v[1]].m_posf}};
+        const double L = (p[1] - p[0]).norm();
+        for (size_t i = 0; i < n_pieces; ++i) {
+            const int piece = several ? int(i) : -1;
+            const std::shared_ptr<const ExactBandIntegral2D>& be = band_exact_for(piece);
+            if (!be) continue;
+            const double delta = region_delta(piece), fc = front_conv_of(piece);
+            const double dmax = std::max(be->distance(p[0]), be->distance(p[1]));
+            if (!(dmax - L < delta - fc)) continue;
+            const double depth = delta - be->min_distance(p);
+            if (!(depth > fc) || !(depth / fc > worst)) continue;
+            std::vector<size_t> cells;
+            if (sx.n == 2) {
+                for (const long c : sx.cells)
+                    if (c >= 0) cells.push_back(size_t(c));
+            } else {
+                cells = get_one_ring_fids_for_vertex(sx.v[0]);
+            }
+            if (std::all_of(cells.begin(), cells.end(), [&](const size_t c) {
+                    return face_off_offset_side(c, piece);
+                })) {
+                continue;
+            }
+            worst = depth / fc;
+            const Vector2d c = (p[0] + p[1]) / 2.;
+            where = fmt::format(
+                "{} at ({:.4g}, {:.4g}), which the band does not touch, lies {:.4g} inside the "
+                "level set{}, more than front_conv {:.4g}",
+                sx.kind,
+                c[0],
+                c[1],
+                depth,
+                several ? fmt::format(" of offsets[{}]", m_region_offset[i]) : std::string(),
+                fc);
+        }
+    }
+    return where;
+}
+
 void TopoOffsetTriMesh::check_level_set_reachable(const std::string& when)
 {
     // See the declaration. As in 3D, word for word.
-    if (m_unreachable_cells == 0) return;
+    std::string why;
+    if (m_unreachable_cells > 0) {
+        why = fmt::format(
+            "the label clean-up keeps {} non-band cell(s) wholly inside the level set out of the "
+            "band, the first at {}",
+            m_unreachable_cells,
+            m_unreachable_where);
+    } else {
+        why = held_object_inside_level_set();
+    }
+    if (why.empty()) return;
     const std::string msg = fmt::format(
         "[held objects] {}: the level set is out of reach without the band touching a held object "
-        "it did not touch as constructed -- the label clean-up keeps {} non-band cell(s) wholly "
-        "inside the level set out of the band, the first at {} (throw_on_unreachable_level_set "
-        "false warns and goes on)",
+        "it did not touch as constructed -- {} (throw_on_unreachable_level_set false warns and "
+        "goes on)",
         when,
-        m_unreachable_cells,
-        m_unreachable_where);
+        why);
     if (m_offset_params.throw_on_unreachable_level_set) log_and_throw_error("{}", msg);
     logger().warn("\t{}", msg);
 }
@@ -5579,8 +5951,10 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
     //   one_sided_at_target: one_sided, and also any triangle with a front edge (1 or 2 edges on
     //     the other label; 3D: 1 to 3 faces) whose three corners are all within front_conv of the
     //     level set, by the tip rule's sign of b(t). As in 3D.
-    //   label growth (FlipSide::Corners): non-band -> band iff every corner is inside, d < delta;
-    //     band -> non-band iff every corner is beyond, d >= delta. The two exclude each other.
+    //   label growth (FlipSide::Corners): non-band -> band iff every corner is inside or on the
+    //     level set, d <= delta + tol, tol the march's trace's (sphere_trace_tol()); band ->
+    //     non-band iff every corner is beyond, d > delta + tol. As 3D, whose measurements
+    //     motivate it. The two exclude each other.
     //     Read at the corners alone, it does not say the whole triangle is on that side: d is not
     //     linear on t, and t can cross the level set between its corners where the level set
     //     curves toward the band or near the medial axis. The optimization removes that.
@@ -5600,8 +5974,9 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
         for (int k = 0; k < 3; ++k) p[size_t(k)] = m_vertex_attribute[vs[size_t(k)]].m_posf;
         if (corners) {
             bool all_inside = true, all_beyond = true;
-            for (const Vector2d& q : p) {
-                const bool inside = band_exact.distance(q) < delta;
+            const double on = delta + sphere_trace_tol(delta);
+            for (int k = 0; k < 3; ++k) {
+                const bool inside = band_exact.distance(p[size_t(k)]) <= on;
                 all_inside = all_inside && inside;
                 all_beyond = all_beyond && !inside;
             }
@@ -5753,6 +6128,42 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
     // into the band, so q joined the front; under exact_swept turn 11 took q's last non-band cell
     // and the band enclosed q.
     const auto held_face = [&](const Tuple& e) { return held_object_edge(e); };
+    // LABEL GROWTH'S HELD OBJECTS, 3D's one dimension down (2026-11-25): those no flip can move
+    // -- the curve group or an edge tag between triangles of one tag set, a held point, the input
+    // complex, the box, a boundary between tag sets that differ in a protected tag. Growth asks the
+    // held objects' test of these alone, its chambers parted by their edges alone; a boundary
+    // between tag sets that differ only in unprotected tags moves with the flips, and the region
+    // test keeps it. As 3D, whose measurement motivates it; here growth asked no test of the curve
+    // group at all.
+    const auto fixed_edge = [&](const Tuple& e) {
+        if (!held_face(e)) return false;
+        const std::optional<Tuple> opp = e.switch_face(*this);
+        if (!opp) return true; // the box
+        const size_t eid = e.eid(*this);
+        if (m_edge_extra[eid].label == 1 || m_face_extra[e.fid(*this)].label == 1 ||
+            m_face_extra[opp->fid(*this)].label == 1) {
+            return true;
+        }
+        const CellTag& a = m_face_attribute[e.fid(*this)].tags;
+        const CellTag& b = m_face_attribute[opp->fid(*this)].tags;
+        // Two tag sets: the flips' own unless they differ in a protected tag, the curve group or
+        // an edge tag on it as well. One tag set: the curve group or an edge tag, which the
+        // region test cannot see; else a boundary the band covered this pass. As 3D, whose
+        // measurement motivates the order.
+        if (a != b) return m_offset_params.protected_kept(a) != m_offset_params.protected_kept(b);
+        return m_edge_extra[eid].on_curve || edge_has_any_tag(eid);
+    };
+    const auto fixed_vertex = [&](const size_t v) {
+        if (m_vertex_extra[v].m_is_on_input) return true;
+        if (m_track_feature_points &&
+            m_feature_point_attribute[v].m_feature_point_id != NO_FEATURE_POINT) {
+            return true;
+        }
+        for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
+            if (fixed_edge(e)) return true;
+        }
+        return false;
+    };
     // The tag the flipped triangle takes, of the label it joins. The band: the one tag set of the
     // band triangles at t's corners (two pieces' bands, of two tag sets, refuse). The non-band:
     // that of t's non-band edge neighbours across edges that are not held (a held edge's far side
@@ -5814,8 +6225,10 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
     // band, with S the side t joins, t meets S, and meets the rest, in one closed arc of its
     // boundary: f edges with their neighbour in S, f = 1 or 2 -- f = 1: the corner opposite the
     // edge not touched by S; f = 2: the two edges' common corner not touched by the rest (3D's
-    // f = 3). It replaces growth's topology test, held objects' test and crossing slide. Held
-    // curves are re-derived from the tags after each flip pass (untrack_covered_boundaries()).
+    // f = 3). It replaces growth's topology test and crossing slide, and on the boundaries the
+    // flips move, its held objects' test (growth asks that test of the held objects no flip
+    // moves: LABEL GROWTH'S HELD OBJECTS). Held curves are re-derived from the tags after each
+    // flip pass (untrack_covered_boundaries()).
     size_t n_refused_region = 0;
     const auto region_test = [&](const size_t fid) {
         CellTag join;
@@ -5930,7 +6343,7 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
                     })) {
                     continue;
                 }
-                if (held_face(e)) continue;
+                if (corners ? fixed_edge(e) : held_face(e)) continue;
                 const size_t n = e.switch_face(*this)->fid(*this);
                 if (std::find(seen.begin(), seen.end(), n) != seen.end()) continue;
                 seen.push_back(n);
@@ -5945,11 +6358,12 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
         // -- closed, as a held edge's corners are held.
         std::vector<std::vector<int>> X;
         for (int i = 0; i < 3; ++i) {
-            if (held_object_vertex(vs[size_t(i)])) X.push_back({i});
+            if (corners ? fixed_vertex(vs[size_t(i)]) : held_object_vertex(vs[size_t(i)]))
+                X.push_back({i});
         }
         for (int k = 0; k < 3; ++k) {
             const Tuple e = tuple_from_edge(fid, size_t(k));
-            if (!held_face(e)) continue;
+            if (!(corners ? fixed_edge(e) : held_face(e))) continue;
             const std::array<size_t, 2> ev = get_edge_vids(e);
             std::vector<int> c;
             for (int i = 0; i < 3; ++i) {
@@ -6268,6 +6682,10 @@ size_t TopoOffsetTriMesh::label_cleanup(const std::string& where, const FlipSide
                     ++n_refused_region;
                     continue;
                 }
+                if (!held_allows(fid)) {
+                    refuse_held(fid);
+                    continue;
+                }
             } else {
                 f = topology(fid, allow, odd);
                 if (!allow) {
@@ -6429,33 +6847,6 @@ void TopoOffsetTriMesh::prepare_front()
     held_topology_check("construction"); // DEBUG_held_topology's baseline
 }
 
-double TopoOffsetTriMesh::bisection_on_edge(
-    const size_t u,
-    const size_t w,
-    const ExactBandIntegral2D& be,
-    const double delta) const
-{
-    // d(x(lo)) < delta <= d(x(hi)) throughout, x(s) read at the rounding of its exact point, the
-    // position the split gives the vertex (split_adjust_position()). Each midpoint of two dyadic
-    // fractions k / 2^n is one with n + 1, so after 52 halvings s is still a double exactly; the
-    // bracket stops earlier where its midpoint rounds onto an end.
-    double lo = 0., hi = 1.;
-    Vector2d p_lo = to_double(growth_point(u, w, lo)), p_hi = to_double(growth_point(u, w, hi));
-    for (int n = 0; n < 52; ++n) {
-        const double mid = 0.5 * (lo + hi);
-        const Vector2d p = to_double(growth_point(u, w, mid));
-        if (p == p_lo || p == p_hi) break;
-        if (be.distance(p) < delta) {
-            lo = mid;
-            p_lo = p;
-        } else {
-            hi = mid;
-            p_hi = p;
-        }
-    }
-    return lo;
-}
-
 std::array<size_t, 3> TopoOffsetTriMesh::growth_splits(const std::string& where)
 {
     // The edges first, each once, then the splits: a split replaces the two triangles at its edge,
@@ -6473,6 +6864,7 @@ std::array<size_t, 3> TopoOffsetTriMesh::growth_splits(const std::string& where)
     };
     std::vector<Pending> todo;
     std::set<std::array<size_t, 2>> seen;
+    size_t n_at_end = 0;
     for (const Tuple& t : get_faces()) {
         const size_t fid = t.fid(*this);
         if (m_face_extra[fid].label != 0) continue;
@@ -6491,8 +6883,8 @@ std::array<size_t, 3> TopoOffsetTriMesh::growth_splits(const std::string& where)
         std::array<double, 3> d;
         for (int k = 0; k < 3; ++k)
             d[size_t(k)] = be->distance(m_vertex_attribute[vs[size_t(k)]].m_posf);
-        // A front vertex inside, not itself a growth split point (at the level set to the last
-        // double already, so the rounds end), and a vertex beyond. As 3D.
+        // A front vertex inside, not itself a growth split point (on the level set to the trace's
+        // tolerance already, so the rounds end), and a vertex beyond. As 3D.
         const auto from = [&](const size_t k) {
             return on_front(k) && d[k] < delta && !m_vertex_extra[vs[k]].m_growth_split_point;
         };
@@ -6510,17 +6902,40 @@ std::array<size_t, 3> TopoOffsetTriMesh::growth_splits(const std::string& where)
             }
             const std::array<size_t, 2> key{{std::min(u, w), std::max(u, w)}};
             if (!seen.insert(key).second) continue;
+            // From a front vertex u more than the march's tolerance inside the level set to a w
+            // more than it beyond: an end within it is on the level set by the march's own
+            // standard, and the corner rule already takes w there as the band's front, so the
+            // edge holds no crossing to resolve. The trace's point as it is
+            // (edge_split_sphere_trace()), an edge whose point rounds onto w not split. As 3D,
+            // whose measurements motivate both ends' rules.
+            const double tol = sphere_trace_tol(delta);
+            const double du = u == vs[a] ? d[a] : d[b], dw = u == vs[a] ? d[b] : d[a];
+            if (!(delta - du > tol) || !(dw - delta > tol)) {
+                ++n_at_end;
+                continue;
+            }
             todo.push_back({u, w, piece});
         }
     }
-    size_t n_split = 0, n_refused = 0, n_at_u = 0;
+    size_t n_split = 0, n_refused = 0;
     for (const Pending& p : todo) {
-        const double s =
-            bisection_on_edge(p.u, p.w, *band_exact_for(p.piece), region_delta(p.piece));
-        // The crossing rounds onto u: u is at the level set as far as the doubles tell, and a
-        // split there would make an edge of length 0. As 3D.
-        if (s == 0.) {
-            ++n_at_u;
+        // where the march's trace from u stops. As 3D.
+        const ExactBandIntegral2D& be = *band_exact_for(p.piece);
+        const Vector2d& pu = m_vertex_attribute[p.u].m_posf;
+        const Vector2d& pw = m_vertex_attribute[p.w].m_posf;
+        Vector2d x;
+        size_t steps = 0;
+        double s = 0.;
+        if (sphere_trace_on_edge(
+                [&](const Vector2d& q) { return be.distance(q); },
+                region_delta(p.piece),
+                pu,
+                pw,
+                x,
+                steps))
+            s = (x - pu).norm() / (pw - pu).norm();
+        if (s == 0. || s == 1.) {
+            ++n_at_end;
             continue;
         }
         m_growth_split = {p.u, s, true};
@@ -6536,7 +6951,7 @@ std::array<size_t, 3> TopoOffsetTriMesh::growth_splits(const std::string& where)
         if (ok) m_vertex_extra[m_growth_split.new_vertex].m_growth_split_point = true;
         ++(ok ? n_split : n_refused);
     }
-    return {{n_split, n_refused, n_at_u}};
+    return {{n_split, n_refused, n_at_end}};
 }
 
 void TopoOffsetTriMesh::label_growth()
@@ -6591,7 +7006,7 @@ void TopoOffsetTriMesh::label_growth()
         at_u += sp[2];
         logger().info(
             "\t[label growth] round {}: {} splits ({} refused by the split; {} edges not split, "
-            "their crossing rounding onto the front vertex), then {} flips",
+            "an end on the level set to the trace's tolerance), then {} flips",
             round,
             sp[0],
             sp[1],
@@ -6630,7 +7045,7 @@ void TopoOffsetTriMesh::label_growth()
     const Vector2d& x = m_vertex_attribute[worst_v].m_posf;
     logger().info(
         "\t[label growth] {} round(s): {} flips, {} splits ({} refused; {} edges not split, "
-        "their crossing at the front vertex) | front vertices {}: {} inside, {} beyond, {} more "
+        "an end on the level set) | front vertices {}: {} inside, {} beyond, {} more "
         "than front_conv from the level set; (d - delta) / front_conv mean {:.4g}, worst {:.4g} "
         "at ({:.4g}, {:.4g}) | front edges on a held object {}",
         round,
@@ -7075,6 +7490,26 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
         // inner cells and 5 real folds; the 10-26 batch: holding for every opposite pair held 4
         // runs to the turn cap on ridges of the level set). The counts are logged every turn, the
         // key on or off.
+        if (!m_region_sides.empty()) { // as 3D
+            logger().info(
+                "\t[crossing step] turn {}: moves solved on a chart of the held curve so far {}, "
+                "by "
+                "the engine's step for want of one {} (no region side within reach {}, no segment "
+                "under the vertex {}, a patch not a simple path {}, a degenerate segment {})",
+                turn,
+                m_crossing_chart_solved.load(),
+                m_crossing_engine_step.load(),
+                m_crossing_chart_why[0].load(),
+                m_crossing_chart_why[1].load(),
+                m_crossing_chart_why[2].load(),
+                m_crossing_chart_why[3].load());
+            logger().info(
+                "\t[region sides] turn {}: moves and collapses refused so far for taking a "
+                "triangle "
+                "outside the band past its region's input: {}",
+                turn,
+                m_region_side_refused.load());
+        }
         {
             const FoldCount fc = count_folds();
             logger().info(

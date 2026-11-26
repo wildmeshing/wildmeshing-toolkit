@@ -4087,6 +4087,7 @@ TEST_CASE("construction-target-distance-inert", "[offset][3d]")
             {{"offsets",
               nlohmann::json::array({{{"selection", "tag_0"}, {"target_distance", target}}})},
              {"num_threads", 0},
+             {"label_growth", false}, // growth reads target_distance (on by default)
              {"optimize_offset", optimize}},
             g.V);
         TopoOffsetTetMesh mesh(param, 0);
@@ -9695,6 +9696,7 @@ MeshData construct_offsets(const MeshData& m, const nlohmann::json& offsets)
     return components::topological_offset::topological_offset(
                {{"input", "m"},
                 {"offsets", offsets},
+                {"label_growth", false}, // the march alone (growth is on by default)
                 {"optimize_offset", false},
                 {"num_threads", 1}},
                {{"m", m}})
@@ -11701,6 +11703,7 @@ MeshData construct_offsets_2d(const MeshData& m, const nlohmann::json& offsets)
     return components::topological_offset::topological_offset(
                {{"input", "m"},
                 {"offsets", offsets},
+                {"label_growth", false}, // the march alone (growth is on by default)
                 {"optimize_offset", false},
                 {"num_threads", 1}},
                {{"m", m}})
@@ -12329,9 +12332,10 @@ TEST_CASE("label-growth-2d", "[offset][2d]")
     // label_growth (2026-11-20), growth alone (optimize_offset false): p, the grid's centre,
     // offset to delta past the march's reach (the march traces to half its maximum marchable
     // distance, within the grid's 0.25 one-ring). Over front_conv_rel's whole range: every front
-    // vertex inside the level set and within front_conv of it -- the corner rule flips a triangle
-    // in only with every corner inside, and a split puts its vertex in (delta - front_conv,
-    // delta) -- and the run's own checks (the components, the inversion check) hold.
+    // vertex inside or on the level set and within front_conv of it -- the corner rule flips a
+    // triangle in only with every corner inside or on it, and a split puts its vertex in
+    // [delta - the march's tolerance, delta] -- and the run's own checks (the components, the
+    // inversion check) hold.
     const double delta = GENERATE(0.3, 0.5);
     const double rel = GENERATE(0.01, 0.1, 0.5, 1.0);
     INFO("delta " << delta << ", front_conv_rel " << rel);
@@ -12353,7 +12357,7 @@ TEST_CASE("label-growth-2d", "[offset][2d]")
     const Vector2d p = grid_point_2d({{4, 4}});
     for (const auto& e : front) {
         for (const Vector2d& x : e) {
-            CHECK((x - p).norm() < delta);
+            CHECK((x - p).norm() <= delta);
             CHECK((x - p).norm() > delta - rel * delta);
         }
     }
@@ -12391,7 +12395,7 @@ TEST_CASE("label-growth-held-point-2d", "[offset][2d]")
     CHECK(touched[size_t(qv)] == 0);
     const Vector2d p = grid_point_2d({{4, 4}});
     for (const auto& e : result_front_2d(out)) {
-        for (const Vector2d& x : e) CHECK((x - p).norm() < delta);
+        for (const Vector2d& x : e) CHECK((x - p).norm() <= delta);
     }
 }
 
@@ -12401,12 +12405,21 @@ TEST_CASE("label-growth-held-crossing-2d", "[offset][2d]")
     // x = 0 between regions A (x < 0) and B (x > 0), offset to delta by label growth alone, B held
     // or protected. The band crosses the line as constructed, and the crossings move along it as
     // the front grows (the region test, 2026-11-20; until then the clean-up's tests and its
-    // crossing slide). Every front vertex inside the level set and within 10% of it, on both
-    // sides of the line and at the crossings.
+    // crossing slide). Every front vertex inside or on the level set and within 10% of it, on both
+    // sides of the line and at the crossings. With an edge tag on the line as well: the flips'
+    // own, as 3D's face tag on the plane.
     const double delta = GENERATE(0.3, 0.5);
     const bool protect = GENERATE(false, true);
-    INFO("delta " << delta << (protect ? ", B protected" : ""));
-    MeshData input = grid_2d({{"p", {{4, 4}}}});
+    const bool sheet = GENERATE(false, true);
+    INFO(
+        "delta " << delta << (protect ? ", B protected" : "")
+                 << (sheet ? ", an edge tag on the line" : ""));
+    MeshData input = grid_2d(
+        {{"p", {{4, 4}}}},
+        {},
+        GridRegion2d(),
+        sheet ? std::vector<std::pair<std::string, GridPolyline2d>>{{"S", {{{4, 0}}, {{4, 8}}}}}
+              : std::vector<std::pair<std::string, GridPolyline2d>>{});
     auto& tris = input.cells.at(CellType::Triangle);
     DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tris.connectivity.rows(), 2);
     for (Eigen::Index r = 0; r < tris.connectivity.rows(); ++r) {
@@ -12430,7 +12443,7 @@ TEST_CASE("label-growth-held-crossing-2d", "[offset][2d]")
     size_t on_line = 0;
     for (const auto& e : front) {
         for (const Vector2d& x : e) {
-            CHECK((x - p).norm() < delta);
+            CHECK((x - p).norm() <= delta);
             CHECK((x - p).norm() > 0.9 * delta);
             on_line += std::abs(x[0]) < 1e-12 ? 1 : 0;
         }
@@ -12502,11 +12515,77 @@ std::vector<Vector3d> result_front_vertices_3d(
 }
 } // namespace
 
+TEST_CASE("label-growth-keeps-held-contact-2d", "[offset][2d]")
+{
+    // The 2D twin of label-growth-keeps-held-contact-3d: p offset to 0.3 by growth alone with a
+    // held object 0.25 from it, which the band never touches -- a held point q; a curve of the
+    // curve group and one of an edge tag (y = 0.25, x in [-0.5, 0.5]); the boundary between
+    // regions A (x < 0.25) and B, none, B or A protected; the box (p at x = -0.75). Before
+    // 2026-11-25 2D growth asked no test of the curve group. And growth acts: some band corner
+    // more than 0.2 from p.
+    const std::string held = GENERATE(
+        "point",
+        "curve",
+        "edge tag",
+        "region",
+        "region, B protected",
+        "region, A protected",
+        "box");
+    INFO("held: " << held);
+    const bool box = held == "box";
+    const std::array<int, 2> pc = box ? std::array<int, 2>{{1, 4}} : std::array<int, 2>{{4, 4}};
+    GridPoints2d points{{"p", pc}};
+    if (held == "point") points.push_back({"q", {{5, 4}}});
+    std::vector<GridPolyline2d> curves;
+    if (held == "curve") curves.push_back({{{2, 5}}, {{6, 5}}});
+    std::vector<std::pair<std::string, GridPolyline2d>> edge_tags;
+    if (held == "edge tag") edge_tags.push_back({"e", {{{2, 5}}, {{6, 5}}}});
+    const bool region = held.rfind("region", 0) == 0;
+    const MeshData input = grid_2d(
+        points,
+        curves,
+        region ? GridRegion2d([](const Vector2d& c) { return c.x() < 0.25 ? "A" : "B"; })
+               : GridRegion2d(),
+        edge_tags);
+    nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"label_growth", true},
+        {"optimize_offset", false},
+        {"num_threads", 1}};
+    if (held == "region, B protected") j["protected_tags"] = "B";
+    if (held == "region, A protected") j["protected_tags"] = "A";
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto touched = band_touched_2d(out);
+    const Vector2d p = grid_point_2d(pc);
+    size_t far = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        if (touched[size_t(v)] && (out.V.row(v).head<2>().transpose() - p).norm() > 0.2) ++far;
+    }
+    CHECK(far > 0);
+    const std::vector<char> in_b = region ? band_touched_2d(out, "B") : std::vector<char>{};
+    size_t n_held = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        const double x = out.V(v, 0), y = out.V(v, 1);
+        bool on = false;
+        if (held == "point") on = x == 0.25 && y == 0.;
+        if (held == "curve" || held == "edge tag") on = y == 0.25 && std::abs(x) <= 0.5;
+        if (region) on = in_b[size_t(v)] != 0;
+        if (box) on = x == -1.;
+        if (!on) continue;
+        ++n_held;
+        CHECK(touched[size_t(v)] == 0);
+    }
+    CHECK(n_held > 0);
+}
+
 TEST_CASE("label-growth-3d", "[offset][3d]")
 {
     // The 3D twin of label-growth-2d: p, the grid's centre, offset to delta past the march's
-    // reach, growth alone; over front_conv_rel's whole range every front vertex inside the level
-    // set and within front_conv of it, and the run's own checks hold.
+    // reach, growth alone; over front_conv_rel's whole range every front vertex inside or on the
+    // level set and within front_conv of it, and the run's own checks hold.
     const double delta = GENERATE(0.3, 0.5);
     const double rel = GENERATE(0.01, 0.1, 0.5, 1.0);
     INFO("delta " << delta << ", front_conv_rel " << rel);
@@ -12527,7 +12606,7 @@ TEST_CASE("label-growth-3d", "[offset][3d]")
     REQUIRE(!front.empty());
     const Vector3d p = grid_point({{4, 4, 4}});
     for (const Vector3d& x : front) {
-        CHECK((x - p).norm() < delta);
+        CHECK((x - p).norm() <= delta);
         CHECK((x - p).norm() > delta - rel * delta);
     }
 }
@@ -12562,7 +12641,7 @@ TEST_CASE("label-growth-held-point-3d", "[offset][3d]")
     REQUIRE((out.V.row(qv).head<3>().transpose() - q).norm() == 0.);
     CHECK(touched[size_t(qv)] == 0);
     const Vector3d p = grid_point({{4, 4, 4}});
-    for (const Vector3d& x : result_front_vertices_3d(out)) CHECK((x - p).norm() < delta);
+    for (const Vector3d& x : result_front_vertices_3d(out)) CHECK((x - p).norm() <= delta);
 }
 
 TEST_CASE("label-growth-held-crossing-3d", "[offset][3d]")
@@ -12572,22 +12651,50 @@ TEST_CASE("label-growth-held-crossing-3d", "[offset][3d]")
     // by label growth alone. The band crosses the plane as constructed, and the crossing has to
     // move along it as the front grows. MEASURED before the region test (with the clean-up's
     // topology test, held objects' test and eligibility): on the double_sphere the front stayed
-    // at the march's distance along the crossing. Every front vertex inside the level set and
+    // at the march's distance along the crossing. Every front vertex inside or on the level set and
     // within front_conv of it, on both sides of the plane and at the crossing.
     // With B protected (since 2026-11-20 the band takes its cells and they keep B), B's surface
-    // stays held inside the band, and each side of it has to follow the other along it.
+    // stays held inside the band, and each side of it has to follow the other along it. With a
+    // face tag on the plane as well (the double_sphere's sheet lies on tag_1's surface), the
+    // face is the flips' own as the boundary is (LABEL GROWTH'S HELD OBJECTS). MEASURED
+    // (2026-11-25, double_sphere out 0.15) with such a face taken as fixed: growth refused 142
+    // flips at it and left the front 83 front_conv short.
     const double delta = GENERATE(0.3, 0.5);
     const bool protect = GENERATE(false, true);
-    INFO("delta " << delta << (protect ? ", B protected" : ""));
+    const bool sheet = GENERATE(false, true);
+    INFO(
+        "delta " << delta << (protect ? ", B protected" : "")
+                 << (sheet ? ", a face tag on the plane" : ""));
     MeshData input = point_grid({{"p", {{4, 4, 4}}}});
     auto& tets = input.cells.at(CellType::Tetrahedron);
     DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tets.connectivity.rows(), 2);
+    std::set<std::array<int, 3>> on_plane_faces;
     for (Eigen::Index r = 0; r < tets.connectivity.rows(); ++r) {
         double x = 0.;
         for (int c = 0; c < 4; ++c) x += input.V(tets.connectivity(r, c), 0) / 4.;
         tags(r, x > 0. ? 1 : 0) = 1;
+        for (int s = 0; s < 4; ++s) {
+            std::array<int, 3> f;
+            for (int c = 0, m = 0; c < 4; ++c) {
+                if (c != s) f[size_t(m++)] = int(tets.connectivity(r, c));
+            }
+            std::sort(f.begin(), f.end());
+            if (input.V(f[0], 0) == 0. && input.V(f[1], 0) == 0. && input.V(f[2], 0) == 0.)
+                on_plane_faces.insert(f);
+        }
     }
     tets.attributes["tags"] = {tags, {"A", "B"}};
+    if (sheet) {
+        auto& faces = input.cells[CellType::Triangle];
+        faces.connectivity.resize(Eigen::Index(on_plane_faces.size()), 3);
+        DataMatrix<uint8_t> member = DataMatrix<uint8_t>::Ones(faces.connectivity.rows(), 1);
+        Eigen::Index r = 0;
+        for (const auto& f : on_plane_faces) {
+            for (int c = 0; c < 3; ++c) faces.connectivity(r, c) = f[size_t(c)];
+            ++r;
+        }
+        faces.attributes["tags"] = {member, {"S"}};
+    }
     nlohmann::json j = {
         {"input", "m"},
         {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", delta}}})},
@@ -12602,7 +12709,7 @@ TEST_CASE("label-growth-held-crossing-3d", "[offset][3d]")
     const Vector3d p = grid_point({{4, 4, 4}});
     size_t on_plane = 0;
     for (const Vector3d& x : front) {
-        CHECK((x - p).norm() < delta);
+        CHECK((x - p).norm() <= delta);
         CHECK((x - p).norm() > 0.9 * delta);
         on_plane += std::abs(x[0]) < 1e-12 ? 1 : 0;
     }
@@ -12656,4 +12763,92 @@ TEST_CASE("label-growth-two-bands-3d", "[offset][3d]")
     }
     CHECK(!corners_a.empty());
     CHECK(n_b > 0);
+}
+
+TEST_CASE("label-growth-keeps-held-contact-3d", "[offset][3d]")
+{
+    // Label growth keeps the construction's topology (LABEL GROWTH'S HELD OBJECTS and the region
+    // test): a held object the band did not touch as constructed, the band never touches. p
+    // offset to 0.3 by growth alone (the march traces to 0.125), with a held object 0.25 from p,
+    // inside the level set: a held point q; a held curve (y = 0.25, x in [-0.5, 0.5]); the
+    // boundary between regions A (x < 0.25) and B, with no tag protected, B protected, or A
+    // protected (the band's cells in A keep A, so a flip moves no cell out of a tag and the
+    // region test cannot see B); the box (p at x = -0.75). MEASURED before (2026-11-25): growth
+    // flipped a cell at the curve's nearest point (0, 0.25, 0) into the band in its first round.
+    // A curve through p (the x axis), which the band crosses as constructed: the band's cells
+    // touch a run of it from p outward on each side and nothing beyond. And growth acts: some
+    // band corner more than 0.2 from p.
+    const std::string held = GENERATE(
+        "point",
+        "curve",
+        "region",
+        "region, B protected",
+        "region, A protected",
+        "box",
+        "curve through p");
+    INFO("held: " << held);
+    const bool box = held == "box";
+    const std::array<int, 3> pc =
+        box ? std::array<int, 3>{{1, 4, 4}} : std::array<int, 3>{{4, 4, 4}};
+    std::vector<std::pair<std::string, std::array<int, 3>>> points{{"p", pc}};
+    if (held == "point") points.push_back({"q", {{5, 4, 4}}});
+    std::vector<std::pair<std::string, GridPolyline>> curves;
+    if (held == "curve") curves.push_back({"curve", {{{2, 5, 4}}, {{6, 5, 4}}}});
+    if (held == "curve through p") curves.push_back({"curve", {{{1, 4, 4}}, {{7, 4, 4}}}});
+    MeshData input = point_grid(points, curves);
+    const bool region = held.rfind("region", 0) == 0;
+    if (region) {
+        auto& tets = input.cells.at(CellType::Tetrahedron);
+        DataMatrix<uint8_t> tags = DataMatrix<uint8_t>::Zero(tets.connectivity.rows(), 2);
+        for (Eigen::Index r = 0; r < tets.connectivity.rows(); ++r) {
+            double x = 0.;
+            for (int c = 0; c < 4; ++c) x += input.V(tets.connectivity(r, c), 0) / 4.;
+            tags(r, x > 0.25 ? 1 : 0) = 1;
+        }
+        tets.attributes["tags"] = {tags, {"A", "B"}};
+    }
+    nlohmann::json j = {
+        {"input", "m"},
+        {"offsets", nlohmann::json::array({{{"selection", "p"}, {"target_distance", 0.3}}})},
+        {"label_growth", true},
+        {"optimize_offset", false},
+        {"num_threads", 1}};
+    if (held == "region, B protected") j["protected_tags"] = "B";
+    if (held == "region, A protected") j["protected_tags"] = "A";
+    ComponentResult res;
+    REQUIRE_NOTHROW(res = components::topological_offset::topological_offset(j, {{"m", input}}));
+    const MeshData& out = res.first.at("mesh");
+    const auto touched = band_touched(out);
+    const Vector3d p = grid_point(pc);
+    size_t far = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        if (touched[size_t(v)] && (out.V.row(v).transpose() - p).norm() > 0.2) ++far;
+    }
+    CHECK(far > 0);
+    if (held == "curve through p") {
+        for (const int side : {-1, 1}) {
+            INFO("side " << side);
+            const auto vs = curve_side(out, touched, side);
+            REQUIRE(!vs.empty());
+            size_t n_touched = 0;
+            while (n_touched < vs.size() && vs[n_touched].second) ++n_touched;
+            CHECK(n_touched > 0);
+            for (size_t k = n_touched; k < vs.size(); ++k) CHECK(!vs[k].second);
+        }
+        return;
+    }
+    const std::vector<char> in_b = region ? band_touched(out, "B") : std::vector<char>{};
+    size_t n_held = 0;
+    for (Eigen::Index v = 0; v < out.V.rows(); ++v) {
+        const double x = out.V(v, 0), y = out.V(v, 1), z = out.V(v, 2);
+        bool on = false;
+        if (held == "point") on = x == 0.25 && y == 0. && z == 0.;
+        if (held == "curve") on = y == 0.25 && z == 0. && std::abs(x) <= 0.5;
+        if (region) on = in_b[size_t(v)] != 0;
+        if (box) on = x == -1.;
+        if (!on) continue;
+        ++n_held;
+        CHECK(touched[size_t(v)] == 0);
+    }
+    CHECK(n_held > 0);
 }

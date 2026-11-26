@@ -273,6 +273,9 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
         m_vertex_attribute[v2].m_is_on_surface = true;
     }
     if (n_edges_tracked > 0) build_boundary_envelopes("load", EnvelopeSetup::PerTag);
+    // The region sides from the input partition as loaded, before the march, as 3D builds them
+    // in build_envelopes().
+    if (n_edges_tracked > 0 && m_offset_params.star_retreat) build_region_sides();
 
     // track bounding box. box_min/box_max are only set by Parameters::init(), which a mesh built
     // from a default-constructed Parameters never calls -- skip rather than index out of bounds.
@@ -448,6 +451,105 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
                   n_complex,
                   n_free)
             : std::string());
+}
+
+void TopoOffsetTriMesh::build_region_sides()
+{
+    // See the declaration; 3D's, one dimension down: every tracked edge with a triangle on each
+    // side, once per tag one side carries and the other lacks, its normal out of that side.
+    std::map<int64_t, std::pair<std::vector<std::array<size_t, 2>>, std::vector<Vector2d>>> by_tag;
+    for (const Tuple& e : get_edges()) {
+        if (!m_edge_attribute[e.eid(*this)].m_is_surface_fs) continue;
+        const std::optional<Tuple> o = e.switch_face(*this);
+        if (!o) continue;
+        const std::array<size_t, 2> ev = get_edge_vids(e);
+        const Vector2d& p0 = m_vertex_attribute[ev[0]].m_posf;
+        const Vector2d dv = m_vertex_attribute[ev[1]].m_posf - p0;
+        const Vector2d n(-dv[1], dv[0]);
+        if (!(n.squaredNorm() > 0.)) continue;
+        const std::array<size_t, 2> faces{{e.fid(*this), o->fid(*this)}};
+        for (int k = 0; k < 2; ++k) {
+            const CellTag& in = m_face_attribute[faces[size_t(k)]].tags;
+            const CellTag& out = m_face_attribute[faces[size_t(1 - k)]].tags;
+            // the inside triangle's corner off the edge: the normal points away from it
+            Vector2d apex = Vector2d::Zero();
+            for (const size_t x : oriented_tri_vids(faces[size_t(k)]))
+                if (x != ev[0] && x != ev[1]) apex = m_vertex_attribute[x].m_posf;
+            const Vector2d nk = (n.dot(apex - p0) > 0. ? -n : n).normalized();
+            for (const int64_t t : in) {
+                if (t <= 0 || out.count(t)) continue;
+                auto& entry = by_tag[t];
+                entry.first.push_back(ev);
+                entry.second.push_back(nk);
+            }
+        }
+    }
+    m_region_sides.clear();
+    for (auto& [tag, es] : by_tag) {
+        RegionSide R;
+        R.tag = tag;
+        std::map<size_t, int> local;
+        for (const auto& ev : es.first) {
+            Eigen::Vector2i seg;
+            for (int i = 0; i < 2; ++i) {
+                auto [it, fresh] = local.emplace(ev[size_t(i)], int(R.V.size()));
+                if (fresh) R.V.push_back(m_vertex_attribute[ev[size_t(i)]].m_posf);
+                seg[i] = it->second;
+            }
+            R.E.push_back(seg);
+        }
+        R.edge_n = es.second;
+        R.vert_n.assign(R.V.size(), Vector2d::Zero());
+        for (size_t i = 0; i < R.E.size(); ++i) {
+            for (int a = 0; a < 2; ++a) R.vert_n[size_t(R.E[i][a])] += R.edge_n[i];
+        }
+        R.env = std::make_shared<Envelope>(/*exact=*/true);
+        R.env->init(R.V, R.E, m_envelope_eps);
+        logger().info(
+            "\t[region sides] face tag {}: {} boundary segments, oriented out of the region",
+            tag,
+            R.E.size());
+        m_region_sides.push_back(std::move(R));
+    }
+}
+
+double TopoOffsetTriMesh::region_excess(const size_t vid, const Vector2d& p) const
+{
+    // See the declaration; 3D's, the nearest feature a polyline vertex or a segment.
+    if (m_region_sides.empty() || !m_vertex_extra[vid].m_is_on_offset) return 0.;
+    std::vector<const CellTag*> sets;
+    for (const size_t f : get_one_ring_fids_for_vertex(vid))
+        if (!face_is_offset_band(f)) sets.push_back(&m_face_attribute[f].tags);
+    if (sets.empty()) return 0.;
+    double worst = 0.;
+    for (const RegionSide& R : m_region_sides) {
+        Vector2d y, seg_n;
+        bool corner = false;
+        int id = -1;
+        const double dist = std::sqrt(R.env->nearest_point_feature(p, y, corner, seg_n, id));
+        if (!(dist > m_envelope_eps)) continue; // on the boundary, to the envelope's width
+        const Vector2d N = corner ? R.vert_n[size_t(id)] : R.edge_n[size_t(id)];
+        const double s = (p - y).dot(N);
+        if (s == 0.) continue;
+        const double out = s > 0. ? dist : -dist; // > 0 outside the region
+        for (const CellTag* T : sets) {
+            const double wrong = T->count(R.tag) ? out : -out;
+            worst = std::max(worst, wrong - m_envelope_eps);
+        }
+    }
+    return worst;
+}
+
+bool TopoOffsetTriMesh::smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const
+{
+    // See the declaration. The excess where the move started, recorded by smooth_before().
+    if (!TriOptimizerMesh::smoothing_position_is_allowed(vid, p)) return false;
+    if (m_region_sides.empty()) return true;
+    if (region_excess(vid, p) > std::max(0., m_region_excess_pre.local())) {
+        ++m_region_side_refused;
+        return false;
+    }
+    return true;
 }
 
 void TopoOffsetTriMesh::mark_input_complex_vertices()
@@ -1416,8 +1518,9 @@ void TopoOffsetTriMesh::init_band_exact()
     // reason EXPERIMENTAL_settle_refinement under every settle_mark: its tests read d through it
     // (settle_refinement_turn(); 3D: through its input envelope, the integral for "max" only).
     const bool corner_bound = m_offset_params.band_volume_rule == "corner_bound";
+    // label_growth: growth's splits and flips read d through it, as in 3D.
     if (!(exact_rule || surface_cleanup || corner_bound || m_offset_params.settle_refinement ||
-          m_offset_params.debug_output)) {
+          m_offset_params.label_growth || m_offset_params.debug_output)) {
         return;
     }
     // The band is on the offset side of the input only (ExactBandIntegral2D's class doc). A

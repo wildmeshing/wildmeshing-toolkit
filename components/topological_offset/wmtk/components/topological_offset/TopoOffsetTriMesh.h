@@ -640,6 +640,41 @@ public:
     void build_boundary_envelopes(const char* when, EnvelopeSetup setup);
 
     /**
+     * @brief THE REGION SIDES, 3D's (TopoOffsetTetMesh::RegionSide, which says why) one dimension
+     * down: each face tag's region as the input bounds it -- the tracked edges between a
+     * triangle carrying the tag and one without it, at load (before the march), each with its
+     * normal out of the region -- for its side of a point: outside by more than envelope_size,
+     * inside by more, or on it. Built under EXPERIMENTAL_star_retreat, as 3D; the crossing
+     * step's chart (smooth_after()) reads their segments.
+     */
+    struct RegionSide
+    {
+        int64_t tag = 0;
+        std::shared_ptr<Envelope> env; // around the region's boundary segments
+        std::vector<Vector2d> edge_n; // per boundary segment, unit, out of the region
+        std::vector<Vector2d> vert_n; // per boundary vertex, the sum of its segments' normals
+        std::vector<Vector2d> V; // the boundary segments themselves (the crossing step's chart)
+        std::vector<Eigen::Vector2i> E;
+    };
+    std::vector<RegionSide> m_region_sides;
+    void build_region_sides();
+    /// 3D's region_excess(): how far past its region's boundary, beyond envelope_size, front
+    /// vertex vid at p takes the non-band triangles at it; 0 when none or without region sides.
+    double region_excess(size_t vid, const Vector2d& p) const;
+    /// The smoother's per-vertex constraint (the base's hook, the anchors' balls): also, a front
+    /// vertex's move may not take a triangle outside the band further past its region
+    /// (region_excess() above what it was where the move started, or above 0). As 3D.
+    bool smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const override;
+    mutable wmtk::threading::enumerable_thread_specific<double> m_region_excess_pre;
+    mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_region_pre;
+    mutable std::atomic<size_t> m_region_side_refused{0};
+    /// The crossing step (smooth_after()): moves solved on a chart of the held curve, moves that
+    /// took the engine's step for want of one, and why (no region side within reach, no segment
+    /// under the vertex, a patch not a simple path, a degenerate segment).
+    mutable std::atomic<size_t> m_crossing_chart_solved{0}, m_crossing_engine_step{0};
+    mutable std::array<std::atomic<size_t>, 4> m_crossing_chart_why{};
+
+    /**
      * @brief The tube the offset boundary may not leave during the frozen-front final pass, of
      * half-width offset_envelope, built from the boundary as the loop left it just before that
      * pass (containment_for() holds the final pass's operations to it). Null until then: the
@@ -768,21 +803,15 @@ public:
      */
     void label_growth();
     /**
-     * @brief Label growth's splits: every edge from a front vertex u inside the level set, not
-     * itself a growth split point, to a vertex w beyond, in any non-band triangle at u, split at
-     * the last point x inside the level set the doubles resolve (bisection_on_edge()), delta the
-     * triangle's piece's; an edge whose crossing rounds onto u is not split. Serial. Returns
-     * {splits, edges the shared split refused, edges not split for their crossing at u}. As 3D.
+     * @brief Label growth's splits: every edge from a front vertex u more than the trace's
+     * tolerance inside the level set, not itself a growth split point, to a vertex w beyond, in
+     * any non-band triangle at u, split where the march's sphere trace from u stops
+     * (sphere_trace_on_edge(), on the band's distance to the triangle's piece's target). A u within
+     * the tolerance is on the level set by the march's own standard; an edge whose point rounds
+     * onto w is not split. Serial. Returns {splits, edges the shared split refused, edges not
+     * split for u on the level set or the point on w}. As 3D.
      */
     std::array<size_t, 3> growth_splits(const std::string& where);
-    /**
-     * @brief The bisection of growth_splits(): x(s) = u + s (w - u) exact (growth_point()), d
-     * read at its rounding, keeping d(x(lo)) < delta <= d(x(hi)) until the bracket's two points
-     * round to neighbouring doubles, nothing between them to read; returns that lo, the last
-     * point inside the level set the doubles resolve (0: the crossing rounds onto u). s is a
-     * dyadic fraction k / 2^n, n <= 52, exact in a double. No tolerance (Uday, 2026-11-20). As 3D.
-     */
-    double bisection_on_edge(size_t u, size_t w, const ExactBandIntegral2D& be, double delta) const;
     /// The exact point u + s (w - u) of the edge (u, w), from the endpoints' exact positions.
     Vector2r growth_point(size_t u, size_t w, double s) const
     {
@@ -811,12 +840,16 @@ public:
     /**
      * @name The level set out of reach
      * The last clean-up's non-band triangles wholly inside the level set (the one-sided side
-     * test) that the held objects' test kept out of the band. At a settled turn and at the loop's
-     * end check_level_set_reachable() throws on them (warns under throw_on_unreachable_level_set
+     * test) that the held objects' test kept out of the band, or else a held object the band
+     * does not touch with a point more than front_conv inside the level set
+     * (held_object_inside_level_set()). At a settled turn and at the loop's end
+     * check_level_set_reachable() throws on either (warns under throw_on_unreachable_level_set
      * false), as in 3D.
      * @{
      */
     void check_level_set_reachable(const std::string& when);
+    /// TopoOffsetTetMesh::held_object_inside_level_set()'s twin (see it), one dimension down.
+    std::string held_object_inside_level_set() const;
     size_t m_unreachable_cells = 0;
     std::string m_unreachable_where;
     /// The last settle test's verdict (settle_refinement_turn()).
@@ -1735,6 +1768,21 @@ public:
         const Vector2d& p_out,
         Vector2d& p_new,
         size_t& steps) const;
+    /// THE SPHERE TRACE itself, for the march (edge_split_sphere_trace(), entry k's distance and
+    /// traced distance) and label growth's splits (growth_splits(), the band's distance and the
+    /// piece's target): the same rule, steps and stop as described above, on `dist` to D.
+    bool sphere_trace_on_edge(
+        const std::function<double(const Vector2d&)>& dist,
+        double D,
+        const Vector2d& p_in,
+        const Vector2d& p_out,
+        Vector2d& p_new,
+        size_t& steps) const;
+    /// The trace's tolerance at D: sphere_trace_target_rel_tol x D.
+    double sphere_trace_tol(const double D) const
+    {
+        return std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
+    }
     /// marching_tris() tallies for the construction log: edges placed on the level set / at the
     /// midpoint because the trace left the edge, and the trace steps (total, max). Reset at the
     /// start of marching_tris().

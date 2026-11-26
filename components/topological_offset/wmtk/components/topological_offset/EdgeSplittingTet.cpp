@@ -280,15 +280,32 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
     Vector3d& p_new,
     size_t& steps) const
 {
-    // Sphere tracing to D = m_construction_distances[k] (entry k's target_distance, or the
-    // construction_mode fallback; see the marching), on d the distance to entry k's complex
-    // (offset_distance()): d is 1-Lipschitz, so from a point at distance d the level set
+    // The march's entry k: its distance (offset_distance()) to its traced distance.
+    return sphere_trace_on_edge(
+        [&](const Vector3d& p) { return offset_distance(k, p); },
+        m_construction_distances[k],
+        p_in,
+        p_out,
+        p_new,
+        steps);
+}
+
+bool TopoOffsetTetMesh::sphere_trace_on_edge(
+    const std::function<double(const Vector3d&)>& dist,
+    const double D,
+    const Vector3d& p_in,
+    const Vector3d& p_out,
+    Vector3d& p_new,
+    size_t& steps) const
+{
+    // Sphere tracing to D on d (the march: entry k's target_distance, or the construction_mode
+    // fallback, on the distance to entry k's complex; label growth: a piece's target on the
+    // band's distance): d is 1-Lipschitz, so from a point at distance d the level set
     // d = D is at least D - d away in every direction, and stepping exactly that far along the
     // edge can never cross it. The step is positive while the trace has not converged
     // (D - d > tol), so t grows by more than tol each time and the loop ends within L / tol
     // steps, one way or the other.
-    const double D = m_construction_distances[k];
-    const double tol = std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
+    const double tol = sphere_trace_tol(D);
     const Vector3d dir = p_out - p_in;
     const double L = dir.norm();
     steps = 0;
@@ -297,7 +314,7 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
     double t = 0.;
     while (true) {
         const Vector3d p = p_in + t * u;
-        const double d = offset_distance(k, p);
+        const double d = dist(p);
         ++steps;
         if (std::abs(d - D) <= tol) {
             p_new = p;

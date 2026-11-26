@@ -646,8 +646,15 @@ public:
         std::vector<Vector3d> vert_n; // per boundary vertex, the sum of its faces' normals
         std::map<std::array<size_t, 2>, Vector3d> edge_n; // per boundary edge, its faces' sum
         size_t n_vertices = 0;
+        std::vector<Vector3d> V; // the boundary faces themselves (the crossing step's chart)
+        std::vector<Eigen::Vector3i> F;
     };
     std::vector<RegionSide> m_region_sides;
+    /// The crossing step (smooth_after()): moves solved on a chart of the held surface, moves
+    /// that took the engine's step for want of one, and why (no region side within reach, no
+    /// face under the vertex, a patch not a disk, a degenerate image, the start off the chart).
+    mutable std::atomic<size_t> m_crossing_chart_solved{0}, m_crossing_engine_step{0};
+    mutable std::array<std::atomic<size_t>, 5> m_crossing_chart_why{};
     void build_region_sides();
     /// How far past its region's boundary, beyond envelope_size, vertex vid at p takes the
     /// non-band cells at it: for each such cell and each region side, the distance p lies on the
@@ -733,6 +740,8 @@ public:
     /// distance the march traced the front to, m_construction_distance / 2. 0 at every other time,
     /// when build_offset_envelope() takes envelope_size (the final pass included).
     double m_construction_envelope_eps = 0.;
+    /// Which envelope that is, for the log: "half_traced_distance", "envelope_size", "front_conv".
+    std::string m_construction_envelope_name;
     /**
      * @brief An in-memory image of the mesh, to put it back as it was (for growth_mode "smart":
      * the revert after a failed attempt). Taken on a consolidated mesh: the tets in tid order,
@@ -890,11 +899,8 @@ public:
     /// it iff every corner is beyond; every other test is the same for both. Returns the flips.
     /// As TopoOffsetTriMesh::label_cleanup().
     /// Cleanup: the loop's clean-up (EXPERIMENTAL_label_cleanup). Corners: label growth's corner rule.
-    /// CornersEnergy: EXPERIMENTAL_label_cleanup "growth" -- label growth's rule in the loop (its
-    /// eligibility, its region test), each flip decided by the band term's sign unless the cell is
-    /// proven on one side.
     /// Star: no single-cell flips, only the whole-star retreat (EXPERIMENTAL_star_retreat).
-    enum class FlipSide { Cleanup, Corners, CornersEnergy, Star };
+    enum class FlipSide { Cleanup, Corners, Star };
     size_t label_cleanup(const std::string& where, FlipSide side = FlipSide::Cleanup);
 
     /**
@@ -906,19 +912,19 @@ public:
      */
     void label_growth();
     /**
-     * @brief Label growth's splits: every edge from a front vertex u inside the level set, not
-     * itself a growth split point, to a vertex w beyond, in any non-band cell at u, split at the
-     * last point x inside the level set the doubles resolve (bisection_on_edge()), delta the
-     * cell's piece's; an edge whose crossing rounds onto u is not split. Serial. Returns {splits,
-     * edges the shared split refused, edges not split for their crossing at u}. As 2D.
+     * @brief Label growth's splits: every edge from a front vertex u more than the trace's
+     * tolerance inside the level set, not itself a growth split point, to a vertex w beyond, in
+     * any non-band cell at u, split where the march's sphere trace from u stops
+     * (sphere_trace_on_edge(), on the band's distance to the cell's piece's target). A u within
+     * the tolerance is on the level set by the march's own standard; an edge whose point rounds
+     * onto w is not split. Serial. Returns {splits, edges the shared split refused, edges not
+     * split for u on the level set or the point on w}. As 2D.
      */
-    /// `loop` (EXPERIMENTAL_label_cleanup "growth"): both directions -- the band advancing (as
-    /// growth) and retreating (band cells at a front vertex beyond) -- and only from front vertices
-    /// more than front_conv from the level set.
-    /// `retreat_only` (EXPERIMENTAL_star_retreat): the loop's retreat splits alone, and only at the
-    /// vertices the star retreat listed (m_retreat_splits).
-    std::array<size_t, 3>
-    growth_splits(const std::string& where, bool loop = false, bool retreat_only = false);
+    /// `retreat` (EXPERIMENTAL_star_retreat's rounds): the band's retreat instead -- band cells at a
+    /// held front vertex more than front_conv beyond the level set, to corners more than front_conv
+    /// inside, split at the first point at or beyond -- and only at the vertices the star retreat
+    /// listed (m_retreat_splits).
+    std::array<size_t, 3> growth_splits(const std::string& where, bool retreat = false);
     /**
      * @brief THE HELD SURFACE at a held vertex v (EXPERIMENTAL_star_retreat's surface cut, see
      * label_cleanup()): the held region face at v with the least sorted corner ids (any one,
@@ -957,11 +963,13 @@ public:
     /// tet tag of one side the other side lacks, ambient none.
     LabelIds tag_boundary_labels(const CellTag& a, const CellTag& b) const;
     /**
-     * @brief The bisection of growth_splits(): x(s) = u + s (w - u) exact (growth_point()), d
+     * @brief The bisection of the star retreat's splits (growth_splits() `retreat`) and of its test
+     * of the star as they would leave it: x(s) = u + s (w - u) exact (growth_point()), d
      * read at its rounding, keeping d(x(lo)) < delta <= d(x(hi)) until the bracket's two points
      * round to neighbouring doubles, nothing between them to read; returns that lo, the last
      * point inside the level set the doubles resolve (0: the crossing rounds onto u). s is a
-     * dyadic fraction k / 2^n, n <= 52, exact in a double. No tolerance (Uday, 2026-11-20). As 2D.
+     * dyadic fraction k / 2^n, n <= 52, exact in a double. No tolerance (Uday, 2026-11-20; growth's
+     * own splits use the march's trace since 2026-11-25, growth_splits()).
      */
     /// `beyond`: the first point at or beyond the level set (hi) instead of the last inside (lo).
     double bisection_on_edge(
@@ -998,14 +1006,28 @@ public:
     bool m_front_prepared = false;
     /**
      * @name The level set out of reach (2026-11-10)
-     * The last clean-up's non-band cells wholly inside the level set (the one-sided side test)
-     * that the held objects' test kept out of the band: the band would have to touch a held
-     * object it did not touch as constructed to reach the level set there. At a settled turn and
-     * at the loop's end, check_level_set_reachable() throws on them (warns under
-     * throw_on_unreachable_level_set false).
+     * The band would have to touch a held object it did not touch as constructed to reach the
+     * level set: the last clean-up's non-band cells wholly inside the level set (the one-sided
+     * side test) that the held objects' test kept out of the band, or else a held object the
+     * band does not touch with a point more than front_conv inside the level set
+     * (held_object_inside_level_set()). At a settled turn and at the loop's end,
+     * check_level_set_reachable() throws on either (warns under throw_on_unreachable_level_set
+     * false).
      * @{
      */
     void check_level_set_reachable(const std::string& when);
+    /// The condition itself, where the clean-up's cells are a sign of it only: a held object off
+    /// the input complex -- the box, the boundary between two tag sets, the sheet and the face
+    /// tags, the held curves with their anchors, each connected part of each by itself -- whose
+    /// part no band cell touches has a point more than front_conv inside a piece's level set, on
+    /// the side its entry grows on. The band may never touch it (the construction set the
+    /// topology), so the level set is out of reach. Empty if none; else the deepest, described.
+    /// MEASURED before it (2026-11-25, unreachable-level-set-throws, p offset to 0.3 with a region
+    /// boundary or the box 0.25 from p, label growth on): growth carried the front against the
+    /// held surface, every cell the clean-up kept out had a corner on the level set, so none was
+    /// wholly inside it, and the run converged with the front's edge midpoints 1.73 front_conv
+    /// inside the level set, untouched by the settle exit (it tests vertices).
+    std::string held_object_inside_level_set() const;
     size_t m_unreachable_cells = 0;
     std::string m_unreachable_where;
     /// The last settle test's verdict (settle_refinement_turn()).
@@ -2384,6 +2406,21 @@ public:
         const Vector3d& p_out,
         Vector3d& p_new,
         size_t& steps) const;
+    /// THE SPHERE TRACE itself, for the march (edge_split_sphere_trace(), entry k's distance and
+    /// traced distance) and label growth's splits (growth_splits(), the band's distance and the
+    /// piece's target): the same rule, steps and stop as described above, on `dist` to D.
+    bool sphere_trace_on_edge(
+        const std::function<double(const Vector3d&)>& dist,
+        double D,
+        const Vector3d& p_in,
+        const Vector3d& p_out,
+        Vector3d& p_new,
+        size_t& steps) const;
+    /// The trace's tolerance at D: sphere_trace_target_rel_tol x D.
+    double sphere_trace_tol(const double D) const
+    {
+        return std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
+    }
     /// marching_tets() tallies for the construction log: edges placed on the level set / at the
     /// midpoint because the trace left the edge, and the trace steps (total, max). Reset at the
     /// start of marching_tets().
