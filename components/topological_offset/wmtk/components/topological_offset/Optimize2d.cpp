@@ -1448,7 +1448,7 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
                     return side->V[size_t(side->E[i][k])];
                 };
                 // the segments meeting the one-ring's box, and among them the one nearest the foot
-                std::vector<size_t> near;
+                std::vector<size_t> near_segs; // not `near`: <windows.h> defines it empty
                 size_t under = 0;
                 double under_d = std::numeric_limits<double>::infinity();
                 for (size_t i = 0; i < side->E.size(); ++i) {
@@ -1456,7 +1456,7 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
                     if (!((a.cwiseMin(b).array() <= hi.array()).all() &&
                           (a.cwiseMax(b).array() >= lo.array()).all()))
                         continue;
-                    near.push_back(i);
+                    near_segs.push_back(i);
                     const Vector2d ab = b - a;
                     const double L2 = ab.squaredNorm();
                     if (!(L2 > 0.)) continue;
@@ -1471,9 +1471,9 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
                     ++m_crossing_chart_why[1];
                     return;
                 }
-                // the patch: the segments of `near` joined to the one under the vertex
+                // the patch: the segments of `near_segs` joined to the one under the vertex
                 std::map<int, std::vector<size_t>> at;
-                for (const size_t i : near)
+                for (const size_t i : near_segs)
                     for (int k = 0; k < 2; ++k) at[side->E[i][k]].push_back(i);
                 std::vector<size_t> patch{under};
                 std::set<size_t> in_patch{under};

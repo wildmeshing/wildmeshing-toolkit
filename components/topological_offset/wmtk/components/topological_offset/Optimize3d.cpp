@@ -2455,7 +2455,7 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
                 return std::array<int, 2>{{std::min(x, y), std::max(x, y)}};
             };
             // the faces meeting the one-ring's box, and among them the one holding the foot
-            std::vector<size_t> near;
+            std::vector<size_t> near_faces; // not `near`: <windows.h> defines it empty
             size_t under = 0;
             double under_d = std::numeric_limits<double>::infinity();
             Eigen::Vector3d under_bary = Eigen::Vector3d::Zero();
@@ -2465,7 +2465,7 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
                                fhi = fa.cwiseMax(fb).cwiseMax(fc);
                 if (!((flo.array() <= hi.array()).all() && (fhi.array() >= lo.array()).all()))
                     continue;
-                near.push_back(i);
+                near_faces.push_back(i);
                 const Vector3d ng = (fb - fa).cross(fc - fa); // the face's own winding
                 const double A2 = ng.squaredNorm();
                 if (!(A2 > 0.)) continue;
@@ -2485,9 +2485,9 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
                 ++m_crossing_chart_why[1];
                 return;
             }
-            // the patch: the faces of `near` edge-connected to the face under the vertex
+            // the patch: the faces of `near_faces` edge-connected to the face under the vertex
             std::map<std::array<int, 2>, std::vector<size_t>> edge_faces;
-            for (const size_t f : near)
+            for (const size_t f : near_faces)
                 for (int k = 0; k < 3; ++k) edge_faces[key(f, k)].push_back(f);
             std::vector<size_t> patch{under};
             std::set<size_t> in_patch{under};
