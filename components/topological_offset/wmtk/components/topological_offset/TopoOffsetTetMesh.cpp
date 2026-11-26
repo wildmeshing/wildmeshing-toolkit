@@ -3486,6 +3486,7 @@ void TopoOffsetTetMesh::set_offset_tet_tags()
 
 void TopoOffsetTetMesh::release_covered_face_tags()
 {
+    if (!m_offset_params.release_covered_tags) return; // a carving caller keeps its blocks
     // The faces the band covers -- both tets band cells -- by the same
     // rule: a face tag gives way unless protected, and so does the sheet group (on_sheet, and the
     // label bit assign_face_labels() gave it for the sheet). Never on a face of the input complex

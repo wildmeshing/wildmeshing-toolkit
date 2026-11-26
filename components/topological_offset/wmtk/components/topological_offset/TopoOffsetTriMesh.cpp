@@ -2643,6 +2643,7 @@ void TopoOffsetTriMesh::set_offset_tri_tags()
 
 void TopoOffsetTriMesh::release_covered_edge_tags()
 {
+    if (!m_offset_params.release_covered_tags) return; // a carving caller keeps its blocks
     // See the declaration. 3D's release_covered_face_tags(), one dimension down: 3D's face tags
     // and surface group are 2D's edge tags and curve group (on_curve). The edges the band covers
     // -- both triangles band triangles -- not of the input complex (label 1): an edge tag gives

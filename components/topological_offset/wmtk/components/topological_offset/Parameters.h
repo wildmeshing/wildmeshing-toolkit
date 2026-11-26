@@ -352,6 +352,14 @@ struct Parameters : public wmtk::OptimizerParameters
     /// and the region sides (TopoOffsetTetMesh::region_excess()). On by default since 2026-11-25
     /// (Uday).
     bool star_retreat = true;
+    /// Not a key (a caller's): whether an input block the band covers -- a face tag or the sheet
+    /// (3D), an edge tag or the curve group (2D) -- gives way unless protected
+    /// (release_covered_face_tags(), release_covered_edge_tags()). True for the offset, whose band
+    /// replaces what it covers; manifold_extraction, which carves with the band and returns every
+    /// tagged block of its input (split where the carving crosses it), sets it false. MEASURED
+    /// (2026-11-25) with the 2D release on: the extraction's tagged curve through the carved
+    /// vertex came back 0.0566 short (manifold_extraction_carries_tagged_edges_points_2d).
+    bool release_covered_tags = true;
     /// 3D (2026-10-21; "linear" was EXPERIMENTAL_incremental_growth): how the loop grows the
     /// offset when the march traces the front below target_distance (construction_mode
     /// "max_marchable_fallback", the target not below the maximum marchable distance), from the

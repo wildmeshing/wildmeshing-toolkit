@@ -86,6 +86,8 @@ struct Parameters
         ret_params.save_vtu = save_vtu;
         // Construction only: the extraction calls construct_offset(), never optimize_offset().
         ret_params.optimize_offset = false;
+        // The carving returns every tagged block of the input: the band releases none it covers.
+        ret_params.release_covered_tags = false;
         // The offset's debug frames (<output>_NNNNN.vtu) are named after this run's output, not
         // the offset spec's default ("out").
         ret_params.output_path = output_path;
