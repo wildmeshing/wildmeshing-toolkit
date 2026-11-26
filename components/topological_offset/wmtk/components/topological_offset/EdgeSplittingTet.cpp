@@ -838,36 +838,12 @@ void TopoOffsetTetMesh::edge_label_assign(
 
 void TopoOffsetTetMesh::close_labels(const std::vector<size_t>& tids)
 {
-    // An In entry's complex, its selection's boundary, has no cell to close a face from: a face
-    // between a band cell of an In entry and a cell outside that entry's selection that is no
-    // band cell (or the outside of the mesh) is that boundary, label 1, as label_input_complex()
-    // labelled it. A face an operation makes there -- a flip on it, a piece of a split -- takes it
-    // here, and its edges and corners with it; from its cells alone it would take the band's 2,
-    // and its corners would read as off the input, its faces as the front. Cells off the band
-    // keep their own tags, so the selection reads them. MEASURED before (one box inward at 0.1,
-    // optimize_construction on, one turn): 7 input vertices on the box's edges and corner flagged
-    // on the front and pulled off it by up to 0.042, against an envelope of 0.0035.
-    bool any_in = false;
-    for (size_t k = 0; k < m_offset_params.offsets.size(); ++k)
-        any_in = any_in || m_offset_params.direction(k) == Parameters::Offset::Direction::In;
-    const auto in_boundary = [&](const Tuple& f) {
-        const size_t t0 = f.tid(*this);
-        const std::optional<Tuple> o = f.switch_tetrahedron(*this);
-        const size_t t1 = o ? o->tid(*this) : size_t(-1);
-        const int l0 = m_tet_attribute[t0].label, l1 = o ? m_tet_attribute[t1].label : 0;
-        if ((l0 == 2) == (l1 == 2) || l0 == 1 || l1 == 1) return false;
-        const size_t band = l0 == 2 ? t0 : t1;
-        const size_t k = band_cell_entry(band);
-        if (m_offset_params.direction(k) != Parameters::Offset::Direction::In) return false;
-        return !o || !cell_in_selection(k, l0 == 2 ? t1 : t0);
-    };
     for (const size_t tid : tids) {
         const int lt = m_tet_attribute[tid].label;
         for (int j = 0; j < 4; ++j) {
             const Tuple f = tuple_from_face(tid, j);
             int& lf = m_face_extra[f.fid(*this)].label;
             lf = closed_label(lf, lt);
-            if (any_in && lf != 1 && in_boundary(f)) lf = 1;
             // The face's three edges, as label_input_complex() walks them.
             for (const Tuple& e :
                  {f, f.switch_edge(*this), f.switch_vertex(*this).switch_edge(*this)}) {

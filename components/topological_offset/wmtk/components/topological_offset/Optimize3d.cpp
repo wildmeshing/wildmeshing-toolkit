@@ -787,6 +787,8 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
         SwapSurfaceSides& sides = m_swap_sides.local();
         sides.worthwhile = false;
         sides.saw_case = false;
+        sides.on_complex = false;
+        sides.on_sheet = false;
     }
     m_swap_record.local().clear(); // see SwapRecord
     m_swap_turned_before.local() = -1; // an interior swap changes no offset face
@@ -840,6 +842,8 @@ bool TopoOffsetTetMesh::swap_before_surface(
         SwapSurfaceSides& sides = m_swap_sides.local();
         sides.worthwhile = false;
         sides.saw_case = false;
+        sides.on_complex = false;
+        sides.on_sheet = false;
     }
     m_swap_record.local().clear(); // see SwapRecord
     m_swap_turned_before.local() = -1; // set below for a flip of the offset surface
@@ -881,6 +885,24 @@ bool TopoOffsetTetMesh::swap_before_surface(
         if (sides(ftup_abc) != sides(ftup_abd)) {
             return swap_reject(SwapReject::app_mask_mismatch);
         }
+    }
+    // The input complex's label goes with the flip (swap_after_cells()): a face of the complex
+    // carries its 1 itself, and where no cell beside it is labelled 1 -- an In entry's selection
+    // boundary, the wall two In entries share, a sheet, a 'both' entry's boundary -- the closure
+    // from the cells (close_labels()) cannot give it back, and the new faces would read as the
+    // band. The engine carries the surface's own attributes across a flip the same way
+    // (sf_face_attr). A flip replacing a face of the complex and a face off it would move the
+    // complex's border, so it is refused as a mixed flip: two face tags side by side, one of them
+    // the selection, pass every test above.
+    {
+        const FaceExtra& x = m_face_extra[fid_abc];
+        const FaceExtra& y = m_face_extra[fid_abd];
+        if ((x.label == 1) != (y.label == 1)) {
+            return swap_reject(SwapReject::app_class_mismatch);
+        }
+        SwapSurfaceSides& sides = m_swap_sides.local();
+        sides.on_complex = x.label == 1;
+        sides.on_sheet = x.on_sheet || y.on_sheet; // as FaceExtra::merge()
     }
     // A flip OF THE OFFSET SURFACE -- both faces it replaces on the front, band on one side and
     // background on the other, asked live of the labels rather than read from the cached
@@ -1594,6 +1616,13 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         m_tet_attribute[t].label = side->second;
         stamp_rest_cell(t); // created by the swap: stamped at creation, as above
     }
+    // The two new surface faces take what the two old ones carried (swap_before_surface()).
+    for (const auto& f : {std::array<size_t, 3>{{sides.abcd[0], sides.abcd[2], sides.abcd[3]}},
+                          std::array<size_t, 3>{{sides.abcd[1], sides.abcd[2], sides.abcd[3]}}}) {
+        FaceExtra& x = m_face_extra[std::get<1>(tuple_from_face(f))];
+        if (sides.on_complex) x.label = 1;
+        x.on_sheet = sides.on_sheet;
+    }
     close_labels(tids);
     // growth_mode "individual_op_reject": the flip may not raise the turned faces among the two it
     // changes -- (a,b,c), (a,b,d) out, (a,c,d), (b,c,d) in, whose band cells are new cells now.
@@ -1621,6 +1650,7 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     // m_vertex_attr_group, so these writes roll back with it.
     for (const size_t v : sides.abcd) refresh_offset_membership(v);
     if (sides.worthwhile) ++funnel_committed;
+    if (sides.on_complex) ++m_complex_flips;
     ++iter_cnt_swap;
     return true;
 }

@@ -1032,9 +1032,17 @@ public:
      *     are renamed in place and keep their slots.
      *   - swap: the old cells' faces are captured (swap_before_interior() /
      *     swap_before_surface()); a new cell's face that was one of them keeps its value, every
-     *     other face of the new cells is reset (swap_after_cells()).
-     * close_labels() and the label flip read the label live -- a face of a sheet complex has no
-     * complex cell beside it, so only the carry keeps its 1 -- which is why it has to be carried.
+     *     other face of the new cells is reset (swap_after_cells()) -- but a flip's two new
+     *     surface faces, which take the complex's 1 and on_sheet from the two faces they replace
+     *     (SwapSurfaceSides::on_complex).
+     * close_labels() and the label flip read the label live -- a face of the complex with no
+     * label-1 cell beside it (an In entry's selection boundary, the wall two In entries share, a
+     * sheet, a 'both' entry's boundary) has nothing to take its 1 from but the carry -- which is
+     * why it has to be carried. MEASURED before the flip carried it (2026-11-26, test
+     * offset-complex-keeps-its-label): 32, 109 and 10 faces of the complex read 2 after three
+     * rounds on the wall, the 'both' box (13 of its corners off the input) and the sheet. A rule
+     * in close_labels() that labelled 1 a face between an In band cell and a cell outside the
+     * selection covered the one-box case alone (d1f522bea5); with the carry it is not needed.
      *
      * The edge label is carried the same way (edge_label_capture() / edge_label_assign()): an
      * edge's slot is its lowest incident tet's, so an operation that changes the tets around an
@@ -2166,6 +2174,9 @@ public:
     mutable std::atomic<long long> funnel_after_cells{0};
     mutable std::atomic<long long> funnel_energy{0};
     mutable std::atomic<long long> funnel_committed{0};
+    /// Flips of the input complex that swap_after_cells() let through (a later refusal by the
+    /// engine's envelope check can still roll one back).
+    mutable std::atomic<long long> m_complex_flips{0};
     std::string flip_funnel_report() const;
     void flip_funnel_reset();
     /// Splits of an offset-surface edge: offered, accepted. Real attempts only: a screened pass's
@@ -3834,6 +3845,12 @@ private:
         bool saw_case = false;
         /// tids.size() as swap_before_surface() saw it: 3, 4 or 5, i.e. which swap this is.
         int kind = 0;
+        /// The two faces the flip replaces are faces of the input complex (label 1), and whether
+        /// either lies on the envelope surface group (FaceExtra::on_sheet): what
+        /// swap_after_cells() gives the two new faces, which face_extra_assign() resets. Set by
+        /// swap_before_surface().
+        bool on_complex = false;
+        bool on_sheet = false;
     };
     bool swap_capture_surface_sides(
         const std::vector<size_t>& tids,

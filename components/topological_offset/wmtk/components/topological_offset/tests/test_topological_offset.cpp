@@ -10086,6 +10086,191 @@ TEST_CASE("offset-direction-touching-in-optimized", "[offset][3d]")
     for (const CellCorners& c : cells_b) CHECK(box_signed_distance(centroid(c), b) > 0.);
 }
 
+namespace {
+/// A full run on the mesh itself, as the driver runs it (topological_offset.cpp, 3D): the input
+/// read as the driver reads a mesh in memory, the construction, then the optimization. The 3D
+/// twin of run_offsets_2d(), for tests that read the mesh's labels after the run.
+std::unique_ptr<TopoOffsetTetMesh> run_offsets_3d(const MeshData& m, const nlohmann::json& j)
+{
+    components::simwild::InputData in = components::simwild::read_mesh_data(m);
+    nlohmann::json k = j;
+    if (!k.contains("num_threads")) k["num_threads"] = 1;
+    if (!k.contains("throw_on_nonconvergence")) k["throw_on_nonconvergence"] = false;
+    // the mesh holds a reference to its parameters: keep them alive with it
+    static std::vector<std::unique_ptr<Parameters>> params;
+    params.push_back(std::make_unique<Parameters>(construction_params(k, in.V_input)));
+    auto mesh = std::make_unique<TopoOffsetTetMesh>(*params.back(), 0);
+    mesh->m_point_names = in.point_names;
+    mesh->m_input_point_labels = in.input_point_labels;
+    mesh->init_from_image(
+        in.V_input,
+        in.T_input,
+        in.T_input_tag,
+        in.V_envelope,
+        in.F_envelope,
+        in.tag_names,
+        in.envelope_name,
+        in.F_tagged,
+        in.F_tags,
+        in.face_tag_names,
+        in.F_orientation,
+        in.feature_edge_names,
+        &in.features,
+        &in.features_placed,
+        in.V_input_r);
+    for (Parameters::Offset& o : mesh->m_offset_params.offsets)
+        o.expression = parse(o.selection, mesh->m_tag_name_to_id);
+    mesh->m_offset_params.parse_protected_tags(mesh->m_tag_name_to_id);
+    mesh->label_input_complex();
+    mesh->init_input_complex_bvh();
+    mesh->consolidate_mesh();
+    const std::filesystem::path out =
+        std::filesystem::temp_directory_path() / "wmtk_offset_complex_labels";
+    mesh->construct_offset(out);
+    mesh->init_offset_potential();
+    mesh->optimize_offset(out);
+    return mesh;
+}
+
+/// A square of the input complex: the plane where coordinate `axis` is `value`, the other two
+/// coordinates (axis + 1, axis + 2, mod 3) in [lo, hi].
+struct ComplexSquare
+{
+    int axis;
+    double value;
+    std::array<double, 2> lo, hi;
+};
+
+/// The six sides of box_grid()'s box of cube indices r.
+std::vector<ComplexSquare> box_sides(const std::array<int, 6>& r)
+{
+    const auto lo = [&](const int x) { return r[size_t(2 * x)] * 0.25 - 1.; };
+    const auto hi = [&](const int x) { return (r[size_t(2 * x + 1)] + 1) * 0.25 - 1.; };
+    std::vector<ComplexSquare> out;
+    for (int a = 0; a < 3; ++a) {
+        const int b = (a + 1) % 3, c = (a + 2) % 3;
+        for (const double v : {lo(a), hi(a)})
+            out.push_back({a, v, {{lo(b), lo(c)}}, {{hi(b), hi(c)}}});
+    }
+    return out;
+}
+
+/// The input complex after a run, read off the construction labels. On each square: the faces
+/// lying on it -- every corner within the envelope of it, as far as the optimization may move a
+/// vertex of the complex -- whose areas projected onto its plane must tile it but for a strip
+/// one envelope wide along its border (area_bound), so that a face with a corner pulled off the
+/// complex drops out of the sum; and among them the faces, edges and corners not labelled 1 (a
+/// corner also not m_is_on_input). MEASURED (two touching boxes, 3 rounds): a corner of the
+/// box, label 1 and on the input, 1.4e-4 off two of its sides, within the envelope's 1.7e-4.
+struct ComplexLabels
+{
+    double area_missing = 0., area_bound = 0.;
+    size_t faces = 0, faces_off = 0, edges_off = 0, corners_off = 0;
+};
+ComplexLabels complex_labels(const TopoOffsetTetMesh& m, const std::vector<ComplexSquare>& squares)
+{
+    ComplexLabels out;
+    std::set<size_t> edges_off, corners_off;
+    const double tol = m.m_offset_params.envelope_size;
+    for (const ComplexSquare& s : squares) {
+        const int b = (s.axis + 1) % 3, c = (s.axis + 2) % 3;
+        const auto on = [&](const Vector3d& p) {
+            return std::abs(p[s.axis] - s.value) <= tol && p[b] >= s.lo[0] - tol &&
+                   p[b] <= s.hi[0] + tol && p[c] >= s.lo[1] - tol && p[c] <= s.hi[1] + tol;
+        };
+        double area = 0.;
+        for (const auto& f : m.get_faces()) {
+            const auto vids = m.get_face_vids(f);
+            std::array<Vector3d, 3> p;
+            bool all_on = true;
+            for (size_t i = 0; i < 3; ++i) {
+                p[i] = m.m_vertex_attribute[vids[i]].m_posf;
+                all_on = all_on && on(p[i]);
+            }
+            if (!all_on) continue;
+            ++out.faces;
+            area += 0.5 * std::abs((p[1] - p[0]).cross(p[2] - p[0])[s.axis]);
+            if (m.m_face_extra[f.fid(m)].label != 1) ++out.faces_off;
+            for (const auto& e : {f, f.switch_edge(m), f.switch_vertex(m).switch_edge(m)}) {
+                if (m.m_edge_attribute[e.eid(m)].label != 1) edges_off.insert(e.eid(m));
+            }
+            for (const size_t v : vids) {
+                if (m.m_vertex_extra[v].label != 1 || !m.m_vertex_extra[v].m_is_on_input)
+                    corners_off.insert(v);
+            }
+        }
+        out.area_missing += (s.hi[0] - s.lo[0]) * (s.hi[1] - s.lo[1]) - area;
+        out.area_bound += 2. * ((s.hi[0] - s.lo[0]) + (s.hi[1] - s.lo[1])) * tol;
+    }
+    out.edges_off = edges_off.size();
+    out.corners_off = corners_off.size();
+    return out;
+}
+} // namespace
+
+TEST_CASE("offset-complex-keeps-its-label", "[offset][3d]")
+{
+    // The input complex keeps label 1 through the optimization: every face, edge and corner of
+    // it, on every kind of complex, whether or not a cell beside it is labelled 1 -- a solid's
+    // boundary inward and both ways, two inward solids' shared wall, a sheet, and the outward
+    // solid, whose own cells carry the 1. Each case flips the complex (m_complex_flips), the
+    // operation that remakes a face of it. MEASURED before (2026-11-26, the two touching boxes
+    // of offset-direction-touching-in-optimized, #1208's head): after two turns 16 of the wall's
+    // 58 faces read 2, though no corner had lost its 1 yet, and that test, which reads only the
+    // band cells' centroids, passed. Geneva's one-shot went on to split such an edge: the new
+    // vertex closed to 2, off the input, and the band regions' flood crossed the wall.
+    // front_conv_rel 0.005 and the envelope as in offset-direction-touching-in-optimized: the loop
+    // runs. The box inward at 0.15, not 0.1: MEASURED (2026-11-26) at 0.1 with label growth on
+    // (#1208) the front is resolved after one turn and no flip reaches the box (0 at 3 and 6
+    // rounds, front_conv_rel 0.005 and 0.002); at 0.15, 4 to 7 (without growth 30 to 32).
+    const std::array<int, 6> a = {{1, 3, 1, 3, 1, 3}}, b = {{4, 6, 1, 3, 1, 3}};
+    const auto entry = [](const std::string& s, const std::string& dir, const double d) {
+        return nlohmann::json{
+            {"selection", s},
+            {"direction", dir},
+            {"output_tags", {s + "_band"}},
+            {"target_distance", d}};
+    };
+    std::vector<ComplexSquare> both_boxes = box_sides(a);
+    for (const ComplexSquare& s : box_sides(b)) both_boxes.push_back(s);
+    struct Case
+    {
+        std::string name;
+        MeshData m;
+        nlohmann::json offsets;
+        std::vector<ComplexSquare> squares;
+    };
+    const std::vector<Case> cases = {
+        {"a box inward", box_grid({{"a", a}}), {entry("a", "in", 0.15)}, box_sides(a)},
+        {"two boxes inward, sharing a wall",
+         box_grid({{"a", a}, {"b", b}}),
+         {entry("a", "in", 0.1), entry("b", "in", 0.05)},
+         both_boxes},
+        {"a box both ways", box_grid({{"a", a}}), {entry("a", "both", 0.1)}, box_sides(a)},
+        {"a box outward", box_grid({{"a", a}}), {entry("a", "out", 0.1)}, box_sides(a)},
+        {"a sheet",
+         two_sheet_grid(1.5),
+         {entry("yellow", "out", 0.1)},
+         {{2, 1., {{0.5, 0.5}}, {{1.5, 1.5}}}}},
+    };
+    for (const Case& c : cases) {
+        INFO(c.name);
+        const auto mesh = run_offsets_3d(
+            c.m,
+            {{"offsets", c.offsets},
+             {"front_conv_rel", 0.005},
+             {"envelope_size_rel", 5e-5},
+             {"max_rounds", 3}});
+        CHECK(mesh->m_complex_flips > 0);
+        const ComplexLabels l = complex_labels(*mesh, c.squares);
+        INFO(l.faces << " faces on the complex");
+        CHECK(std::abs(l.area_missing) <= l.area_bound);
+        CHECK(l.faces_off == 0);
+        CHECK(l.edges_off == 0);
+        CHECK(l.corners_off == 0);
+    }
+}
+
 TEST_CASE("offset-direction-in-thin-slab", "[offset][3d]")
 {
     // A slab one cube thick: every vertex of its cells is on its boundary, so the march has no edge
@@ -12190,6 +12375,132 @@ TEST_CASE("offset-direction-touching-in-optimized-2d", "[offset][2d]")
     CHECK(!fb.empty());
     for (const FaceCorners2d& c : fa) CHECK(box_signed_distance_2d(centroid(c), a) > 0.);
     for (const FaceCorners2d& c : fb) CHECK(box_signed_distance_2d(centroid(c), b) > 0.);
+}
+
+namespace {
+/// A segment of a 2D input complex: the line where coordinate `axis` is `value`, the other
+/// coordinate in [lo, hi].
+struct ComplexSegment2d
+{
+    int axis;
+    double value, lo, hi;
+};
+
+/// The four sides of box_grid_2d()'s box of squares r.
+std::vector<ComplexSegment2d> box_sides_2d(const Box2d& r)
+{
+    const double x0 = r[0] * 0.25 - 1., x1 = (r[1] + 1) * 0.25 - 1.;
+    const double y0 = r[2] * 0.25 - 1., y1 = (r[3] + 1) * 0.25 - 1.;
+    return {{0, x0, y0, y1}, {0, x1, y0, y1}, {1, y0, x0, x1}, {1, y1, x0, x1}};
+}
+
+/// What 2D keeps of the input complex through the optimization, which is not its edges' and
+/// vertices' construction labels (2D's operations do not carry them, see held_object_edge()) but
+/// the hold: on each segment, the edges lying on it (both corners within the envelope of it),
+/// whose lengths along it must cover it but for the envelope at its two ends, so that an edge
+/// with a corner pulled off the complex drops out of the sum; and among them the edges not held
+/// (held_object_edge()) and the corners not m_is_on_input.
+struct ComplexHold2d
+{
+    double length_missing = 0., length_bound = 0.;
+    size_t edges = 0, edges_free = 0, corners_off = 0;
+};
+ComplexHold2d complex_hold_2d(
+    const TopoOffsetTriMesh& m,
+    const std::vector<ComplexSegment2d>& segments)
+{
+    ComplexHold2d out;
+    std::set<size_t> corners_off;
+    const double tol = m.m_offset_params.envelope_size;
+    for (const ComplexSegment2d& s : segments) {
+        const int o = 1 - s.axis;
+        const auto on = [&](const Vector2d& p) {
+            return std::abs(p[s.axis] - s.value) <= tol && p[o] >= s.lo - tol &&
+                   p[o] <= s.hi + tol;
+        };
+        double length = 0.;
+        for (const auto& e : m.get_edges()) {
+            const size_t v0 = e.vid(m), v1 = e.switch_vertex(m).vid(m);
+            const Vector2d& p0 = m.m_vertex_attribute[v0].m_posf;
+            const Vector2d& p1 = m.m_vertex_attribute[v1].m_posf;
+            if (!on(p0) || !on(p1)) continue;
+            ++out.edges;
+            length += std::abs(p1[o] - p0[o]);
+            if (!m.held_object_edge(e)) ++out.edges_free;
+            for (const size_t v : {v0, v1}) {
+                if (!m.m_vertex_extra[v].m_is_on_input) corners_off.insert(v);
+            }
+        }
+        out.length_missing += (s.hi - s.lo) - length;
+        out.length_bound += 2. * tol;
+    }
+    out.corners_off = corners_off.size();
+    return out;
+}
+} // namespace
+
+TEST_CASE("offset-complex-keeps-its-hold-2d", "[offset][2d]")
+{
+    // The 2D twin of offset-complex-keeps-its-label: the input complex stays held through the
+    // optimization -- every edge of it held, every corner on the input -- on every kind of
+    // complex: a box's boundary inward and both ways, two inward boxes' shared side, an open
+    // curve, and the outward box, whose own faces carry the 1. 2D's operations carry the face
+    // labels, m_is_on_input and the edge tracking, which is what held_object_edge() and
+    // held_object_vertex() read; a swap never takes a held edge. Each case splits or collapses
+    // the complex (its edge count changes from the input's), the operations that remake it in 2D.
+    const Box2d a = {{1, 3, 1, 3}}, b = {{4, 6, 1, 3}};
+    const GridPolyline2d curve = {{{1, 6}}, {{2, 6}}, {{3, 6}}, {{4, 6}}, {{5, 6}}};
+    std::vector<ComplexSegment2d> both_boxes = box_sides_2d(a);
+    for (const ComplexSegment2d& s : box_sides_2d(b)) both_boxes.push_back(s);
+    struct Case
+    {
+        std::string name;
+        BoxGrid2d g;
+        nlohmann::json offsets;
+        std::vector<ComplexSegment2d> segments;
+    };
+    const std::vector<Case> cases = {
+        {"a box inward",
+         box_grid_2d({{"a", a}}),
+         {direction_entry_2d("a", "in", "a_band", 0.15)},
+         box_sides_2d(a)},
+        {"two boxes inward, sharing a side",
+         box_grid_2d({{"a", a}, {"b", b}}),
+         {direction_entry_2d("a", "in", "a_band", 0.1),
+          direction_entry_2d("b", "in", "b_band", 0.05)},
+         both_boxes},
+        {"a box both ways",
+         box_grid_2d({{"a", a}}),
+         {direction_entry_2d("a", "both", "a_band", 0.1)},
+         box_sides_2d(a)},
+        {"a box outward",
+         box_grid_2d({{"a", a}}),
+         {direction_entry_2d("a", "out", "a_band", 0.1)},
+         box_sides_2d(a)},
+        {"an open curve",
+         box_grid_2d({{"a", {{1, 2, 1, 2}}}}, curve),
+         {direction_entry_2d("curve", "out", "curve_band", 0.1)},
+         {{1, 0.5, -0.75, 0.25}}},
+    };
+    for (const Case& c : cases) {
+        INFO(c.name);
+        size_t input_edges = 0;
+        for (const ComplexSegment2d& s : c.segments)
+            input_edges += size_t(std::lround((s.hi - s.lo) / 0.25));
+        const auto mesh = run_offsets_2d(
+            c.g,
+            {{"offsets", c.offsets},
+             {"front_conv_rel", 0.005},
+             {"envelope_size_rel", 5e-5},
+             {"max_rounds", 3}},
+            true);
+        const ComplexHold2d h = complex_hold_2d(*mesh, c.segments);
+        INFO(h.edges << " edges on the complex, " << input_edges << " in the input");
+        CHECK(h.edges != input_edges);
+        CHECK(std::abs(h.length_missing) <= h.length_bound);
+        CHECK(h.edges_free == 0);
+        CHECK(h.corners_off == 0);
+    }
 }
 
 TEST_CASE("offset-direction-in-thin-slab-2d", "[offset][2d]")

@@ -305,7 +305,7 @@ public:
     /// read off their label; Both: the band covers both sides of the complex. The 2D twin of
     /// TopoOffsetTetMesh::band_face_on_in_complex(): every test of the front from the face labels
     /// (edge_is_offset_surface_live(), vertex_has_live_offset_edge(), split_adjust_position())
-    /// excludes these edges, which 3D's close_labels() labels 1.
+    /// excludes these edges, where 3D's faces carry their 1 (swap_before_surface()).
     bool band_edge_on_in_complex(
         const size_t band,
         const size_t other,
@@ -1649,7 +1649,7 @@ public:
         /// The split edge is on an In entry's complex, the boundary of its selection
         /// (band_edge_on_in_complex(), read on the parents): its midpoint is on the input and not
         /// on the front, which the parents' labels (a band face and one that is neither band nor
-        /// input complex) would say. 3D labels such a face 1 (close_labels()).
+        /// input complex) would say. In 3D such a face carries its 1 (swap_before_surface()).
         bool on_in_complex = false;
     };
     wmtk::threading::enumerable_thread_specific<OptSplitCache2d> m_opt_split_cache;
