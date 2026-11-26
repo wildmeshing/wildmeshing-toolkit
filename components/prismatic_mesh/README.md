@@ -1,5 +1,160 @@
 # Prismatic mesh input
 
+## Region quality improvement after hybrid construction
+
+Enable the mixed-cell remeshing pipeline with `quality_improvement: true`:
+
+```json
+{
+  "application": "prismatic_mesh",
+  "input": "construction.msh",
+  "output": "improved.vtu",
+  "iterations": 5,
+  "prism_dominant": true,
+  "keep_background_mesh": true,
+  "export_input_and_shell": true,
+  "quality_improvement": true,
+  "quality_improvement_options": {
+    "cycles": 4,
+    "time_limit": 900,
+    "initial_sizing_factor": 0.25,
+    "quality_target": 20,
+    "smoothing_target": 18,
+    "mixed_smoothing_sweeps": 120,
+    "thickness_weight": 100,
+    "thickness_smoothing_weight": 10,
+    "thickness_tolerance": 0.05,
+    "thickness_feature_angle": 30
+  }
+}
+```
+
+The option defaults to **false**. Enable it for region remeshing and native
+AMIPS-plus-thickness smoothing after the hybrid build. When enabled, its mixed
+smoothing replaces the separate Jacobian/background quality stages and transition
+and thickness smoothing. Disabling it does not select another quality pipeline.
+The original collapse/target construction iterations and hybrid build still run.
+In rod mode, shell construction and this quality stage run first with rod tets,
+vertices and attachment stars reserved. Rod geometry and native prism construction
+then run while completed shell cells stay fixed. Rods use their own frame/radius
+energy rather than shell height constraints. A finite positive nominal shell
+thickness is required when a shell quality stage is present.
+
+To run only the new native AMIPS/thickness smoothing, keep
+`quality_improvement: true` and set
+`quality_improvement_options.topology_enabled: false`. This skips post-build
+split/collapse/swap stages. The removed 20 + 20 relocation workflow and its
+configuration keys have been removed; delete them from older JSON files.
+This pipeline uses strict positivity of actual cells; nonzero `min_tet_volume`
+or `relative_tet_volume_floor` settings are rejected rather than silently ignored.
+
+Each outer cycle performs mixed gradient smoothing, compatible prism-column
+collapses/conforming splits/cap swaps, bulk tetrahedral split/collapse/swap/smoothing,
+and another mixed smoothing stage. All actual tetrahedra, including input-volume
+and background tets, enter the bulk optimizer. Its material and native interfaces
+are fixed during this stage; shared vertices can move in the mixed smoothing stages.
+Input faces between two shell tets are released. Other input patches preserve their
+planes and coverage; coplanar patch interiors can be retriangulated while geometric
+feature intersections constrain vertex motion. This exact patch policy can be
+more restrictive than an approximation envelope.
+
+The initial target edge length is `max(thickness, 0.25 * mean_offset_edge_length)`;
+the mean counts unique edges of the construction's tagged offset triangles.
+Before subsequent cycles, vertices of mixed cells above the quality target and
+their one-ring neighbors have their sizing halved, with a nominal-thickness floor
+and graded propagation to nearby vertices and paired columns.
+
+Mixed smoothing minimizes squared excess native AMIPS above `smoothing_target`,
+with a small log-AMIPS regularizer, plus `thickness_weight` times squared relative
+reference-height error. The default thickness weight is `100`; an explicit JSON
+value overrides it. Analytic gradients, projected input freedom and halving
+Armijo line searches require lower local combined energy and positive cells;
+individual cell qualities may worsen. Projection uses a slab whose relative width
+is `max(0.25, current_error)`. The height direction is the original optimal normal,
+or the initial column direction if unavailable. It is not nearest-surface distance
+or every incident input face's normal thickness.
+
+Thickness error also activates vertices whose incident cells already meet the
+AMIPS target. `thickness_tolerance` defaults to a relative error of `0.05` (5%).
+The neighbor term, weighted by `thickness_smoothing_weight` (default `10`), penalizes
+differences of relative height error along shell-interface edges. Degree-normalized
+pairs exclude opposite sheets, reference-normal changes above
+`thickness_feature_angle` (default 30 degrees), and target-height ratios above 1.5.
+It smooths the scalar height field rather than applying a position Laplacian across
+features. Input feature constraints remain in force. Interface points without a
+valid height reference remain eligible for AMIPS relocation under the existing
+geometry, exterior and rod-reservation constraints. Their missing references are
+counted in the report; no nearest-surface reference is invented for them.
+
+Smoothing stops when no move is accepted or both AMIPS and enabled height criteria
+are met. Zero weight disables its corresponding height criterion; setting both
+thickness weights to zero disables height energies and height-based activation.
+Topology operations have their
+own validity/acceptance rules and can temporarily increase the combined energy.
+Neighbor pairs are rebuilt after topology changes; split vertices retain interpolated
+reference directions and heights.
+
+Every completed stage checks positive actual cells, oriented conforming faces,
+region connectivity/adjacency and shell-background interface Euler signatures,
+input patch geometry, exterior preservation, and domain volume. Failed stages
+roll back. A non-box exterior keeps its exact initial triangulation and fixed
+vertices; this also fixes an exposed offset boundary if background was removed.
+The time limit is soft and checked between operations. Output selects the valid
+stage with the lowest global maximum native AMIPS. The combined AMIPS,
+point-height and neighbor-height energies remain available as diagnostics, with
+exact accumulation of floating-point contributions. This energy sum is not a
+refinement-invariant functional and does not select the output checkpoint.
+
+A final background-only cleanup targets native background tet/pyramid AMIPS above
+100. It first relocates individual vertices, then jointly relocates a bad cell's
+free vertices with a direction projected against the volume gradients of extreme
+neighboring tets. A final pass expands to one ring of movable background vertices
+(at most 48 per block). Every accepted step lowers incident AMIPS loss and preserves
+positive native cells. Shell/input/exterior vertices and rod reservations remain
+fixed, and connectivity is unchanged. The phase uses up to 80 vertex sweeps, 1000
+joint sweeps and 1000 expanded sweeps, with a separate 120-second soft cap for the
+whole cleanup. Its timing and residuals appear in `background_relocation`; it does
+not guarantee that every background cell reaches 100. The repaired candidate is
+compared with earlier valid stages using the same maximum-AMIPS checkpoint rule.
+With `cycles: 0`, the shell quality API remains an export-only operation.
+
+Rod runs retaining background perform this cleanup after rod construction even
+when shell `quality_improvement` is disabled. Rod/frame geometry stays fixed; a
+changed background is exported as native improved cells without stale construction
+reference-tet IDs. The original radius, frame, joint and local remeshing options
+continue to control the rod construction stages.
+
+Reports include baseline/final energies and thickness errors, and
+separate `quality_target_met` and `thickness_target_met` flags; `target_met` requires
+both. Finite budgets do not guarantee AMIPS below the target or height convergence,
+sizing convergence, or a global nonadjacent-cell intersection certificate.
+
+`quality_improvement.hpp` exposes `QualityImprovementOptions`,
+`improve_prismatic_mesh_quality`, and `write_improved_prismatic_mesh`. The returned
+`ImprovedHybridMesh` owns its new coordinates, native cells, material regions,
+source vertex IDs, geometric/discrete references, and quality report. The original
+`PrismaticMeshInput` and `PrismDominantMesh` remain construction/reference data.
+Remeshing changes cell ownership, so improved output omits construction-only
+`source_tet_ids` and `tet_decomposition` rather than reporting stale references.
+New vertices receive unique source IDs above the original range; existing IDs
+are retained. Geometric references without a discrete input vertex export
+`corr_input_vid = -1` and retain their `reference_base` field.
+
+VTU, MSH, filtered input-and-shell exports, and the in-memory component route all
+use the same final mesh. They include `AMIPS_native`, `cell_type` (10/13/14),
+`region` (1 input, 2 shell, 3 background), `tag_0`, `offset_tag`,
+`full_mesh_cell_id`, `vid`, `corr_input_vid`, `original_vertex_row`,
+`reference_base`, `reference_normal`, `target_normal_thickness`,
+`target_edge_length`, `projected_height`, and `reference_height_error_ratio`.
+`thickness_constrained` is 1 where the height constraint applies and 0 elsewhere;
+unconstrained points use zero target height, projection and error rather than NaN
+tokens, so the ASCII MSH reader can load the same fields reliably.
+Raw AMIPS has ideal value 3; prisms and pyramids use order-4 native integration,
+not a maximum over tetrahedral decompositions. Reports are stored under
+`quality_improvement` in `<output_stem>_hybrid.json` or the memory result's
+`hybrid` report. The original reference-mesh offset-face companion is not exported
+for this new row space.
+
 ## Rod rings in mixed volume/shell/rod meshes
 
 `rod_mode` uses original vertex correspondence to construct rods. The same
@@ -28,7 +183,7 @@ boundary of its disk region supplies the terminal ring. A complete planar prism
 fan defines a flat end; its exterior offset cap is returned to background.
 Unsuccessful endpoint fans retain their supplied valid tet caps.
 
-The rod pipeline has one construction path:
+The default rod pipeline uses this construction path:
 
 1. Group offset-front vertices by their original input correspondence. Collapse
    legal same-region surface edges until each ordinary region is a single cycle.
@@ -72,6 +227,154 @@ AMIPS. Input/protected points, correspondence and connectivity stay fixed.
 Tet and pyramid shape quality is not optimized: positivity alone permits very
 poor shapes. The final smoothing stage is opt-in and defaults to zero.
 
+`rod_edge_based: true` selects the edge-link alternative for pure or mixed inputs
+with `rod_mode: true`. Every source edge must be internal to the supplied
+manifold tet mesh and have a complete offset-vertex link cycle. This topological
+cycle does not imply that a geometrically valid prism pairing exists.
+
+The preparation separates shared link vertices by stellar splits of complete
+radial edge stars, including background cofaces. Each split strictly reduces
+the excess frame ownership. It inserts an exact centerline midpoint for each
+source edge and uses its half-edge link as the section, independently of whether
+the corresponding offset-front region has already collapsed to a cycle.
+Additional splits create the original-vertex transition regions between ports.
+The rod domain is reselected as the remaining input-vertex stars; outer children
+stay in the background. `edge_based_preparation` reports both band volumes, the
+split operations and the removed frame overlap. All existing point coordinates
+and the original embedded centerline are preserved during preparation.
+
+The typical edge-section degree on each path supplies a coarsening preference.
+After checked collapses, the largest surviving ring sets the common degree;
+smaller rings are split until the valid section degrees agree. These full-star
+splits can refine a protected joint port without moving its existing points;
+the refined protection snapshot is refreshed before later operations.
+Oriented ring cycles are extracted before material mapping. After all topology
+and degree work, continuous rays are transported from the first actual section
+control to the last, through geometric section planes. Edge-midpoint normals
+follow their source edge; corner normals use the normalized sum of the incoming
+and outgoing directed tangents, independent of ring phases. Only the terminal
+section is rounded to its degree lattice. Its angular residual is wrapped to
+[-pi, pi] and distributed by centerline arc length. Once this continuous field
+is complete, intermediate rings choose their closest cyclic vertex origin
+against it. This only assigns material indices; it does not rotate or refit
+the transported poses. An arbitrary pre-transport vertex zero therefore cannot
+force the optimizer to twist the physical mesh by a whole ring sector. There
+is no cyclic-shift DP. An open path keeps its first origin fixed and applies
+the terminal rounding permutation at its last ring. A closed path records
+that terminal permutation on one seam without relabeling the shared first
+section. `material_mapping` reports
+the controls, terminal permutation and correction at each station.
+
+Before constructing native prisms, `rod_position_iterations` (default 20) sweeps
+optimize positions throughout the still-tetrahedral rod volume. Ring order and
+connectivity are fixed. The energy combines AMIPS of all coupled rod/background
+tets with transported circular-section and carrier-radius targets; `rod_position_weight`
+(default 100) weights the radius-normalized geometric error against mean AMIPS.
+Every valid prism-cap ring, including intermediate transition rings, receives
+full frame targets directly from the corrected transported pose. Radial edge
+`k` has angle `2*pi*k/n` for a ring with `n` edges (`k=0,...,n-1`). Their phase
+is not refitted to current vertex positions. Points outside those rings use `rod_laplace_weight`
+(default 10) penalizes Laplace residuals. Front vertices use surface neighbors
+and a carrier-radius penalty to avoid shrinkage; other intermediate rod points
+use their volume neighbors. One adjacent layer of pure-background interior
+vertices can relax, while the outer boundary stays fixed. Damped
+Newton directions with backtracking must decrease the combined energy and keep
+every affected tet strictly positive. Input vertices and protected joint points
+stay fixed. The `tet_position_optimization` report records energy history,
+mapping/connectivity preservation and candidate prism geometry before/after.
+Zero sweeps provides a comparison with degree alignment alone. Local interface
+swaps and atomic layer/background-pyramid construction then use the same native
+positivity and conformity checks as the default pipeline. Infeasible layers
+retain tets. Structural refinement precedes junction protection; subsequent
+operations preserve the refined junction stars. Rod edges are maximal input edges
+with no input-face or solid cofaces; sharing an attachment vertex with a sheet is
+allowed. Shell-owned link points are separated by radial splits before native
+construction, retaining their shell correspondence. Input faces and solid cells
+are retained. A particular prism percentage is not guaranteed.
+
+Mixed processing orders the stages as shell construction, shell quality improvement
+(when enabled), rod frame/radius geometry optimization, and atomic rod prism
+construction. Shell remeshing reserves rod tets and attachment stars. Its native
+result is handed back through compatible positive reference splits, preserving
+the original rod vertex rows and mapping. If no compatible handoff exists, the
+shell quality checkpoint is rejected and the valid shell construction is retained;
+the report records the reason. During rod geometry, swaps, local BG remeshing and
+pyramid reconstruction, completed shell cells and their BG pyramid bodies remain
+fixed. The final mesh is validated together. Mixed quality exports retain
+`construction_region`, `rod_region`, `joint_one_ring`, and native AMIPS fields.
+
+`rod_background_remeshing` (default false) optionally remeshes pure background
+after the rod position solve and before interface swaps/prism construction.
+`rod_background_remeshing_radius` is the outward Euclidean distance from the
+actual rod surface in mesh units; zero uses the rod radius. Background tets
+with a vertex in that neighborhood form the patch. Rod cells, rod points,
+the patch boundary faces, and existing points farther than the radius stay
+fixed during this stage. TetWild split, collapse, swap and AMIPS smoothing
+operate inside the patch; no CDT is used. The later interface swaps can then
+adjust the rod/background triangulation using the updated background stars.
+`rod_background_remeshing_target_length` defaults to the rod radius and grades
+to twice that length away from the rod. `rod_background_remeshing_passes`
+(default 2), `rod_background_remeshing_time_limit` (default 30 seconds), and
+a 2000-split budget bound the experiment. The rod report includes the selected
+neighborhood, operation counts, quality before/after and time-limit status.
+This stage preserves the interface during remeshing; it does not guarantee
+that the subsequent prism/pyramid construction will succeed on every layer.
+
+`rod_coupled_optimization_rounds` (default 0, maximum 3) adds alternating
+background-remeshing and simultaneous rod/joint/background geometry rounds.
+It requires edge-based rods, retained background and local background
+remeshing. A round first remeshes the background with the current rod fixed,
+then optimizes the whole rod surface together with free pure-background
+vertices throughout the surface-distance neighborhood. The neighborhood outer
+boundary and input centerline stay fixed. `rod_coupled_optimization_iterations`
+(default 20), `rod_coupled_geometry_weight` (default 100), and
+`rod_coupled_smoothing_weight` (default 10) control each geometry round. Shared
+surface Laplace rows include mapped ring points and tet/joint regions, without
+a split by the eventual native cell type. Every move decreases combined energy
+and retains positive incident tets. The joint displacement bound is measured
+from its initial geometry across all rounds. Native prism/pyramid reconstruction
+runs after the final round. `coupled_optimization` records each remeshing/geometry
+report and how many newly created background points actually moved. Zero rounds
+retains the prior single background-remeshing stage without this coupled solve.
+
+`rod_joint_smoothing_iterations` (default 0) enables a separate joint geometry
+pass between regular rod positions and background remeshing. Only branching
+joint offset stars and their neighboring pure-background interior points move;
+input positions, frame labels, and all tet connectivity remain fixed. The
+energy combines incident rod/background AMIPS, transported port-frame targets,
+joint-core radius fitting, and surface Laplace energy. `rod_joint_smoothing_weight`
+(default 20) weights Laplace energy and `rod_joint_geometry_weight` (default 100)
+weights geometry. The core reference is the union of incident capsules;
+`rod_joint_blend_radius_ratio` (default 0) optionally smooths that union, with
+a positive blend width in rod-radius units. Each accepted move decreases total energy
+and keeps all incident tets positive. Joint offsets have no cumulative radius-based
+displacement cap; frame/radius energy, descent and per-step backtracking control
+movement. This pass explicitly refreshes the protected coordinate
+snapshot after validation; joint collapse/swap protection remains in force.
+`joint_smoothing` reports the released/moved points and energy history, and
+`junction_protection` distinguishes initial coordinates from the accepted
+protected geometry snapshot. The default zero iterations retains frozen joints.
+
+`rod_position_smoothing_weight` enables optional surface fairing after the
+existing tet position pass. Its default is zero, preserving that pass alone.
+The extra pass uses `rod_position_smoothing_iterations` (default 20) and is
+warm-started from the original pass. One layer of neighboring pure-background
+interior vertices can relax with the surface; the outer boundary stays fixed.
+Its `rod_position_smoothing_geometry_weight` (default 1000) fits physical radius
+and section planes, with a weaker material-slot tether to discourage angular
+crowding. This weight is separate from the unchanged original position pass.
+It penalizes longitudinal second differences of the fixed mapped radial vectors
+after parallel transport between section planes, with weights for nonuniform
+centerline spacing. Circular stencils also regularize spacing around each ring.
+Parallel-transported circular sections have zero fairing residual even at real
+centerline bends; the centerline itself is not smoothed. Radius/plane fitting
+and tet AMIPS stay in the energy, and the same positive-volume line search applies. Joint offsets
+remain protected. Reports label the additional energy as
+`surface_fairing_squared_error` in the separate `tet_surface_smoothing` report.
+The original `tet_position_optimization` report is retained. Fairing operates
+before prism reconstruction; it is distinct from the optional final `thickness_smoothing_iterations` pass,
+whose non-prism tet objective is validity only.
+
 `ignore_background_mesh: true` explicitly removes exterior cells before
 preparation and all optimization/conversion checks, retaining input volume and
 band. It overrides `keep_background_mesh`. Otherwise the supplied background
@@ -88,6 +391,34 @@ cells, coordinates and reference decompositions.
 
 Ring-edge splitting changes circumferential degree; centerline edges and input
 vertices stay fixed.
+
+Atomic rod-layer reconstruction first plans disjoint background pyramid cavities
+in a batch. Layers rejected specifically for `overlapping_cavity` then get a
+sequential retry on a private updated tet mesh: materialize the accepted batch,
+protect the two reference tets forming each pyramid body, and search again using
+the remaining/new background tets. Each successful quad updates the temporary
+face and edge-star indices before the next quad is planned. Any failed quad
+rolls back that retry's entire rod layer, including new points and connectivity.
+The successful retry sequence is replayed together with the original batch only
+when the final hybrid mesh is assembled and validated. Other failure categories
+are not retried by this stage. Existing coordinates, centerlines, input volumes,
+and already accepted pyramid bodies remain fixed; no CDT is used.
+
+`background_pyramid_reconstruction.initial_rejections` records the original
+batch failures. `sequential_overlap_retry` records attempted/recovered layers,
+per-layer retry failures and rollback progress; `sequential_applied` counts the
+additional pyramids. A retry can still fail when the remaining tet sector is
+disconnected, has no positive kernel, or needs an unsupported repartition. The
+report's reference-tet row lists describe the corresponding reconstruction step;
+later successful retries may reuse its supporting tet rows.
+
+Shell exterior quads use the same batch-plus-sequential overlap retry. After the
+shell marker solve selects the actual native cells, cavities are replanned for
+only their emitted quads, so a retry cannot depend on an inactive candidate.
+If the emitted set cannot be reconstructed, its affected offset corners become
+transition marks and shell reconstruction is retried. The original candidate
+diagnostics remain at the report root; `emitted_quad_planning` records the final
+active-quad plan.
 
 ## Surface construction
 
@@ -429,8 +760,8 @@ or reference geometry, not during this fixed-target optimization.
 `optimize_prismatic_mesh` runs `iterations` rounds (default 5), each in the order
 **collapse → unlock → smoothing**. Set
 `iterations` to 0 to compute targets without the original collapse/smoothing stage.
-For a hybrid export without the default postprocessing as well, also set
-`collapse_edge_relocation_iterations` and `tet_face_relocation_iterations` to 0.
+For a hybrid export without region quality improvement, set
+`quality_improvement` to `false`.
 For a positive iteration count, a final exhaustive collapse pass runs after the
 last smoothing sweep. This consumes edges that became admissible at the final
 positions before hybrid marking; otherwise they would seed unnecessary
@@ -676,159 +1007,6 @@ into scalar fields `tet_decomposition_0` through `tet_decomposition_11`: Gmsh vi
 supports 1, 3 or 9 components. The local corner indices remain zero-based and padded with -1.
 The `cell_type` attribute keeps its VTK values (10/13/14); the actual MSH element types are
 4/6/7. Elements are grouped by region and type, with their attributes reordered together.
-
-### Default hybrid quality pipeline
-
-For `prism_dominant: true`, the component now defaults to the accepted pipeline:
-the original collapse/target smoothing (5 rounds by default), hybrid reconstruction,
-20 rounds of residual-edge domain AMIPS relocation, then 20 rounds of offset-surface
-AMIPS/thickness relocation allowing vertices shared with prisms/pyramids.
-Background retention remains controlled by `keep_background_mesh`.
-The defaults are equivalent to:
-
-```json
-"collapse_edge_relocation_iterations": 20,
-"prism_tet_relocation_iterations": 0,
-"tet_face_relocation_iterations": 20,
-"tet_face_relocation_allow_mixed_cells": true,
-"relocation_amips_threshold": 100,
-"relocation_thickness_weight": 1000,
-"relocation_thickness_tolerance": 0.1,
-"relocation_max_displacement_ratio": 0.5
-```
-
-The legacy prism-derived bad-tet pass remains available but is disabled by default.
-There is no new quality gate during the original collapse/target smoothing stage.
-Pure-tet component calls implicitly disable both hybrid postpasses when their options
-are omitted; explicitly requesting a nonzero hybrid-only stage still requires
-`prism_dominant`. Setting both relocation iteration options to zero disables the
-default postprocessing. Low-level `BadQualityRelocationOptions` retains opt-in zero
-defaults for callers running individual stages directly.
-If an input has no positive target thickness (for example, no usable input edges),
-the implicit default thickness pass is skipped and its report records
-`skipped_reason: no_positive_target_thickness`. Explicitly requesting that pass
-still requires a positive target thickness.
-
-1. **Residual collapse edge:** a bad tet contains an offset edge with matching correspondence
-   and component IDs. Build the common edge-connected triangle patch from the union of its two
-   endpoint stars on the offset surface. Use **all three-offset triangles**, including triangles
-   supported only by retained background cells, rather than cutting the chart at the band tag.
-   Parameterize a disk patch with a convex circular boundary and uniform positive harmonic weights.
-   Its piecewise-affine inverse maps parameter coordinates back onto the current triangle patch.
-   Only the two edge ends move; all other patch vertices are fixed during that operation.
-
-   Minimize `sum(incident reference-tet AMIPS/3)`. Pull the analytic 3D AMIPS gradient into the
-   chart by `J.transpose()*gradient`, considering the appropriate one-sided derivatives at triangle
-   seams and vertices. The line-search interval starts at the current coordinates and ends at
-   the first outer-domain boundary hit or UV triangle-collapse event. Backtrack by halving until
-   the actual summed AMIPS over **all** incident tets (including background) strictly decreases
-   and the positivity guards pass. Individual tets may increase their AMIPS; this class has
-   no per-cell quality ceilings or additional Armijo sufficient-decrease test.
-   Rebuild the current local chart for each
-   operation. This class does **not** use target positions, normals, thickness energy, a spring,
-   or a thickness-scaled displacement cap. Non-disk, missing or degenerate domains are reported
-   and skipped; there is no fallback to the earlier spring/height method.
-2. **Prism-derived bad tet:** a remaining bad tet was emitted from a Jacobian-valid prism
-   candidate (including pyramid-plus-tet transitions). Relocate its offset corners using
-   `sum(incident reference-tet AMIPS / 3) + weight * sum((normal_thickness/h - 1)^2)`.
-   Positive-definite corner Newton steps are bounded by `0.2*h` and backtracked, with a
-   normalized projected-gradient fallback when Newton fails or its accepted displacement
-   is at most `sqrt(machine epsilon)*h`. A tiny successful Newton candidate is retained if
-   the gradient candidate fails or has higher energy. The hard
-   projected-thickness error band is `max(tolerance, error at entry to this class)`, so an
-   existing thickness error need not be solved before a quality-improving move can occur.
-   Regular vertices use their fixed unit optimal normal; missing/singular normals use the
-   current input-to-offset column direction. This is projected thickness, not nearest-surface
-   distance. This class's total displacement ball uses `relocation_max_displacement_ratio*h`,
-   measured from its entry **after** domain relocation.
-
-Only the second class gives every affected shell or retained background tet its own quality ceiling
-`max(threshold, entry AMIPS)`, tightened after improvement: initially bad neighbors do not
-block repair merely for being over 100, while an initially good neighbor cannot become bad.
-Coupled moves certify positive volume along their applied 3D segment using exact Bernstein
-controls; single-corner moves have affine determinants. Shell `min_tet_volume` and optional
-relative per-move volume floors still apply. Incident native prism/pyramid cells remain
-positive; analogous native shape bounds apply only in the second class. The first class additionally preserves
-positive parameter-triangle orientation throughout its bounded UV step.
-
-Input/rod and fixed-background vertices, correspondence, connectivity and output cell types stay
-fixed. Junction no-collapse offsets may relocate; the no-collapse mask continues to forbid
-topology changes. The report records `no_collapse_offset_vertices_relocated` and
-`relocated_no_collapse_source_vids`, and updates `junction_protection.offset_positions_fixed`
-to reflect the final coordinates.
-With transition expansion disabled, no collapse retry or reconstruction follows this pass.
-It requires `prism_dominant`.
-Other bad tets are reported separately. The hybrid report's `bad_quality_relocation` records
-entry class membership, before/after quality and displacement. Its `collapse_edge_domain`
-records admissible edges, rejected-domain reasons, decreasing AMIPS energy and accepted moves;
-`prism_tet_relocation` records the second class's energy and projected-thickness errors.
-VTU field `bad_quality_region` records the entry class: 1 residual edge, 2 prism-derived,
-3 other bad tet, 0 unselected. `smoothing_max_backtracks` also bounds both line searches.
-
-The default `tet_face_relocation_iterations` pass runs after the domain stage and any
-explicitly enabled legacy prism-tet stage. Its settings are:
-
-```json
-"collapse_edge_relocation_iterations": 20,
-"prism_tet_relocation_iterations": 0,
-"tet_face_relocation_iterations": 20,
-"tet_face_relocation_allow_mixed_cells": true
-```
-
-It rescans **all actual shell tets**, regardless of their AMIPS or original class, and
-selects their offset vertices that lie on an all-offset triangular face. By default,
-vertices shared with native prisms or pyramids can move too; all neighboring native
-cells must stay positive. Set `tet_face_relocation_allow_mixed_cells` to `false` to
-reproduce the earlier restriction to **entirely tetrahedral native one-rings**.
-Input/rod/frozen vertices remain fixed. Junction no-collapse offsets are eligible for this
-position optimization too; they retain their topology protection.
-This includes surface vertices shared with two-offset shell tets; it does not require
-the selected tet itself to have three offset corners.
-
-The new pass minimizes the summed AMIPS/3 of all incident reference tets, including
-background and prism/pyramid reference decompositions, plus the same projected-thickness
-energy. Vertices move one at a time in
-3D with damped corner Newton steps and halving line searches. Failed or tiny Newton steps
-trigger a gradient fallback, starting at `0.2*h` and backtracking under the same acceptance
-checks. Both directions use the Euclidean projection onto the intersection of the displacement
-ball and normal-thickness slab, preserving feasible tangent motion at the ball boundary.
-The gradient uses the complete AMIPS-plus-thickness energy. Only the actual combined
-energy must strictly decrease; individual tet quality can rise. There are no per-cell
-quality caps, bad-seed monotonicity tests or AMIPS-based early skips. Positivity,
-minimum-volume checks, the thickness-error band and thickness-scaled step/displacement
-bounds still apply, measured from entry to this new pass. Normal directions are fixed
-at stage entry. This stage uses no target-position tether and does not itself reconstruct cells.
-
-The stage defaults to 20 rounds in hybrid mode; zero disables it. Its report key is
-`bad_quality_relocation.tet_face_relocation`, recording the selected source vertex IDs,
-the count selected with mixed native neighbors or excluded by the optional restriction,
-shell quality before/after, thickness errors,
-accepted moves, displacement and monotonically decreasing combined energy.
-It also records `accepted_newton_moves`, `gradient_fallback_attempts`,
-`accepted_gradient_moves`, `newton_stagnations` and `tiny_newton_candidates`.
-
-### Optional expansion of residual bad-tet transition regions
-
-Set `bad_tet_transition_expansion_rounds` to `1` to add one outer repair round after the
-configured relocation stages. The default is `0`; the allowed range is `0..5`, and hybrid
-output is required. Each round finds actual shell tets above `relocation_amips_threshold`
-(default `100`) and freezes their offset vertices as seeds. Every all-offset triangle incident
-to those seeds contributes all three corners to the forced `transition_mark=1` set. This is
-one vertex ring per round; newly added corners do not recursively grow that same ring.
-Previous marks are preserved, and the reconstruction's conformity repair may add further marks.
-Vertex labels, correspondence, input positions and collapse protection are preserved.
-
-The hybrid cells and conforming reference decomposition are rebuilt with these marks, then
-the configured relocation stages run again (normally `20` domain rounds plus `20`
-AMIPS/thickness rounds). Original collapse and target-position smoothing are not repeated.
-Each relocation stage measures its displacement bounds from its new entry coordinates.
-The loop stops when no actual bad shell tet remains or the requested outer budget is exhausted;
-it does not guarantee that every tet reaches AMIPS below 100.
-
-The report's `bad_tet_transition_expansion` records initial relocation, seed and ring source IDs,
-marked faces, newly forced marks, cell counts and quality before/reconstruction/optimization,
-and every repeated relocation report. Compare all shell reference tets as well as actual shell
-tets: converting a prism or pyramid into tets can change the latter population.
 
 ### Final thickness and prism smoothing
 

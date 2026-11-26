@@ -146,6 +146,13 @@ public:
         return m_workers;
     }
 
+    /// How many workers are idle: waiting for a job, or about to. For tests.
+    size_t idle_count()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_idle;
+    }
+
 private:
     worker_pool() = default;
 

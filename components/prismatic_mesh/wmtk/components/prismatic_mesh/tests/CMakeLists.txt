@@ -21,6 +21,5 @@ target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE
     test_rod_mesh.cpp
     test_rod_frame_mapping.cpp
     test_thickness_smoothing.cpp
-    test_bad_quality_relocation.cpp
-    test_surface_domain.cpp
+    test_quality_improvement.cpp
 )

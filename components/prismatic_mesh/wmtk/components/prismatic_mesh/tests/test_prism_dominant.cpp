@@ -813,6 +813,142 @@ TEST_CASE("background cavity reservations reject overlap and input-volume consum
     REQUIRE(data.tetrahedra == tets);
 }
 
+TEST_CASE("atomic background layers retry overlap on updated tets and roll back failed retries")
+{
+    // Adjacent cube faces y=0 and x=1 need pyramids. Their original diagonal
+    // stars share tet (0,1,5,7), but the first reconstruction leaves free support
+    // tets on which the second face can be reconstructed without touching the
+    // first pyramid body.
+    PrismaticMeshInput data;
+    data.vertices.resize(10, 3);
+    data.vertices << 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, .5,
+        -.5, .5, 1.5, .5, .5;
+    std::vector<std::array<size_t, 4>> tets = {
+        {0, 1, 3, 7},
+        {0, 1, 5, 7},
+        {0, 2, 3, 7},
+        {0, 2, 6, 7},
+        {0, 4, 5, 7},
+        {0, 4, 6, 7},
+        {8, 0, 4, 5},
+        {8, 0, 5, 1},
+        {9, 1, 5, 7},
+        {9, 1, 7, 3}};
+    data.tetrahedra.resize(tets.size(), 4);
+    for (size_t i = 0; i < tets.size(); ++i) {
+        if (!tet_volume_above_threshold(data.vertices, tets[i], 0))
+            std::swap(tets[i][0], tets[i][1]);
+        REQUIRE(tet_volume_above_threshold(data.vertices, tets[i], 0));
+        for (int j = 0; j < 4; ++j) data.tetrahedra(i, j) = tets[i][j];
+    }
+    data.vertex_tags.assign(10, 2);
+    data.vertex_tags[8] = data.vertex_tags[9] = 1;
+    data.source_vertex_ids.resize(10);
+    for (size_t v = 0; v < 10; ++v) data.source_vertex_ids[v] = 100 + 3 * v;
+    data.corr_input_vid.assign(10, -1);
+    data.corr_input_vertex.assign(10, -1);
+    data.input_to_offset_vertices.resize(10);
+    data.input_cells.assign(tets.size(), 0);
+    data.offset_tet_tags.assign(tets.size(), -1);
+    for (size_t i = 6; i < tets.size(); ++i) data.offset_tet_tags[i] = 1;
+    const detail::BackgroundQuad first{{0, 4, 5, 1}, {{{0, 4, 5}, {0, 5, 1}}}};
+    const detail::BackgroundQuad second{{1, 5, 7, 3}, {{{1, 5, 7}, {1, 7, 3}}}};
+    const auto positions = data.vertices;
+    const auto original_tets = data.tetrahedra;
+    const auto ids = data.source_vertex_ids;
+
+    const auto initial_hybrid = [&]() {
+        PrismDominantMesh hybrid;
+        for (size_t tid = 0; tid < 6; ++tid)
+            hybrid.cells.push_back(
+                {HybridCellType::Tetrahedron, {tets[tid].begin(), tets[tid].end()}, {tid}});
+        hybrid.cells.push_back({HybridCellType::Pyramid, {1, 5, 4, 0, 8}, {6, 7}});
+        hybrid.cells.push_back({HybridCellType::Pyramid, {3, 7, 5, 1, 9}, {8, 9}});
+        return hybrid;
+    };
+    SECTION("new support tets can be reused while all preceding pyramid bodies remain fixed")
+    {
+        bool same_layer = false;
+        bool shell_quads = false;
+        SECTION("across two layers") {}
+        SECTION("shell quad cavities reuse the same sequential reconstruction")
+        {
+            shell_quads = true;
+        }
+        SECTION("within one atomic layer")
+        {
+            same_layer = true;
+        }
+        std::vector<std::string> reasons;
+        const std::vector<std::vector<detail::BackgroundQuad>> groups =
+            same_layer ? std::vector<std::vector<detail::BackgroundQuad>>{{first, second}}
+                       : std::vector<std::vector<detail::BackgroundQuad>>{{first}, {second}};
+        auto plans = shell_quads ? detail::plan_background_pyramids(data, {first, second}, 0)
+                                 : detail::plan_atomic_rod_layer_pyramids(data, groups, 0, reasons);
+        REQUIRE(plans.report["initial_rejections"]["overlapping_cavity"] == 1);
+        REQUIRE(
+            std::all_of(reasons.begin(), reasons.end(), [](const auto& s) { return s.empty(); }));
+        REQUIRE(plans.accepted.size() == (same_layer ? 0 : 1));
+        REQUIRE(plans.sequential.size() == (same_layer ? 2 : 1));
+        REQUIRE(plans.report["sequential_overlap_retry"]["recovered_layers"] == 1);
+        // Planning, including sequential mutation, is private until final apply.
+        REQUIRE(data.vertices == positions);
+        REQUIRE(data.tetrahedra == original_tets);
+        REQUIRE(data.source_vertex_ids == ids);
+        auto hybrid = initial_hybrid();
+        detail::apply_background_pyramids(data, hybrid, plans);
+        REQUIRE(plans.report["applied"] == 2);
+        REQUIRE(plans.report["sequential_applied"] == (same_layer ? 2 : 1));
+        REQUIRE(data.vertices.topRows(positions.rows()) == positions);
+        REQUIRE(data.vertices.rows() == positions.rows() + 2);
+        REQUIRE(count(hybrid, HybridCellType::Pyramid) == 4);
+        REQUIRE(std::count_if(hybrid.cells.begin(), hybrid.cells.end(), [](const auto& c) {
+                    return c.background_transition && c.type == HybridCellType::Pyramid;
+                }) == 2);
+        check_partition(data, hybrid);
+    }
+    SECTION("an infeasible later face rolls back all temporary changes in its layer")
+    {
+        const detail::BackgroundQuad invalid{{0, 2, 6, 4}, {{{0, 2, 6}, {0, 6, 4}}}};
+        // This third face is an exterior boundary with no rod-side owner. The
+        // original attempt stops at overlap; the retry reaches it after first
+        // materializing the preceding faces, and must roll everything back.
+        std::vector<std::string> reasons;
+        const auto plans =
+            detail::plan_atomic_rod_layer_pyramids(data, {{first, second, invalid}}, 0, reasons);
+        REQUIRE(plans.accepted.empty());
+        REQUIRE(plans.sequential.empty());
+        REQUIRE(reasons == std::vector<std::string>{"overlapping_cavity"});
+        const auto& retry = plans.report["sequential_overlap_retry"];
+        REQUIRE(retry["recovered_layers"] == 0);
+        REQUIRE(retry["attempts"][0]["quads_completed_before_failure_or_commit"] == 2);
+        REQUIRE(retry["attempts"][0]["reason"] == "not_background_interface");
+        REQUIRE(data.vertices == positions);
+        REQUIRE(data.tetrahedra == original_tets);
+        REQUIRE(data.source_vertex_ids == ids);
+    }
+    SECTION("a rolled-back layer does not poison the following retry")
+    {
+        const detail::BackgroundQuad invalid{{0, 2, 6, 4}, {{{0, 2, 6}, {0, 6, 4}}}};
+        std::vector<std::string> reasons;
+        auto plans = detail::plan_atomic_rod_layer_pyramids(
+            data,
+            {{first, second, invalid}, {first, second}},
+            0,
+            reasons);
+        REQUIRE(reasons[0] == "overlapping_cavity");
+        REQUIRE(reasons[1].empty());
+        REQUIRE(plans.accepted.empty());
+        REQUIRE(plans.sequential.size() == 2);
+        REQUIRE(plans.sequential[0].point_vertex_row == 10);
+        REQUIRE(plans.sequential[1].point_vertex_row == 11);
+        auto hybrid = initial_hybrid();
+        detail::apply_background_pyramids(data, hybrid, plans);
+        REQUIRE(data.vertices.rows() == 12);
+        check_partition(data, hybrid);
+    }
+}
+
 TEST_CASE("adjacent prisms share a quadrilateral and reject a one-sided tetrahedral fallback")
 {
     auto data =

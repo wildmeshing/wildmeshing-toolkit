@@ -2,6 +2,7 @@
 #include "junction_protection.hpp"
 #include "prism_jacobian.hpp"
 #include "prismatic_mesh.hpp"
+#include "quality_improvement.hpp"
 #include "rod_mesh.hpp"
 
 #include <algorithm>
@@ -483,7 +484,7 @@ std::vector<Interface> split_interfaces(
                     flexible_exterior_quads.insert(quad);
                     continue;
                 }
-                if (!background.accepted.count(quad) &&
+                if (!background.contains(quad) &&
                     std::any_of(
                         c.sides[side].triangles.begin(),
                         c.sides[side].triangles.end(),
@@ -732,6 +733,15 @@ std::vector<Candidate> discover_candidates(
                 return input.vertex_tags.at(v) == 2;
             }))
             continue;
+        if (input.rod_state &&
+            std::any_of(
+                incidence.tets.begin(),
+                incidence.tets.end(),
+                [&](size_t tid) { return is_rod_band_tet(input, tid); }) &&
+            std::none_of(incidence.tets.begin(), incidence.tets.end(), [&](size_t tid) {
+                return input.offset_tet_tags[tid] == 1 && !is_rod_band_tet(input, tid);
+            }))
+            continue;
         std::set<int64_t> parents;
         for (size_t v : f) {
             const auto parent = input.corr_input_vertex.at(v);
@@ -919,7 +929,7 @@ PrismDominantMesh build_whole_rod_layers(PrismaticMeshInput& input, double floor
     const auto original_faces = source_faces(input);
     std::map<std::array<size_t, 2>, std::set<size_t>> cavities;
     for (size_t tid = 0; tid < size_t(input.tetrahedra.rows()); ++tid) {
-        if (input.offset_tet_tags[tid] != 1) continue;
+        if (input.offset_tet_tags[tid] != 1 || is_fixed_shell_tet(input, tid)) continue;
         std::set<int64_t> parents;
         for (size_t v : source_tet(input, tid))
             parents.insert(
@@ -933,14 +943,17 @@ PrismDominantMesh build_whole_rod_layers(PrismaticMeshInput& input, double floor
     for (const auto& axis : state.input_edges) {
         WholeRodLayer layer;
         layer.axis = axis;
-        const auto reject = [&](const std::string& reason) { layer.reason = reason; };
+        const auto reject = [&](const std::string& reason) {
+            // A nonpositive candidate also has wrongly oriented caps. Retain
+            // the first failure so the edge-based report names the cause.
+            if (!state.options.edge_based || layer.reason.empty()) layer.reason = reason;
+        };
         if (!state.vertex_frame.count(axis[0]) || !state.vertex_frame.count(axis[1])) {
             reject("endpoint_region_not_a_ring");
             layers.push_back(std::move(layer));
             continue;
         }
-        const auto& lo = state.frames[state.vertex_frame.at(axis[0])].ring;
-        const auto& hi = state.frames[state.vertex_frame.at(axis[1])].ring;
+        const auto [lo, hi] = rod_layer_rings(input, axis);
         if (lo.size() < 3 || lo.size() != hi.size()) {
             reject("unequal_ring_degree");
             layers.push_back(std::move(layer));
@@ -1145,13 +1158,22 @@ PrismDominantMesh build_whole_rod_layers(PrismaticMeshInput& input, double floor
     reference.offset_tet_tags = std::move(bands);
     for (auto& [q, plan] : background.accepted)
         for (auto& tid : plan.cavity) tid = old_to_new.at(tid);
+    // Sequential retry rows belong to the planner's updated tet snapshot.
+    // Original BG rows follow the retained-row map; appended BG rows follow
+    // the same append order after the newly reconstructed rod reference tets.
+    for (auto& step : background.sequential)
+        for (auto& tid : step.plan.cavity)
+            tid = tid < background.planning_tet_count
+                      ? old_to_new.at(tid)
+                      : size_t(reference.tetrahedra.rows()) + tid - background.planning_tet_count;
     result.source_tet_to_cell.assign(new_tets.size(), std::numeric_limits<size_t>::max());
     for (size_t ci = 0; ci < result.cells.size(); ++ci)
         for (size_t tid : result.cells[ci].source_tets) result.source_tet_to_cell[tid] = ci;
     detail::apply_background_pyramids(reference, result, background);
+    restore_shell_cells(reference, result);
     validate_prism_dominant_mesh(reference, result, floor);
     // A kept background volume must preserve the complete outer domain boundary.
-    if (!background.accepted.empty()) {
+    if (!background.accepted.empty() || !background.sequential.empty()) {
         const auto final_faces = source_faces(reference);
         std::map<Tri, Tri> before, after;
         for (const auto& [q, f] : original_faces)
@@ -1166,9 +1188,16 @@ PrismDominantMesh build_whole_rod_layers(PrismaticMeshInput& input, double floor
                 after.count(q) && same_orientation(f, after.at(q)),
                 "whole-layer builder changes domain orientation");
     }
-    size_t band_tets = 0, bg_tets = 0, bg_pyramids = 0, input_tets = 0;
+    size_t band_tets = 0, bg_tets = 0, bg_pyramids = 0, input_tets = 0, prisms = 0,
+           shell_pyramids = 0;
     for (const auto& cell : result.cells) {
-        if (cell.type == HybridCellType::Pyramid) ++bg_pyramids;
+        if (cell.type == HybridCellType::Prism) ++prisms;
+        if (cell.type == HybridCellType::Pyramid) {
+            if (cell.background_transition)
+                ++bg_pyramids;
+            else
+                ++shell_pyramids;
+        }
         if (cell.type != HybridCellType::Tetrahedron) continue;
         const size_t tid = cell.source_tets.front();
         if (reference.offset_tet_tags[tid] == 1)
@@ -1180,9 +1209,10 @@ PrismDominantMesh build_whole_rod_layers(PrismaticMeshInput& input, double floor
     }
     result.report = {
         {"method", "atomic_ring_to_ring_rod_layers"},
-        {"prisms", prism_candidate},
-        {"pyramids", bg_pyramids},
-        {"shell_pyramids", 0},
+        {"prisms", prisms},
+        {"rod_prisms", prism_candidate},
+        {"pyramids", bg_pyramids + shell_pyramids},
+        {"shell_pyramids", shell_pyramids},
         {"background_pyramids", bg_pyramids},
         {"band_tetrahedra", band_tets},
         {"input_tetrahedra", input_tets},
@@ -1278,7 +1308,7 @@ static PrismDominantMesh build_shell_hybrid(
         if (!c.partition || c.conflict) continue;
         for (size_t side = 0; side < 3; ++side) {
             const auto& q = c.sides[side];
-            if (quad_users[q.vertices] != 1 || background.accepted.count(q.vertices) ||
+            if (quad_users[q.vertices] != 1 || background.contains(q.vertices) ||
                 std::all_of(q.triangles.begin(), q.triangles.end(), [&](const Tri& t) {
                     return faces.at(t).tets.size() == 1;
                 }))
@@ -1549,6 +1579,37 @@ static PrismDominantMesh build_shell_hybrid(
             unassigned_band += input.offset_tet_tags[tid] == 1;
             append(retained_tet(reference, tid));
         }
+    // The marker solve may have removed candidate quads. Retry only the emitted
+    // quads, so no sequential step depends on an inactive provisional pyramid.
+    std::set<Quad> active_background;
+    for (const auto& cell : result.cells)
+        if (reference.offset_tet_tags[cell.source_tets.front()] == 1)
+            for (const auto& face : cell_faces(cell))
+                if (face.size() == 4)
+                    active_background.insert(sorted(Quad{face[0], face[1], face[2], face[3]}));
+    std::vector<detail::BackgroundQuad> active_quads;
+    std::set<Quad> seen_background;
+    for (const auto& quad : background_quads) {
+        const auto q = sorted(quad.vertices);
+        if (active_background.count(q) && background.contains(q) &&
+            seen_background.insert(q).second)
+            active_quads.push_back(quad);
+    }
+    auto final_background =
+        detail::plan_background_pyramids(reference, active_quads, min_tet_volume);
+    auto retry_marks = extra_transition_marks;
+    for (const auto& quad : active_quads)
+        if (!final_background.contains(sorted(quad.vertices)))
+            for (size_t v : quad.vertices)
+                if (input.vertex_tags[v] == 2) retry_marks.insert(v);
+    if (retry_marks != extra_transition_marks)
+        return build_shell_hybrid(input, min_tet_volume, retry_marks);
+    const auto emitted_report = final_background.report;
+    final_background.report = background.report;
+    final_background.report["emitted_quad_planning"] = emitted_report;
+    final_background.report["sequential_overlap_retry"] =
+        emitted_report.at("sequential_overlap_retry");
+    background = std::move(final_background);
     detail::apply_background_pyramids(reference, result, background);
     // Cavity replacement must preserve the full domain's oriented triangular boundary.
     if (background.report["applied"].get<size_t>()) {
@@ -1691,6 +1752,130 @@ static PrismDominantMesh build_shell_hybrid(
         result.report["background_remeshing"] = input.background_remeshing_report;
     return result;
 }
+PrismDominantMesh build_shell_prism_mesh(PrismaticMeshInput& input, double floor)
+{
+    return build_shell_hybrid(input, floor, {});
+}
+
+PrismDominantMesh build_rod_prism_mesh(PrismaticMeshInput& input, double floor)
+{
+    finalize_rod_frame_mapping(input);
+    auto result = build_whole_rod_layers(input, floor);
+    if (!input.rod_state->fixed_shell_cells.empty()) {
+        result.report["method"] = "shell_first_then_atomic_rod_layers";
+        result.report["checks"]["completed_shell_cells_preserved_during_rod_reconstruction"] = true;
+        result.report["checks"]["mixed_interfaces_validated_together"] = true;
+    }
+    return result;
+}
+
+PrismDominantMesh adopt_improved_shell_mesh(
+    PrismaticMeshInput& input,
+    const ImprovedHybridMesh& mesh)
+{
+    auto reference = reconstruction_state(input);
+    const size_t nv = mesh.vertices.rows();
+    require(nv >= size_t(input.vertices.rows()), "shell handoff removed original vertex rows");
+    for (size_t v = 0; v < size_t(input.vertices.rows()); ++v)
+        require(
+            mesh.source_vertex_ids.at(v) == input.source_vertex_ids[v],
+            "shell handoff renumbered original vertex rows");
+    reference.vertices = mesh.vertices;
+    reference.source_vertex_ids = mesh.source_vertex_ids;
+    reference.vertex_tags = mesh.vertex_tags;
+    reference.corr_input_vertex = mesh.correspondence;
+    reference.corr_input_vid.assign(nv, -1);
+    reference.input_to_offset_vertices.assign(nv, {});
+    reference.input_vertices.clear();
+    reference.offset_vertices.clear();
+    for (size_t v = 0; v < nv; ++v) {
+        if (reference.vertex_tags[v] == 1) reference.input_vertices.push_back(v);
+        const auto parent = reference.corr_input_vertex[v];
+        if (reference.vertex_tags[v] == 2 && parent >= 0) {
+            reference.offset_vertices.push_back(v);
+            reference.input_to_offset_vertices.at(parent).push_back(v);
+            reference.corr_input_vid[v] = reference.source_vertex_ids.at(parent);
+        } else {
+            reference.corr_input_vertex[v] = -1;
+            if (reference.vertex_tags[v] == 2) reference.vertex_tags[v] = -1;
+        }
+    }
+    PrismDominantMesh result;
+    std::vector<Candidate> candidates;
+    std::map<Quad, std::vector<std::pair<size_t, int>>> users;
+    for (const auto& cell : mesh.cells) {
+        HybridCell native;
+        native.type = cell.type;
+        native.vertices = cell.vertices;
+        if (native.type == HybridCellType::Prism) {
+            std::swap(native.vertices[1], native.vertices[2]);
+            std::swap(native.vertices[4], native.vertices[5]);
+        }
+        native.background_transition = cell.region == 3 && cell.type == HybridCellType::Pyramid;
+        Candidate c;
+        c.prism = native;
+        c.partition = true;
+        c.splits = decompositions(native);
+        for (size_t d = 0; d < c.splits.size(); ++d) {
+            c.split_sides.push_back(patches(native, c.splits[d]));
+            if (std::all_of(c.splits[d].begin(), c.splits[d].end(), [&](const Tet& t) {
+                    return tet_volume_above_threshold(reference.vertices, t, 0);
+                }))
+                c.admissible_splits |= 1u << d;
+        }
+        require(c.admissible_splits != 0, "remeshed shell has no positive corner tet split");
+        const size_t ci = candidates.size();
+        for (size_t q = 0; q < c.split_sides.front().size(); ++q)
+            users[c.split_sides.front()[q].vertices].push_back({ci, int(q)});
+        candidates.push_back(std::move(c));
+        result.cells.push_back(std::move(native));
+    }
+    std::vector<Interface> interfaces;
+    for (const auto& [q, owners] : users) {
+        require(owners.size() <= 2, "nonmanifold remeshed shell quad");
+        if (owners.size() == 2)
+            interfaces.push_back(
+                {owners[0].first, owners[1].first, owners[0].second, owners[1].second});
+    }
+    std::vector<size_t> solution;
+    size_t failure = 0, decisions = 0;
+    bool limited = false;
+    require(
+        solve_splits(candidates, interfaces, solution, failure, decisions, limited),
+        "remeshed shell has no compatible positive reference splits");
+    std::vector<Tet> tets;
+    reference.input_cells.clear();
+    reference.offset_tet_tags.clear();
+    for (size_t ci = 0; ci < result.cells.size(); ++ci)
+        for (const auto& t : candidates[ci].splits[solution[ci]]) {
+            result.cells[ci].source_tets.push_back(tets.size());
+            result.source_tet_to_cell.push_back(ci);
+            tets.push_back(t);
+            reference.input_cells.push_back(mesh.cells[ci].region == 1 ? 1 : 0);
+            reference.offset_tet_tags.push_back(mesh.cells[ci].region == 2 ? 1 : -1);
+        }
+    reference.tetrahedra.resize(tets.size(), 4);
+    for (size_t tid = 0; tid < tets.size(); ++tid)
+        for (int j = 0; j < 4; ++j) reference.tetrahedra(tid, j) = tets[tid][j];
+    reference.mesh = std::make_unique<TetMesh>();
+    reference.mesh->init_with_isolated_vertices(nv, tets);
+    require(reference.mesh->check_mesh_connectivity_validity(), "invalid remeshed shell reference");
+    reference.offset_components.clear();
+    reference.input_to_components.clear();
+    reference.vertex_component_ids.assign(nv, -1);
+    reference.singular_vertex_tags.assign(nv, -1);
+    reference.optimal_normals = mesh.reference_normals;
+    reference.target_positions = reference.vertices;
+    reference.fixed_background_vertices.clear();
+    label_offset_faces(reference);
+    validate_prism_dominant_mesh(reference, result, 0);
+    result.report = {
+        {"shell_quality_improvement", mesh.report},
+        {"compatible_reference_rebuilt", true}};
+    input = std::move(reference);
+    return result;
+}
+
 PrismDominantMesh build_prism_dominant_mesh(
     PrismaticMeshInput& input,
     double floor,
@@ -1700,93 +1885,14 @@ PrismDominantMesh build_prism_dominant_mesh(
         if (v >= static_cast<size_t>(input.vertices.rows()) || input.vertex_tags[v] != 2)
             throw std::invalid_argument("Transition marks must name offset vertex rows");
     if (!input.rod_state) return build_shell_hybrid(input, floor, extra_transition_marks);
-    auto rods = build_whole_rod_layers(input, floor);
-    bool has_shell = false;
-    for (size_t i = 0; i < size_t(input.tetrahedra.rows()) && !has_shell; ++i) {
-        if (input.offset_tet_tags[i] != 1) continue;
-        size_t input_corners = 0;
-        for (size_t v : source_tet(input, i)) input_corners += input.vertex_tags[v] == 1;
-        has_shell = input_corners >= 3;
+    nlohmann::json shell_report;
+    if (has_shell_region(input) && input.rod_state->fixed_shell_cells.empty()) {
+        auto shells = build_shell_hybrid(input, floor, extra_transition_marks);
+        shell_report = shells.report;
+        reserve_shell_cells(input, shells);
     }
-    if (!has_shell) return rods;
-    auto shells = build_shell_hybrid(input, floor, extra_transition_marks);
-    std::set<size_t> reserved;
-    std::vector<HybridCell> retained;
-    int64_t next_candidate = 0;
-    for (const auto& cell : shells.cells)
-        next_candidate = std::max(next_candidate, cell.prism_candidate + 1);
-    for (const auto& cell : rods.cells) {
-        if (cell.type == HybridCellType::Tetrahedron) continue;
-        require(
-            matches_reference(input, cell),
-            "shell pass changed a reserved rod prism/pyramid partition");
-        for (size_t tid : cell.source_tets)
-            require(reserved.insert(tid).second, "overlapping reserved rod cells");
-        retained.push_back(cell);
-        if (retained.back().prism_candidate >= 0) retained.back().prism_candidate += next_candidate;
-    }
-    PrismDominantMesh result;
-    for (auto& cell : shells.cells) {
-        size_t overlap = 0;
-        for (size_t tid : cell.source_tets) overlap += reserved.count(tid);
-        if (overlap) {
-            require(
-                cell.type == HybridCellType::Tetrahedron && cell.source_tets.size() == 1,
-                "shell cell overlaps a reserved rod native cell");
-            continue;
-        }
-        result.cells.push_back(std::move(cell));
-    }
-    result.cells.insert(result.cells.end(), retained.begin(), retained.end());
-    result.source_tet_to_cell.assign(input.tetrahedra.rows(), std::numeric_limits<size_t>::max());
-    size_t prisms = 0, pyramids = 0, band_tets = 0, volume_tets = 0, bg_tets = 0, bg_pyramids = 0;
-    for (size_t ci = 0; ci < result.cells.size(); ++ci) {
-        const auto& cell = result.cells[ci];
-        for (size_t tid : cell.source_tets) {
-            require(
-                result.source_tet_to_cell[tid] == std::numeric_limits<size_t>::max(),
-                "mixed cell ownership overlap");
-            result.source_tet_to_cell[tid] = ci;
-        }
-        if (cell.type == HybridCellType::Prism)
-            ++prisms;
-        else if (cell.type == HybridCellType::Pyramid) {
-            ++pyramids;
-            bg_pyramids += cell.background_transition;
-        } else if (input.offset_tet_tags[cell.source_tets[0]] == 1)
-            ++band_tets;
-        else if (input.input_cells[cell.source_tets[0]] == 1)
-            ++volume_tets;
-        else
-            ++bg_tets;
-    }
-    validate_prism_dominant_mesh(input, result, floor);
-    result.report = shells.report;
-    result.report["method"] = "atomic_region_rod_layers_composed_with_shell_prisms";
-    result.report["atomic_rod_layers"] = rods.report;
-    result.report["shell_reconstruction"] = shells.report;
-    result.report["interface_swaps"] =
-        rods.report.value("interface_swaps", nlohmann::json::object());
-    result.report["prisms"] = prisms;
-    result.report["pyramids"] = pyramids;
-    result.report["shell_pyramids"] = pyramids - bg_pyramids;
-    result.report["background_pyramids"] = bg_pyramids;
-    result.report["band_tetrahedra"] = band_tets;
-    result.report["input_tetrahedra"] = volume_tets;
-    result.report["background_tetrahedra"] = bg_tets;
-    result.report["output_cells"] = result.cells.size();
-    result.report["source_tetrahedra"] = input.tetrahedra.rows();
-    result.report["checks"]["atomic_rod_cells_preserved_during_shell_reconstruction"] = true;
-    result.report["checks"]["mixed_interfaces_validated_together"] = true;
-    result.report["marked_offset_source_vids"] =
-        shells.report.value("marked_offset_source_vids", nlohmann::json::array());
-    logger().info(
-        "Mixed region strategy: {} native rod prisms, {} total prisms, {} band tets, {} background "
-        "pyramids",
-        rods.report["prisms"].get<size_t>(),
-        prisms,
-        band_tets,
-        bg_pyramids);
+    auto result = build_rod_prism_mesh(input, floor);
+    if (!shell_report.is_null()) result.report["shell_reconstruction"] = std::move(shell_report);
     return result;
 }
 

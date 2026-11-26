@@ -213,7 +213,8 @@ bool try_rod_interface_swap(
         if (std::find(t.begin(), t.end(), old_edge[0]) == t.end() ||
             std::find(t.begin(), t.end(), old_edge[1]) == t.end())
             continue;
-        if (input.input_cells[tid] == 1 || junction_tet_protected(input, t)) {
+        if (input.input_cells[tid] == 1 || junction_tet_protected(input, t) ||
+            is_fixed_shell_tet(input, tid)) {
             reason = "protected_volume_star";
             return false;
         }
@@ -314,7 +315,7 @@ bool prepare_background_face_swap(
     if (owners.size() != 2) return false;
     for (size_t tid : owners)
         if (input.offset_tet_tags[tid] == 1 || input.input_cells[tid] == 1 ||
-            junction_tet_protected(input, source_tet(input, tid)))
+            junction_tet_protected(input, source_tet(input, tid)) || is_fixed_shell_tet(input, tid))
             return false;
     if (input.input_cells[owners[0]] != input.input_cells[owners[1]] ||
         input.offset_tet_tags[owners[0]] != input.offset_tet_tags[owners[1]])
@@ -458,8 +459,7 @@ nlohmann::json align_rod_interfaces_by_swaps(PrismaticMeshInput& input, double f
     auto& state = *input.rod_state;
     for (const auto& axis : state.input_edges) {
         if (!state.vertex_frame.count(axis[0]) || !state.vertex_frame.count(axis[1])) continue;
-        const auto& lower = state.frames[state.vertex_frame.at(axis[0])].ring;
-        const auto& upper = state.frames[state.vertex_frame.at(axis[1])].ring;
+        const auto [lower, upper] = rod_layer_rings(input, axis);
         if (lower.size() < 3 || lower.size() != upper.size()) continue;
         std::set<SwapEdge> target;
         for (size_t k = 0; k < lower.size(); ++k)

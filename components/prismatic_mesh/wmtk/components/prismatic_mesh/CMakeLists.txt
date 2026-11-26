@@ -19,6 +19,10 @@ set(SRC_FILES
     prism_main.cpp
     rod_mesh.hpp
     rod_mesh.cpp
+    rod_tet_positions.cpp
+    rod_background_remeshing.cpp
+    rod_fairing.hpp
+    rod_joint_radius.hpp
     rod_ends.cpp
     rod_frame_mapping.cpp
     rod_interface_swaps.cpp
@@ -33,11 +37,9 @@ set(SRC_FILES
     jacobian_smoothing.cpp
     thickness_smoothing.hpp
     thickness_smoothing.cpp
-    bad_quality_relocation.hpp
-    bad_quality_relocation.cpp
-    relocation_projection.hpp
-    surface_domain.hpp
-    surface_domain.cpp
+    quality_improvement.hpp
+    quality_improvement.cpp
+    write_improved_mesh.cpp
     target_positions.cpp
     background_remeshing.hpp
     background_remeshing.cpp

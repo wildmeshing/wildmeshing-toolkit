@@ -2,9 +2,11 @@
 """
 polyfem_sim — build a PolyFEM simulation.json from a Python config
 and run PolyFEM on it. Pairs with the boundary-extraction outputs
-(`m_sim.msh` + `m_bdry_selection.txt` + `m_bdry_selection_id_map.txt`):
-materials and BCs are given by physical-group / tag NAME (e.g. "tag_0",
-"tag_0 & ambient") and resolved to polyfem integer ids via the id_map.
+(`m_sim.msh` + `m_bdry_selection.txt` + `m_bdry_selection_id_map.txt`),
+or with a mesh written from msh_boundary_extractor.simulation_mesh, whose
+selections are physical groups of the mesh itself (no selection file, no
+id_map): materials and BCs are given by physical-group / tag NAME (e.g.
+"tag_0", "tag_0 & ambient") and resolved to polyfem integer ids.
 
 Config (dict):
   input_msh          : str   — boundary-extracted _sim.msh
@@ -23,14 +25,20 @@ Config (dict):
                                may use "selection": "tag_0 & ambient" (or a
                                list of names) instead of "id"
   initial_conditions : dict  — pass-through; "id" is the volumetric body id
-                               from the boundary-extraction output_groups
+                               from the boundary-extraction output_groups,
+                               or a body's tag name
   contact / time / solver / output / space : dict — optional pass-through
   save_vtu           : bool  — emit paraview .vtu/.pvd (default True)
-  save_restart       : bool  — write state.hdf5/restart.json checkpoints so
-                               a later run can resume (default True)
-  resume             : bool  — resume from restart files found in out_dir/sim_output
-                               (default True); set False or delete them to
-                               start fresh
+  save_restart       : bool  — have PolyFEM write a checkpoint after every time
+                               step, overwriting sim_output/checkpoint.hdf5, so
+                               a later run can resume (default False; a
+                               time-dependent simulation only)
+  resume             : bool  — resume from sim_output/checkpoint.hdf5 if there
+                               is one (default False). PolyFEM takes the whole
+                               configuration from the checkpoint, so cfg must
+                               build the simulation.json that wrote it;
+                               force_resume resumes anyway, on the
+                               checkpoint's settings
 
 Example:
   cfg = {
@@ -50,8 +58,9 @@ import re
 from pathlib import Path
 
 import gmsh
+import numpy as np
 
-from ..polyfem_utils import (PARAVIEW_DEFAULTS, deep_merge,
+from ..polyfem_utils import (PARAVIEW_DEFAULTS, deep_merge, mesh_group_resources,
                              polyfem_bin as _polyfem_bin,
                              geometry_block, get_mesh_info,
                              run_streaming)
@@ -68,29 +77,17 @@ def _diff_json_keys(a, b, path: str = "") -> list:
     return [] if a == b else [path or "<root>"]
 
 
-# Fields that can safely differ between a resumed run and the saved
-# simulation.json. Extending tend, tweaking output bookkeeping, retuning the
-# solver, or providing initial conditions (only applied at t=0) does not
-# invalidate the state vectors saved at t > 0.
-_RESUME_SAFE_PREFIXES = (
-    "time.tend",
-    "output.",
-    "solver.",
-    "initial_conditions.",
-)
-
-
-def _filter_drift(diffs: list) -> list:
-    return [d for d in diffs if not any(
-        d == p.rstrip(".") or d.startswith(p) for p in _RESUME_SAFE_PREFIXES
-    )]
-
-
 SIM_DEFAULTS = {
     "scale":        0.001,
     "save_vtu":     True,
-    "save_restart": True,
+    "save_restart": False,
+    "resume":       False,
 }
+
+# The checkpoint save_restart has PolyFEM write, in its output directory. No `{}`
+# in the name, which PolyFEM would fill with the time step: one file, overwritten
+# every step.
+CHECKPOINT = "checkpoint.hdf5"
 
 # Polyfem JSON section defaults — match the in-tree reference simulation.json
 # (lego-head-3d-coarse). These are merged shallowly with whatever the user
@@ -177,6 +174,35 @@ def parse_id_map(path: str) -> dict:
                     selections[(m.group(2), m.group(3))] = int(m.group(1))
     return {"bodies": bodies, "selections": selections}
 
+def _selection_desc(region: str, filt) -> str:
+    """A selection as the id_map writes it: region='...' [filter='...']. `filt` is None for
+    a selection without a filter (the region's whole boundary)."""
+    return f"region='{region}'" + (f" filter='{filt}'" if filt is not None else "")
+
+
+# A selection's name in a simulation mesh (msh_boundary_extractor._sel_desc).
+_SELECTION_NAME = re.compile(r"^region='([^']*)'(?:\s+filter='([^']*)')?$")
+
+
+def msh_selections(msh_path: str, mesh_dim: int) -> dict:
+    """The selections of a mesh written from simulation_mesh: its facet
+    physical groups (2D: edges), named as the id_map names them. Returns
+    {(region, filter|None): surface id}, as parse_id_map's "selections"."""
+    selections: dict = {}
+    gmsh.initialize()
+    gmsh.open(str(msh_path))
+    for d, ptag in gmsh.model.getPhysicalGroups(dim=mesh_dim - 1):
+        m = _SELECTION_NAME.match(gmsh.model.getPhysicalName(d, ptag))
+        if m:
+            selections[(m.group(1), m.group(2))] = int(ptag)
+    gmsh.finalize()
+    return selections
+
+# The boundary-condition lists whose items may name a "selection" instead of an "id".
+_BC_LISTS = ("dirichlet_boundary", "neumann_boundary", "pressure_boundary",
+             "obstacle_displacements")
+
+
 def _resolve_bc_list(bc_list: list, selection_map: dict) -> list:
     """Resolve named surface selections to polyfem ids in a list of BC items.
     Items may carry `"selection": {"region": expr, "filter": expr?}` instead
@@ -197,7 +223,7 @@ def _resolve_bc_list(bc_list: list, selection_map: dict) -> list:
                     f"'a & b' strings are no longer supported)")
             key = (sel["region"], sel.get("filter"))
             if key not in selection_map:
-                avail = [f"region='{r}'" + (f" filter='{f}'" if f else "")
+                avail = [_selection_desc(r, f)
                          for r, f in sorted(selection_map,
                                             key=lambda k: (k[0], k[1] or ""))]
                 raise ValueError(
@@ -209,7 +235,7 @@ def _resolve_bc_list(bc_list: list, selection_map: dict) -> list:
 
 def build_polyfem_sim_json(cfg: dict, msh_path: Path, sim_out_dir: Path,
                             name_to_tag: dict, id_map: dict,
-                            mesh_dim: int) -> dict:
+                            mesh_dim: int, selections_in_mesh: bool = False) -> dict:
     scale = cfg.get("scale", SIM_DEFAULTS["scale"])
     save_vtu = cfg.get("save_vtu", SIM_DEFAULTS["save_vtu"])
     save_restart = cfg.get("save_restart", SIM_DEFAULTS["save_restart"])
@@ -240,8 +266,7 @@ def build_polyfem_sim_json(cfg: dict, msh_path: Path, sim_out_dir: Path,
     # `dimension` to all-true at mesh_dim if user omits it.
     raw_bc = dict(cfg.get("boundary_conditions", {}))
     sel_map = id_map["selections"]
-    for key in ("dirichlet_boundary", "neumann_boundary",
-                "pressure_boundary", "obstacle_displacements"):
+    for key in _BC_LISTS:
         if key in raw_bc and isinstance(raw_bc[key], list):
             raw_bc[key] = _resolve_bc_list(raw_bc[key], sel_map)
     for item in raw_bc.get("dirichlet_boundary", []):
@@ -254,7 +279,7 @@ def build_polyfem_sim_json(cfg: dict, msh_path: Path, sim_out_dir: Path,
     # works as before, and users who want translation / rotation / a flipped
     # axis (e.g. {"scale": [1, -1, 1]}) just set transformation directly.
     sel_file = cfg.get("input_selection") or cfg.get("selection_file")
-    if sel_file is None:
+    if sel_file is None and not selections_in_mesh:
         sel_default = msh_path.parent / (
             msh_path.stem.removesuffix("_sim") + "_bdry_selection.txt"
             if msh_path.stem.endswith("_sim")
@@ -276,7 +301,18 @@ def build_polyfem_sim_json(cfg: dict, msh_path: Path, sim_out_dir: Path,
         "solver": deep_merge(SIM_SECTION_DEFAULTS["solver"], cfg.get("solver", {})),
     }
     if "initial_conditions" in cfg:
-        j["initial_conditions"] = cfg["initial_conditions"]
+        # An item's "id" may be a body's tag name, as materials keys may.
+        def body(it):
+            if not (isinstance(it, dict) and isinstance(it.get("id"), str)):
+                return it
+            if it["id"] not in name_to_tag:
+                raise ValueError(
+                    f"initial_conditions id '{it['id']}' is not a physical group in "
+                    f"the mesh. Available: {sorted(name_to_tag)}")
+            return dict(it, id=name_to_tag[it["id"]])
+        j["initial_conditions"] = {
+            key: [body(it) for it in items] if isinstance(items, list) else items
+            for key, items in cfg["initial_conditions"].items()}
 
     # Pass-through sections (skip the ones with defaults; keep this loop for
     # any future top-level section the user wants to inject).
@@ -291,15 +327,8 @@ def build_polyfem_sim_json(cfg: dict, msh_path: Path, sim_out_dir: Path,
         output["paraview"] = deep_merge(
             deep_merge(PARAVIEW_DEFAULTS, {"skip_frame": 1}),
             output.get("paraview", {}))
-    # Restart checkpoint: polyfem fmt::format-substitutes `{}` with the global
-    # timestep index. Omitting `{}` makes fmt return the literal string each
-    # step, so polyfem overwrites the same `state.hdf5` / `restart.json`
-    # instead of accumulating one pair per timestep.
     if save_restart:
-        data = dict(output.get("data", {}))
-        data.setdefault("state", "state.hdf5")
-        output["data"] = data
-        output.setdefault("restart_json", "restart.json")
+        output["checkpoint"] = deep_merge({"path": CHECKPOINT}, output.get("checkpoint", {}))
     j["output"] = output
 
     return j
@@ -317,8 +346,8 @@ def run(cfg: dict, out_dir=None, in_dirname: str = "sim_input",
 
     out_dir = Path(out_dir) if out_dir is not None else (
         msh_path.parent / "sim")
-    # Mirror minimum_separation's layout: generated polyfem inputs go to
-    # in_dirname/, everything polyfem writes (vtu/pvd, log, restart/state)
+    # Generated polyfem inputs go to
+    # in_dirname/, everything polyfem writes (vtu/pvd, log, checkpoint)
     # to out_dirname/. Override the names e.g. to "input"/"output" when
     # out_dir is already a per-simulation folder.
     sim_in_dir = out_dir / in_dirname
@@ -328,86 +357,76 @@ def run(cfg: dict, out_dir=None, in_dirname: str = "sim_input",
 
     polyfem = _polyfem_bin()
 
+    _, mesh_dim, name_to_tag, _, _ = get_mesh_info(str(msh_path))
+
     # id_map: explicit cfg["id_map"] wins; else derive from input_selection
-    # (replace ".txt" with "_id_map.txt"); else fall back to the mesh stem.
+    # (replace ".txt" with "_id_map.txt"); else the mesh's own selections
+    # (simulation_mesh), with any selection file or id_map next to it an
+    # older run's; else fall back to the mesh stem.
     id_map_path = cfg.get("id_map")
     sel_cfg = cfg.get("input_selection") or cfg.get("selection_file")
+    mesh_selections = (msh_selections(msh_path, mesh_dim)
+                       if id_map_path is None and sel_cfg is None else {})
     if id_map_path is None and sel_cfg is not None:
         sel_path = Path(sel_cfg)
         id_map_path = sel_path.with_name(sel_path.stem + "_id_map.txt")
-    if id_map_path is None:
-        stem = msh_path.stem
-        if stem.endswith("_sim"):
-            stem = stem[: -len("_sim")]
-        id_map_path = msh_path.parent / f"{stem}_bdry_selection_id_map.txt"
-    id_map_path = Path(id_map_path)
-    id_map = (parse_id_map(str(id_map_path))
-              if id_map_path.exists() else {"bodies": {}, "selections": {}})
-
-    _, mesh_dim, name_to_tag, _, _ = get_mesh_info(str(msh_path))
+    if mesh_selections:
+        id_map = {"bodies": {}, "selections": mesh_selections}
+    else:
+        if id_map_path is None:
+            stem = msh_path.stem
+            if stem.endswith("_sim"):
+                stem = stem[: -len("_sim")]
+            id_map_path = msh_path.parent / f"{stem}_bdry_selection_id_map.txt"
+        id_map_path = Path(id_map_path)
+        id_map = (parse_id_map(str(id_map_path))
+                  if id_map_path.exists() else {"bodies": {}, "selections": {}})
 
     print(f"\n[polyfem_sim] mesh: {msh_path} (dim={mesh_dim})")
     if name_to_tag:
         print(f"  bodies: {name_to_tag}")
     if id_map["selections"]:
-        print(f"  surface selections: "
-              f"{ {' ∩ '.join(sorted(k)): v for k, v in id_map['selections'].items()} }")
+        print("  surface selections: " + ", ".join(
+            f"{sid} ← {_selection_desc(region, filt)}"
+            for (region, filt), sid in id_map["selections"].items()))
 
     sim_json = build_polyfem_sim_json(
-        cfg, msh_path, out_dir, name_to_tag, id_map, mesh_dim)
+        cfg, msh_path, out_dir, name_to_tag, id_map, mesh_dim,
+        selections_in_mesh=bool(mesh_selections))
 
     sim_json_path = sim_in_dir / "simulation.json"
 
-    # Resume from the latest polyfem-written restart_<N>.json if one is in
-    # sim_output/. Polyfem's restart file references simulation.json via `common`,
-    # so the saved state must match the cfg used to produce it — bail out if
-    # the freshly-built cfg has drifted from the saved simulation.json.
-    resume = cfg.get("resume", True)
+    # Resume from the checkpoint a save_restart run left in sim_output/. PolyFEM
+    # takes the whole configuration from the checkpoint, so it resumes only the
+    # simulation.json that wrote it: a change to cfg since would be ignored.
     json_to_run = sim_json_path
-    if resume:
-        # Prefer the overwrite-style `restart.json`; fall back to legacy
-        # per-timestep `restart_<N>.json` from older runs.
-        restart_single = sim_out_dir / "restart.json"
-        if restart_single.exists():
-            restarts = [restart_single]
-        else:
-            restarts = sorted(
-                sim_out_dir.glob("restart_*.json"),
-                key=lambda p: int(p.stem.split("_")[-1]) if p.stem.split("_")[-1].isdigit() else -1,
-            )
-        if restarts and sim_json_path.exists():
-            try:
-                prior_json = json.loads(sim_json_path.read_text())
-            except json.JSONDecodeError:
-                prior_json = None
-            if prior_json != sim_json:
-                all_diffs = _diff_json_keys(prior_json or {}, sim_json)
-                unsafe = _filter_drift(all_diffs)
-                safe = [d for d in all_diffs if d not in unsafe]
-                if safe:
-                    print(f"  resume: applying safe cfg changes to "
-                          f"{sim_json_path.name}: {safe}")
-                if unsafe and not cfg.get("force_resume", False):
-                    raise RuntimeError(
-                        f"cfg has drifted from {sim_json_path.name} on fields that affect saved state.\n"
-                        f"  Unsafe diffs: {unsafe}\n"
-                        f"  (safe diffs would have been auto-applied: {safe or 'none'})\n"
-                        f"  The saved state hdf5 was produced under the OLD cfg, so resuming would\n"
-                        f"  silently mix old state vectors with new settings.\n"
-                        f"  Fix one of:\n"
-                        f"    - cfg['resume'] = False  (start fresh, keeps the old files around)\n"
-                        f"    - delete {sim_out_dir}/restart*.json and state*.hdf5  (clean slate)\n"
-                        f"    - cfg['force_resume'] = True  (override at your own risk)\n"
-                        f"    - revert cfg so it matches {sim_json_path}")
-                if unsafe:
-                    print(f"  resume: WARNING force_resume=True; ignoring unsafe diffs: {unsafe}")
-        if restarts:
-            json_to_run = restarts[-1]
-            print(f"  resuming from {json_to_run.name} "
-                  f"(set cfg['resume']=False or delete state*.hdf5/restart*.json to start fresh)")
-
-    sim_json_path.write_text(json.dumps(sim_json, indent=4))
-    print(f"  wrote {sim_json_path}")
+    checkpoint = sim_out_dir / CHECKPOINT
+    if cfg.get("resume", SIM_DEFAULTS["resume"]) and checkpoint.exists():
+        try:
+            prior_json = json.loads(sim_json_path.read_text())
+        except (FileNotFoundError, json.JSONDecodeError):
+            prior_json = None
+        if prior_json != json.loads(json.dumps(sim_json)):
+            diffs = (_diff_json_keys(prior_json, sim_json) if prior_json is not None
+                     else [f"no readable {sim_json_path.name}"])
+            if not cfg.get("force_resume", False):
+                raise RuntimeError(
+                    f"cfg has changed since {checkpoint.name} was written: {diffs}\n"
+                    f"  PolyFEM resumes on the checkpoint's own settings, so these changes\n"
+                    f"  would be ignored. Fix one of:\n"
+                    f"    - cfg['resume'] = False  (start fresh)\n"
+                    f"    - delete {checkpoint}  (start fresh)\n"
+                    f"    - cfg['force_resume'] = True  (resume on the checkpoint's settings)\n"
+                    f"    - revert cfg so it matches {sim_json_path}")
+            print(f"  resume: WARNING force_resume=True; the checkpoint's settings win over: {diffs}")
+        json_to_run = sim_in_dir / "resume.json"
+        json_to_run.write_text(json.dumps(
+            {"input": {"checkpoint": {"path": str(checkpoint.resolve())}}}, indent=4))
+        print(f"  resuming from {checkpoint} "
+              f"(set cfg['resume']=False or delete it to start fresh)")
+    else:
+        sim_json_path.write_text(json.dumps(sim_json, indent=4))
+        print(f"  wrote {sim_json_path}")
 
     cmd = [polyfem, "-j", str(json_to_run), "-o", str(sim_out_dir)]
     print(f"  running: {' '.join(cmd)}\n")
@@ -426,6 +445,173 @@ def run(cfg: dict, out_dir=None, in_dirname: str = "sim_input",
             f"last Finished line: {last!r}")
 
     return out_dir
+
+
+# ---------------------------------------------------------------------------
+# In process (wildmeshing built with WMTK_WITH_POLYFEM)
+# ---------------------------------------------------------------------------
+
+# The name the simulation JSON's geometry gives the mesh simulate() hands PolyFEM.
+MESH_RESOURCE = "simulation_mesh"
+
+
+def in_process() -> bool:
+    """Whether this wildmeshing runs PolyFEM in process (built with WMTK_WITH_POLYFEM)."""
+    from ... import _core
+    return hasattr(_core, "polyfem_simulate")
+
+
+def polyfem_mesh(mesh: dict) -> tuple:
+    """PolyFEM's mesh group of a simulation mesh dictionary (simulation_mesh),
+    numbered as from the file: wm.write_mesh numbers the physical groups of the
+    faces (2D: edges) first, then of the cells, each in label order, and PolyFEM
+    gives a face the first of its groups. So the selections are 1..S and the
+    bodies S+1..S+B. Returns (group, mesh_dim, name_to_tag, selections), the
+    last as msh_selections returns them."""
+    if "tetrahedron" in mesh["cells"]:
+        cell, face_cell, mesh_dim = "tetrahedron", "triangle", 3
+    elif "triangle" in mesh["cells"]:
+        cell, face_cell, mesh_dim = "triangle", "edge", 2
+    else:
+        raise ValueError("polyfem_mesh: the mesh has no tetrahedra or triangles")
+    cells = mesh["cells"][cell]
+    faces = mesh["cells"].get(face_cell)
+    sel_labels = list(faces["attributes"]["tags"]["labels"]) if faces else []
+    body_labels = list(cells["attributes"]["tags"]["labels"])
+    in_body = np.asarray(cells["attributes"]["tags"]["values"]) != 0
+    if (in_body.sum(axis=1) != 1).any():
+        raise ValueError("polyfem_mesh: every cell must be in exactly one body")
+    # PolyFEM's mesh keeps as many coordinates as its cells have dimensions, as its
+    # .msh reader does.
+    group = {"vertices": np.asarray(mesh["V"], dtype=float)[:, :mesh_dim],
+             "cells": np.asarray(cells["connectivity"], dtype=np.int64),
+             "body_ids": len(sel_labels) + 1 + in_body.argmax(axis=1)}
+    if sel_labels:
+        member = np.asarray(faces["attributes"]["tags"]["values"]) != 0
+        selected = member.any(axis=1)
+        group["boundary_elements"] = np.asarray(faces["connectivity"], dtype=np.int64)[selected]
+        group["boundary_ids"] = 1 + member[selected].argmax(axis=1)
+    name_to_tag = {name: len(sel_labels) + 1 + i for i, name in enumerate(body_labels)}
+    selections = {}
+    for i, label in enumerate(sel_labels):
+        m = _SELECTION_NAME.match(label)
+        if m:
+            selections[(m.group(1), m.group(2))] = i + 1
+    return group, mesh_dim, name_to_tag, selections
+
+
+def simulate(cfg: dict, mesh: dict, out_dir=None, step_callback=None,
+             out_dirname: str = "sim_output") -> np.ndarray:
+    """Run cfg's simulation, as run() does, in this process, on a simulation
+    mesh dictionary (simulation_mesh) instead of a mesh file. cfg is run()'s,
+    without input_msh, input_selection and id_map. Needs a wildmeshing built
+    with WMTK_WITH_POLYFEM (in_process()).
+
+    Returns the final displacement at the rows of mesh["V"], in PolyFEM's
+    units (after cfg's scale and transformation); step_callback(step,
+    displacement) is called after each time step.
+
+    Files: without out_dir, none. save_vtu and save_restart are off, and PolyFEM's
+    per-step output (output.advanced.save_time_sequence) too unless cfg's output
+    sets it. With out_dir, PolyFEM writes into out_dir/out_dirname what run()
+    has it write. There is no resume in process."""
+    from ... import _core
+    if not hasattr(_core, "polyfem_simulate"):
+        raise RuntimeError(
+            "polyfem_sim.simulate: this wildmeshing is built without PolyFEM "
+            "(WMTK_WITH_POLYFEM); use run() with a mesh file")
+    for key in ("input_msh", "input_selection", "selection_file", "id_map"):
+        if key in cfg:
+            raise ValueError(f"polyfem_sim.simulate: '{key}' is for run(); the mesh is the argument")
+    group, mesh_dim, name_to_tag, selections = polyfem_mesh(mesh)
+    cfg = dict(cfg)
+    if out_dir is None:
+        for key in ("save_vtu", "save_restart"):
+            if cfg.get(key):
+                raise ValueError(f"polyfem_sim.simulate: {key} writes files; give an out_dir")
+            cfg[key] = False
+    sim_json = build_polyfem_sim_json(
+        cfg, Path(MESH_RESOURCE), out_dir, name_to_tag,
+        {"bodies": {}, "selections": selections}, mesh_dim, selections_in_mesh=True)
+    output = sim_json["output"]
+    if out_dir is None:
+        output["advanced"] = deep_merge({"save_time_sequence": False}, output.get("advanced", {}))
+    else:
+        # As run() passes PolyFEM_bin -o.
+        sim_out_dir = Path(out_dir).resolve() / out_dirname
+        sim_out_dir.mkdir(parents=True, exist_ok=True)
+        output["directory"] = str(sim_out_dir)
+
+    print(f"\n[polyfem_sim] in process (dim={mesh_dim})")
+    if name_to_tag:
+        print(f"  bodies: {name_to_tag}")
+    if selections:
+        print("  surface selections: " + ", ".join(
+            f"{sid} ← {_selection_desc(region, filt)}"
+            for (region, filt), sid in selections.items()))
+    resources, attributes = mesh_group_resources(MESH_RESOURCE, group)
+    return _core.polyfem_simulate(sim_json, resources, attributes, step_callback)["displacement"]
+
+
+# simulation()'s options that go to PolyFEM as run() passes them, checked by PolyFEM.
+_SECTIONS = ("transformation", "materials", "boundary_conditions", "initial_conditions",
+             "contact", "time", "solver", "space", "output")
+
+
+def simulation(options: dict, meshes: dict) -> tuple:
+    """Simulate the cells of options["bodies"] of the tagged mesh dictionary
+    meshes[options["input"]] in this process (a wildmeshing built with
+    WMTK_WITH_POLYFEM), as a component's memory interface. Options: spec.json; the
+    sections run() passes to PolyFEM are PolyFEM's to check. The mesh is cut to its
+    simulation mesh (simulation_mesh) on the selections the boundary conditions name.
+
+    Returns ({"mesh": the simulation mesh at rest, a vertex attribute
+    "displacement_<step>" for each step kept}, {"steps", "time", "max_displacement"}):
+    the steps PolyFEM's own output keeps (output.paraview.skip_frame), each step's
+    time, and the displacements in mesh units (the transformation's scale undone).
+    Writes no files."""
+    from .. import spec as _spec
+    from .msh_boundary_extractor import simulation_mesh
+    p = _spec.validate(_spec.load_spec("polyfem_sim"),
+                       {k: v for k, v in options.items() if k not in _SECTIONS})
+    cfg = {k: options[k] for k in _SECTIONS if k in options}
+    for key, value in cfg.items():
+        if not isinstance(value, dict):
+            raise ValueError(f"polyfem_sim: {key} must be an object, got {value!r}")
+    moved = sorted(set(cfg.get("transformation", {})) - {"scale", "translation"})
+    if moved:  # a rotation turns the displacements: undone only for a scale
+        raise ValueError(f"polyfem_sim: transformation {moved} is not undone on the "
+                         "displacements; give a scale and a translation only")
+    skip = cfg.get("output", {}).get("paraview", {}).get("skip_frame", 1)
+    if not isinstance(skip, int) or skip < 1:
+        raise ValueError(f"polyfem_sim: output.paraview.skip_frame must be >= 1, got {skip!r}")
+    if p["input"] not in meshes:
+        raise KeyError(f"polyfem_sim: no mesh '{p['input']}' in meshes")
+
+    selections = []
+    for key in _BC_LISTS:
+        for item in cfg.get("boundary_conditions", {}).get(key, []):
+            if isinstance(item, dict) and "selection" in item and item["selection"] not in selections:
+                selections.append(item["selection"])
+    sim = simulation_mesh(meshes[p["input"]], p["bodies"], selections)
+    dim = 3 if "tetrahedron" in sim["cells"] else 2
+    scale = np.broadcast_to(np.asarray(cfg.get("transformation", {}).get("scale", p["scale"]),
+                                       dtype=float), (dim,))
+    frames = {}
+
+    def keep(step, displacement):
+        if step % skip == 0:
+            frames[step] = np.array(displacement, dtype=float) / scale  # -> mesh units
+
+    simulate(dict(cfg, scale=p["scale"]), sim, step_callback=keep)
+    time = deep_merge(SIM_SECTION_DEFAULTS["time"], cfg.get("time", {}))
+    steps = sorted(frames)
+    attributes = dict(sim.get("vertex_attributes") or {})
+    attributes.update({f"displacement_{step}": frames[step] for step in steps})
+    return {"mesh": dict(sim, vertex_attributes=attributes)}, {
+        "steps": steps,
+        "time": [time.get("t0", 0.0) + step * time["dt"] for step in steps],
+        "max_displacement": max((float(np.abs(u).max()) for u in frames.values()), default=0.0)}
 
 
 # ---------------------------------------------------------------------------

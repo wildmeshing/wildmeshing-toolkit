@@ -15,6 +15,7 @@ namespace wmtk::components::prismatic_mesh {
 
 struct RodMeshState;
 struct JunctionProtection;
+struct ImprovedHybridMesh;
 
 struct OffsetComponent
 {
@@ -183,6 +184,12 @@ void validate_prism_dominant_mesh(
     const PrismaticMeshInput& input,
     const PrismDominantMesh& hybrid,
     double min_tet_volume);
+PrismDominantMesh build_shell_prism_mesh(PrismaticMeshInput& input, double min_tet_volume);
+PrismDominantMesh build_rod_prism_mesh(PrismaticMeshInput& input, double min_tet_volume);
+// Transactionally recover a compatible positive tet reference after shell remeshing.
+PrismDominantMesh adopt_improved_shell_mesh(
+    PrismaticMeshInput& input,
+    const ImprovedHybridMesh& mesh);
 
 // Tetrahedral VTU (ASCII/uncompressed inline binary) or Gmsh 4.1 MSH (ASCII/binary).
 PrismaticMeshInput load_prismatic_mesh(const std::filesystem::path& path);

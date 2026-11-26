@@ -141,7 +141,7 @@ void transport_rod_frame_mapping(PrismaticMeshInput& input)
         const double terminal_phase = mapped_phase.back();
         const auto terminal_index = static_cast<int64_t>(std::llround(terminal_phase / step));
         const double snapped_phase = terminal_index * step;
-        const double delta = snapped_phase - terminal_phase;
+        const double delta = std::remainder(snapped_phase - terminal_phase, 2 * pi);
         auto frames = nlohmann::json::array();
         double energy = 0, maximum_density_error = 0;
         for (size_t k = 0; k < path.size(); ++k) {
@@ -220,5 +220,258 @@ void transport_rod_frame_mapping(PrismaticMeshInput& input)
         completed,
         skipped,
         maximum_change);
+}
+void transport_rod_section_mapping(PrismaticMeshInput& input)
+{
+    if (!input.rod_state) return;
+    auto& state = *input.rod_state;
+    state.mapping_controls.clear();
+    state.layer_slot_shifts.clear();
+    const auto is_control = [&](size_t v) {
+        return state.vertex_frame.count(v) &&
+               (state.section_edges.count(v) || state.free_endpoints.count(v));
+    };
+    const auto fitted_pose = [&](size_t v, const Vector3d& normal) {
+        const auto& f = state.frames.at(state.vertex_frame.at(v));
+        const Eigen::Quaterniond basis =
+            Eigen::Quaterniond::FromTwoVectors(f.rotation * Vector3d::UnitZ(), normal) * f.rotation;
+        const Vector3d x = basis * Vector3d::UnitX(), y = basis * Vector3d::UnitY();
+        double re = 0, im = 0;
+        for (size_t k = 0; k < f.ring.size(); ++k) {
+            const Vector3d d = position(input, f.ring[k]) - position(input, v);
+            const double a = std::atan2(d.dot(y), d.dot(x)) - 2 * pi * k / f.ring.size();
+            re += std::cos(a);
+            im += std::sin(a);
+        }
+        // Continuous least-squares pose of the fixed endpoint labels. This
+        // neither snaps an angle nor selects another cyclic vertex origin.
+        return Eigen::Quaterniond(basis * Eigen::AngleAxisd(std::atan2(im, re), Vector3d::UnitZ()));
+    };
+    auto paths = nlohmann::json::array();
+    size_t completed = 0, skipped = 0;
+    for (size_t rod = 0; rod < state.rods.size(); ++rod) {
+        const auto& path = state.rods[rod];
+        if (path.empty()) continue;
+        std::vector<size_t> vertices{state.directed_input_edges[path.front()][0]};
+        for (size_t e : path) vertices.push_back(state.directed_input_edges[e][1]);
+        const bool closed = vertices.front() == vertices.back();
+        auto report = nlohmann::json{{"rod", rod}, {"closed", closed}, {"completed", false}};
+        const auto fail = [&](const std::string& reason) {
+            report["reason"] = reason;
+            paths.push_back(report);
+            ++skipped;
+            for (size_t v : vertices) {
+                const auto found = state.vertex_frame.find(v);
+                if (found == state.vertex_frame.end()) continue;
+                auto& frame = state.frames[found->second];
+                frame.valid = false;
+                frame.reason = "material_mapping_" + reason;
+                state.vertex_frame.erase(found);
+            }
+        };
+        if (closed) vertices.pop_back();
+        const auto first = std::find_if(vertices.begin(), vertices.end(), is_control);
+        if (first == vertices.end()) {
+            fail("no_section_controls");
+            continue;
+        }
+        if (closed) {
+            std::rotate(vertices.begin(), first, vertices.end());
+            vertices.push_back(vertices.front());
+        } else {
+            vertices.erase(vertices.begin(), first);
+            const auto last = std::find_if(vertices.rbegin(), vertices.rend(), is_control).base();
+            vertices.erase(last, vertices.end());
+        }
+        const size_t start = vertices.front(), end = vertices.back();
+        const size_t degree = state.frames.at(state.vertex_frame.at(start)).ring.size();
+        bool valid = degree >= 3;
+        for (size_t v : vertices)
+            if (state.vertex_frame.count(v))
+                valid &= state.frames[state.vertex_frame.at(v)].ring.size() == degree;
+        if (!valid) {
+            fail("incompatible_section_degrees");
+            continue;
+        }
+        std::vector<double> arc{0};
+        std::vector<Vector3d> tangents, normals;
+        for (size_t k = 1; k < vertices.size(); ++k) {
+            const Vector3d edge = position(input, vertices[k]) - position(input, vertices[k - 1]);
+            const double length = edge.norm();
+            if (!(length > 0)) {
+                valid = false;
+                break;
+            }
+            arc.push_back(arc.back() + length);
+            tangents.push_back(edge / length);
+        }
+        if (valid && tangents.empty()) {
+            // A path between two joints can contain just one section control.
+            normals.push_back(
+                state.frames[state.vertex_frame.at(start)].rotation * Vector3d::UnitZ());
+        } else if (valid)
+            for (size_t k = 0; k < vertices.size(); ++k) {
+                Vector3d normal;
+                if (closed && (k == 0 || k + 1 == vertices.size()))
+                    normal = tangents.back() + tangents.front();
+                else if (k == 0)
+                    normal = tangents.front();
+                else if (k + 1 == vertices.size())
+                    normal = tangents.back();
+                else
+                    normal = tangents[k - 1] + tangents[k];
+                if (!normal.allFinite() || normal.norm() <= 1e-12) {
+                    valid = false;
+                    break;
+                }
+                normals.push_back(normal.normalized());
+            }
+        if (!valid) {
+            fail("undefined_geometric_section_plane");
+            continue;
+        }
+        const auto first_pose = fitted_pose(start, normals.front()),
+                   last_pose = closed ? first_pose : fitted_pose(end, normals.back());
+        std::vector<Vector3d> rays{first_pose * Vector3d::UnitX()};
+        for (size_t k = 1; k < vertices.size(); ++k) {
+            const auto ray = ray_map(rays.back(), tangents[k - 1], normals[k]);
+            if (!ray) {
+                valid = false;
+                break;
+            }
+            rays.push_back(*ray);
+        }
+        if (!valid) {
+            fail("parallel_or_degenerate_projection");
+            continue;
+        }
+        const double total = arc.back(), step = 2 * pi / degree;
+        const double terminal_phase = phase(last_pose, rays.back());
+        const int64_t rounded = std::llround(terminal_phase / step);
+        const double delta = std::remainder(rounded * step - terminal_phase, 2 * pi);
+        const size_t shift =
+            size_t((rounded % int64_t(degree) + int64_t(degree)) % int64_t(degree));
+        const auto end_before = state.frames[state.vertex_frame.at(end)].ring;
+        if (!closed && end != start) {
+            auto& ring = state.frames[state.vertex_frame.at(end)].ring;
+            std::rotate(ring.begin(), ring.begin() + shift, ring.end());
+        } else if (closed && vertices.size() > 1) {
+            const size_t u = vertices[vertices.size() - 2], v = vertices.front();
+            std::array<size_t, 2> axis{u, v};
+            std::sort(axis.begin(), axis.end());
+            state.layer_slot_shifts[axis] = u < v ? shift : (degree - shift) % degree;
+        }
+        auto stations = nlohmann::json::array();
+        auto relabelings = nlohmann::json::array();
+        const size_t count = vertices.size() - (closed ? 1 : 0);
+        for (size_t k = 0; k < count; ++k) {
+            const size_t v = vertices[k];
+            const double correction = total > 0 ? arc[k] * delta / total : 0;
+            Vector3d x = Eigen::AngleAxisd(correction, normals[k]) * rays[k];
+            x -= normals[k] * normals[k].dot(x);
+            x.normalize();
+            Eigen::Matrix3d basis;
+            basis.col(0) = x;
+            basis.col(1) = normals[k].cross(x);
+            basis.col(2) = normals[k];
+            const Eigen::Quaterniond q(basis);
+            state.vertex_rotations[v] = q;
+            if (state.vertex_frame.count(v)) {
+                auto& f = state.frames[state.vertex_frame.at(v)];
+                f.rotation = q;
+                f.tangent = normals[k];
+                // A cyclic ring origin is only an index convention. Choose it
+                // against the completed continuous field before locking the
+                // mapping; do not physically rotate vertices by a whole sector
+                // merely to preserve an arbitrary pre-transport vertex zero.
+                if (v != start && (closed || v != end) && f.valid) {
+                    const auto cost = [&](size_t shift) {
+                        double sum = 0;
+                        for (size_t j = 0; j < f.ring.size(); ++j) {
+                            const double angle = 2 * pi * j / f.ring.size();
+                            const Vector3d target =
+                                position(input, v) +
+                                state.radius * (q * Vector3d(std::cos(angle), std::sin(angle), 0));
+                            sum += (position(input, f.ring[(j + shift) % f.ring.size()]) - target)
+                                       .squaredNorm();
+                        }
+                        return sum;
+                    };
+                    size_t best_shift = 0;
+                    const double before_cost = cost(0);
+                    double best_cost = before_cost;
+                    for (size_t shift = 1; shift < f.ring.size(); ++shift) {
+                        const double candidate = cost(shift);
+                        if (candidate < best_cost) {
+                            best_shift = shift;
+                            best_cost = candidate;
+                        }
+                    }
+                    if (best_shift) {
+                        relabelings.push_back(
+                            {{"center_vid", input.source_vertex_ids[v]},
+                             {"cyclic_shift", best_shift},
+                             {"target_squared_error_before", before_cost},
+                             {"target_squared_error_after", best_cost}});
+                        std::rotate(f.ring.begin(), f.ring.begin() + best_shift, f.ring.end());
+                    }
+                }
+            }
+            if (is_control(v)) state.mapping_controls.insert(v);
+            stations.push_back(
+                {{"center_vid", input.source_vertex_ids[v]},
+                 {"arc_length", arc[k]},
+                 {"correction_radians", correction},
+                 {"control", is_control(v)}});
+        }
+        const Vector3d terminal = Eigen::AngleAxisd(delta, normals.back()) * rays.back();
+        report.update(
+            {{"completed", true},
+             {"degree", degree},
+             {"span_length", total},
+             {"terminal_phase_radians", terminal_phase},
+             {"terminal_degree_shift", shift},
+             {"delta_theta_radians", delta},
+             {"twist_density", total > 0 ? delta / total : 0},
+             {"closure_error_radians",
+              std::abs(std::remainder(phase(last_pose, terminal) - rounded * step, 2 * pi))},
+             {"frames", stations},
+             {"intermediate_cyclic_origins_changed", relabelings.size()},
+             {"intermediate_relabelings", relabelings},
+             {"per_frame_rounding", false},
+             {"DP_pairing", false}});
+        if (!closed) {
+            const auto ids = [&](const auto& ring) {
+                std::vector<int64_t> result;
+                for (size_t v : ring) result.push_back(input.source_vertex_ids[v]);
+                return result;
+            };
+            report["terminal_ring_before"] = ids(end_before);
+            report["terminal_ring_after"] = ids(state.frames[state.vertex_frame.at(end)].ring);
+        }
+        paths.push_back(std::move(report));
+        ++completed;
+    }
+    std::vector<int64_t> control_ids;
+    for (size_t v : state.mapping_controls) control_ids.push_back(input.source_vertex_ids[v]);
+    state.report["material_mapping"] = {
+        {"method", "continuous_ray_transport_terminal_rounding_arc_length_twist"},
+        {"completed_paths", completed},
+        {"skipped_paths", skipped},
+        {"paths", paths},
+        {"control_center_vids", control_ids},
+        {"section_planes", "edge_normal_at_midpoints_and_geometric_tangent_bisector_at_corners"},
+        {"cyclic_origins_assigned_after_transport", true},
+        {"per_frame_rounding", false},
+        {"DP_pairing", false}};
+    state.report["vertex_frame_rule"] = "continuous_transported_material_direction";
+    state.report["frame_mapping"] = state.report["material_mapping"];
+    state.mapping_locked = true;
+    logger().info(
+        "Rod material mapping: {} paths completed, {} skipped; {} section controls; terminal "
+        "rounding only",
+        completed,
+        skipped,
+        state.mapping_controls.size());
 }
 } // namespace wmtk::components::prismatic_mesh

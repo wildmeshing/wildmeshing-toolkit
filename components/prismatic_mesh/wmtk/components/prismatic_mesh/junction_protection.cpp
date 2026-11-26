@@ -1,5 +1,6 @@
 #include "junction_protection.hpp"
 #include "prism_jacobian.hpp"
+#include "rod_mesh.hpp"
 
 #include <Eigen/Geometry>
 #include <algorithm>
@@ -181,6 +182,14 @@ nlohmann::json junction_protection_report(const PrismaticMeshInput& input)
     bool positions_fixed = true;
     for (const auto& [v, position] : state.offset_positions)
         positions_fixed &= input.vertices.row(v).transpose() == position;
+    const bool snapshot_fixed = positions_fixed;
+    if (input.rod_state)
+        for (const auto& [v, original] : input.rod_state->joint_position_reference)
+            positions_fixed &= input.vertices.row(v).transpose() == original;
+    if (input.rod_state && input.rod_state->report.contains("joint_smoothing"))
+        positions_fixed &= input.rod_state->report["joint_smoothing"].value(
+                               "protected_offset_vertices_moved",
+                               size_t(0)) == 0;
     return {
         {"rod_shell_source_vids", source_ids(state.rod_shell_vertices)},
         {"rod_end_source_vids", source_ids(state.rod_end_vertices)},
@@ -195,6 +204,7 @@ nlohmann::json junction_protection_report(const PrismaticMeshInput& input)
         {"no_collapse_offset_source_vids", source_ids(state.offset_vertices)},
         {"protected_one_ring_cells", state.original_band_cells.size()},
         {"offset_positions_fixed", positions_fixed},
+        {"protected_geometry_snapshot_fixed", snapshot_fixed},
         {"collapse_connectivity_verified", state.collapse_connectivity_verified}};
 }
 

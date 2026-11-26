@@ -1,8 +1,8 @@
 #include "prismatic_mesh.hpp"
 #include <wmtk/io/ComponentIO.hpp>
 #include <wmtk/io/DataWriter.hpp>
-#include "bad_quality_relocation.hpp"
 #include "junction_protection.hpp"
+#include "quality_improvement.hpp"
 #include "rod_mesh.hpp"
 #include "thickness_smoothing.hpp"
 
@@ -21,10 +21,6 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
 {
     component_io.prepare(json_params, "prismatic_mesh");
     if (component_io.memory()) json_params["output"] = "mesh.vtu";
-    const bool explicit_domain_relocation =
-        json_params.contains("collapse_edge_relocation_iterations");
-    const bool explicit_tet_face_relocation =
-        json_params.contains("tet_face_relocation_iterations");
     const auto spec = jse::embed::wmtk_prismatic_mesh_spec::prismatic_mesh_spec::spec();
     jse::JSE spec_engine;
     if (!spec_engine.verify_json(json_params, spec)) {
@@ -32,16 +28,26 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     }
 
     json_params = spec_engine.inject_defaults(json_params, spec);
-    const int expansion_rounds = json_params["bad_tet_transition_expansion_rounds"].get<int>();
-    if (expansion_rounds < 0 || expansion_rounds > 5)
-        log_and_throw_error("bad_tet_transition_expansion_rounds must be in [0,5].");
-    if (expansion_rounds > 0 && !json_params["prism_dominant"].get<bool>())
-        log_and_throw_error("Transition expansion requires prism_dominant.");
-    // The 20 + 20 default pipeline belongs to hybrid output. Pure-tet callers
-    // retain their pipeline; explicitly requested hybrid-only stages still fail below.
-    if (!json_params["prism_dominant"].get<bool>()) {
-        if (!explicit_domain_relocation) json_params["collapse_edge_relocation_iterations"] = 0;
-        if (!explicit_tet_face_relocation) json_params["tet_face_relocation_iterations"] = 0;
+    const bool quality_improvement = json_params["quality_improvement"].get<bool>();
+    QualityImprovementOptions quality_options;
+    if (quality_improvement) {
+        if (!json_params["prism_dominant"].get<bool>())
+            log_and_throw_error("Quality improvement requires prism_dominant.");
+        if (json_params["min_tet_volume"].get<double>() != 0 ||
+            json_params["relative_tet_volume_floor"].get<double>() != 0)
+            log_and_throw_error(
+                "Region quality improvement requires min_tet_volume=0 and "
+                "relative_tet_volume_floor=0; it enforces strictly positive actual cells.");
+        quality_options =
+            QualityImprovementOptions::from_json(json_params["quality_improvement_options"]);
+        // Region remeshing starts at the original hybrid build. Its mixed
+        // smoothing replaces the separate optional quality stages.
+        for (const char* name :
+             {"jacobian_smoothing_iterations",
+              "transition_smoothing_iterations",
+              "thickness_smoothing_iterations"})
+            json_params[name] = 0;
+        json_params["background_remeshing"] = false;
     }
     const auto path = std::filesystem::path(component_io.path(
         json_params["input_dir"].get<std::string>(),
@@ -103,19 +109,96 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
     background.max_operations = json_params["background_remeshing_max_operations"].get<int>();
     background.max_attempts = json_params["background_remeshing_max_attempts"].get<int>();
     const bool rod_mode = json_params["rod_mode"].get<bool>();
+    if (json_params["rod_edge_based"].get<bool>() && !rod_mode)
+        log_and_throw_error("rod_edge_based requires rod_mode.");
+    if (json_params["rod_background_remeshing"].get<bool>() &&
+        (!rod_mode || !json_params["rod_edge_based"].get<bool>() || ignore_background))
+        log_and_throw_error("rod_background_remeshing requires edge-based rods and background.");
+    if (json_params["rod_coupled_optimization_rounds"].get<int>() > 0 &&
+        (!rod_mode || !json_params["rod_edge_based"].get<bool>() || ignore_background ||
+         !json_params["rod_background_remeshing"].get<bool>()))
+        log_and_throw_error(
+            "rod_coupled_optimization_rounds requires edge-based rods and local background "
+            "remeshing.");
     std::optional<PrismDominantMesh> hybrid;
+    std::optional<ImprovedHybridMesh> improved, shell_improved;
     if (ignore_background) discard_background_mesh(input);
     initialize_junction_protection(input);
     if (rod_mode) {
         RodOptions rod;
+        rod.edge_based = json_params["rod_edge_based"].get<bool>();
         rod.radius = json_params["rod_radius"].get<double>();
         rod.thicknessratio = json_params["thicknessratio"].get<double>();
         rod.iterations = optimization.iterations;
+        rod.position_iterations = json_params["rod_position_iterations"].get<int>();
+        rod.position_weight = json_params["rod_position_weight"].get<double>();
+        rod.laplace_weight = json_params["rod_laplace_weight"].get<double>();
+        rod.position_smoothing_weight = json_params["rod_position_smoothing_weight"].get<double>();
+        rod.position_smoothing_iterations =
+            json_params["rod_position_smoothing_iterations"].get<int>();
+        rod.position_smoothing_geometry_weight =
+            json_params["rod_position_smoothing_geometry_weight"].get<double>();
+        rod.joint_smoothing_iterations = json_params["rod_joint_smoothing_iterations"].get<int>();
+        rod.joint_smoothing_weight = json_params["rod_joint_smoothing_weight"].get<double>();
+        rod.joint_geometry_weight = json_params["rod_joint_geometry_weight"].get<double>();
+        rod.joint_blend_radius_ratio = json_params["rod_joint_blend_radius_ratio"].get<double>();
+        rod.coupled_rounds = json_params["rod_coupled_optimization_rounds"].get<int>();
+        rod.coupled_iterations = json_params["rod_coupled_optimization_iterations"].get<int>();
+        rod.coupled_smoothing_weight = json_params["rod_coupled_smoothing_weight"].get<double>();
+        rod.coupled_geometry_weight = json_params["rod_coupled_geometry_weight"].get<double>();
         rod.min_tet_volume = optimization.min_tet_volume;
+        rod.background_remeshing.enabled = json_params["rod_background_remeshing"].get<bool>();
+        rod.background_remeshing.radius =
+            json_params["rod_background_remeshing_radius"].get<double>();
+        rod.background_remeshing.target_length =
+            json_params["rod_background_remeshing_target_length"].get<double>();
+        rod.background_remeshing.passes = json_params["rod_background_remeshing_passes"].get<int>();
+        rod.background_remeshing.time_limit =
+            json_params["rod_background_remeshing_time_limit"].get<double>();
         preprocess_rod_mesh(input, rod);
         auto domain_options = optimization;
         domain_options.keep_background_mesh = !ignore_background;
         prism_main(input, rod.thicknessratio, domain_options);
+        nlohmann::json shell_report;
+        const bool mixed = has_shell_region(input) && json_params["prism_dominant"].get<bool>();
+        if (mixed) {
+            hybrid = build_shell_prism_mesh(input, optimization.min_tet_volume);
+            shell_report = hybrid->report;
+            if (quality_improvement) {
+                auto candidate = improve_prismatic_mesh_quality(input, *hybrid, quality_options);
+                try {
+                    auto replacement = adopt_improved_shell_mesh(input, candidate);
+                    hybrid = std::move(replacement);
+                    shell_report["quality_improvement"] = candidate.report;
+                    shell_improved = std::move(candidate);
+                } catch (const std::exception& e) {
+                    shell_report["quality_improvement"] = {
+                        {"applied", false},
+                        {"reason", e.what()}};
+                    logger().warn(
+                        "Shell remeshing checkpoint cannot be handed to rods: {}",
+                        e.what());
+                }
+            }
+            reserve_shell_cells(input, *hybrid);
+        }
+        if (rod.edge_based) optimize_rod_tet_positions(input);
+        if (rod.edge_based) optimize_rod_joint_positions(input);
+        if (rod.edge_based) {
+            if (rod.coupled_rounds > 0)
+                optimize_rod_background_coupled(input);
+            else
+                remesh_rod_background(input);
+        }
+        if (mixed) {
+            hybrid = build_rod_prism_mesh(input, optimization.min_tet_volume);
+            hybrid->report["shell_reconstruction"] = std::move(shell_report);
+            hybrid->report["pipeline_order"] = {
+                "shell_construction",
+                "shell_quality",
+                "rod_geometry",
+                "rod_construction"};
+        }
     } else
         prism_main(input, json_params["thicknessratio"].get<double>(), optimization);
     if (!hybrid && json_params["prism_dominant"].get<bool>())
@@ -146,54 +229,44 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             optimization.min_tet_volume,
             thickness_iterations);
     }
-    BadQualityRelocationOptions relocation;
-    relocation.collapse_edge_iterations =
-        json_params["collapse_edge_relocation_iterations"].get<int>();
-    relocation.prism_tet_iterations = json_params["prism_tet_relocation_iterations"].get<int>();
-    relocation.tet_face_iterations = json_params["tet_face_relocation_iterations"].get<int>();
-    relocation.tet_face_allow_mixed_cells =
-        json_params["tet_face_relocation_allow_mixed_cells"].get<bool>();
-    relocation.amips_threshold = json_params["relocation_amips_threshold"].get<double>();
-    relocation.thickness_weight = json_params["relocation_thickness_weight"].get<double>();
-    relocation.thickness_tolerance = json_params["relocation_thickness_tolerance"].get<double>();
-    relocation.max_displacement_ratio =
-        json_params["relocation_max_displacement_ratio"].get<double>();
-    relocation.max_backtracks = optimization.smoothing_max_backtracks;
-    const bool skip_default_thickness =
-        hybrid && !explicit_tet_face_relocation && relocation.tet_face_iterations > 0 &&
-        (!(input.target_thickness > 0) || !std::isfinite(input.target_thickness));
-    const int configured_tet_face_iterations = relocation.tet_face_iterations;
-    if (skip_default_thickness) relocation.tet_face_iterations = 0;
-    if (hybrid) {
-        relocate_bad_quality_regions(input, *hybrid, optimization.min_tet_volume, relocation);
-        expand_bad_tet_transition_regions(
-            input,
-            *hybrid,
-            optimization.min_tet_volume,
-            relocation,
-            expansion_rounds);
-        if (skip_default_thickness) {
-            auto& skipped = hybrid->report["bad_quality_relocation"]["tet_face_relocation"];
-            skipped["requested_iterations"] = configured_tet_face_iterations;
-            skipped["actual_iterations"] = 0;
-            skipped["accepted_moves"] = 0;
-            skipped["history"] = nlohmann::json::array();
-            skipped["skipped_reason"] = "no_positive_target_thickness";
-            logger().info("Default tet-face relocation skipped: no positive target thickness");
-        }
-    } else if (
-        relocation.collapse_edge_iterations != 0 || relocation.prism_tet_iterations != 0 ||
-        relocation.tet_face_iterations != 0) {
-        log_and_throw_error("Bad-quality relocation requires prism_dominant.");
-    }
     if (hybrid) hybrid->report["ignore_background_mesh"] = ignore_background;
+    if (quality_improvement) {
+        improved = rod_mode ? finalize_staged_mixed_mesh(
+                                  input,
+                                  *hybrid,
+                                  shell_improved ? &*shell_improved : nullptr,
+                                  optimization.keep_background_mesh)
+                            : improve_prismatic_mesh_quality(input, *hybrid, quality_options);
+        improved->report["construction"] = hybrid->report;
+    } else if (rod_mode && hybrid && optimization.keep_background_mesh) {
+        auto candidate = finalize_staged_mixed_mesh(input, *hybrid, nullptr, true);
+        const auto& background = candidate.report["background_relocation"];
+        hybrid->report["background_relocation"] = background;
+        hybrid->report["final_native_quality"] = candidate.report["final_quality"];
+        hybrid->report["final_domain_volume"] = candidate.report["final_domain_volume"];
+        hybrid->report["final_material_topology"] = candidate.report["final_material_topology"];
+        if (background.value("accepted", size_t(0)) > 0) improved = std::move(candidate);
+    }
+    const auto write_result = [&](const std::filesystem::path& destination,
+                                  bool background,
+                                  MeshMap* raw = nullptr,
+                                  nlohmann::json* report = nullptr) {
+        if (improved)
+            write_improved_prismatic_mesh(*improved, destination, background, raw, report);
+        else
+            write_prismatic_mesh(
+                input,
+                destination,
+                hybrid ? &*hybrid : nullptr,
+                background,
+                raw,
+                report);
+    };
     if (component_io.memory()) {
         MeshMap raw;
         nlohmann::json hybrid_report;
-        write_prismatic_mesh(
-            input,
+        write_result(
             "mesh.vtu",
-            hybrid ? &*hybrid : nullptr,
             !rod_mode || optimization.keep_background_mesh,
             &raw,
             &hybrid_report);
@@ -204,11 +277,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         if (hybrid) component_io.result.second["hybrid"] = std::move(hybrid_report);
         if (rod_mode) component_io.result.second["rod"] = input.rod_state->report;
     } else {
-        write_prismatic_mesh(
-            input,
-            output_path,
-            hybrid ? &*hybrid : nullptr,
-            !rod_mode || optimization.keep_background_mesh);
+        write_result(output_path, !rod_mode || optimization.keep_background_mesh);
         if (rod_mode) {
             auto report_path =
                 output_path.parent_path() / (output_path.stem().string() + "_rod.json");
@@ -223,13 +292,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
             if (!component_io.result.first.count("input_and_shell")) {
                 MeshMap raw;
                 nlohmann::json hybrid_report;
-                write_prismatic_mesh(
-                    input,
-                    "mesh.vtu",
-                    hybrid ? &*hybrid : nullptr,
-                    false,
-                    &raw,
-                    &hybrid_report);
+                write_result("mesh.vtu", false, &raw, &hybrid_report);
                 auto keys = io::default_output_keys();
                 keys["mesh.vtu"] = "input_and_shell";
                 keys["mesh_offset_faces.vtu"] = "input_and_shell_offset";
@@ -238,7 +301,7 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                     component_io.result.second["input_and_shell_hybrid"] = std::move(hybrid_report);
             }
         } else
-            write_prismatic_mesh(input, out, hybrid ? &*hybrid : nullptr, false);
+            write_result(out, false);
         logger().info("Wrote input + shell mesh: {}", out.string());
     }
 }
