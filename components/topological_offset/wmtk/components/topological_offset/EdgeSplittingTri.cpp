@@ -10,10 +10,8 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
 {
     // A correspondence carried from an earlier offset is the edge from its offset vertex to the
     // input vertex it names; cutting that edge loses it, whichever step cuts (the simplicial
-    // embedding, the march). As in 3D (TopoOffsetTetMesh::split_edge_before()), whose message
-    // also says to protect the earlier band: 3D's march cuts no edge of a protected cell, 2D's
-    // still does (marching_tris(); 3D's rule dates from 2026-11-05), so here protecting does not
-    // help.
+    // embedding, the march). As in 3D (TopoOffsetTetMesh::split_edge_before()): both marches cut
+    // protected cells' edges (3D again since 2026-11-20), so protecting does not help.
     {
         const size_t a = t.vid(*this);
         const size_t b = t.switch_vertex(*this).vid(*this);
@@ -67,6 +65,7 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
         c.edge_labels = common_labels(
             m_vertex_extra[c.v1_id].m_boundary_labels,
             m_vertex_extra[c.v2_id].m_boundary_labels);
+        c.split_edge_label = m_edge_extra[t.eid(*this)].label;
         const simplex::Edge edge(c.v1_id, c.v2_id);
         // parent_q_max is diagnostic: split_after_vertex() uses it to say whether a needle child
         // came from a parent that was already unscoreable, or from a healthy one.
@@ -213,15 +212,32 @@ bool TopoOffsetTriMesh::edge_split_sphere_trace(
     Vector2d& p_new,
     size_t& steps) const
 {
-    // Sphere tracing to D = m_construction_distances[k] (entry k's target_distance, or the
-    // construction_mode fallback; see the marching), on d the distance to entry k's complex
-    // (offset_distance()): d is 1-Lipschitz, so from a point at distance d the level set
+    // The march's entry k: its distance (offset_distance()) to its traced distance.
+    return sphere_trace_on_edge(
+        [&](const Vector2d& p) { return offset_distance(k, p); },
+        m_construction_distances[k],
+        p_in,
+        p_out,
+        p_new,
+        steps);
+}
+
+bool TopoOffsetTriMesh::sphere_trace_on_edge(
+    const std::function<double(const Vector2d&)>& dist,
+    const double D,
+    const Vector2d& p_in,
+    const Vector2d& p_out,
+    Vector2d& p_new,
+    size_t& steps) const
+{
+    // Sphere tracing to D on d (the march: entry k's target_distance, or the construction_mode
+    // fallback, on the distance to entry k's complex; label growth: a piece's target on the
+    // band's distance): d is 1-Lipschitz, so from a point at distance d the level set
     // d = D is at least D - d away in every direction, and stepping exactly that far along the
     // edge can never cross it. The step is positive while the trace has not converged
     // (D - d > tol), so t grows by more than tol each time and the loop ends within L / tol
     // steps, one way or the other. Same as 3D.
-    const double D = m_construction_distances[k];
-    const double tol = std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
+    const double tol = sphere_trace_tol(D);
     const Vector2d dir = p_out - p_in;
     const double L = dir.norm();
     steps = 0;
@@ -230,7 +246,7 @@ bool TopoOffsetTriMesh::edge_split_sphere_trace(
     double t = 0.;
     while (true) {
         const Vector2d p = p_in + t * u;
-        const double d = offset_distance(k, p);
+        const double d = dist(p);
         ++steps;
         if (std::abs(d - D) <= tol) {
             p_new = p;

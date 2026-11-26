@@ -103,6 +103,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: false stops the run at the constructed offset, optimize_offset() is not
     /// called and the constructed band is written as the result.
     bool optimize_offset;
+    /// See the spec (2026-11-20, 2D and 3D): after construction and before the optimization,
+    /// grow the band toward the level set by topology-keeping label flips and level-set splits
+    /// (TopoOffsetTriMesh / TopoOffsetTetMesh::label_growth()). With optimize_offset false the
+    /// grown band is the result. On by default since 2026-11-25 (Uday).
+    bool label_growth = true;
     // Half-width of the envelope that holds the held surfaces (3D: every region boundary, the
     // input complex's included, and the domain wall; see the spec doc).
     // Absolute; if <= 0, computed from envelope_size_rel (relative to the bbox diagonal) by
@@ -327,6 +332,34 @@ struct Parameters : public wmtk::OptimizerParameters
     /// of half the distance the march traced it to (TopoOffsetTetMesh::optimize_construction_pass()).
     /// Ignored when optimize_offset is false. See the spec doc.
     bool optimize_construction = true;
+    /// EXPERIMENTAL_post_growth_front_envelope (see the spec), 3D, read with label_growth: what
+    /// optimize_construction's pass after label growth holds the offset surface to. "front_conv"
+    /// (the default) or "envelope_size": that envelope, and the pass runs only when the max AMIPS
+    /// is at or over stop_energy, as the final pass; "half_traced_distance": half the distance the
+    /// march traced it to. Without label growth the pass after the march holds it to half the
+    /// traced distance.
+    std::string post_growth_front_envelope = "front_conv";
+    /// EXPERIMENTAL_construction_pass_before_growth (see the spec), 3D: optimize_construction's
+    /// pass also runs on the march's front, before label_growth, the front held to half the
+    /// distance the march traced it to.
+    bool construction_pass_before_growth = false;
+    /// EXPERIMENTAL_resolve_crossing (see the spec), 3D, under label_growth: before growth, held
+    /// surfaces resolve the level set to front_conv near it (vanilla midpoint splits).
+    bool resolve_crossing = false;
+    /// EXPERIMENTAL_star_retreat (see the spec), 3D, under label_growth: after the loop's label
+    /// clean-up, the march's retreat splits at held front vertices beyond the level set and the
+    /// whole-star retreat; where the non-band across a star carries two tag sets, the surface cut;
+    /// and the region sides (TopoOffsetTetMesh::region_excess()). On by default since 2026-11-25
+    /// (Uday).
+    bool star_retreat = true;
+    /// Not a key (a caller's): whether an input block the band covers -- a face tag or the sheet
+    /// (3D), an edge tag or the curve group (2D) -- gives way unless protected
+    /// (release_covered_face_tags(), release_covered_edge_tags()). True for the offset, whose band
+    /// replaces what it covers; manifold_extraction, which carves with the band and returns every
+    /// tagged block of its input (split where the carving crosses it), sets it false. MEASURED
+    /// (2026-11-25) with the 2D release on: the extraction's tagged curve through the carved
+    /// vertex came back 0.0566 short (manifold_extraction_carries_tagged_edges_points_2d).
+    bool release_covered_tags = true;
     /// 3D (2026-10-21; "linear" was EXPERIMENTAL_incremental_growth): how the loop grows the
     /// offset when the march traces the front below target_distance (construction_mode
     /// "max_marchable_fallback", the target not below the maximum marchable distance), from the
@@ -466,6 +499,7 @@ struct Parameters : public wmtk::OptimizerParameters
         throw_on_nonconvergence = json_params["throw_on_nonconvergence"];
         throw_on_unreachable_level_set = json_params["throw_on_unreachable_level_set"];
         optimize_offset = json_params["optimize_offset"];
+        label_growth = json_params["label_growth"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
         per_input_envelopes = json_params["per_input_envelopes"];
@@ -687,6 +721,19 @@ struct Parameters : public wmtk::OptimizerParameters
         front_pocket_split = json_params["EXPERIMENTAL_front_pocket_split"];
         front_spanned_split = json_params["EXPERIMENTAL_front_spanned_split"];
         exit_no_folds = json_params["EXPERIMENTAL_exit_no_folds"];
+        post_growth_front_envelope = json_params["EXPERIMENTAL_post_growth_front_envelope"];
+        if (post_growth_front_envelope != "front_conv" &&
+            post_growth_front_envelope != "envelope_size" &&
+            post_growth_front_envelope != "half_traced_distance") {
+            log_and_throw_error(
+                "EXPERIMENTAL_post_growth_front_envelope is \"front_conv\", \"envelope_size\" or "
+                "\"half_traced_distance\", not \"{}\"",
+                post_growth_front_envelope);
+        }
+        construction_pass_before_growth =
+            json_params["EXPERIMENTAL_construction_pass_before_growth"];
+        resolve_crossing = json_params["EXPERIMENTAL_resolve_crossing"];
+        star_retreat = json_params["EXPERIMENTAL_star_retreat"];
         label_cleanup = json_params["EXPERIMENTAL_label_cleanup"];
         if (label_cleanup != "off" && label_cleanup != "one_sided" &&
             label_cleanup != "one_sided_tips" && label_cleanup != "one_sided_at_target" &&

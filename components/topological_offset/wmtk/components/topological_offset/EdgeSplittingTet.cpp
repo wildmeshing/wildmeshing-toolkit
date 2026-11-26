@@ -19,8 +19,10 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
 {
     // A correspondence carried from an earlier offset is the edge from its offset vertex to the
     // input vertex it names; cutting that edge loses it, whichever step cuts (the simplicial
-    // embedding, the march). The march cuts no edge of a protected cell (marching_tets()), so an
-    // earlier band that is protected keeps every one. Until 2026-11-06 the run instead compared
+    // embedding, the march). From 2026-11-05 to 2026-11-20 the march cut no edge of a protected
+    // cell, so an earlier band that was protected kept every one; protected cells are marched
+    // again since (marching_tets()), so a chain that keeps an earlier band throws here until it
+    // is redone (Uday, 2026-11-20). Until 2026-11-06 the run instead compared
     // each carried vertex's star before and after construction, which also refused cuts beside
     // the earlier band: feature demo 4, the wire's band protected, 258 of its 1886 stars.
     {
@@ -33,7 +35,8 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         if (names(a, b) || names(b, a)) {
             log_and_throw_error(
                 "the offset cuts the edge from an earlier offset's vertex to its input vertex "
-                "(corr_input_vid), vertices {} and {}: protect the earlier band (protected_tags)",
+                "(corr_input_vid), vertices {} and {}: a chain of offsets that keeps an earlier "
+                "band is not supported (protected cells are marched since 2026-11-20)",
                 a,
                 b);
         }
@@ -67,13 +70,19 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         // MEASURED with the wait (cube_in, target 0.3, 7 turns): 580 pocket splits refused by it
         // against 248 committed, and 46 of 55 pinned cells left before turn 1's collapse group's
         // first smoothing pass. It is still counted as off the longest edge.
+        //
+        // Nor does a label growth split (growth_splits()), for the same reason: serial, outside the
+        // pass, never retried, and placed on the level set rather than refining. MEASURED with the
+        // wait (label-growth-3d, a point offset to 0.3 on the 8^3 grid, front_conv_rel 0.01): every
+        // refused growth split was a wait (59 of 59 in round 1, 51 of 51 in rounds 2 and 3), the
+        // front left up to 58 front_conv short.
         const double l2 = get_length2(t);
         bool off_longest = false;
         for (const Tuple& tet : get_incident_tets_for_edge(t)) {
             for (int j = 0; j < 6; ++j) {
                 const Tuple f = tuple_from_edge(tet.tid(*this), j);
                 if (!(get_length2(f) > l2)) continue;
-                if (!m_pocket_splitting && split_edge_is_due(f)) {
+                if (!m_pocket_splitting && !m_growth_split.active && split_edge_is_due(f)) {
                     ++m_split_order_waits;
                     return false;
                 }
@@ -271,15 +280,32 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
     Vector3d& p_new,
     size_t& steps) const
 {
-    // Sphere tracing to D = m_construction_distances[k] (entry k's target_distance, or the
-    // construction_mode fallback; see the marching), on d the distance to entry k's complex
-    // (offset_distance()): d is 1-Lipschitz, so from a point at distance d the level set
+    // The march's entry k: its distance (offset_distance()) to its traced distance.
+    return sphere_trace_on_edge(
+        [&](const Vector3d& p) { return offset_distance(k, p); },
+        m_construction_distances[k],
+        p_in,
+        p_out,
+        p_new,
+        steps);
+}
+
+bool TopoOffsetTetMesh::sphere_trace_on_edge(
+    const std::function<double(const Vector3d&)>& dist,
+    const double D,
+    const Vector3d& p_in,
+    const Vector3d& p_out,
+    Vector3d& p_new,
+    size_t& steps) const
+{
+    // Sphere tracing to D on d (the march: entry k's target_distance, or the construction_mode
+    // fallback, on the distance to entry k's complex; label growth: a piece's target on the
+    // band's distance): d is 1-Lipschitz, so from a point at distance d the level set
     // d = D is at least D - d away in every direction, and stepping exactly that far along the
     // edge can never cross it. The step is positive while the trace has not converged
     // (D - d > tol), so t grows by more than tol each time and the loop ends within L / tol
     // steps, one way or the other.
-    const double D = m_construction_distances[k];
-    const double tol = std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
+    const double tol = sphere_trace_tol(D);
     const Vector3d dir = p_out - p_in;
     const double L = dir.norm();
     steps = 0;
@@ -288,7 +314,7 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
     double t = 0.;
     while (true) {
         const Vector3d p = p_in + t * u;
-        const double d = offset_distance(k, p);
+        const double d = dist(p);
         ++steps;
         if (std::abs(d - D) <= tol) {
             p_new = p;

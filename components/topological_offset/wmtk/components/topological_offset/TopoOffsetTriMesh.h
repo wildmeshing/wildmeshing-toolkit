@@ -89,6 +89,10 @@ public:
     /// created by an optimization split. Read only by the needle diagnostics' per-vertex lines.
     /// Assigned at each split, never OR'd -- a recycled slot carries a dead vertex's epoch.
     uint32_t m_born_epoch = 0;
+
+    /// Placed by a label growth split (growth_splits()): at the level set to the last double, so
+    /// never split again. Read by growth only. As 3D.
+    bool m_growth_split_point = false;
 };
 
 
@@ -636,6 +640,41 @@ public:
     void build_boundary_envelopes(const char* when, EnvelopeSetup setup);
 
     /**
+     * @brief THE REGION SIDES, 3D's (TopoOffsetTetMesh::RegionSide, which says why) one dimension
+     * down: each face tag's region as the input bounds it -- the tracked edges between a
+     * triangle carrying the tag and one without it, at load (before the march), each with its
+     * normal out of the region -- for its side of a point: outside by more than envelope_size,
+     * inside by more, or on it. Built under EXPERIMENTAL_star_retreat, as 3D; the crossing
+     * step's chart (smooth_after()) reads their segments.
+     */
+    struct RegionSide
+    {
+        int64_t tag = 0;
+        std::shared_ptr<Envelope> env; // around the region's boundary segments
+        std::vector<Vector2d> edge_n; // per boundary segment, unit, out of the region
+        std::vector<Vector2d> vert_n; // per boundary vertex, the sum of its segments' normals
+        std::vector<Vector2d> V; // the boundary segments themselves (the crossing step's chart)
+        std::vector<Eigen::Vector2i> E;
+    };
+    std::vector<RegionSide> m_region_sides;
+    void build_region_sides();
+    /// 3D's region_excess(): how far past its region's boundary, beyond envelope_size, front
+    /// vertex vid at p takes the non-band triangles at it; 0 when none or without region sides.
+    double region_excess(size_t vid, const Vector2d& p) const;
+    /// The smoother's per-vertex constraint (the base's hook, the anchors' balls): also, a front
+    /// vertex's move may not take a triangle outside the band further past its region
+    /// (region_excess() above what it was where the move started, or above 0). As 3D.
+    bool smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const override;
+    mutable wmtk::threading::enumerable_thread_specific<double> m_region_excess_pre;
+    mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_region_pre;
+    mutable std::atomic<size_t> m_region_side_refused{0};
+    /// The crossing step (smooth_after()): moves solved on a chart of the held curve, moves that
+    /// took the engine's step for want of one, and why (no region side within reach, no segment
+    /// under the vertex, a patch not a simple path, a degenerate segment).
+    mutable std::atomic<size_t> m_crossing_chart_solved{0}, m_crossing_engine_step{0};
+    mutable std::array<std::atomic<size_t>, 4> m_crossing_chart_why{};
+
+    /**
      * @brief The tube the offset boundary may not leave during the frozen-front final pass, of
      * half-width offset_envelope, built from the boundary as the loop left it just before that
      * pass (containment_for() holds the final pass's operations to it). Null until then: the
@@ -727,16 +766,6 @@ public:
     /// split (settle_refinement_turn()); front_pocket_split() splits them and clears the list. As
     /// in 3D, whose list holds front edges of its faces.
     std::vector<std::array<size_t, 2>> m_settle_split_edges;
-    /// HELD-SEGMENT SPLIT: the held segments that refused a front vertex's smoothing move, each
-    /// outside its tube at the refused position (smooth_vertex_under_energy()); front_pocket_split()
-    /// splits them before the next smoothing pass and clears the list. A held segment is straight
-    /// and its boundary may curve, so it bows L^2 / 8R inside a curve of radius R: a front vertex
-    /// that must slide along the boundary to reach the level set stretches the segment behind it
-    /// until it leaves the tube, and halving that segment quarters its bow. Kept by its ends'
-    /// positions, since the turn's consolidation renumbers the vertices before the next smoothing
-    /// pass; a segment whose end moved or went since is skipped.
-    std::vector<std::array<Vector2d, 2>> m_held_split_edges;
-    std::mutex m_held_split_mutex;
     /**
      * @brief EXPERIMENTAL_label_cleanup (see the spec). The 2D twin of
      * TopoOffsetTetMesh::label_cleanup(), one dimension down: a cell is a triangle, its faces
@@ -754,17 +783,73 @@ public:
      * passes the band-region map. One [label cleanup] line. Called by loop_group() after the
      * operation passes; a no-op with the key "off". "energy_decrease" reads the "surface" rule's
      * face term, which 2D has not, and is refused (see the definition).
+     *
+     * `side` picks the side test: the key's mode (Cleanup), or label growth's corner rule
+     * (Corners, label_growth()): a non-band triangle joins the band iff every corner is inside
+     * the level set, a band triangle leaves it iff every corner is beyond. Everything else --
+     * eligibility, the topology test, the held objects' test, the crossing slide, the
+     * re-derivations and the component check -- is the same for both. Returns the flips.
      */
-    void label_cleanup(const std::string& where);
+    enum class FlipSide { Cleanup, Corners };
+    size_t label_cleanup(const std::string& where, FlipSide side = FlipSide::Cleanup);
+
+    /**
+     * @brief label_growth (see the spec, 2026-11-20): after construction, before the
+     * optimization, grow the band toward the level set: label_cleanup() under the corner rule,
+     * then rounds of level-set splits (growth_splits()) each followed by the corner rule's flips,
+     * until a round splits nothing. Calls prepare_front() first. A split point is never split again
+     * (VertexExtra2d::m_growth_split_point), so every edge is split at most once and the rounds
+     * end.
+     */
+    void label_growth();
+    /**
+     * @brief Label growth's splits: every edge from a front vertex u more than the trace's
+     * tolerance inside the level set, not itself a growth split point, to a vertex w beyond, in
+     * any non-band triangle at u, split where the march's sphere trace from u stops
+     * (sphere_trace_on_edge(), on the band's distance to the triangle's piece's target). A u within
+     * the tolerance is on the level set by the march's own standard; an edge whose point rounds
+     * onto w is not split. Serial. Returns {splits, edges the shared split refused, edges not
+     * split for u on the level set or the point on w}. As 3D.
+     */
+    std::array<size_t, 3> growth_splits(const std::string& where);
+    /// The exact point u + s (w - u) of the edge (u, w), from the endpoints' exact positions.
+    Vector2r growth_point(size_t u, size_t w, double s) const
+    {
+        const Vector2r pu = m_vertex_attribute[u].pos();
+        const Vector2r pw = m_vertex_attribute[w].pos();
+        return pu + (pw - pu) * Rational(s);
+    }
+    /// A pending growth split: the shared split's position hook (split_adjust_position()) puts
+    /// the new vertex at growth_point(u, w, s). Unset outside growth_splits().
+    struct GrowthSplit
+    {
+        size_t u = 0;
+        double s = 0.5;
+        bool active = false;
+        size_t new_vertex = size_t(-1); ///< set by split_adjust_position()
+    };
+    GrowthSplit m_growth_split;
+    /**
+     * @brief The optimization's setup that label growth also reads, run once by whichever of
+     * label_growth() and optimize_offset() comes first: the optimization split mode, the front
+     * edge classes (label_offset_boundary()), the membership baseline and DEBUG_held_topology's
+     * baseline.
+     */
+    void prepare_front();
+    bool m_front_prepared = false;
     /**
      * @name The level set out of reach
      * The last clean-up's non-band triangles wholly inside the level set (the one-sided side
-     * test) that the held objects' test kept out of the band. At a settled turn and at the loop's
-     * end check_level_set_reachable() throws on them (warns under throw_on_unreachable_level_set
+     * test) that the held objects' test kept out of the band, or else a held object the band
+     * does not touch with a point more than front_conv inside the level set
+     * (held_object_inside_level_set()). At a settled turn and at the loop's end
+     * check_level_set_reachable() throws on either (warns under throw_on_unreachable_level_set
      * false), as in 3D.
      * @{
      */
     void check_level_set_reachable(const std::string& when);
+    /// TopoOffsetTetMesh::held_object_inside_level_set()'s twin (see it), one dimension down.
+    std::string held_object_inside_level_set() const;
     size_t m_unreachable_cells = 0;
     std::string m_unreachable_where;
     /// The last settle test's verdict (settle_refinement_turn()).
@@ -1579,6 +1664,10 @@ public:
     /// The turn the run is in, 1-based; 0 before the loop starts. Read only by
     /// write_smoothing_debug_output(), to tag each frame with the turn it belongs to.
     int m_round = 0;
+    /// The turns the last optimize_offset_loop() ran: 0 when the mesh passed the exit test at the
+    /// loop's entry. Read by the report ("loop_turns"). Not m_iterations_used, which the loop sets
+    /// too: the final pass's mesh_improvement() resets that one and counts its own iterations.
+    int m_loop_turns = 0;
     /// Monotonic frame counter for the debug timeline. Mutable because the write hook is const.
     mutable size_t m_debug_seq = 0;
     /// DEBUG_output: the label of each debug frame, indexed by its sequence number, and, per
@@ -1651,6 +1740,8 @@ public:
         /// on the front, which the parents' labels (a band face and one that is neither band nor
         /// input complex) would say. 3D labels such a face 1 (close_labels()).
         bool on_in_complex = false;
+        /// The split edge's construction label, for its two halves (split_adjust_position()).
+        int split_edge_label = 0;
     };
     wmtk::threading::enumerable_thread_specific<OptSplitCache2d> m_opt_split_cache;
 
@@ -1677,6 +1768,21 @@ public:
         const Vector2d& p_out,
         Vector2d& p_new,
         size_t& steps) const;
+    /// THE SPHERE TRACE itself, for the march (edge_split_sphere_trace(), entry k's distance and
+    /// traced distance) and label growth's splits (growth_splits(), the band's distance and the
+    /// piece's target): the same rule, steps and stop as described above, on `dist` to D.
+    bool sphere_trace_on_edge(
+        const std::function<double(const Vector2d&)>& dist,
+        double D,
+        const Vector2d& p_in,
+        const Vector2d& p_out,
+        Vector2d& p_new,
+        size_t& steps) const;
+    /// The trace's tolerance at D: sphere_trace_target_rel_tol x D.
+    double sphere_trace_tol(const double D) const
+    {
+        return std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
+    }
     /// marching_tris() tallies for the construction log: edges placed on the level set / at the
     /// midpoint because the trace left the edge, and the trace steps (total, max). Reset at the
     /// start of marching_tris().
@@ -3049,7 +3155,8 @@ public:
      * TopoOffsetTetMesh::settle_refinement_turn(), front chords in place of offset faces. Settled
      * when the offset energy (offset_energy(), no AMIPS) fell by less than the bar energy
      * b = front_conv^2 L / (2 target_distance) since `e_prev` (the offset energy at the end of
-     * the previous turn, turn 1: before its first group; set to the offset energy now), L the
+     * the previous turn, turn 1: before its first group; NaN: no turn behind the test, the exit
+     * test at the loop's entry, a turn of length zero; set to the offset energy now), L the
      * front's length: the offset term's excess for a front lying front_conv beyond the level set,
      * per unit length int_0^front_conv s / delta ds (3D: A, the front's area). Only a settled turn
      * marks the front by EXPERIMENTAL_settle_mark and halves the corners it marks, when
@@ -3574,6 +3681,15 @@ public:
      * the given offset tag values in m_offset_params.offset_tag_value
      */
     void set_offset_tri_tags();
+    /// The edges the band covers (band triangles on both sides), not of the input complex: their
+    /// edge tags and the curve group give way unless protected_tags keeps them. Run after
+    /// set_offset_tri_tags() and by label growth after each flip pass. 3D's
+    /// release_covered_face_tags(), one dimension down.
+    void release_covered_edge_tags();
+    /// A tracked edge with the band on both sides, one tag set across it, no edge tag and not on
+    /// the curve group, no longer bounds anything: untracked, its corners' region and surface
+    /// flags re-derived. Run after release_covered_edge_tags(). 3D's untrack_covered_boundaries().
+    void untrack_covered_boundaries();
 
     /**
      * @brief verify that the closed offset region (simplices labelled 1 or 2) form a manifold

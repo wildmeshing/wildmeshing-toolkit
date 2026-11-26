@@ -274,8 +274,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         timer.start();
         mesh.construct_offset(output_filename);
 
-        // checks
-        {
+        // checks, on the offset as constructed and, under label_growth, as grown
+        const auto offset_checks = [&]() {
             // Did conservative growth run out of room? Reported here, not inside the
             // optimization, because it is a property of the offset as constructed: the
             // optimization cannot move vertices off the bounding box, so a band clipped here
@@ -303,6 +303,17 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                     "connected components check passed. (# components={})",
                     initial_num_comps);
             }
+        };
+        offset_checks();
+
+        // label_growth (json, default false; see the spec): the band grown toward the level set
+        // by label flips and level-set splits, after construction and before the optimization.
+        // It reads d through the exact band integral, which init_offset_potential() builds; with
+        // optimize_offset false the grown band is the result.
+        if (mesh.m_offset_params.label_growth) {
+            mesh.init_offset_potential();
+            mesh.label_growth();
+            offset_checks();
         }
 
         // optimize_offset (json, default true). Construction leaves the band boundary on
@@ -311,8 +322,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // resolution; false is for inspecting the constructed offset.
         if (mesh.m_offset_params.optimize_offset) {
             // The potential, against the constructed offset. Only the optimization reads it, so
-            // a construction-only run builds none. As in 3D.
-            mesh.init_offset_potential();
+            // a construction-only run builds none. As in 3D. label_growth built it already.
+            if (!mesh.m_offset_params.label_growth) mesh.init_offset_potential();
             mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
 
             mesh.optimize_offset(output_filename);
@@ -409,6 +420,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 report["converged"] = mesh.m_converged;
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
+                // The turns of the last loop (under incremental or smart growth, the last stage's);
+                // 0: the mesh passed the exit test at the loop's entry.
+                report["loop_turns"] = mesh.m_loop_turns;
             }
             report["all_rounded"] = unrounded == 0;
             report["#unrounded"] = unrounded;
@@ -584,8 +598,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         timer.start();
         mesh.construct_offset(output_filename);
 
-        // checks
-        {
+        // checks, on the offset as constructed and, under label_growth, as grown. As in 2D.
+        const auto offset_checks = [&]() {
             // Did conservative growth run out of room? Reported here, not inside the
             // optimization, because it is a property of the offset as constructed: the
             // optimization cannot move vertices off the bounding box, so a band clipped here
@@ -613,6 +627,15 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                     "connected components check passed. (# components={})",
                     initial_num_comps);
             }
+        };
+        offset_checks();
+
+        // label_growth (json, default false; see the spec), as in 2D: the band grown toward the
+        // level set before the optimization, then the checks again on the grown band.
+        if (mesh.m_offset_params.label_growth) {
+            mesh.init_offset_potential();
+            mesh.label_growth();
+            offset_checks();
         }
 
         // optimize_offset (json, default true), as in 2D. Conservative growth leaves the band
@@ -621,8 +644,8 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
         // mesh's resolution; false is for inspecting the constructed offset.
         if (mesh.m_offset_params.optimize_offset) {
             // The potential, against the constructed offset. Only the optimization reads it, so
-            // a construction-only run builds none.
-            mesh.init_offset_potential();
+            // a construction-only run builds none. label_growth built it already.
+            if (!mesh.m_offset_params.label_growth) mesh.init_offset_potential();
             mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
 
             mesh.optimize_offset(output_filename);
@@ -722,6 +745,9 @@ static void run(nlohmann::json json_params, io::ComponentIO& component_io)
                 report["converged"] = mesh.m_converged;
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
+                // The turns of the last loop (under incremental or smart growth, the last stage's);
+                // 0: the mesh passed the exit test at the loop's entry.
+                report["loop_turns"] = mesh.m_loop_turns;
             }
             report["all_rounded"] = unrounded == 0;
             report["#unrounded"] = unrounded;
