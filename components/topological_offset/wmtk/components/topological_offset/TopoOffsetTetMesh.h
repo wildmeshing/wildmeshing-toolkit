@@ -473,8 +473,29 @@ public:
      * assigned yet (an operation's new vertex, until assign_band_regions() runs again), the
      * nearest piece (nearest_piece()). -1 with one entry, or before the per-piece fields exist:
      * the whole complex's field (m_offset_potential) and the run's distance, as before 2026-11.
+     * A cell (n = 4) is its own body's piece instead (cell_piece()).
      */
     int place_piece(const size_t* vids, size_t n) const;
+    /**
+     * @brief place_piece() of a cell: the nearest piece, at the cell's centroid, of the entry
+     * whose band it is -- the entry whose level set holds the centroid most deeply, (d_k -
+     * delta_k) / delta_k least, d_k the one-sided distance (side_distance(), +infinity outside an
+     * In entry's selection: inside an In body, that body's entry). Not the nearest piece of all:
+     * between two Out entries a cell of the farther one's band lies nearer the other's input
+     * (several-offsets-optimize-distances, b's band at 0.3 reaching to 0.24 from a at 0.1, read at
+     * a's integral beyond a's target, did not converge). A function of the cell's corners'
+     * positions alone, never of the
+     * cells around it nor of a table an operation leaves stale: the band term of a cell
+     * (band_cell_term()) is its piece's integral, and E must be a function of the mesh for a
+     * pass of strictly descending operations to end. An In piece's integral is one-sided (0
+     * outside its selection), so a cell read at another body's piece loses its whole band term.
+     * MEASURED before (2026-11-26, test offset-several-in-crease): b fills a corner notch of a,
+     * both inward at one target; a cell with no corner of one piece read its piece from the
+     * regions of the cells around it, b's when a swap made it and a's when the next swap removed
+     * it, and three swaps then cycled without end, each booking 1.3e-5 of band term the cells
+     * never lost.
+     */
+    int cell_piece(const size_t* vids) const;
     /// The piece nearest to p, by the per-piece envelopes (m_region_envelopes); -1 without them.
     int nearest_piece(const Vector3d& p) const;
     /// Piece r's target distance: its entry's (m_region_offset), its growth_mode stage's while a

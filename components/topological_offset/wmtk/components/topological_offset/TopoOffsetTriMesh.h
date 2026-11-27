@@ -451,9 +451,17 @@ public:
      * band, or on vertices not assigned yet (an operation's new
      * vertex, until assign_band_regions() runs again), the nearest piece (nearest_piece()). -1
      * with one entry, or before the per-piece fields exist: the whole complex's field and
-     * integral and the run's distance.
+     * integral and the run's distance. A face (n = 3) is its own body's piece instead
+     * (face_piece()).
      */
     int place_piece(const size_t* vids, size_t n) const;
+    /// place_piece() of a face: a piece of the entry whose band it is -- the entry whose level set
+    /// holds the centroid most deeply, as 3D's cell_piece(): its only piece, else the
+    /// nearest piece (nearest_piece()) if it is one of the entry's, else the entry's first. A
+    /// function of the face's corners' positions alone, as 3D's cell_piece() (see there); 2D has
+    /// no per-piece envelopes, so among an entry's several pieces the nearest is found only when
+    /// it is the nearest of all.
+    int face_piece(const size_t* vids) const;
     /// The piece nearest to p: that of the input-complex BVH's nearest feature (m_phi_vert_region,
     /// m_phi_seg_region), as assign_band_regions() reads a seed's piece; -1 for none. 3D asks its
     /// per-piece envelopes (m_region_envelopes), which 2D does not build.

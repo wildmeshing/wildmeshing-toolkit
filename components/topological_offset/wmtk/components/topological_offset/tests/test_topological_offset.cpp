@@ -10271,6 +10271,59 @@ TEST_CASE("offset-complex-keeps-its-label", "[offset][3d]")
     }
 }
 
+TEST_CASE("offset-several-in-crease", "[offset][3d]")
+{
+    // Two In bodies whose contact has creases, as Geneva's base and cross at the pin: b fills a
+    // corner notch of a, its three inner faces the contact, both inward at one target, their
+    // output tags shared ([]), as Geneva's. A band cell's piece is its own body's, a function of
+    // the cell alone (cell_piece()): the In entry whose selection holds its centroid, whatever
+    // the order of its corners and whatever the regions of the cells around it.
+    // MEASURED before (2026-11-26, 1 thread): turn 7's swap pass never returned -- a cell with no
+    // corner of one piece read its piece from the regions of the cells around it, b's when a swap
+    // made it and a's when the next swap removed it (a's one-sided integral is 0 in b), and three
+    // swaps cycled, each booking 1.3e-5 of band term the cells never lost.
+    const std::array<int, 6> a = {{1, 6, 1, 6, 1, 6}}, b = {{4, 6, 4, 6, 4, 6}};
+    const auto entry = [](const std::string& s) {
+        return nlohmann::json{
+            {"selection", s},
+            {"direction", "in"},
+            {"output_tags", nlohmann::json::array()},
+            {"target_distance", 0.1}};
+    };
+    const auto mesh = run_offsets_3d(
+        box_grid({{"a", a}, {"b", b}}),
+        {{"offsets", {entry("a"), entry("b")}},
+         {"front_conv_rel", 0.002},
+         {"envelope_size_rel", 5e-5},
+         {"max_rounds", 8}});
+    size_t n = 0, off_body = 0, order_or_context = 0;
+    std::vector<std::pair<std::array<size_t, 4>, int>> pieces;
+    for (const auto& t : mesh->get_tets()) {
+        const size_t tid = t.tid(*mesh);
+        if (!mesh->cell_is_offset_band(tid)) continue;
+        ++n;
+        std::array<size_t, 4> v = mesh->oriented_tet_vids(tid);
+        Vector3d c = Vector3d::Zero();
+        for (const size_t u : v) c += mesh->m_vertex_attribute[u].m_posf / 4.;
+        const int piece = mesh->place_piece(v.data(), 4);
+        const int own = mesh->side_distance(0, c) < std::numeric_limits<double>::infinity() ? 0 : 1;
+        if (piece < 0 || mesh->m_region_offset[size_t(piece)] != own) ++off_body;
+        pieces.push_back({v, piece});
+        std::reverse(v.begin(), v.end());
+        if (mesh->place_piece(v.data(), 4) != piece) ++order_or_context;
+    }
+    // the regions of the cells and vertices around, cleared: no cell's piece changes
+    std::fill(mesh->m_cell_region.begin(), mesh->m_cell_region.end(), -1);
+    std::fill(mesh->m_vertex_region.begin(), mesh->m_vertex_region.end(), -1);
+    for (const auto& [v, piece] : pieces) {
+        if (mesh->place_piece(v.data(), 4) != piece) ++order_or_context;
+    }
+    INFO(n << " band cells");
+    CHECK(n > 0);
+    CHECK(off_body == 0);
+    CHECK(order_or_context == 0);
+}
+
 TEST_CASE("offset-direction-in-thin-slab", "[offset][3d]")
 {
     // A slab one cube thick: every vertex of its cells is on its boundary, so the march has no edge

@@ -3774,11 +3774,48 @@ int TopoOffsetTetMesh::nearest_piece(const Vector3d& p) const
     return best;
 }
 
+int TopoOffsetTetMesh::cell_piece(const size_t* vids) const
+{
+    // See the declaration.
+    Vector3d c = Vector3d::Zero();
+    for (int i = 0; i < 4; ++i) c += m_vertex_attribute[vids[i]].m_posf;
+    c /= 4.;
+    // The entry whose level set holds the centroid most deeply: (d_k - delta_k) / delta_k least,
+    // d_k its one-sided distance (side_distance(): +infinity outside an In entry's selection, so
+    // inside an In body only that body's entry is finite), delta_k its target (its stage's, as
+    // region_delta()).
+    int own = -1;
+    double own_s = std::numeric_limits<double>::infinity();
+    for (size_t k = 0; k < m_offset_params.offsets.size(); ++k) {
+        const double d = side_distance(k, c);
+        if (!(d < std::numeric_limits<double>::infinity())) continue;
+        const double delta = m_offset_levels.empty() ? m_offset_params.offsets[k].target_distance
+                                                     : m_offset_levels[k];
+        const double s = (d - delta) / delta;
+        if (s < own_s) {
+            own_s = s;
+            own = int(k);
+        }
+    }
+    int best = -1;
+    double best_d = std::numeric_limits<double>::infinity();
+    for (size_t r = 0; r < m_region_envelopes.size() && r < m_region_offset.size(); ++r) {
+        if (m_region_offset[r] != own) continue;
+        const double d = m_region_envelopes[r]->squared_distance(c);
+        if (d < best_d) {
+            best_d = d;
+            best = int(r);
+        }
+    }
+    return best >= 0 ? best : nearest_piece(c);
+}
+
 int TopoOffsetTetMesh::place_piece(const size_t* vids, const size_t n) const
 {
     // See the declaration.
     if (m_offset_params.offsets.size() <= 1 || m_region_potentials.empty()) return -1;
     if (m_region_potentials.size() == 1) return 0;
+    if (n == 4) return cell_piece(vids);
     int best = -1;
     double best_delta = std::numeric_limits<double>::infinity();
     const auto consider = [&](const int r) {

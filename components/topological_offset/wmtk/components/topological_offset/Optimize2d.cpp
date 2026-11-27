@@ -3061,11 +3061,42 @@ int TopoOffsetTriMesh::nearest_piece(const Vector2d& p) const
     return size_t(feature) < src.size() ? int(src[size_t(feature)]) : -1;
 }
 
+int TopoOffsetTriMesh::face_piece(const size_t* vids) const
+{
+    // See the declaration.
+    const Vector2d c = (m_vertex_attribute[vids[0]].m_posf + m_vertex_attribute[vids[1]].m_posf +
+                        m_vertex_attribute[vids[2]].m_posf) /
+                       3.;
+    // The entry whose level set holds the centroid most deeply, as 3D's cell_piece().
+    int own = -1;
+    double own_s = std::numeric_limits<double>::infinity();
+    for (size_t k = 0; k < m_offset_params.offsets.size(); ++k) {
+        const double d = side_distance(k, c);
+        if (!(d < std::numeric_limits<double>::infinity())) continue;
+        const double delta = m_offset_levels.empty() ? m_offset_params.offsets[k].target_distance
+                                                     : m_offset_levels[k];
+        const double s = (d - delta) / delta;
+        if (s < own_s) {
+            own_s = s;
+            own = int(k);
+        }
+    }
+    std::vector<int> mine;
+    for (size_t r = 0; r < m_region_offset.size(); ++r) {
+        if (m_region_offset[r] == own) mine.push_back(int(r));
+    }
+    if (mine.size() == 1) return mine.front();
+    const int nearest = nearest_piece(c);
+    if (mine.empty() || std::find(mine.begin(), mine.end(), nearest) != mine.end()) return nearest;
+    return mine.front();
+}
+
 int TopoOffsetTriMesh::place_piece(const size_t* vids, const size_t n) const
 {
     // See the declaration. As in 3D, m_face_region in place of m_cell_region.
     if (m_offset_params.offsets.size() <= 1 || m_region_potentials.empty()) return -1;
     if (m_region_potentials.size() == 1) return 0;
+    if (n == 3) return face_piece(vids);
     int best = -1;
     double best_delta = std::numeric_limits<double>::infinity();
     const auto consider = [&](const int r) {
