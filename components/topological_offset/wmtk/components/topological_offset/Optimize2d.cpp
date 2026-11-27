@@ -263,188 +263,6 @@ std::shared_ptr<Envelope> TopoOffsetTriMesh::containment_for(
     return m_offset_isect_cache.emplace(region_labels, std::move(isect)).first->second;
 }
 
-bool TopoOffsetTriMesh::face_is_deformable(const size_t fid) const
-{
-    // deform_others: the whole medium outside the band deforms, the input complex's interior
-    // included -- its boundary is what the complex tube holds. Same set as face_is_plastic().
-    return face_is_plastic(fid);
-}
-
-bool TopoOffsetTriMesh::face_is_released_band(const size_t fid) const
-{
-    // A band cell that is released material: every tag besides the offset output tag belongs to
-    // a released object, and there is at least one such tag. A pure band cell carries only the
-    // output tag and stays the front's freely-reshaped working material; a cell shared with a
-    // held object is excluded. Read only by the front placement objective and the rest stamping,
-    // so the front does work against released material where it pushes through the overlap while
-    // the band's interior smoothing stays equilateral.
-    if (m_deform_tags.empty()) return false;
-    if (m_face_extra[fid].label != 2) return false;
-    bool has_released = false;
-    for (const int64_t t : m_face_attribute[fid].tags) {
-        if (m_offset_output_tag_ids.count(t)) continue;
-        if (m_deform_tags.count(t) == 0) return false;
-        has_released = true;
-    }
-    return has_released;
-}
-
-void TopoOffsetTriMesh::stamp_rest_face(const size_t fid)
-{
-    if (!face_is_plastic(fid) && !face_is_deformable(fid) && !face_is_released_band(fid)) return;
-    const auto vs = oriented_tri_vids(fid);
-    FaceExtra2d& x = m_face_extra[fid];
-    for (int i = 0; i < 3; ++i) x.rest_pos[i] = m_vertex_attribute[vs[i]].m_posf;
-    x.rest_valid = true;
-}
-
-void TopoOffsetTriMesh::stamp_plastic_rests()
-{
-    if (!m_plastic_active) return;
-    size_t n = 0;
-    for (const Tuple& f : get_faces()) {
-        const size_t fid = f.fid(*this);
-        if (!face_is_plastic(fid) && !face_is_released_band(fid)) continue;
-        const auto vs = oriented_tri_vids(fid);
-        FaceExtra2d& x = m_face_extra[fid];
-        for (int i = 0; i < 3; ++i) x.rest_pos[i] = m_vertex_attribute[vs[i]].m_posf;
-        x.rest_valid = true;
-        ++n;
-    }
-    (void)n;
-}
-
-bool TopoOffsetTriMesh::smooth_plastic_vertex(const Tuple& t)
-{
-    // The plastic medium's smoothing: rest-shape AMIPS over the one-ring and nothing else. Rest
-    // is the shape at the group's start (stamp_plastic_rests), so the term resists only the
-    // increment. No equilateral term -- quality in the medium belongs to the operation passes --
-    // and no quality veto, which would freeze the flow. Accept on exact inversion of the ring.
-    const size_t vid = t.vid(*this);
-    const std::vector<size_t> ring = get_one_ring_fids_for_vertex(t);
-    for (const size_t fid : ring) {
-        if (is_inverted_f(fid)) {
-            ++m_smooth_rejects.already_inverted;
-            return false;
-        }
-    }
-    std::vector<RestAMIPSEnergy2D::Cell> cells;
-    for (const size_t fid : ring) {
-        const FaceExtra2d& fx = m_face_extra[fid];
-        if (!face_is_plastic(fid) || !fx.rest_valid) continue;
-        const auto vs = oriented_tri_vids(fid);
-        int k = 0;
-        while (k < 3 && vs[k] != vid) ++k;
-        if (k == 3) continue;
-        RestAMIPSEnergy2D::Cell c;
-        // Neighbours: read through the const smoothing_position(), see
-        // TriOptimizerMesh::smooth_after().
-        c.q1 = smoothing_position(vs[(k + 1) % 3]);
-        c.q2 = smoothing_position(vs[(k + 2) % 3]);
-        Eigen::Matrix2d R;
-        R.col(0) = fx.rest_pos[(k + 1) % 3] - fx.rest_pos[k];
-        R.col(1) = fx.rest_pos[(k + 2) % 3] - fx.rest_pos[k];
-        const double det = R.determinant();
-        if (!(det > 0.)) continue;
-        c.rest_inv = R.inverse();
-        cells.push_back(c);
-    }
-    if (cells.empty()) return false;
-    auto energy = std::make_shared<RestAMIPSEnergy2D>(std::move(cells), 1.0);
-    // The thread's shared solver, criteria set by smoothing_solver().
-    polysolve::nonlinear::Solver& solver = smoothing_solver();
-    const Vector2d x0 = m_vertex_attribute[vid].m_posf;
-    Eigen::VectorXd x = x0;
-    bool threw = false;
-    try {
-        solver.minimize(*energy, x);
-    } catch (const std::exception&) {
-        threw = true;
-    }
-    m_newton_plastic.record(solver, threw);
-    set_vertex_position(vid, Vector2d(x));
-    for (const size_t fid : ring) {
-        if (is_inverted(fid)) {
-            set_vertex_position(vid, x0);
-            ++m_smooth_rejects.inverted;
-            return false;
-        }
-    }
-    for (const size_t fid : ring) m_face_attribute[fid].m_quality = get_quality(fid);
-    ++m_smooth_rejects.accepted;
-    m_released_tube_dirty.store(true, std::memory_order_release); // the boundary may have moved
-    return true;
-}
-
-void TopoOffsetTriMesh::release_deformable_regions()
-{
-    // deform_others: from here on the only region-class envelopes are the domain wall and the
-    // input complex boundary (EnvelopeSetup::WallComplex), and every other tag region is
-    // released: it deforms as plastic medium, see face_is_plastic(). The released set is every
-    // input tag the selection does not name, ambient included; it drives face_is_released_band()
-    // and the diagnostics. The tubes and the masks come from build_boundary_envelopes().
-    std::set<int64_t> source_tags;
-    if (!m_offset_params.offsets.empty() && m_offset_params.offsets[0].expression) {
-        for (const int64_t t : m_offset_params.offsets[0].expression->tags_involved()) {
-            source_tags.insert(t);
-        }
-    }
-    m_source_tags = source_tags;
-    m_deform_tags.clear();
-    for (const auto& [tag, name] : m_tag_id_to_name) {
-        if (source_tags.count(tag) || m_offset_output_tag_ids.count(tag)) continue;
-        m_deform_tags.insert(tag);
-    }
-    build_boundary_envelopes("deform_others", EnvelopeSetup::WallComplex);
-    // No released tube: a released boundary is held by nothing, in the operations too.
-    m_released_envelope = nullptr;
-    m_released_tube_dirty.store(false, std::memory_order_release);
-
-    std::string released;
-    for (const int64_t t : m_deform_tags) released += " " + envelope_key_name(t);
-    logger().info(
-        "[deform_others] released:{} | held: the domain wall and the input complex boundary "
-        "({} tubes); every face outside the band is plastic",
-        released,
-        m_tag_envelopes.size());
-}
-
-std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::rest_energy_for_vertex(
-    const size_t vid) const
-{
-    // Off with the plastic medium: the final pass minimises equilateral AMIPS alone.
-    if (!m_plastic_active) return nullptr;
-    std::vector<RestAMIPSEnergy2D::Cell> cells;
-    for (const size_t fid : get_one_ring_fids_for_vertex(tuple_from_vertex(vid))) {
-        // Released-band cells too: a released object's boundary inside the band has band-labeled
-        // ring cells, which face_is_deformable() skips, so without this the boundary is smoothed
-        // by pure triangle quality instead of getting the same treatment as the object's boundary
-        // outside the band.
-        if (!face_is_deformable(fid) && !face_is_released_band(fid)) continue;
-        const FaceExtra2d& fx = m_face_extra[fid];
-        if (!fx.rest_valid) continue;
-        const auto vs = oriented_tri_vids(fid);
-        int k = 0;
-        while (k < 3 && vs[k] != vid) ++k;
-        if (k == 3) continue;
-        RestAMIPSEnergy2D::Cell c;
-        c.q1 = m_vertex_attribute[vs[(k + 1) % 3]].m_posf;
-        c.q2 = m_vertex_attribute[vs[(k + 2) % 3]].m_posf;
-        Eigen::Matrix2d R;
-        R.col(0) = fx.rest_pos[(k + 1) % 3] - fx.rest_pos[k];
-        R.col(1) = fx.rest_pos[(k + 2) % 3] - fx.rest_pos[k];
-        const double det = R.determinant();
-        if (!(det > 0.)) continue; // a degenerate or inverted rest holds no shape to preserve
-        c.rest_inv = R.inverse();
-        cells.push_back(c);
-    }
-    if (cells.empty()) return nullptr;
-    // The AMIPS factor the smoother gives this vertex (smoother_amips_weight()), so the rest
-    // term and the equilateral quality term it sums with sit at 1:1. As in 3D.
-    const double w = smoother_amips_weight(vid);
-    return std::make_shared<RestAMIPSEnergy2D>(std::move(cells), w);
-}
-
 bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
 {
     if (!TriOptimizerMesh::swap_edge_after(t)) {
@@ -476,8 +294,6 @@ bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
         ++iter_cnt_swap_energy_reject; // a NaN refuses
         return false;
     }
-    // deform_others: a swap rewires exactly these two faces; their rest is stale.
-    for (const size_t fid : made) stamp_rest_face(fid);
     ++iter_cnt_swap;
     return true;
 }
@@ -556,11 +372,6 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     }
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
         m_vertex_attribute[v2_id].m_sizing_scalar = m_collapse_survivor_sizing.local();
-    }
-    // deform_others: every surviving face at the survivor changed shape (v1 became v2); their
-    // rest is stale.
-    for (const size_t fid : get_one_ring_fids_for_vertex(v2_id)) {
-        stamp_rest_face(fid);
     }
     return true;
 }
@@ -793,13 +604,6 @@ void TopoOffsetTriMesh::split_after_vertex(const size_t v_id)
 
     // The children's region labels are set in split_adjust_position(), early enough for the
     // split's own containment check to see them.
-
-    // deform_others: every face at the midpoint was created by this split and the snapshot copy
-    // gave each the parent's rest -- re-stamp, or a child measures itself against a triangle
-    // twice its size (see FaceExtra2d::rest_valid).
-    for (const size_t fid : get_one_ring_fids_for_vertex(tuple_from_vertex(v_id))) {
-        stamp_rest_face(fid);
-    }
 }
 
 bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vector<Tuple>&)
@@ -1148,7 +952,6 @@ bool TopoOffsetTriMesh::smooth_vertex_under_energy(const Tuple& t, const bool fr
         return false;
     }
     if (front) {
-        m_released_tube_dirty.store(true, std::memory_order_release);
         if (m_offset_params.debug_crossings) {
             for (size_t k = 0; k < nb.size(); ++k) {
                 const double after = ring_measure_at(nb[k]);
@@ -1212,25 +1015,6 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
     // The repulsion passes before the march (repulsion_smoothing()); false at every other time.
     if (is_repulsion_vertex(vid)) return smooth_repulsion_vertex(t);
 
-    // The plastic medium: a vertex whose whole ring is plastic and which no envelope holds flows
-    // under rest-shape AMIPS alone (see smooth_plastic_vertex). Wall vertices, and vertices
-    // touching the band or the complex, keep the standard path so the interfaces stay under the
-    // usual rules. As in 3D.
-    if (m_plastic_active && !ve.m_is_on_offset && !smoothing_containment_envelope(vid)) {
-        bool all_plastic = true;
-        for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
-            if (!face_is_plastic(fid)) {
-                all_plastic = false;
-                break;
-            }
-        }
-        if (all_plastic) {
-            const bool okp = smooth_plastic_vertex(t);
-            ++m_smooth_trace.interior_attempted;
-            return okp;
-        }
-    }
-
     // Every vertex, front or not, goes through the shared smoother -- same solver, line search and
     // accept tests -- with the offset's options: its objective is its part of the energy
     // (smoothing_extra_energy), and the veto is on tri_energy() instead of AMIPS, since a front
@@ -1244,7 +1028,7 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
         // around smooth_vertex_under_energy() rather than after its veto inside it, so that the 2D
         // smoother's own edits (the exact_swept step) merge with this one: the same test at the
         // same point of the move, after the veto passed. A move refused here was counted by
-        // DEBUG_crossings (log-only) and marked the released tube dirty (a needless refresh).
+        // DEBUG_crossings (log-only).
         int turned_before = -1;
         if (turned_reject_active()) {
             std::set<std::array<size_t, 2>> f;
@@ -1407,8 +1191,7 @@ void TopoOffsetTriMesh::update_attributes()
 void TopoOffsetTriMesh::log_smoothing_pass_accounting()
 {
     // Per pass, after the engine's own "\tsmooth:" line: the background's Newton line (which the
-    // 3D engine prints itself), then the 3D component's lines. The plastic line only when the
-    // plastic medium solved anything.
+    // 3D engine prints itself), then the 3D component's lines.
     logger().info("\tnewton, smooth_after: {}", m_newton.to_string());
     logger().info("\tnewton, front: {}", m_newton_front.to_string());
     logger().info(
@@ -1461,12 +1244,8 @@ void TopoOffsetTriMesh::log_smoothing_pass_accounting()
         line("|grad|", m_front_grad_abs, -14);
         line("|grad|/|grad_0|", m_front_grad_rel, -14);
     }
-    if (m_newton_plastic.solves() > 0) {
-        logger().info("\tnewton, plastic: {}", m_newton_plastic.to_string());
-    }
     m_newton.reset();
     m_newton_front.reset();
-    m_newton_plastic.reset();
     if (m_offset_params.debug_crossings && m_round > 0) crossing_snapshot("smooth", true, false);
 }
 
@@ -1653,7 +1432,7 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
     // empty set is a propagation hole. The expectation is that the LIVE labels go quiet: the band
     // replaces the tags of every face it grows through, which is why the labels must be
     // propagated, not rederived.
-    int n_region = 0, n_unmasked = 0, n_released = 0, n_live_dead = 0, n_wall = 0;
+    int n_region = 0, n_unmasked = 0, n_live_dead = 0, n_wall = 0;
     int n_band = 0, n_outside = 0, n_mixed = 0, n_ends_offset = 0, n_ends_input = 0;
     size_t worst = size_t(-1);
     for (const Tuple& e : get_edges()) {
@@ -1667,30 +1446,6 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
         // A quiet edge bounds nothing any more: the band retagged both its sides, so there is no
         // boundary left to hold and a zero mask on it is moot, not a violation.
         if (edge_face_boundary_labels(e).none()) continue;
-        // A released boundary is freed on purpose -- deform_others zeroes its endpoint masks by
-        // this same symmetric-difference test -- so a zero mask there is the feature, not a
-        // propagation hole. Everything else still violates the invariant and is counted below.
-        if (!m_deform_tags.empty()) {
-            if (const std::optional<Tuple> opp0 = e.switch_face(*this)) {
-                CellTag edge_tags;
-                const auto& t0 = m_face_attribute[e.fid(*this)].tags;
-                const auto& t1 = m_face_attribute[opp0->fid(*this)].tags;
-                std::set_symmetric_difference(
-                    t0.begin(),
-                    t0.end(),
-                    t1.begin(),
-                    t1.end(),
-                    std::inserter(edge_tags, edge_tags.begin()));
-                bool released_here = false;
-                for (const int64_t t : edge_tags) {
-                    if (m_deform_tags.count(t)) released_here = true;
-                }
-                if (released_here) {
-                    ++n_released;
-                    continue;
-                }
-            }
-        }
         ++n_unmasked;
         if (worst == size_t(-1)) worst = eid;
         // The first few in full: what is an uncontained region edge? Endpoint masks say which end
@@ -1742,14 +1497,12 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
         if (m_vertex_extra[a].m_is_on_input && m_vertex_extra[b].m_is_on_input) ++n_ends_input;
     }
     logger().info(
-        "\t[envelope health @ {}] {} region-boundary edges tracked ({} on the wall) | {} freed "
-        "by deform_others (released boundaries; expected) | {} with a ZERO stored mask (the "
-        "invariant; must be 0) | {} with quiet LIVE bits (expected once the band retags the "
-        "faces it grew through)",
+        "\t[envelope health @ {}] {} region-boundary edges tracked ({} on the wall) | {} with a "
+        "ZERO stored mask (the invariant; must be 0) | {} with quiet LIVE bits (expected once the "
+        "band retags the faces it grew through)",
         when,
         n_region,
         n_wall,
-        n_released,
         n_unmasked,
         n_live_dead);
 
@@ -1789,10 +1542,8 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
     if (n_unmasked > 0) {
         logger().warn(
             "\t[envelope health @ {}] {} of {} tracked region-boundary edges ({:.1f}%) are "
-            "contained by NOTHING (released boundaries already excluded): their endpoints' "
-            "stored masks AND to zero, so surface_envelope_for_edge() has no envelope to hold "
-            "them to. Either a propagation hole, or collateral of deform_others' vertex freeing "
-            "(a freed vertex shared with a KEPT boundary takes that boundary's edges with it).",
+            "contained by NOTHING: their endpoints' stored masks AND to zero, so "
+            "surface_envelope_for_edge() has no envelope to hold them to: a propagation hole.",
             when,
             n_unmasked,
             n_region,
@@ -3896,93 +3647,6 @@ bool TopoOffsetTriMesh::settle_refinement_turn(
     return settled && n_marked == 0 && n_gap_over == 0;
 }
 
-TopoOffsetTriMesh::SmoothingProgress TopoOffsetTriMesh::smoothing_progress(
-    const std::vector<Vector2d>& before)
-{
-    SmoothingProgress s;
-    const double l = std::max(m_params.l, 1e-16);
-    // A front vertex's STEP against the one bar; the background uses its own sizing target below.
-    const double tube = m_offset_params.front_conv;
-    for (const Tuple& v : get_vertices()) {
-        const size_t vid = v.vid(*this);
-        const Vector2d& x = m_vertex_attribute[vid].m_posf;
-        const double step = vid < before.size() ? (x - before[vid]).norm() : 0.;
-        const bool front =
-            m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
-        if (!front) {
-            ++s.n_background;
-            const double target = std::max(m_vertex_attribute[vid].m_sizing_scalar * l, 1e-300);
-            const double r = step / target;
-            if (r > s.background_max_step) {
-                s.background_max_step = r;
-                s.background_worst_vid = vid;
-            }
-            continue;
-        }
-        if (tube > 0.) s.front_max_step = std::max(s.front_max_step, step / tube);
-        const double gn = front_vertex_conv_ratio(vid);
-        if (!std::isfinite(gn)) {
-            ++s.n_front_unmeasurable;
-            continue;
-        }
-        ++s.n_front;
-        if (gn > s.front_max_ratio) {
-            s.front_max_ratio = gn;
-            s.front_worst_vid = vid;
-        }
-    }
-    return s;
-}
-
-void TopoOffsetTriMesh::smooth_group_to_convergence(const char* group_name)
-{
-    // The adaptive_smoothing keys were removed on the 3D-only branch spenbert/offsets-cleanup
-    // (2026-10-13); their old defaults are hard-wired here until the 2D port.
-    const int max_passes = /* adaptive_smoothing_max_passes */ 20;
-    const double stall_rel = /* adaptive_smoothing_stall_rel */ 0.1;
-    const double step_rel = /* adaptive_smoothing_step_rel */ 0.01;
-    std::vector<Vector2d> before;
-    double prev_front = std::numeric_limits<double>::infinity();
-    for (int p = 0; p < max_passes; ++p) {
-        before.assign(vert_capacity(), Vector2d::Zero());
-        for (const Tuple& v : get_vertices()) {
-            const size_t vid = v.vid(*this);
-            before[vid] = m_vertex_attribute[vid].m_posf;
-        }
-        // One pass through the same entry the fixed count used: the sweep, rounding, the
-        // quality log and update_attributes(). The tube is NOT rebuilt between passes; the
-        // group's caller rebuilds it once, as with the fixed count.
-        local_operations({{0, 0, 0, 1}});
-        const SmoothingProgress s = smoothing_progress(before);
-        const bool front_converged = s.n_front == 0 || front_placed_by_ratio(s.front_max_ratio);
-        const bool front_stalled = !front_converged && std::isfinite(prev_front) &&
-                                   s.front_max_ratio > (1. - stall_rel) * prev_front;
-        const bool background_settled = s.background_max_step <= step_rel;
-        const char* front_verdict =
-            front_converged ? "converged" : (front_stalled ? "stalled" : "moving");
-        logger().info(
-            "\t[smoothing {} pass {}/{}] front: max ratio {:.4} (prev {:.4}) at v{}, {} measured "
-            "+ {} unmeasurable, max step {:.4} x tube -> {} | background: max step "
-            "{:.4} x target edge at v{} over {} vertices -> {}",
-            group_name,
-            p + 1,
-            max_passes,
-            s.front_max_ratio,
-            prev_front,
-            s.front_worst_vid,
-            s.n_front,
-            s.n_front_unmeasurable,
-            s.front_max_step,
-            front_verdict,
-            s.background_max_step,
-            s.background_worst_vid,
-            s.n_background,
-            background_settled ? "settled" : "moving");
-        if ((front_converged || front_stalled) && background_settled) break;
-        prev_front = s.front_max_ratio;
-    }
-}
-
 void TopoOffsetTriMesh::grade_sizing(double grade, const std::vector<size_t>& seeds)
 {
     if (seeds.empty()) return;
@@ -4784,94 +4448,8 @@ void TopoOffsetTriMesh::check_no_vertex_on_both_surfaces(const char* when) const
         both.size() > n_show ? ", ..." : "");
 }
 
-bool TopoOffsetTriMesh::edge_borders_released_boundary(const Tuple& e) const
-{
-    // The same test release_deformable_regions() freed vertices by: the incident faces' CURRENT
-    // tag symmetric difference contains a released tag and no source tag. Kept here rather than
-    // cached on the edge so the classification always reflects tags as they are now.
-    const std::optional<Tuple> opp = e.switch_face(*this);
-    if (!opp) return false; // the domain wall
-    CellTag edge_tags;
-    const auto& t0 = m_face_attribute[e.fid(*this)].tags;
-    const auto& t1 = m_face_attribute[opp->fid(*this)].tags;
-    std::set_symmetric_difference(
-        t0.begin(),
-        t0.end(),
-        t1.begin(),
-        t1.end(),
-        std::inserter(edge_tags, edge_tags.begin()));
-    bool released_here = false;
-    for (const int64_t t : edge_tags) {
-        if (m_source_tags.count(t)) return false;
-        if (m_deform_tags.count(t)) released_here = true;
-    }
-    return released_here;
-}
-
-std::shared_ptr<Envelope> TopoOffsetTriMesh::released_envelope() const
-{
-    // deform_others' ops-only tube: a tube around the CURRENT released boundaries, consulted by
-    // surface_envelope_for_edge() -- the dispatch every operation containment check comes through
-    // and no smoothing path does. Releasing an object frees its boundary of every envelope so
-    // smoothing can carry it; without this the operations would be free too, and the collapse pass
-    // distorts a released boundary at will while the plastic re-stamp makes each distortion the
-    // new rest. eps is the offset tube's: no operation may degrade a tracked boundary by more than
-    // the accuracy tube, released or not.
-    //
-    // Lazy, on a dirty flag the smoothing accepts set, never rebuilt on a fixed cadence: this tube
-    // holds a boundary smoothing is SUPPOSED to move, so any fixed schedule leaves a window where
-    // the tube lags the boundary it was built from and the engine's sanity sweep reports false
-    // alarms. Rebuilding on first query after a smoothing accept makes every consumer judge
-    // against the boundary as it is now. Operations never set the flag, so op-by-op drift cannot
-    // recenter its own container.
-    // WallComplex holds a released boundary with nothing, the operations included.
-    if (envelope_setup() == EnvelopeSetup::WallComplex) return nullptr;
-    if (m_deform_tags.empty()) return nullptr;
-    std::lock_guard<std::mutex> lock(m_released_mutex);
-    if (!m_released_tube_dirty.load(std::memory_order_acquire)) return m_released_envelope;
-    // Never rebuild mid-operation: a containment query can arrive between an operation's before-
-    // and after-hooks -- a split child's check runs before its attributes are written, a
-    // collapse's between tentative state and the rollback decision -- and a tube built from that
-    // mesh reads recycled slots and tentative geometry. Deferring keeps the group-start tube for
-    // the whole operation, which is the semantics anyway: an operation is judged against the shape
-    // as of the moment no operation was in flight. `recording` is the engine's
-    // rollback-protection flag, thread-local, true exactly inside an operation.
-    // const_cast: enumerable_thread_specific::local() has no const overload; this is a read.
-    if (const_cast<TopoOffsetTriMesh*>(this)->m_vertex_attribute.recording.local()) {
-        return m_released_envelope;
-    }
-    std::vector<Eigen::Vector2i> segs;
-    for (const Tuple& e : get_edges()) {
-        if (!m_edge_attribute[e.eid(*this)].m_is_surface_fs) continue;
-        if (!edge_borders_released_boundary(e)) continue;
-        segs.emplace_back(int(e.vid(*this)), int(e.switch_vertex(*this).vid(*this)));
-    }
-    if (segs.empty()) {
-        m_released_envelope = nullptr;
-    } else {
-        std::vector<Eigen::Vector2d> verts(vert_capacity());
-        for (size_t i = 0; i < vert_capacity(); ++i) {
-            verts[i] = m_vertex_attribute[i].m_posf;
-        }
-        const double eps = std::max(m_offset_params.offset_envelope, 1e-12);
-        m_released_envelope = std::make_shared<Envelope>(/*exact=*/true);
-        m_released_envelope->init(verts, segs, eps);
-    }
-    m_released_tube_dirty.store(false, std::memory_order_release);
-    return m_released_envelope;
-}
-
-void TopoOffsetTriMesh::refresh_released_envelope()
-{
-    // The released boundaries' ops-only tube: mark and rebuild NOW, at this consistent moment,
-    // between passes -- released_envelope() never rebuilds mid-operation.
-    m_released_tube_dirty.store(true, std::memory_order_release);
-    released_envelope();
-}
-
 void TopoOffsetTriMesh::rebuild_offset_envelope()
 {
-    refresh_released_envelope();
     // First, and on every path out of here including the empty one: each entry is an
     // IntersectionEnvelope holding the tube this call is about to replace.
     {
@@ -5428,10 +5006,10 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
     //     exclude each other.
     //   one_sided_tips: one_sided, and also a TIP -- a triangle with two edges on the other label
     //     (3D: three faces) whose three corners are all within front_conv of the level set --
-    //     flips iff that strictly lowers E. An eligible triangle is not plastic, so tri_energy()
-    //     is cell_energy(): the AMIPS term (w / s^3) area A^3, from its corners and quality alone,
-    //     plus band_cell_term() when it is band (the repulsion term is 0 in the loop). Every other
-    //     triangle's energy reads its own corners and label. So the flip changes E by exactly
+    //     flips iff that strictly lowers E. tri_energy() is cell_energy(): the AMIPS term
+    //     (w / s^3) area A^3, from its corners and quality alone, plus band_cell_term() when it
+    //     is band (the repulsion term is 0 in the loop). Every other triangle's energy reads its
+    //     own corners and label. So the flip changes E by exactly
     //     +b(t) (to band) or -b(t) (to non-band): non-band -> band iff b(t) < 0, band -> non-band
     //     iff b(t) > 0. A triangle at MAX_ENERGY is MAX_ENERGY under either label, and no flip
     //     lowers E there. See 3D for the measurements; the passes still end, every flip of either
@@ -5477,8 +5055,8 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
     };
 
     // ELIGIBILITY: two labels only, so that the topology test sees everything t touches. Every
-    // triangle sharing a vertex with t is band or non-band (no input-complex triangle) and not
-    // plastic (its AMIPS term would read the label). And no corner of t is where a held boundary
+    // triangle sharing a vertex with t is band or non-band (no input-complex triangle). And no
+    // corner of t is where a held boundary
     // -- a tag boundary, the curve group or the box (vertex_is_on_region()) -- and the front
     // meet along a front edge whose other end is on a held boundary too: the construction makes
     // edges between band and non-band that are both held and front and carry the offset class,
@@ -5512,7 +5090,7 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
             }
             for (const size_t s : get_one_ring_fids_for_vertex(v)) {
                 const int l = label_of(s);
-                if ((l != 0 && l != 2) || face_is_plastic(s)) return false;
+                if (l != 0 && l != 2) return false;
             }
         }
         return true;
@@ -6262,7 +5840,7 @@ void TopoOffsetTriMesh::front_pocket_split(const std::string& where)
             edges.push_back({{std::min(a, b), std::max(a, b)}});
         }
     };
-    // The loop's own split (split_edge(): labels, tags, sizing and rests as in the split pass).
+    // The loop's own split (split_edge(): labels, tags and sizing as in the split pass).
     // 3D skips its longest-edge order here (m_pocket_splitting); 2D's split has no such order.
     const auto split_one = [this](const std::array<size_t, 2>& e) {
         const Tuple t = std::get<0>(tuple_from_edge(e));
@@ -6449,16 +6027,13 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
     // As in 3D.
     const int budget = max_turns > 0 ? max_turns : std::max(1, m_offset_params.max_rounds);
     const char* budget_name = max_turns > 0 ? "smart_growth_attempts" : "max_rounds";
-    // One turn is TriWild's operation groups, run here rather than through mesh_improvement() so
-    // the released-boundary tube can be refreshed after every group. What mesh_improvement()
-    // adds and is left out here on purpose is its stall response, which refines around the
-    // worst elements: a moving front stretches cells by design.
-    // k is the fixed count when adaptive_smoothing is off; on, each group smooths until the
-    // front and the background settle (smooth_group_to_convergence()).
+    // One turn is TriWild's operation groups, run here rather than through mesh_improvement().
+    // What mesh_improvement() adds and is left out here on purpose is its stall response, which
+    // refines around the worst elements: a moving front stretches cells by design.
     // interleaved_smoothing true is TriWild's shape of a turn: three groups, each one operation
     // pass followed by k smoothing passes. With it false a turn is ONE group -- split, collapse
-    // and swap back to back -- followed by one smoothing block of num_smoothing_passes (or
-    // adaptive). See the 3D twin for the measurement behind the switch.
+    // and swap back to back -- followed by one smoothing block of num_smoothing_passes. See the
+    // 3D twin for the measurement behind the switch.
     const bool interleaved = m_params.interleaved_smoothing;
     const int k = std::max(
         1,
@@ -6474,34 +6049,24 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
         "\tTurn shape: {}",
         interleaved
             ? fmt::format(
-                  "INTERLEAVED -- split, collapse, swap, each followed by {}",
-                  /* adaptive_smoothing */ false ? std::string("adaptive smoothing")
-                                                 : fmt::format("{} smoothing pass(es)", k))
+                  "INTERLEAVED -- split, collapse, swap, each followed by {} smoothing "
+                  "pass(es)",
+                  k)
             : fmt::format(
-                  "COMBINED -- split, collapse, swap back to back, then {} (interleaved_smoothing "
-                  "false)",
-                  /* adaptive_smoothing */ false ? std::string("adaptive smoothing")
-                                                 : fmt::format("{} smoothing pass(es)", k)));
+                  "COMBINED -- split, collapse, swap back to back, then {} smoothing pass(es) "
+                  "(interleaved_smoothing false)",
+                  k));
     partition_mesh_morton();
     if (m_offset_params.pre_smooth) {
         // One smoothing block on the constructed mesh before turn 1's split pass: the same
-        // block every operation group is followed by, with the same bookkeeping around it
-        // (plastic rests stamped before, the released tube refreshed after). Frames are r0S*.
+        // block every operation group is followed by. Frames are r0S*.
         m_round = 0;
-        refresh_released_envelope();
-        stamp_plastic_rests();
         logger().info(
-            "\t[pre_smooth] one smoothing block before turn 1: {}",
-            /* adaptive_smoothing */ false ? std::string("adaptive smoothing")
-                                           : fmt::format("{} interleaved smoothing pass(es)", k));
-        if (/* adaptive_smoothing */ false) {
-            smooth_group_to_convergence("pre_smooth");
-        } else {
-            // Through loop_group(), as in 3D: the pocket splits precede each of its smoothing
-            // passes too.
-            loop_group({{0, 0, 0, k}}, "pre_smooth");
-        }
-        refresh_released_envelope();
+            "\t[pre_smooth] one smoothing block before turn 1: {} interleaved smoothing pass(es)",
+            k);
+        // Through loop_group(), as in 3D: the pocket splits precede each of its smoothing passes
+        // too.
+        loop_group({{0, 0, 0, k}}, "pre_smooth");
     }
     // EXPERIMENTAL_settle_refinement: the settle test refines and exits (settle_refinement_turn());
     // the energy criterion's refinable sets, its sizing-floor warnings and its exit do not act.
@@ -6512,9 +6077,7 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
     for (int it = 0; it < budget; ++it) {
         m_round = it + 1;
         m_iterations_used = it + 1;
-        refresh_released_envelope();
         for (size_t gi = 0; gi < groups.size(); ++gi) {
-            stamp_plastic_rests(); // plastic: each group resists only its own increment
             // E before and after each group, the descent check (a collapse or swap group may not
             // raise it; a split group may). As in 3D.
             const double energy_before_group = global_energy();
@@ -6527,17 +6090,9 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
             if (gi == 1) needle_scan("collapse pass");
             if (!interleaved) needle_scan("combined ops pass");
             log_energy_step(it + 1, "start");
-            if (/* adaptive_smoothing */ false) {
-                // The group's operations alone, then its smoothing pass by pass until the front
-                // and the background have settled -- see smooth_group_to_convergence().
-                local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
-                smooth_group_to_convergence(group_names[gi]);
-            } else {
-                // The operation passes, EXPERIMENTAL_label_cleanup, and the pocket splits before
-                // each smoothing pass. As in 3D.
-                loop_group(groups[gi], fmt::format("turn {} {} group", it + 1, group_names[gi]));
-            }
-            refresh_released_envelope(); // the smoothing in this group moved the boundaries
+            // The operation passes, EXPERIMENTAL_label_cleanup, and the pocket splits before each
+            // smoothing pass. As in 3D.
+            loop_group(groups[gi], fmt::format("turn {} {} group", it + 1, group_names[gi]));
             // Per group, so a containment violation is attributed to the pass that made it
             // rather than found at the end of the run. Same gate as the shared sanity check.
             if (m_params.perform_sanity_checks) {
@@ -6790,7 +6345,6 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
                     fc.worst,
                     fc.worst_at[0],
                     fc.worst_at[1]);
-                refresh_released_envelope();
                 return false;
             }
         }
@@ -6810,7 +6364,6 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
                 (ec.ring_exit ? ec.max_ring : ec.max_edge) / ec.bar,
                 ec.n_vertices,
                 amips);
-            refresh_released_envelope();
             return true;
         }
         if (resolved) {
@@ -6868,9 +6421,8 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
                 // The front's tube, built from the front as placement left it and held for the
                 // entire pass; the region boundaries stay held in the tubes and masks the load
                 // built (m_tag_envelopes, never rebuilt), as 3D's final pass adds the front's
-                // envelope alone (build_final_envelopes(), 2b8de047ba). Equilateral AMIPS alone:
-                // the plastic vertex path and the rest-shape term are both off. Until 2026-11-11
-                // the region tubes and the vertex masks were rebuilt here from the tags and
+                // envelope alone (build_final_envelopes(), 2b8de047ba). Until 2026-11-11 the
+                // region tubes and the vertex masks were rebuilt here from the tags and
                 // on_curve, which no operation carries: MEASURED on the mesh the loop leaves (p
                 // offset to 0.3, a held curve-group curve 0.5 from it, 3 to 8 turns, 5 runs), the
                 // rebuild put 1 to 4 of the curve's 7 to 9 tracked edges in its tube and took the
@@ -6878,10 +6430,7 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
                 // were held by nothing.
                 rebuild_offset_envelope();
                 m_freeze_front = true;
-                const bool plastic_was = m_plastic_active;
-                m_plastic_active = false;
                 mesh_improvement(a_iters);
-                m_plastic_active = plastic_was;
                 m_freeze_front = false;
                 assign_band_regions();
                 const double final_amips = std::get<0>(optimization_quality_stats());
@@ -6897,7 +6446,6 @@ bool TopoOffsetTriMesh::optimize_offset_loop(
                     write_smoothing_debug_output(fmt::format("end_{}F", it + 2));
                 }
             }
-            refresh_released_envelope();
             return true;
         }
     }
@@ -7284,21 +6832,6 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // flag from the construction labels; this asks the live label test the same question.
     check_offset_membership("construction");
     held_topology_check("construction"); // DEBUG_held_topology's baseline
-
-    // deform_others: from here on, other input regions deform instead of being envelope-held.
-    // deform_others was removed on the 3D-only branch spenbert/offsets-cleanup (2026-10-13); its
-    // default, false, is hard-wired here until the 2D port.
-    if (/* deform_others */ false) {
-        release_deformable_regions();
-        if (!m_deform_tags.empty()) {
-            m_plastic_active = true;
-            stamp_plastic_rests();
-        }
-    }
-
-    // The released-boundary tube, from the boundaries as released. The offset envelope is only
-    // built for the final pass.
-    refresh_released_envelope();
 
     // The front as constructed must already be inside the potential's support.
     check_offset_within_support("Offset as constructed");
