@@ -604,10 +604,20 @@ double TopoOffsetTetMesh::swap_swept_change(
     for (const int q : rec.old_piece) one = one && q == r;
     for (const int q : new_piece) one = one && q == r;
     if (one) return flip ? band_chain_change(rec.old_band, new_band, nullptr, r) : 0.;
-    double s = 0.;
-    for (size_t i = 0; i < new_band.size(); ++i) s += band_cell_term(new_band[i], new_piece[i]);
+    // Cells of several pieces: each piece's own region change, as one piece's above. Until
+    // 2026-11-26 the sum of the new cells' band_cell_term() less the old's, which differs from
+    // the region change where value() takes rule (a)'s bound: the swaps' changes were then two
+    // bookkeepings of one energy, and a pass could descend forever. MEASURED before (Geneva's
+    // one-shot, three touching In bodies, turn 11): a flip of the base|cross wall booked
+    // -1.2e-8 as its cells' sum, an interior swap 3 -> 2 of one body booked 0 while its cells'
+    // sum rose by +1.2e-8, and the three swaps of the loop repeated without end.
+    std::map<int, std::pair<std::vector<std::array<size_t, 4>>, std::vector<std::array<size_t, 4>>>>
+        by_piece;
     for (size_t i = 0; i < rec.old_band.size(); ++i)
-        s -= band_cell_term(rec.old_band[i], rec.old_piece[i]);
+        by_piece[rec.old_piece[i]].first.push_back(rec.old_band[i]);
+    for (size_t i = 0; i < new_band.size(); ++i) by_piece[new_piece[i]].second.push_back(new_band[i]);
+    double s = 0.;
+    for (const auto& [q, cells] : by_piece) s += band_chain_change(cells.first, cells.second, nullptr, q);
     return s;
 }
 

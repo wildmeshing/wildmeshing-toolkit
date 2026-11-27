@@ -1319,8 +1319,9 @@ public:
      *     corner's position) adds b_{r1}(t) - b_{r0}(t) on the cell after the operation
      *     (band_relabel_change()).
      *   - a swap: band_chain_change() at the cells' piece where its band cells, old and new, are
-     *     all of one; otherwise the change of its cells' own terms, sum of b(t) over the new band
-     *     cells less the old (swap_swept_change()).
+     *     all of one; otherwise, per piece, band_chain_change() of that piece's old and new band
+     *     cells (swap_swept_change(); until 2026-11-26 the change of its cells' own terms, see
+     *     there).
      * With one entry every cell is piece -1, and every change is the one above, bit for bit.
      * MEASURED (several-offsets-optimize-distances, its case b one cube at 0.3, a at 0.1, 0.5
      * apart, 5 turns, 1 thread), each change against the change of its cells' band_cell_term():
@@ -1385,8 +1386,8 @@ public:
     /// cells (by candidate_label() in the case search, by the labels written in the rule), the
     /// old ones SwapRecord::old_band. Where the band cells, old and new, are all of one piece
     /// (place_piece(); the old ones' read before the swap): 0 for an interior swap,
-    /// band_chain_change() at that piece for a flip. Otherwise the sum of the new band cells'
-    /// band_cell_term() less the old's, each at its piece (EXACT SWEPT CHANGE, several entries).
+    /// band_chain_change() at that piece for a flip. Otherwise, per piece, band_chain_change() of
+    /// its old and new band cells (EXACT SWEPT CHANGE, several entries).
     double swap_swept_change(const std::vector<std::array<size_t, 4>>& new_band, bool flip);
     /// "exact_swept": the smoother's acceptance after a solve moved vid from x0 to where it is.
     /// The move stands iff the ring's AMIPS change (tet_energy_sum(ring, false) - amips_before)
