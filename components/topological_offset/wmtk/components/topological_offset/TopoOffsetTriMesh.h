@@ -451,17 +451,18 @@ public:
      * band, or on vertices not assigned yet (an operation's new
      * vertex, until assign_band_regions() runs again), the nearest piece (nearest_piece()). -1
      * with one entry, or before the per-piece fields exist: the whole complex's field and
-     * integral and the run's distance. A face (n = 3) is its own body's piece instead
-     * (face_piece()).
+     * integral and the run's distance. A face (n = 3) is the piece of its own band instead
+     * (face_piece(), which takes `tag`).
      */
-    int place_piece(const size_t* vids, size_t n) const;
-    /// place_piece() of a face: a piece of the entry whose band it is -- the entry whose level set
-    /// holds the centroid most deeply, as 3D's cell_piece(): its only piece, else the
-    /// nearest piece (nearest_piece()) if it is one of the entry's, else the entry's first. A
-    /// function of the face's corners' positions alone, as 3D's cell_piece() (see there); 2D has
-    /// no per-piece envelopes, so among an entry's several pieces the nearest is found only when
-    /// it is the nearest of all.
-    int face_piece(const size_t* vids) const;
+    int place_piece(const size_t* vids, size_t n, const CellTag* tag = nullptr) const;
+    /// place_piece() of a face: a piece of the entry whose band it is -- the entry its tag set
+    /// names where exactly one entry writes it (m_band_tags_entry; `tag`, else that of the band
+    /// face with these corners), else the entry whose level set holds the centroid most deeply, as
+    /// 3D's cell_piece(): its only piece, else the nearest piece (nearest_piece()) if it is one of
+    /// the entry's, else the entry's first. A function of the face's corners' positions and its
+    /// tags alone, as 3D's cell_piece() (see there); 2D has no per-piece envelopes, so among an
+    /// entry's several pieces the nearest is found only when it is the nearest of all.
+    int face_piece(const size_t* vids, const CellTag* tag = nullptr) const;
     /// The piece nearest to p: that of the input-complex BVH's nearest feature (m_phi_vert_region,
     /// m_phi_seg_region), as assign_band_regions() reads a seed's piece; -1 for none. 3D asks its
     /// per-piece envelopes (m_region_envelopes), which 2D does not build.
@@ -1306,11 +1307,12 @@ public:
      * distance and integral (place_piece(); the run's and the whole complex's with one entry), as
      * 3D's.
      */
-    double band_cell_term(const std::array<size_t, 3>& vids) const
+    double band_cell_term(const std::array<size_t, 3>& vids, const CellTag* tag = nullptr) const
     {
-        if (band_rule_exact()) return band_cell_term(vids, place_piece(vids.data(), 3));
+        // `tag`: the tag set the face carries as a band face where it is not one yet (face_piece())
+        if (band_rule_exact()) return band_cell_term(vids, place_piece(vids.data(), 3, tag));
         int64_t best = -1;
-        return band_cell_corner_bound(vids, best);
+        return band_cell_corner_bound(vids, best, tag);
     }
     /// band_cell_term()'s J_t / delta ("exact" and the rules that take its term) at piece r's
     /// distance and integral, whatever the face's piece: EXACT SWEPT CHANGE's change of a face's
@@ -1343,9 +1345,12 @@ public:
     /// unsigned area (the face is valid wherever this is read) times (md - delta) / delta, md the
     /// min mean (ExactBandIntegral2D::min_mean_distance(), 3D's min_mean_distance() on its input
     /// envelope, which 2D does not have) on the face's piece.
-    double band_cell_corner_bound(const std::array<size_t, 3>& vids, int64_t& best) const
+    double band_cell_corner_bound(
+        const std::array<size_t, 3>& vids,
+        int64_t& best,
+        const CellTag* tag = nullptr) const
     {
-        const int r = place_piece(vids.data(), 3);
+        const int r = place_piece(vids.data(), 3, tag);
         const double delta = region_delta(r);
         std::array<Vector2d, 3> p;
         for (int j = 0; j < 3; ++j) p[size_t(j)] = m_vertex_attribute[vids[size_t(j)]].m_posf;

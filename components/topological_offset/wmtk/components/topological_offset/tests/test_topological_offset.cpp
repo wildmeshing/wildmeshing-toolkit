@@ -10551,6 +10551,57 @@ TEST_CASE("several-offsets-optimize-distances", "[offset][3d]" + release_only)
     }
 }
 
+TEST_CASE("several-offsets-own-band", "[offset][3d]" + release_only)
+{
+    // A band cell is read at its own band's piece (cell_piece(): the entry its tags name), and a
+    // cell the clean-up would take into a band at that band's (the tag it joins). Boxes a and b
+    // 0.5 apart, both outward, their level sets overlapping: at 0.3 each, and a at 0.1 with b at
+    // 0.45, whose level set reaches 0.05 from a while b's front starts at the march's 0.125 from
+    // b. Through the loop each band stays within its own level set, up to the bar: every corner
+    // of a's band within its target + front_conv of a, of b's of b, and no vertex in both.
+    // MEASURED before (2026-11-27, boxes 0.5 apart at 0.3 under #1208's label growth, its test
+    // label-growth-two-bands-3d): a cell beyond a's level set and inside b's, at a's band's
+    // corners, was read at b's integral, which put it inside, and taken into a's band; a's
+    // corners reached 0.42 from a, b's 0.55 from b.
+    const auto [delta_a, delta_b] =
+        GENERATE(std::pair<double, double>{0.3, 0.3}, std::pair<double, double>{0.1, 0.45});
+    INFO("a at " << delta_a << ", b at " << delta_b);
+    const double conv_a = 0.1 * delta_a, conv_b = 0.1 * delta_b; // front_conv_rel's default
+    const std::array<int, 6> a = {{2, 2, 3, 4, 3, 4}}, b = {{5, 5, 3, 4, 3, 4}};
+    const MeshData out = components::topological_offset::topological_offset(
+                             {{"input", "m"},
+                              {"offsets",
+                               nlohmann::json::array(
+                                   {{{"selection", "a"},
+                                     {"output_tags", {"a_band"}},
+                                     {"target_distance", delta_a}},
+                                    {{"selection", "b"},
+                                     {"output_tags", {"b_band"}},
+                                     {"target_distance", delta_b}}})},
+                              {"max_rounds", 8},
+                              {"num_threads", 1},
+                              {"throw_on_nonconvergence", false}},
+                             {{"m", box_grid({{"a", a}, {"b", b}})}})
+                             .first.at("mesh");
+    std::set<std::array<double, 3>> corners_a;
+    for (const CellCorners& c : cells_tagged(out, "a_band")) {
+        for (const auto& q : c) {
+            corners_a.insert(q);
+            CHECK(box_distance(Vector3d(q[0], q[1], q[2]), a) <= delta_a + conv_a);
+        }
+    }
+    size_t n_b = 0;
+    for (const CellCorners& c : cells_tagged(out, "b_band")) {
+        ++n_b;
+        for (const auto& q : c) {
+            CHECK(corners_a.count(q) == 0);
+            CHECK(box_distance(Vector3d(q[0], q[1], q[2]), b) <= delta_b + conv_b);
+        }
+    }
+    CHECK(!corners_a.empty());
+    CHECK(n_b > 0);
+}
+
 TEST_CASE("several-offsets-absolute-front-conv", "[offset][3d]")
 {
     // An absolute front_conv is one length for every piece; entries of different distances
@@ -11072,6 +11123,45 @@ TEST_CASE("several-offsets-touch-2d", "[offset][2d]")
     CHECK(!corners_a.empty());
     CHECK(n_b > 0);
     CHECK(n_b_outer > 0);
+}
+
+TEST_CASE("several-offsets-own-band-2d", "[offset][2d]" + release_only)
+{
+    // The 2D twin of several-offsets-own-band: a band face is read at its own band's piece
+    // (face_piece(): the entry its tags name), and a face the clean-up would take into a band at
+    // that band's. Boxes a and b 0.5 apart, both outward, their level sets overlapping: through
+    // the loop every corner of a's band within its target + front_conv of a, of b's of b, and no
+    // vertex in both.
+    const auto [delta_a, delta_b] =
+        GENERATE(std::pair<double, double>{0.3, 0.3}, std::pair<double, double>{0.1, 0.45});
+    INFO("a at " << delta_a << ", b at " << delta_b);
+    const double conv_a = 0.1 * delta_a, conv_b = 0.1 * delta_b; // front_conv_rel's default
+    const Box2d a = {{2, 2, 3, 4}}, b = {{5, 5, 3, 4}};
+    const BoxGrid2d g = box_grid_2d({{"a", a}, {"b", b}});
+    const auto mesh = run_offsets_2d(
+        g,
+        {{"offsets",
+          nlohmann::json::array({offset_entry_2d("a", delta_a), offset_entry_2d("b", delta_b)})},
+         {"max_rounds", 8},
+         {"num_threads", 1}},
+        true);
+    std::set<std::array<double, 2>> corners_a;
+    for (const FaceCorners2d& f : faces_tagged_2d(*mesh, "a_band")) {
+        for (const auto& q : f) {
+            corners_a.insert(q);
+            CHECK(box_distance_2d(Vector2d(q[0], q[1]), a) <= delta_a + conv_a);
+        }
+    }
+    size_t n_b = 0;
+    for (const FaceCorners2d& f : faces_tagged_2d(*mesh, "b_band")) {
+        ++n_b;
+        for (const auto& q : f) {
+            CHECK(corners_a.count(q) == 0);
+            CHECK(box_distance_2d(Vector2d(q[0], q[1]), b) <= delta_b + conv_b);
+        }
+    }
+    CHECK(!corners_a.empty());
+    CHECK(n_b > 0);
 }
 
 TEST_CASE("several-offsets-absolute-front-conv-2d", "[offset][2d]")

@@ -3111,25 +3111,46 @@ int TopoOffsetTriMesh::nearest_piece(const Vector2d& p) const
     return size_t(feature) < src.size() ? int(src[size_t(feature)]) : -1;
 }
 
-int TopoOffsetTriMesh::face_piece(const size_t* vids) const
+int TopoOffsetTriMesh::face_piece(const size_t* vids, const CellTag* tag) const
 {
     // See the declaration.
     const Vector2d c = (m_vertex_attribute[vids[0]].m_posf + m_vertex_attribute[vids[1]].m_posf +
                         m_vertex_attribute[vids[2]].m_posf) /
                        3.;
-    // The entry whose level set holds the centroid most deeply, as 3D's cell_piece(): only the
-    // entries whose side holds it compete, and one In selection alone decides without a distance.
+    // The entry the face's tag set names, where exactly one entry writes it: `tag`, else the band
+    // face with these corners' own. As 3D's cell_piece().
+    if (!tag && !m_band_tags_entry.empty()) {
+        for (const size_t f : get_one_ring_fids_for_vertex(vids[0])) {
+            if (!face_is_offset_band(f)) continue;
+            const std::array<size_t, 3> fv = oriented_tri_vids(f);
+            bool same = true;
+            for (int i = 1; i < 3; ++i)
+                same = same && std::find(fv.begin(), fv.end(), vids[i]) != fv.end();
+            if (same) {
+                tag = &m_face_attribute[f].tags;
+                break;
+            }
+        }
+    }
+    int own = -1;
+    if (tag) {
+        if (const auto it = m_band_tags_entry.find(*tag); it != m_band_tags_entry.end())
+            own = int(it->second);
+    }
+    // Else the entry whose level set holds the centroid most deeply, as 3D's cell_piece(): only
+    // the entries whose side holds it compete, and one In selection alone decides without a
+    // distance.
     using Direction = Parameters::Offset::Direction;
     bool all_in = true;
     for (size_t k = 0; k < m_offset_params.offsets.size(); ++k)
         all_in = all_in && m_offset_params.direction(k) == Direction::In;
     std::vector<size_t> competing;
-    for (size_t k = 0; k < m_offset_params.offsets.size(); ++k) {
+    for (size_t k = 0; own < 0 && k < m_offset_params.offsets.size(); ++k) {
         if (m_offset_params.direction(k) == Direction::In && !inside_selection(k, c)) continue;
         competing.push_back(k);
         if (all_in) break; // the In selections are disjoint
     }
-    int own = competing.size() == 1 ? int(competing.front()) : -1;
+    if (competing.size() == 1) own = int(competing.front());
     if (competing.size() > 1) {
         double own_s = std::numeric_limits<double>::infinity();
         for (const size_t k : competing) {
@@ -3155,12 +3176,12 @@ int TopoOffsetTriMesh::face_piece(const size_t* vids) const
     return mine.front();
 }
 
-int TopoOffsetTriMesh::place_piece(const size_t* vids, const size_t n) const
+int TopoOffsetTriMesh::place_piece(const size_t* vids, const size_t n, const CellTag* tag) const
 {
     // See the declaration. As in 3D, m_face_region in place of m_cell_region.
     if (m_offset_params.offsets.size() <= 1 || m_region_potentials.empty()) return -1;
     if (m_region_potentials.size() == 1) return 0;
-    if (n == 3) return face_piece(vids);
+    if (n == 3) return face_piece(vids, tag);
     int best = -1;
     double best_delta = std::numeric_limits<double>::infinity();
     const auto consider = [&](const int r) {
@@ -5112,12 +5133,49 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
     //   one_sided_at_target: one_sided, and also any triangle with a front edge (1 or 2 edges on
     //     the other label; 3D: 1 to 3 faces) whose three corners are all within front_conv of the
     //     level set, by the tip rule's sign of b(t). As in 3D.
+    // The tag the flipped triangle takes, of the label it joins. The band: the one tag set of the
+    // band triangles at t's corners (two pieces' bands, of two tag sets, refuse). The non-band:
+    // that of t's non-band edge neighbours across edges that are not held (a held edge's far side
+    // is another region); they must agree, and there must be one. As in 3D.
+    const auto joined_tag = [&](const size_t fid, CellTag& tag) {
+        const int o = label_of(fid) == 2 ? 0 : 2;
+        const CellTag* found = nullptr;
+        if (o == 2) {
+            for (const size_t v : oriented_tri_vids(fid)) {
+                for (const size_t s : get_one_ring_fids_for_vertex(v)) {
+                    if (label_of(s) != 2) continue;
+                    const CellTag& tg = m_face_attribute[s].tags;
+                    if (found && *found != tg) return false;
+                    found = &tg;
+                }
+            }
+        } else {
+            for (int k = 0; k < 3; ++k) {
+                const Tuple e = tuple_from_edge(fid, size_t(k));
+                if (held_object_edge(e)) continue;
+                const size_t n = e.switch_face(*this)->fid(*this);
+                if (label_of(n) != o) continue;
+                const CellTag& tg = m_face_attribute[n].tags;
+                if (found && *found != tg) return false;
+                found = &tg;
+            }
+        }
+        if (!found) return false;
+        tag = *found;
+        return true;
+    };
+
     const auto wants_flip = [&](const size_t fid) {
         const std::array<size_t, 3> vs = oriented_tri_vids(fid);
         const bool band = face_is_offset_band(fid);
+        // A non-band triangle is read as one of the band it would join: its piece is that of the
+        // tag joined_tag() gives it (face_piece()); with none (joined_tag() refuses the flip
+        // below), its own reading. As in 3D.
+        CellTag joins;
+        const CellTag* as = !band && joined_tag(fid, joins) ? &joins : nullptr;
         // The triangle's piece's target distance, its front_conv (front_conv_rel of it) and its
         // integral (one entry: the run's and the whole complex's).
-        const int piece = place_piece(vs.data(), 3);
+        const int piece = place_piece(vs.data(), 3, as);
         // Never across an In entry's complex: a non-band face outside its selection is off the
         // side the band grows on (face_off_offset_side()). As in 3D.
         if (!band && face_off_offset_side(fid, piece)) return false;
@@ -5145,7 +5203,7 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
             if (!(std::abs(band_exact.distance(q) - delta) <= front_conv)) return false;
         }
         if (get_quality(fid) >= MAX_ENERGY) return false;
-        const double b = band_cell_term(vs);
+        const double b = band_cell_term(vs, as);
         return band ? b > 0. : b < 0.;
     };
 
@@ -5261,37 +5319,6 @@ void TopoOffsetTriMesh::label_cleanup(const std::string& where)
     // into the band, so q joined the front; under exact_swept turn 11 took q's last non-band cell
     // and the band enclosed q.
     const auto held_face = [&](const Tuple& e) { return held_object_edge(e); };
-    // The tag the flipped triangle takes, of the label it joins. The band: the one tag set of the
-    // band triangles at t's corners (two pieces' bands, of two tag sets, refuse). The non-band:
-    // that of t's non-band edge neighbours across edges that are not held (a held edge's far side
-    // is another region); they must agree, and there must be one. As in 3D.
-    const auto joined_tag = [&](const size_t fid, CellTag& tag) {
-        const int o = label_of(fid) == 2 ? 0 : 2;
-        const CellTag* found = nullptr;
-        if (o == 2) {
-            for (const size_t v : oriented_tri_vids(fid)) {
-                for (const size_t s : get_one_ring_fids_for_vertex(v)) {
-                    if (label_of(s) != 2) continue;
-                    const CellTag& tg = m_face_attribute[s].tags;
-                    if (found && *found != tg) return false;
-                    found = &tg;
-                }
-            }
-        } else {
-            for (int k = 0; k < 3; ++k) {
-                const Tuple e = tuple_from_edge(fid, size_t(k));
-                if (held_face(e)) continue;
-                const size_t n = e.switch_face(*this)->fid(*this);
-                if (label_of(n) != o) continue;
-                const CellTag& tg = m_face_attribute[n].tags;
-                if (found && *found != tg) return false;
-                found = &tg;
-            }
-        }
-        if (!found) return false;
-        tag = *found;
-        return true;
-    };
     const auto edge_has = [](const std::array<size_t, 2>& ev, const size_t x) {
         return ev[0] == x || ev[1] == x;
     };

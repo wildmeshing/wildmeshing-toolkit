@@ -477,18 +477,26 @@ public:
      * assigned yet (an operation's new vertex, until assign_band_regions() runs again), the
      * nearest piece (nearest_piece()). -1 with one entry, or before the per-piece fields exist:
      * the whole complex's field (m_offset_potential) and the run's distance, as before 2026-11.
-     * A cell (n = 4) is its own body's piece instead (cell_piece()).
+     * A cell (n = 4) is the piece of its own band instead (cell_piece(), which takes `tag`).
      */
-    int place_piece(const size_t* vids, size_t n) const;
+    int place_piece(const size_t* vids, size_t n, const CellTag* tag = nullptr) const;
     /**
      * @brief place_piece() of a cell: the nearest piece, at the cell's centroid, of the entry
-     * whose band it is -- the entry whose level set holds the centroid most deeply, (d_k -
+     * whose band it is. Its tag set, where exactly one entry writes it (m_band_tags_entry), names
+     * that entry: `tag` (the one a cell not yet band, or not yet made, will carry: the tag a
+     * clean-up flip joins, a swap's candidate's), else that of the band cell with these corners.
+     * The operations carry the tags, so this is the band the cell is in. Otherwise (shared output
+     * tags, none, or no such cell) the entry whose level set holds the centroid most deeply, (d_k -
      * delta_k) / delta_k least, d_k the one-sided distance (side_distance(), +infinity outside an
-     * In entry's selection: inside an In body, that body's entry). Not the nearest piece of all:
+     * In entry's selection: inside an In body, that body's entry). MEASURED before the tag
+     * (2026-11-27, #1208's label-growth-two-bands-3d: boxes a and b, Out at 0.3, level sets
+     * overlapping): a cell beyond a's level set and inside b's, at a's band's corners, was read at
+     * b's integral, its band term negative, and growth took it into a's band, whose corners then
+     * reached 0.42 from a. Not the nearest piece of all:
      * between two Out entries a cell of the farther one's band lies nearer the other's input
      * (several-offsets-optimize-distances, b's band at 0.3 reaching to 0.24 from a at 0.1, read at
      * a's integral beyond a's target, did not converge). A function of the cell's corners'
-     * positions alone, never of the
+     * positions and its tags alone, never of the
      * cells around it nor of a table an operation leaves stale: the band term of a cell
      * (band_cell_term()) is its piece's integral, and E must be a function of the mesh for a
      * pass of strictly descending operations to end. An In piece's integral is one-sided (0
@@ -499,7 +507,7 @@ public:
      * it, and three swaps then cycled without end, each booking 1.3e-5 of band term the cells
      * never lost.
      */
-    int cell_piece(const size_t* vids) const;
+    int cell_piece(const size_t* vids, const CellTag* tag = nullptr) const;
     /// The piece nearest to p, by the per-piece envelopes (m_region_envelopes); -1 without them.
     int nearest_piece(const Vector3d& p) const;
     /// Piece r's target distance: its entry's (m_region_offset), its growth_mode stage's while a
@@ -1544,9 +1552,10 @@ public:
      * int_t (d - delta) dV by the divergence theorem, so the operations, the veto and the global
      * energy read it as value() computes it. The two can differ only on rule-(a) pieces, where
      * value() takes an upper bound and the front form labels the piece exactly, or throws where
-     * a curved bisector crosses it. See the spec doc.
+     * a curved bisector crosses it. See the spec doc. `tag`: the tag set the cell carries as a
+     * band cell where it is not one yet (cell_piece()).
      */
-    double band_cell_term(const std::array<size_t, 4>& vids) const
+    double band_cell_term(const std::array<size_t, 4>& vids, const CellTag* tag = nullptr) const
     {
         if (m_offset_params.band_volume_rule == "exact" ||
             m_offset_params.band_volume_rule == "front_flux" || swept_rule()) {
@@ -1554,10 +1563,10 @@ public:
             // it is, see above): J_t / delta, J_t = int_t (d - delta) dV in closed form
             // (ExactBandIntegral), in place of the corner bound. The cell's own piece's distance
             // and integral (place_piece(); the run's and the whole complex's with one entry).
-            return band_cell_term(vids, place_piece(vids.data(), 4));
+            return band_cell_term(vids, place_piece(vids.data(), 4, tag));
         }
         int64_t best = -1;
-        return band_cell_corner_bound(vids, best);
+        return band_cell_corner_bound(vids, best, tag);
     }
     /// band_cell_term()'s J_t / delta ("exact" and the rules that take its term) at piece r's
     /// distance and integral, whatever the cell's piece: EXACT SWEPT CHANGE's change of a cell's
@@ -1573,9 +1582,12 @@ public:
         return band_exact_for(r)->value(p, delta) / delta;
     }
     /// band_cell_term()'s value, with its minimising triangle in `best`.
-    double band_cell_corner_bound(const std::array<size_t, 4>& vids, int64_t& best) const
+    double band_cell_corner_bound(
+        const std::array<size_t, 4>& vids,
+        int64_t& best,
+        const CellTag* tag = nullptr) const
     {
-        const int r = place_piece(vids.data(), 4);
+        const int r = place_piece(vids.data(), 4, tag);
         const double delta = region_delta(r);
         std::array<Vector3d, 4> p;
         for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vids[size_t(j)]].m_posf;
@@ -1615,14 +1627,18 @@ public:
         return m_offset_params.offset_amips_weight / (s * s * s);
     }
     /// One cell's energy from its corners, its AMIPS^3 and its band label; see tet_energy().
-    double cell_energy(const std::array<size_t, 4>& vids, const double amips3, const bool band)
-        const
+    /// `tag`: a candidate's tag set (candidate_tag()), as band_cell_term() takes it.
+    double cell_energy(
+        const std::array<size_t, 4>& vids,
+        const double amips3,
+        const bool band,
+        const CellTag* tag = nullptr) const
     {
         if (amips3 >= MAX_ENERGY) return MAX_ENERGY;
         double a = band_amips_weight() * vol_amips3(vids, amips3);
         // EXPERIMENTAL_band_volume_rule "surface": no cell carries an offset term; it lives on the
         // front's faces (surface_face_term()), which every rule adds beside the cells' sums.
-        if (band && !surface_energy()) a += band_cell_term(vids);
+        if (band && !surface_energy()) a += band_cell_term(vids, tag);
         if (m_repulsion_potential) a += repulsion_cell_term(vids);
         return a;
     }
@@ -1634,6 +1650,9 @@ public:
     /// The label swap_after_cells() will write on the candidate cell vids (candidate_energy(),
     /// and "exact_swept"'s case search).
     int candidate_label(const std::array<size_t, 4>& vids);
+    /// The tag set swap_after_cells() will write on the candidate cell vids, as candidate_label()
+    /// the label (cell_piece() reads a band cell's entry from it).
+    CellTag candidate_tag(const std::array<size_t, 4>& vids);
     /// Collapses and swaps refused for raising E over the cells they change, per operation group
     /// ([band volume energy]).
     mutable std::atomic<int> m_volume_reject_collapse{0}, m_volume_reject_swap{0};
