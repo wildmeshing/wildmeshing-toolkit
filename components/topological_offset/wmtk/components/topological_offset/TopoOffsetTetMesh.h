@@ -1237,17 +1237,30 @@ public:
         if (m_offset_params.band_volume_rule != "exact" &&
             m_offset_params.band_volume_rule != "front_flux")
             return false;
+        // The cells' sum keeps its value only within one piece's integral: every cell of one
+        // piece, and a body of no other piece, which a new cell of the same region could take
+        // instead (cell_piece()). Until 2026-11-26 the ring's vertices together picked one piece,
+        // so a ring of two bodies' cells (a flip of the wall two In entries share) was tested on
+        // one body's integral alone.
         std::vector<size_t> vids;
-        for (const size_t tid : tids) {
-            if (!cell_is_offset_band(tid)) return false;
-            for (const size_t v : oriented_tet_vids(tid)) vids.push_back(v);
+        int piece = -1;
+        for (size_t i = 0; i < tids.size(); ++i) {
+            if (!cell_is_offset_band(tids[i])) return false;
+            const std::array<size_t, 4> vs = oriented_tet_vids(tids[i]);
+            const int r = place_piece(vs.data(), 4);
+            if (i == 0) piece = r;
+            if (r != piece) return false;
+            for (const size_t v : vs) vids.push_back(v);
         }
+        if (piece >= 0 && size_t(piece) < m_region_offset.size() &&
+            std::count(m_region_offset.begin(), m_region_offset.end(), m_region_offset[size_t(piece)]) > 1)
+            return false;
         wmtk::vector_unique(vids);
         std::vector<Vector3d> pts;
         pts.reserve(vids.size());
         for (const size_t v : vids) pts.push_back(m_vertex_attribute[v].m_posf);
         const int n = int(pts.size());
-        const ExactBandIntegral& eb = *band_exact_for(place_piece(vids.data(), vids.size()));
+        const ExactBandIntegral& eb = *band_exact_for(piece);
         if (eb.front_flux_flag(pts.data(), n)) return false;
         return eb.distance_bound(pts.data(), n) <= eb.front_flux_reach();
     }
