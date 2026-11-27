@@ -2036,6 +2036,14 @@ double TopoOffsetTetMesh::side_distance(const size_t k, const Vector3d& p) const
     return std::sqrt(q.envelope->squared_distance(p));
 }
 
+bool TopoOffsetTetMesh::inside_selection(const size_t k, const Vector3d& p) const
+{
+    // See the declaration.
+    if (k >= m_offset_queries.size() || !m_offset_queries[k].winding) return true;
+    return wmtk::utils::winding_number_inside(
+        m_offset_queries[k].winding->winding_number(p.transpose()));
+}
+
 double TopoOffsetTetMesh::input_complex_distance(const Vector3d& p) const
 {
     // Several entries: the nearest entry's own distance on its side (side_distance()), whatever

@@ -329,6 +329,10 @@ public:
     /// offset_distance() off its one side: +infinity where an In entry is 0 (outside its
     /// selection), so that the union of entries (input_complex_distance()) is not 0 there.
     double side_distance(size_t k, const Vector3d& p) const;
+    /// Whether p is inside entry k's selection, by OffsetQuery::winding (the test side_distance()
+    /// reads); true for an entry that has none, whose side is all of space. The 2D twin is
+    /// TopoOffsetTriMesh::inside_selection().
+    bool inside_selection(size_t k, const Vector3d& p) const;
     /// Per entry of Parameters::offsets: its selection has cells (label_input_complex()). An In
     /// entry without is dropped; the repulsion passes need one with.
     std::vector<bool> m_offset_has_cells;

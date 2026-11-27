@@ -3067,18 +3067,32 @@ int TopoOffsetTriMesh::face_piece(const size_t* vids) const
     const Vector2d c = (m_vertex_attribute[vids[0]].m_posf + m_vertex_attribute[vids[1]].m_posf +
                         m_vertex_attribute[vids[2]].m_posf) /
                        3.;
-    // The entry whose level set holds the centroid most deeply, as 3D's cell_piece().
-    int own = -1;
-    double own_s = std::numeric_limits<double>::infinity();
+    // The entry whose level set holds the centroid most deeply, as 3D's cell_piece(): only the
+    // entries whose side holds it compete, and one In selection alone decides without a distance.
+    using Direction = Parameters::Offset::Direction;
+    bool all_in = true;
+    for (size_t k = 0; k < m_offset_params.offsets.size(); ++k)
+        all_in = all_in && m_offset_params.direction(k) == Direction::In;
+    std::vector<size_t> competing;
     for (size_t k = 0; k < m_offset_params.offsets.size(); ++k) {
-        const double d = side_distance(k, c);
-        if (!(d < std::numeric_limits<double>::infinity())) continue;
-        const double delta = m_offset_levels.empty() ? m_offset_params.offsets[k].target_distance
-                                                     : m_offset_levels[k];
-        const double s = (d - delta) / delta;
-        if (s < own_s) {
-            own_s = s;
-            own = int(k);
+        if (m_offset_params.direction(k) == Direction::In && !inside_selection(k, c)) continue;
+        competing.push_back(k);
+        if (all_in) break; // the In selections are disjoint
+    }
+    int own = competing.size() == 1 ? int(competing.front()) : -1;
+    if (competing.size() > 1) {
+        double own_s = std::numeric_limits<double>::infinity();
+        for (const size_t k : competing) {
+            const double d = side_distance(k, c);
+            if (!(d < std::numeric_limits<double>::infinity())) continue;
+            const double delta = m_offset_levels.empty()
+                                     ? m_offset_params.offsets[k].target_distance
+                                     : m_offset_levels[k];
+            const double s = (d - delta) / delta;
+            if (s < own_s) {
+                own_s = s;
+                own = int(k);
+            }
         }
     }
     std::vector<int> mine;
