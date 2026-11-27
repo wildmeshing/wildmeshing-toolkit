@@ -10311,6 +10311,38 @@ TEST_CASE("offset-direction-complement-out-is-in", "[offset][3d]")
     CHECK(run("!a", "out") == in);
 }
 
+TEST_CASE("offset-direction-in-pinched-body", "[offset][3d]")
+{
+    // An inward offset of a body that is two boxes sharing one edge: a non-manifold input surface,
+    // four of its faces on that edge. The band lines each box, and the two linings meet along the
+    // shared edge, which is the input's; the front is two separate closed surfaces. The manifold
+    // check judges the front, not the input: MEASURED (2026-11-26), it refused this case ("OFFSET
+    // REGION IS NOT MANIFOLD") while it tested the band's whole boundary, as it refused piece01_in
+    // (a Thingi10K 70565 piece with one such edge), which passed and resolved at turn 7 when an
+    // inward offset's complex was every cell outside the body (before 2026-11-17): the edge then
+    // lay inside the checked region. Outward, and one box alone inward, pass either way.
+    const std::array<int, 6> a = {{1, 2, 1, 2, 1, 2}}, b = {{3, 4, 3, 4, 1, 2}};
+    const MeshData m = box_grid({{"a", a}, {"b", b}});
+    const auto run = [&](const std::string& selection, const std::string& direction) {
+        return construct_offsets(
+            m,
+            nlohmann::json::array(
+                {{{"selection", selection},
+                  {"direction", direction},
+                  {"output_tags", {"band"}},
+                  {"target_distance", 0.1}}}));
+    };
+    MeshData in;
+    REQUIRE_NOTHROW(in = run("a | b", "in"));
+    const BandSides sa = band_sides(in, "band", a, 0.1);
+    const BandSides sb = band_sides(in, "band", b, 0.1);
+    CHECK(sa.inside > 0);
+    CHECK(sb.inside > 0);
+    CHECK(sa.inside + sb.inside == cells_tagged(in, "band").size()); // every band cell in a or b
+    CHECK_NOTHROW(run("a | b", "out"));
+    CHECK_NOTHROW(run("a", "in"));
+}
+
 TEST_CASE("several-offsets-sheets", "[offset][3d]")
 {
     // A body and two sheets (face tags) in one march, each as alone: the sheets' faces are each
@@ -12210,6 +12242,44 @@ TEST_CASE("offset-direction-in-out-both-2d", "[offset][2d]")
             {{"a", a}},
             nlohmann::json::array({offset_entry_2d("a", 0.1)}),
             "a_band") == run("out"));
+}
+
+TEST_CASE("offset-direction-in-pinched-body-2d", "[offset][2d]")
+{
+    // The 2D twin of offset-direction-in-pinched-body: one tag over two grid squares that share one
+    // corner (a non-manifold input boundary, four of its edges at that corner). The band lines each
+    // square and the two linings meet at the shared corner, the input's; the front is two separate
+    // closed curves. MEASURED (2026-11-26) in 3D: the check refused this while it tested the band's
+    // whole region. Outward, and one square alone inward, pass either way.
+    const auto in_square = [](const Vector2d& c, const double x0, const double y0) {
+        return c.x() > x0 && c.x() < x0 + 0.5 && c.y() > y0 && c.y() < y0 + 0.5;
+    };
+    const MeshData two = grid_2d({}, {}, [&](const Vector2d& c) {
+        return in_square(c, -0.75, -0.75) || in_square(c, -0.25, -0.25) ? "a" : "";
+    });
+    const MeshData one =
+        grid_2d({}, {}, [&](const Vector2d& c) { return in_square(c, -0.75, -0.75) ? "a" : ""; });
+    const auto band_faces = [](const MeshData& out) {
+        const auto& block = out.cells.at(CellType::Triangle);
+        const auto& tags = block.attributes.at("tags");
+        const auto it = std::find(tags.labels.begin(), tags.labels.end(), "band");
+        REQUIRE(it != tags.labels.end());
+        const auto member = tags.integers();
+        const Eigen::Index col = Eigen::Index(it - tags.labels.begin());
+        size_t n = 0;
+        for (Eigen::Index r = 0; r < member.rows(); ++r) n += member(r, col) != 0;
+        return n;
+    };
+    const auto run = [&](const MeshData& m, const std::string& direction) {
+        return construct_offsets_2d(
+            m,
+            nlohmann::json::array({direction_entry_2d("a", direction, "band", 0.1)}));
+    };
+    MeshData in;
+    REQUIRE_NOTHROW(in = run(two, "in"));
+    CHECK(band_faces(in) > 0);
+    CHECK_NOTHROW(run(two, "out"));
+    CHECK_NOTHROW(run(one, "in"));
 }
 
 TEST_CASE("offset-direction-several-in-2d", "[offset][2d]")

@@ -1,6 +1,4 @@
 #include "TopoOffsetTriMesh.h"
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
 #include <paraviewo/VTUWriter.hpp>
 #include <queue>
 #include <utility>
@@ -2536,51 +2534,28 @@ void TopoOffsetTriMesh::set_offset_tri_tags()
 
 bool TopoOffsetTriMesh::offset_is_manifold()
 {
-    // vertex map
-    std::map<size_t, bool> included_vids;
-    auto verts = get_vertices();
-    for (const Tuple& v : verts) {
-        included_vids[v.vid(*this)] = false;
+    // 3D's rule one dimension down: the front must be a manifold curve -- the boundary of the
+    // closed offset region (face_in_region(): from the tags, which every operation propagates, not
+    // from the label derived alongside them) less its edges on the input complex (both corners on
+    // the input, edge_on_input_complex(): by the simplicial embedding an edge of the complex), so
+    // at most two of its edges at any vertex. The input may be non-manifold: the region itself,
+    // tested before 2026-11-26 (one fan of faces at every vertex), is not, where an inward offset's
+    // body pinches at a vertex (offset-direction-in-pinched-body-2d); see the 3D definition.
+    std::map<size_t, int> front_edges_at;
+    for (const Tuple& e : get_edges()) {
+        const std::optional<Tuple> opp = e.switch_face(*this);
+        const bool here = face_in_region(e.fid(*this));
+        const bool there = opp && face_in_region(opp->fid(*this));
+        if (here == there) continue; // not on the region's boundary
+        const std::array<size_t, 2> ev = get_edge_vids(e);
+        if (edge_on_input_complex(ev)) continue;
+        ++front_edges_at[ev[0]];
+        ++front_edges_at[ev[1]];
     }
-
-    // collect faces in closed offset region (labelled 1 or 2)
-    auto tris = get_faces();
-    std::vector<Vector3i> offset_tris;
-    for (const Tuple& t : tris) {
-        size_t t_id = t.fid(*this);
-        // Region membership from the tags, which every operation propagates -- not from the
-        // label derived alongside them. See face_in_region().
-        if (face_in_region(t_id)) {
-            auto vs = oriented_tri_vids(t_id);
-            offset_tris.emplace_back(vs[0], vs[1], vs[2]);
-            included_vids[vs[0]] = true;
-            included_vids[vs[1]] = true;
-            included_vids[vs[2]] = true;
-        }
+    for (const auto& [v, n] : front_edges_at) {
+        if (n > 2) return false;
     }
-
-    // create consolidated v_id map
-    int vert_count = 0;
-    std::map<size_t, size_t> v_id_map;
-    for (const auto& pair : included_vids) {
-        if (pair.second) {
-            v_id_map[pair.first] = vert_count++;
-        }
-    }
-
-    // form matrix
-    MatrixXi F(offset_tris.size(), 3);
-    for (int i = 0; i < offset_tris.size(); i++) {
-        for (int j = 0; j < 3; j++) {
-            F(i, j) = v_id_map[offset_tris[i](j)];
-        }
-    }
-
-    // check manifoldness
-    bool is_edge_man = igl::is_edge_manifold(F);
-    VectorXi B;
-    bool is_vert_man = igl::is_vertex_manifold(F, B);
-    return (is_edge_man && is_vert_man);
+    return true;
 }
 
 

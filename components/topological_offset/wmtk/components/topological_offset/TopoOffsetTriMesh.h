@@ -3576,8 +3576,9 @@ public:
     void set_offset_tri_tags();
 
     /**
-     * @brief verify that the closed offset region (simplices labelled 1 or 2) form a manifold
-     * region. This should be true for any offset. This function is for verification
+     * @brief Whether the front is a manifold curve: the boundary of the closed offset region less
+     * its edges on the input complex, which may be non-manifold. True for any offset; for
+     * verification. The twin of TopoOffsetTetMesh::offset_is_manifold().
      */
     bool offset_is_manifold();
 

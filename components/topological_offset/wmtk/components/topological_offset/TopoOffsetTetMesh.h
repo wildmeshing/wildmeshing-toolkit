@@ -3683,7 +3683,9 @@ public:
      */
     void untrack_covered_boundaries();
 
-    /// verify that the closed offset region (simplices labelled 1 or 2) form a manifold region.
+    /// Whether the front is a manifold surface: the boundary of the closed offset region (cells
+    /// labelled 1 or 2) less its faces on the input complex, which may be non-manifold (see the
+    /// definition).
     bool offset_is_manifold();
 
     //// output stuff
