@@ -2936,10 +2936,60 @@ double TopoOffsetTriMesh::swap_swept_change(const std::vector<size_t>& made) con
     for (const auto& t : old) one = one && t.second == r;
     for (const auto& t : nb) one = one && t.second == r;
     if (one) return 0.;
+    // faces of several pieces: each piece's own region change (see the declaration)
+    std::map<int, std::pair<std::vector<std::array<size_t, 3>>, std::vector<std::array<size_t, 3>>>>
+        by_piece;
+    for (const auto& t : old) by_piece[t.second].first.push_back(t.first);
+    for (const auto& t : nb) by_piece[t.second].second.push_back(t.first);
     double s = 0.;
-    for (const auto& t : nb) s += band_cell_term(t.first, t.second);
-    for (const auto& t : old) s -= band_cell_term(t.first, t.second);
+    for (const auto& [q, faces] : by_piece) s += band_chain_change(faces.first, faces.second, q);
     return s;
+}
+
+double TopoOffsetTriMesh::band_chain_change(
+    const std::vector<std::array<size_t, 3>>& old_band,
+    const std::vector<std::array<size_t, 3>>& new_band,
+    const int piece) const
+{
+    // See the declaration: dD = the new band faces' boundary less the old ones', each edge as its
+    // sorted vertex pair with the multiplicity of the orientation that has the face on its left.
+    using wmtk::utils::predicates::orient2d;
+    using wmtk::utils::predicates::Orientation;
+    const auto P = [&](const size_t v) -> const Vector2d& { return m_vertex_attribute[v].m_posf; };
+    std::map<std::array<size_t, 2>, int> dD;
+    const auto add = [&](const std::array<size_t, 3>& t, const int sgn) {
+        if (orient2d(P(t[0]), P(t[1]), P(t[2])) == Orientation::COLLINEAR) return;
+        for (int i = 0; i < 3; ++i) {
+            std::array<size_t, 2> e = {{t[size_t((i + 1) % 3)], t[size_t((i + 2) % 3)]}};
+            std::sort(e.begin(), e.end());
+            // the sorted pair runs with the face on its left iff orient2d(pair, opposite) > 0
+            const bool left = orient2d(P(e[0]), P(e[1]), P(t[size_t(i)])) == Orientation::POSITIVE;
+            dD[e] += sgn * (left ? 1 : -1);
+        }
+    };
+    for (const auto& t : new_band) add(t, 1);
+    for (const auto& t : old_band) add(t, -1);
+    std::map<size_t, int> on;
+    for (const auto& [e, m] : dD) {
+        if (m == 0) continue;
+        for (const size_t v : e) ++on[v];
+    }
+    if (on.empty()) return 0.;
+    size_t apex = on.begin()->first;
+    for (const auto& [v, n] : on) {
+        if (n > on[apex]) apex = v;
+    }
+    const double delta = region_delta(piece);
+    const ExactBandIntegral2D& eb = *band_exact_for(piece);
+    double s = 0.;
+    for (const auto& [e, m] : dD) {
+        if (m == 0 || e[0] == apex || e[1] == apex) continue; // a flat cone
+        const Orientation o = orient2d(P(e[0]), P(e[1]), P(apex));
+        if (o == Orientation::COLLINEAR) continue;
+        const double sign = o == Orientation::POSITIVE ? 1. : -1.;
+        s += double(m) * sign * eb.value({{P(apex), P(e[0]), P(e[1])}}, delta);
+    }
+    return s / delta;
 }
 
 bool TopoOffsetTriMesh::swept_accept(

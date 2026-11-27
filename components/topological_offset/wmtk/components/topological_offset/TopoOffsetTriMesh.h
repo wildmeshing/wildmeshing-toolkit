@@ -1177,9 +1177,20 @@ public:
         const std::vector<std::pair<size_t, int>>& before) const;
     /// "exact_swept": a swap's band term change, the faces it made `made` (EXACT SWEPT CHANGE):
     /// 0 where its faces, old (m_swap_old_band) and new, are all of one piece -- 2D's only swap
-    /// is the interior flip, which keeps B_r's region and boundary -- and the sum of the new
-    /// band faces' band_cell_term() less the old's, each at its piece, where they are not.
+    /// is the interior flip, which keeps B_r's region and boundary -- and, where they are not,
+    /// each piece's region change, band_chain_change() of its old and new band faces. Until
+    /// 2026-11-27 the sum of the new band faces' band_cell_term() less the old's, which differs
+    /// from the region change where value() takes rule (a)'s bound (ExactBandIntegral2D): two
+    /// bookkeepings of one energy, as 3D's swap_swept_change() had (see there).
     double swap_swept_change(const std::vector<size_t>& made) const;
+    /// "exact_swept": dE* / delta for the band faces `old_band` replaced by `new_band`, all of
+    /// piece `piece`, at the current positions: the cone from a vertex over the boundary chain of
+    /// (new) - (old), each edge with the multiplicity of its orientation, the 2D twin of 3D's
+    /// band_chain_change().
+    double band_chain_change(
+        const std::vector<std::array<size_t, 3>>& old_band,
+        const std::vector<std::array<size_t, 3>>& new_band,
+        int piece = -1) const;
     /// "exact_swept": the smoother's acceptance after a solve moved vid from x0 to where it is,
     /// 3D's swept_accept(). The move stands iff the ring's AMIPS change (tri_energy_sum(ring,
     /// false) - amips_before) plus band_swept_change() is <= 0 (a tie passes, a NaN refuses); if
