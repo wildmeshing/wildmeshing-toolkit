@@ -618,9 +618,11 @@ double TopoOffsetTetMesh::swap_swept_change(
         by_piece;
     for (size_t i = 0; i < rec.old_band.size(); ++i)
         by_piece[rec.old_piece[i]].first.push_back(rec.old_band[i]);
-    for (size_t i = 0; i < new_band.size(); ++i) by_piece[new_piece[i]].second.push_back(new_band[i]);
+    for (size_t i = 0; i < new_band.size(); ++i)
+        by_piece[new_piece[i]].second.push_back(new_band[i]);
     double s = 0.;
-    for (const auto& [q, cells] : by_piece) s += band_chain_change(cells.first, cells.second, nullptr, q);
+    for (const auto& [q, cells] : by_piece)
+        s += band_chain_change(cells.first, cells.second, nullptr, q);
     return s;
 }
 
@@ -1643,8 +1645,9 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         stamp_rest_cell(t); // created by the swap: stamped at creation, as above
     }
     // The two new surface faces take what the two old ones carried (swap_before_surface()).
-    for (const auto& f : {std::array<size_t, 3>{{sides.abcd[0], sides.abcd[2], sides.abcd[3]}},
-                          std::array<size_t, 3>{{sides.abcd[1], sides.abcd[2], sides.abcd[3]}}}) {
+    for (const auto& f :
+         {std::array<size_t, 3>{{sides.abcd[0], sides.abcd[2], sides.abcd[3]}},
+          std::array<size_t, 3>{{sides.abcd[1], sides.abcd[2], sides.abcd[3]}}}) {
         FaceExtra& x = m_face_extra[std::get<1>(tuple_from_face(f))];
         if (sides.on_complex) x.label = 1;
         x.on_sheet = sides.on_sheet;
@@ -3860,8 +3863,9 @@ int TopoOffsetTetMesh::cell_piece(const size_t* vids, const CellTag* tag) const
     }
     // its nearest piece; an entry of one piece reads no distance
     if (std::count(m_region_offset.begin(), m_region_offset.end(), own) == 1)
-        return int(std::find(m_region_offset.begin(), m_region_offset.end(), own) -
-                   m_region_offset.begin());
+        return int(
+            std::find(m_region_offset.begin(), m_region_offset.end(), own) -
+            m_region_offset.begin());
     int best = -1;
     double best_d = std::numeric_limits<double>::infinity();
     for (size_t r = 0; r < m_region_envelopes.size() && r < m_region_offset.size(); ++r) {

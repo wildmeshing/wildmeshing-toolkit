@@ -376,7 +376,8 @@ TEST_CASE("exact-swept-chain-2d", "[offset][exact_swept][2d]")
             std::vector<Vec2> pts;
             for (int k = 0; k < 4; ++k) {
                 const double ang = 0.5 * M_PI * (k + 0.3 * U(rng));
-                pts.push_back(fx.c + fx.w * (0.7 + 0.2 * U(rng)) * Vec2(std::cos(ang), std::sin(ang)));
+                pts.push_back(
+                    fx.c + fx.w * (0.7 + 0.2 * U(rng)) * Vec2(std::cos(ang), std::sin(ang)));
             }
             Parameters param;
             auto mesh = make_mesh(param, pts, {{{0, 1, 2}}, {{0, 2, 3}}}, {2, 2}, fx.eb);
@@ -408,8 +409,12 @@ TEST_CASE("exact-swept-chain-2d", "[offset][exact_swept][2d]")
     }
     CHECK(worst <= 1e-12 * scale);
     CHECK(antisymmetric == n);
-    std::printf("  chain change against the sums: %.1e (scale %.1e); reverse its negative %d of %d\n",
-                worst, scale, antisymmetric, n);
+    std::printf(
+        "  chain change against the sums: %.1e (scale %.1e); reverse its negative %d of %d\n",
+        worst,
+        scale,
+        antisymmetric,
+        n);
 }
 
 TEST_CASE("exact-swept-search-model-2d", "[offset][exact_swept][2d]")

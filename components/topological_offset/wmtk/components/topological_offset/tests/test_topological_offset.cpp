@@ -10568,21 +10568,20 @@ TEST_CASE("several-offsets-own-band", "[offset][3d]" + release_only)
     INFO("a at " << delta_a << ", b at " << delta_b);
     const double conv_a = 0.1 * delta_a, conv_b = 0.1 * delta_b; // front_conv_rel's default
     const std::array<int, 6> a = {{2, 2, 3, 4, 3, 4}}, b = {{5, 5, 3, 4, 3, 4}};
-    const MeshData out = components::topological_offset::topological_offset(
-                             {{"input", "m"},
-                              {"offsets",
-                               nlohmann::json::array(
-                                   {{{"selection", "a"},
-                                     {"output_tags", {"a_band"}},
-                                     {"target_distance", delta_a}},
-                                    {{"selection", "b"},
-                                     {"output_tags", {"b_band"}},
-                                     {"target_distance", delta_b}}})},
-                              {"max_rounds", 8},
-                              {"num_threads", 1},
-                              {"throw_on_nonconvergence", false}},
-                             {{"m", box_grid({{"a", a}, {"b", b}})}})
-                             .first.at("mesh");
+    const MeshData out =
+        components::topological_offset::topological_offset(
+            {{"input", "m"},
+             {"offsets",
+              nlohmann::json::array(
+                  {{{"selection", "a"}, {"output_tags", {"a_band"}}, {"target_distance", delta_a}},
+                   {{"selection", "b"},
+                    {"output_tags", {"b_band"}},
+                    {"target_distance", delta_b}}})},
+             {"max_rounds", 8},
+             {"num_threads", 1},
+             {"throw_on_nonconvergence", false}},
+            {{"m", box_grid({{"a", a}, {"b", b}})}})
+            .first.at("mesh");
     std::set<std::array<double, 3>> corners_a;
     for (const CellCorners& c : cells_tagged(out, "a_band")) {
         for (const auto& q : c) {
@@ -12628,8 +12627,7 @@ ComplexHold2d complex_hold_2d(
     for (const ComplexSegment2d& s : segments) {
         const int o = 1 - s.axis;
         const auto on = [&](const Vector2d& p) {
-            return std::abs(p[s.axis] - s.value) <= tol && p[o] >= s.lo - tol &&
-                   p[o] <= s.hi + tol;
+            return std::abs(p[s.axis] - s.value) <= tol && p[o] >= s.lo - tol && p[o] <= s.hi + tol;
         };
         double length = 0.;
         for (const auto& e : m.get_edges()) {

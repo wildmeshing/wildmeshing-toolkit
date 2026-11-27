@@ -1265,7 +1265,10 @@ public:
             for (const size_t v : vs) vids.push_back(v);
         }
         if (piece >= 0 && size_t(piece) < m_region_offset.size() &&
-            std::count(m_region_offset.begin(), m_region_offset.end(), m_region_offset[size_t(piece)]) > 1)
+            std::count(
+                m_region_offset.begin(),
+                m_region_offset.end(),
+                m_region_offset[size_t(piece)]) > 1)
             return false;
         wmtk::vector_unique(vids);
         std::vector<Vector3d> pts;
