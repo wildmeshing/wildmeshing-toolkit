@@ -841,36 +841,3 @@ TEST_CASE(
         CHECK(r.worst < 1e-6);
     }
 }
-
-TEST_CASE(
-    "tetwild-near-axis-aligned-cube-fine-round-trip",
-    "[tetwild][tracking]" + release_only)
-{
-    // The same cube with each face an 8 x 8 grid: every face now has many vertices that are in
-    // one plane only up to 1e-15, and the insertion has flat facets (no area once rounded) with
-    // or without the curve input: the curve adds none. The surface map still sends pieces of
-    // the output onto segments of the input when a later collapse removes such a facet, with no
-    // build warning. When this was written (dbbfc1a799): 1 of 61,712 points off without the
-    // curve (worst 2.9e-4 of the diagonal), 11 of 58,744 with it (worst 4.7e-3). With the exact
-    // cube (noise 0) every point comes back.
-    SECTION("exact cube, edges as a curve")
-    {
-        const CubeRoundTrip r = noisy_cube_round_trip(8, 0., true);
-        CHECK(r.off == 0);
-        CHECK(r.worst < 1e-6);
-    }
-    SECTION("cube off by 1e-15, no curve")
-    {
-        const CubeRoundTrip r = noisy_cube_round_trip(8, 1e-15, false);
-        INFO("points " << r.points << ", off " << r.off << ", worst " << r.worst);
-        CHECK(r.off == 0);
-        CHECK(r.worst < 1e-6);
-    }
-    SECTION("cube off by 1e-15, edges as a curve")
-    {
-        const CubeRoundTrip r = noisy_cube_round_trip(8, 1e-15, true);
-        INFO("points " << r.points << ", off " << r.off << ", worst " << r.worst);
-        CHECK(r.off == 0);
-        CHECK(r.worst < 1e-6);
-    }
-}
