@@ -11,6 +11,7 @@
 #include <igl/readOBJ.h>
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -540,14 +541,19 @@ TEST_CASE("tetwild-volume-history-memory-route", "[tetwild][tracking]" + release
     CHECK(!plain.count("history_output"));
 }
 
-TEST_CASE("tetwild-volume-coarse-round-trip", "[tetwild][tracking]" + release_only)
+namespace {
+
+/// The icosahedron split once (42 vertices) through tetwild with a volume history, and 3,000
+/// positions of its tets mapped to the output and back: how many come back more than 1e-9 of the
+/// diagonal off, the worst, and the map's stats.
+struct CoarseRoundTrip
 {
-    // A known limitation, pinned (docs/tracking.md, "Volumes"). On an input this coarse -- the
-    // icosahedron split once, 42 vertices -- the insertion leaves tets that the positions the
-    // volume history holds, the exact ones rounded to doubles, turn flat or inverted
-    // (VolumeMapStats::inverted_ops): the tets there overlap, a position is in two, and a point
-    // mapped there and back can come back off, by up to the size of the tets around. Every
-    // operation maps, and the other points come back to a rounding.
+    size_t off = 0;
+    double worst = 0;
+    tracking::VolumeMapStats stats;
+};
+CoarseRoundTrip coarse_round_trip(const bool lattice_jitter)
+{
     nlohmann::json options = small_volume_run();
     options["input"] = "sphere";
     options["length_rel"] = 0.3;
@@ -555,6 +561,7 @@ TEST_CASE("tetwild-volume-coarse-round-trip", "[tetwild][tracking]" + release_on
     options["eps_simplify_rel"] = 0.01; // half of eps_rel, the simplification this was pinned at
     options["max_iterations"] = 1;
     options["preserve_topology"] = true;
+    options["lattice_jitter"] = lattice_jitter;
     const auto [outputs, report] = tetwild::tetwild(options, {{"sphere", icosphere(1, 1)}});
     const tracking::VolumeTracking t(
         history::SurfaceHistory::from_bytes(report.at("history").get_binary()),
@@ -581,18 +588,256 @@ TEST_CASE("tetwild-volume-coarse-round-trip", "[tetwild][tracking]" + release_on
         regions.push_back(p.region);
     }
     const auto back = t.map_positions(xyz, false, regions);
-    size_t off = 0;
-    double worst = 0;
+    CoarseRoundTrip out;
     for (size_t i = 0; i < pts.size(); ++i) {
         const double d = (back[i].position - pts[i]).norm() / diagonal;
-        off += d > 1e-9;
-        worst = std::max(worst, d);
+        out.off += d > 1e-9;
+        out.worst = std::max(out.worst, d);
     }
-    const auto stats = t.map().stats();
-    CHECK(stats.failed == 0);
-    CHECK(stats.inverted_ops > 0);
-    // 17 of 3000 off, the worst by 1.3% of the diagonal, and 61 such operations, when this was
-    // written; the bounds leave room for another platform's run
-    CHECK(off < pts.size() / 50);
-    CHECK(worst < 0.05);
+    out.stats = t.map().stats();
+    return out;
+}
+
+} // namespace
+
+TEST_CASE("tetwild-volume-coarse-round-trip", "[tetwild][tracking]" + release_only)
+{
+    // On an input this coarse -- the icosahedron split once, 42 vertices -- the regular background
+    // lattice misses input edges by an ulp, and the insertion leaves tets that the positions the
+    // volume history holds, the exact ones rounded to doubles, turn flat or inverted
+    // (VolumeMapStats::inverted_ops): the tets there overlap, a position is in two, and a point
+    // mapped there and back can come back off, by up to the size of the tets around
+    // (docs/tracking.md, "Volumes"). lattice_jitter, on by default, moves the lattice off them.
+    SECTION("lattice_jitter")
+    {
+        const CoarseRoundTrip r = coarse_round_trip(true);
+        CHECK(r.stats.failed == 0);
+        CHECK(r.stats.inverted_ops == 0);
+        CHECK(r.off == 0); // the worst 4e-13 of the diagonal when this was written
+        CHECK(r.worst < 1e-9);
+    }
+    SECTION("the regular lattice: the limitation, pinned")
+    {
+        const CoarseRoundTrip r = coarse_round_trip(false);
+        CHECK(r.stats.failed == 0);
+        CHECK(r.stats.inverted_ops > 0);
+        // 17 of 3000 off, the worst by 1.3% of the diagonal, and 61 such operations, when this
+        // was written; the bounds leave room for another platform's run
+        CHECK(r.off < 3000 / 50);
+        CHECK(r.worst < 0.05);
+    }
+}
+
+TEST_CASE("tetwild-lattice-jitter-leaves-no-flat-facets", "[tetwild][tracking]" + release_only)
+{
+    // The unit cube: the regular lattice is symmetric about it in exact arithmetic but not in
+    // doubles, its tets miss the cube's edges by an ulp, and the insertion leaves facets 1e-18
+    // wide (408 of 7,320 on the cube when this was written), with no area once rounded, as the
+    // surface history's embed holds them. lattice_jitter moves the lattice off them.
+    MeshData cube;
+    cube.V.resize(8, 3);
+    cube.V << 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1;
+    auto& F = cube.cells[CellType::Triangle].connectivity;
+    F.resize(12, 3);
+    F << 0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7, 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6,
+        3, 0, 4, 3, 4, 7;
+    // The embedded faces whose height over their longest edge is within 1e-12 of the mean edge.
+    const auto flat_facets = [&cube](const bool lattice_jitter) {
+        nlohmann::json options = {
+            {"input", "cube"},
+            {"simplify", false},
+            {"max_iterations", 1},
+            {"num_threads", 1},
+            {"write_vtu", false},
+            {"history_output", "recorded"},
+            {"lattice_jitter", lattice_jitter}};
+        const auto [outputs, report] = tetwild::tetwild(options, {{"cube", cube}});
+        const auto h = history::SurfaceHistory::from_bytes(report.at("history").get_binary());
+        const auto embed = std::find_if(h.edits.begin(), h.edits.end(), [](const auto& e) {
+            return e.kind == history::EditKind::embed;
+        });
+        REQUIRE(embed != h.edits.end());
+        std::map<uint64_t, Eigen::Vector3d> P;
+        for (const auto& m : embed->moves) P[m.vid] = m.pos;
+        const size_t nf = embed->v.size() / 3;
+        double mean = 0;
+        for (size_t f = 0; f < nf; ++f) {
+            for (int k = 0; k < 3; ++k) {
+                mean += (P.at(embed->v[3 * f + k]) - P.at(embed->v[3 * f + (k + 1) % 3])).norm();
+            }
+        }
+        mean /= double(3 * nf);
+        size_t flat = 0;
+        for (size_t f = 0; f < nf; ++f) {
+            const Eigen::Vector3d a = P.at(embed->v[3 * f]), b = P.at(embed->v[3 * f + 1]),
+                                  c = P.at(embed->v[3 * f + 2]);
+            const double longest = std::max({(b - a).norm(), (c - b).norm(), (a - c).norm()});
+            flat += !((b - a).cross(c - a).norm() > 1e-12 * mean * longest);
+        }
+        return flat;
+    };
+    CHECK(flat_facets(true) == 0);
+    CHECK(flat_facets(false) > 0);
+}
+
+namespace {
+
+/// A unit cube, each face a K x K grid of quads split in two, every coordinate moved by up to
+/// `noise` (as a CAD export's axis-aligned faces are: 6.9e-15 where 0 is meant), through tetwild
+/// with a surface history, with or without the cube's 12 edges as a curve input. Then 28 points
+/// of every tracked face of the output mapped to the input and back: how many come back more
+/// than 1e-6 of the diagonal off, and the worst.
+struct CubeRoundTrip
+{
+    size_t points = 0;
+    size_t off = 0;
+    double worst = 0;
+};
+CubeRoundTrip noisy_cube_round_trip(const int K, const double noise, const bool with_curve)
+{
+    std::map<std::array<int, 3>, int> ids;
+    std::vector<std::array<int, 3>> lattice;
+    const auto vid = [&](const std::array<int, 3>& p) {
+        const auto [it, added] = ids.emplace(p, int(lattice.size()));
+        if (added) lattice.push_back(p);
+        return it->second;
+    };
+    std::vector<std::array<int, 3>> tris;
+    for (int axis = 0; axis < 3; ++axis) {
+        for (const int side : {0, K}) {
+            for (int a = 0; a < K; ++a) {
+                for (int b = 0; b < K; ++b) {
+                    std::array<int, 4> q;
+                    const int da[4] = {0, 1, 1, 0}, db[4] = {0, 0, 1, 1};
+                    for (int c = 0; c < 4; ++c) {
+                        std::array<int, 3> p;
+                        p[axis] = side;
+                        p[(axis + 1) % 3] = a + da[c];
+                        p[(axis + 2) % 3] = b + db[c];
+                        q[c] = vid(p);
+                    }
+                    if (side == 0) std::reverse(q.begin(), q.end()); // outward
+                    tris.push_back({{q[0], q[1], q[2]}});
+                    tris.push_back({{q[0], q[2], q[3]}});
+                }
+            }
+        }
+    }
+    MeshData cube;
+    cube.V.resize(Eigen::Index(lattice.size()), 3);
+    std::mt19937 rng(0); // its raw output is the same on every platform
+    for (size_t v = 0; v < lattice.size(); ++v) {
+        for (int d = 0; d < 3; ++d) {
+            const double u = 2. * double(rng()) / 4294967296. - 1.;
+            cube.V(Eigen::Index(v), d) = double(lattice[v][d]) / K + noise * u;
+        }
+    }
+    auto& F = cube.cells[CellType::Triangle].connectivity;
+    F.resize(Eigen::Index(tris.size()), 3);
+    for (size_t f = 0; f < tris.size(); ++f) {
+        for (int k = 0; k < 3; ++k) F(Eigen::Index(f), k) = tris[f][k];
+    }
+    // The cube's 12 edges: lattice segments whose two other coordinates are on the boundary.
+    // The curve's vertices are the surface's, bit for bit.
+    MeshData edges;
+    edges.V = cube.V;
+    std::vector<std::array<int, 2>> segs;
+    for (const auto& [p, i] : ids) {
+        for (int d = 0; d < 3; ++d) {
+            std::array<int, 3> q = p;
+            ++q[d];
+            const auto it = ids.find(q);
+            const int a = p[(d + 1) % 3], b = p[(d + 2) % 3];
+            if (it != ids.end() && (a == 0 || a == K) && (b == 0 || b == K)) {
+                segs.push_back({{i, it->second}});
+            }
+        }
+    }
+    auto& E = edges.cells[CellType::Edge].connectivity;
+    E.resize(Eigen::Index(segs.size()), 2);
+    for (size_t e = 0; e < segs.size(); ++e) {
+        E(Eigen::Index(e), 0) = segs[e][0];
+        E(Eigen::Index(e), 1) = segs[e][1];
+    }
+
+    nlohmann::json options = {
+        {"eps_rel", 1e-3},
+        {"length_rel", 0.05},
+        {"simplify", false},
+        {"preserve_topology", true},
+        {"check_surface_folds", true},
+        {"filter", "tracked"},
+        {"num_threads", 0},
+        {"write_vtu", false},
+        {"history_output", "recorded"}};
+    std::map<std::string, MeshData> meshes = {{"cube", cube}};
+    options["input"] = {"cube"};
+    if (with_curve) {
+        meshes["edges"] = edges;
+        options["input"].push_back("edges");
+    }
+    const auto [outputs, report] = tetwild::tetwild(options, meshes);
+    const Eigen::MatrixXd& V = outputs.at("mesh").V;
+    const Tracking tracking(history::SurfaceHistory::from_bytes(report.at("history").get_binary()));
+    std::vector<OutputPoint> pts;
+    const int n = 9;
+    for (const auto& t : tracking.output_triangles()) {
+        for (int i = 1; i < n; ++i) {
+            for (int j = 1; j < n - i; ++j) {
+                pts.push_back({kNoId, t, Eigen::Vector3d(i, j, n - i - j) / n});
+            }
+        }
+    }
+    const auto position = [&V](const OutputPoint& p) {
+        Eigen::Vector3d x = Eigen::Vector3d::Zero();
+        for (int k = 0; k < 3; ++k) x += p.bary[k] * V.row(Eigen::Index(p.vertices[k])).transpose();
+        return x;
+    };
+    const std::vector<OutputPoint> back = tracking.to_output(tracking.to_input(pts));
+    CubeRoundTrip out;
+    out.points = pts.size();
+    for (size_t i = 0; i < pts.size(); ++i) {
+        REQUIRE(back[i].vertices[0] != kNoId);
+        const double d = (position(back[i]) - position(pts[i])).norm() / std::sqrt(3.);
+        out.off += d > 1e-6;
+        out.worst = std::max(out.worst, d);
+    }
+    return out;
+}
+
+} // namespace
+
+TEST_CASE(
+    "tetwild-curve-on-near-axis-aligned-cube-round-trip",
+    "[tetwild][tracking]" + release_only)
+{
+    // A cube whose faces are axis-aligned only up to rounding (coordinates 1e-15 off), with its
+    // 12 edges as a curve input (and, as edges.V is the whole cube, its other vertices as
+    // points). The insertion used to pin every curve segment and point with forcing triangles
+    // in axis-aligned planes, almost, not exactly, in the plane of the face beside them, and the
+    // arrangement had facets about 1e-17 wide there, with no area once rounded. The surface map
+    // then sent pieces of the output onto segments of the input: output -> input -> output did
+    // not come back, with no build warning. VolumeRemesher now adds no forcing triangle for a
+    // feature the arrangement has already (a crease or a vertex of the surface), so the curve
+    // changes nothing here. Without the curve input, or with the exact cube (noise 0), every
+    // point always came back.
+    SECTION("exact cube, edges as a curve")
+    {
+        const CubeRoundTrip r = noisy_cube_round_trip(4, 0., true);
+        CHECK(r.off == 0);
+        CHECK(r.worst < 1e-6);
+    }
+    SECTION("cube off by 1e-15, no curve")
+    {
+        const CubeRoundTrip r = noisy_cube_round_trip(4, 1e-15, false);
+        CHECK(r.off == 0);
+        CHECK(r.worst < 1e-6);
+    }
+    SECTION("cube off by 1e-15, edges as a curve")
+    {
+        const CubeRoundTrip r = noisy_cube_round_trip(4, 1e-15, true);
+        INFO("points " << r.points << ", off " << r.off << ", worst " << r.worst);
+        CHECK(r.off == 0);
+        CHECK(r.worst < 1e-6);
+    }
 }

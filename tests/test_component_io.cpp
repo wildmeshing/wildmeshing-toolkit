@@ -2497,30 +2497,38 @@ TEST_CASE(
     "[component_io][tagged]" + release_only)
 {
     // Two unit tets 3 apart, `a` and `b`: every filter keeps both by default, and with
-    // filter_inputs a only a, its volume 1/6 exactly as inserted, b's faces left in the part
-    // removed. On the tagged route too, by a's face-tag label, except "input", refused there.
+    // filter_inputs a only a, its volume 1/6, b's faces left in the part removed. On the tagged
+    // route too, by a's face-tag label, except "input", refused there. The volume is 1/6 up to
+    // what the envelope lets the surface move: even with max_iterations 0 the collapses after the
+    // insertion run, and may move a tracked vertex along a crease by up to eps. On the regular
+    // background lattice they happened to leave the creases alone; on the jittered one
+    // (lattice_jitter) they collapse further and move them, by 5e-6 of volume for `a`.
     WorkingDirectory cwd;
     const std::string filter = GENERATE("input", "tracked", "flood");
     INFO("filter " << filter);
-    const auto both = volume_and_max_x(two_tets_meshed({{"filter", filter}}).first.at("mesh"));
-    CHECK(std::abs(both.first - 2. / 6) < 1e-9);
+    // A unit tet's surface area times the envelope's eps, per tet kept.
+    const auto allowance = [](const ComponentResult& r, const int tets) {
+        return tets * (1.5 + std::sqrt(3.) / 2) * r.second.at("eps").get<double>();
+    };
+    const auto both_run = two_tets_meshed({{"filter", filter}});
+    const auto both = volume_and_max_x(both_run.first.at("mesh"));
+    CHECK(std::abs(both.first - 2. / 6) < allowance(both_run, 2));
     CHECK(both.second > 2);
-    const auto only_a = volume_and_max_x(
-        two_tets_meshed({{"filter", filter}, {"filter_inputs", {"a"}}}).first.at("mesh"));
-    CHECK(std::abs(only_a.first - 1. / 6) < 1e-9);
+    const auto only_a_run = two_tets_meshed({{"filter", filter}, {"filter_inputs", {"a"}}});
+    const auto only_a = volume_and_max_x(only_a_run.first.at("mesh"));
+    CHECK(std::abs(only_a.first - 1. / 6) < allowance(only_a_run, 1));
     CHECK(only_a.second < 1);
     if (filter == "input") return;
     const MeshData tagged = two_tets_meshed().first.at("mesh");
-    const auto tagged_a = volume_and_max_x(
-        tetwild::tetwild(
-            {{"input", "m"},
-             {"filter", filter},
-             {"filter_inputs", {"a"}},
-             {"max_iterations", 0},
-             {"num_threads", 1}},
-            {{"m", tagged}})
-            .first.at("mesh"));
-    CHECK(std::abs(tagged_a.first - 1. / 6) < 1e-9);
+    const auto tagged_run = tetwild::tetwild(
+        {{"input", "m"},
+         {"filter", filter},
+         {"filter_inputs", {"a"}},
+         {"max_iterations", 0},
+         {"num_threads", 1}},
+        {{"m", tagged}});
+    const auto tagged_a = volume_and_max_x(tagged_run.first.at("mesh"));
+    CHECK(std::abs(tagged_a.first - 1. / 6) < allowance(tagged_run, 1));
     CHECK(tagged_a.second < 1);
 }
 #endif

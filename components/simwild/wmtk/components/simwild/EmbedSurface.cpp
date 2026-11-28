@@ -38,7 +38,8 @@ void delaunay_box_mesh(
     std::vector<wmtk::delaunay::Tetrahedron>& tets,
     Vector3d& box_min,
     Vector3d& box_max,
-    const utils::FeatureInputs* features)
+    const utils::FeatureInputs* features,
+    const bool lattice_jitter)
 {
     assert(vertices.cols() == 3);
 
@@ -65,7 +66,8 @@ void delaunay_box_mesh(
         points,
         tets,
         box_min,
-        box_max);
+        box_max,
+        lattice_jitter);
 }
 
 void embed_surface(
@@ -653,7 +655,8 @@ bool EmbedSurface::embed_surface(
     const bool tag_from_winding_number,
     const bool provenance,
     const utils::FeatureInputs* features,
-    const std::vector<bool>& is_volume)
+    const std::vector<bool>& is_volume,
+    const bool lattice_jitter)
 {
     logger().info("Embed with VolumeInsertion");
 
@@ -682,7 +685,15 @@ bool EmbedSurface::embed_surface(
     std::vector<wmtk::delaunay::Tetrahedron> tets;
     Vector3d box_min;
     Vector3d box_max;
-    delaunay_box_mesh(*ptr_env, m_V_surface, points, tets, box_min, box_max, features);
+    delaunay_box_mesh(
+        *ptr_env,
+        m_V_surface,
+        points,
+        tets,
+        box_min,
+        box_max,
+        features,
+        lattice_jitter);
 
     // The features as tetwild hands them to the insertion, checked against the padded box.
     const bool has_features = features != nullptr && !features->empty();

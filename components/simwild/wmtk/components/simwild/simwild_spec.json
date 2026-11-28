@@ -13,6 +13,7 @@
       "input_transform",
       "input_dir",
       "simplify",
+      "lattice_jitter",
       "tag_from_winding_number",
       "split_connected_components",
       "use_sample_envelope",
@@ -204,6 +205,12 @@
     "type": "bool",
     "default": true,
     "doc": "If true, the input is simplified: a surface or curve input before insertion when preserve_topology is false; in 3D, the tet mesh after insertion when preserve_topology is true and the operation is remeshing -- a tagged mesh input included, whose envelope is then the mesh's tracked faces as read (see envelope_reference). The 2D route has no simplification after insertion."
+  },
+  {
+    "pointer": "/lattice_jitter",
+    "type": "bool",
+    "default": true,
+    "doc": "Move each point of the background lattice, strictly inside its box, by up to 1e-3 of a voxel along each axis, by a hash of its grid index: the same on every platform. The regular lattice is symmetric about an axis-aligned input in exact arithmetic but not in doubles, so its Delaunay faces and edges miss the input's edges by an ulp, and the insertion leaves facets that thin: on the unit cube 408 of 7,320 tracked facets, 1e-18 wide, with no area once rounded. The surface map from history_output cannot lay them out, and the volume map finds tets inverted at the recorded positions. With the jitter the cube has none. Changes the output mesh; false is the regular lattice, as before. Surface inputs only: a .msh input is not inserted."
   },
   {
     "pointer": "/tag_from_winding_number",

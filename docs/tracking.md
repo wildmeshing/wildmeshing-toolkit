@@ -828,8 +828,12 @@ the one it ends at.
     `inverted_ops` counts such operations, and `volume` warns. On an icosahedron split once
     (42 vertices) 61 of about 2,200 operations have one, and 17 of 3,000 points come back off,
     the worst by 1.3% of the diagonal; on a unit cube, 176 and 1.7%; on an icosphere of 162
-    vertices none, and every point comes back to 1e-16. `tetwild-volume-coarse-round-trip`
-    pins it. Mapping by exact positions would need them in the history. Rarer: a fallback
+    vertices none, and every point comes back to 1e-16. Those tets are mostly the slivers the
+    regular background lattice leaves where it misses an input edge by an ulp:
+    with `lattice_jitter`, on by default since 2026-11, the icosahedron has no such operation
+    and every point comes back to 1e-12. `tetwild-volume-coarse-round-trip` checks both, the
+    limitation with `lattice_jitter` off. Mapping by exact positions would need them in the
+    history. Rarer: a fallback
     embedding's centre next to a boundary apex (`apex_centre`) can be within 1e-17 of the
     patch from a face plane, and that pair's radial map then loses points too; taking another
     embedding there made `tracking-example-simwild-volume`'s round trip worse, so it is not

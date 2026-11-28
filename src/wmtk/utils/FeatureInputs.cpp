@@ -168,10 +168,10 @@ EmbedFeaturesInput embed_features_input(
         vr_features.edge_indices.push_back(uint32_t(e[0]));
         vr_features.edge_indices.push_back(uint32_t(e[1]));
     }
-    // Point apexes are offset by 0.1x the estimated point spacing, itself bounded by the
-    // point set's own bbox diagonal -- small against the box padding; checked with the
-    // conservative margin of the padding itself would over-reject, so points are checked
-    // with no margin and the remesher's own debug assert stays as the backstop.
+    // A point is inserted as a vertex, with no forcing triangles (the remesher gives it the
+    // corner of three only when points are its whole input, with a corner offset of 0.1x the
+    // point spacing, small against the box padding), so points are checked with no margin;
+    // the remesher's own check stays as the backstop.
     vr_features.point_coord.reserve(3 * points.size());
     for (const Vector3d& p : points) {
         if (!in_box(p, 0)) {

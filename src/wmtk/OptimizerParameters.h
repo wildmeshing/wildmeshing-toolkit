@@ -382,6 +382,10 @@ struct OptimizerParameters
     bool debug_output = false;
     bool perform_sanity_checks = false;
 
+    /// Move the background lattice's points inside its box off the regular lattice, so that its
+    /// faces do not miss an axis-aligned input's edges by an ulp (utils::delaunay_box_mesh()).
+    bool lattice_jitter = true;
+
     /**
      * @brief Derive the edge-length and envelope quantities from the bounding-box diagonal.
      *

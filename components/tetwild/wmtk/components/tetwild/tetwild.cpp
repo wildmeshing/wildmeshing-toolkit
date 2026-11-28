@@ -259,6 +259,7 @@ static TetWildMesh::ExportStruct run(nlohmann::json json_params, io::ComponentIO
 
     params.debug_output = json_params["DEBUG_output"];
     params.perform_sanity_checks = json_params["DEBUG_sanity_checks"];
+    params.lattice_jitter = json_params["lattice_jitter"];
 
     params.allow_surface_swap = json_params["allow_surface_swap"];
     params.check_surface_topology = json_params["check_surface_topology"];

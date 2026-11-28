@@ -73,11 +73,12 @@ struct EmbedTrianglesProvenance
 /**
  * @brief Extra 1D/0D features to force into the output mesh, exactly.
  *
- * The remesher pins each edge as the shared crease of two forcing triangles and each point
- * as the apex of a corner of three, then tracks them through the arrangement like the
- * surface. Flat arrays, same conventions as the surface inputs. Everything -- the features
- * AND the forcing-triangle apexes, which stick out by up to 0.1x the edge length -- must lie
- * inside the background tet mesh's domain.
+ * The remesher inserts each point as a vertex, and pins each edge with up to two forcing
+ * triangles through it -- none when the arrangement has it already, as an edge of one input
+ * triangle or of two that are not coplanar, one inside a flat region of the surface -- then
+ * tracks them through the arrangement like the surface. Flat arrays, same conventions as the
+ * surface inputs. Everything -- the features AND the forcing-triangle apexes, which stick out
+ * by up to 0.1x the edge length -- must lie inside the background tet mesh's domain.
  */
 struct EmbedFeaturesInput
 {

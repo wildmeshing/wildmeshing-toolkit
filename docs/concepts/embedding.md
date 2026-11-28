@@ -51,6 +51,12 @@ the simplified input's vertices, the eight corners of the input's bounding box g
 fifteenth of its diagonal, and a regular grid of points spaced at most a twentieth of the diagonal
 apart, without the grid points closer to the input than half of that
 ([`DelaunayBoxMesh.hpp`](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/src/wmtk/utils/DelaunayBoxMesh.hpp)).
+With [`lattice_jitter`](../reference/tetwild.md#lattice_jitter), on by default, each grid point
+inside the box moves by up to a thousandth of its spacing along each axis, by a hash of its index,
+the same on every platform. The regular grid is symmetric about an axis-aligned input in exact
+arithmetic but not in doubles, so its tetrahedra miss the input's edges by an ulp, and the
+arrangement then has facets that thin: on the unit cube, 408 of the 7,320 facets on the input are
+about 1e-18 wide, and have no area once their corners are rounded. With the jitter it has none.
 
 The input triangles are then inserted with VolumeRemesher's `embed_tri_in_poly_mesh`, which
 computes the exact arrangement of the triangles and the background tetrahedra, and returns

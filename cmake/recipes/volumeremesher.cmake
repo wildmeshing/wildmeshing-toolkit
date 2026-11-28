@@ -179,11 +179,29 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # registered tetwild configs (5.7 s -> 4.9 s) and 32% over the 15 challenging tetwild models at
 # 8 threads (29.4 s -> 20.1 s, every model faster). Peak memory, on the byte-identical runs,
 # moves between -47 MB (1017012, 502 -> 455 MB) and +9 MB (tetwild_double_sphere, 66 -> 75 MB).
+#
+# Then #42-#44 (c10f917):
+#
+#   - #42 and #43: the graph-cut classifier uses an LGPL max-flow vendored from VolumeMesher and is
+#     always compiled (VOLUMEREMESHER_WITH_GRAPHCUT is gone), so it is in the toolkit's binaries
+#     again. The embedding still classifies no cells.
+#   - #44: a forced feature gets forcing triangles only where the arrangement does not have it
+#     already. A point gets none (it is inserted as a vertex); an edge of the surface gets none
+#     when it is a crease or a boundary edge, one when it is inside a flat region, and every
+#     other edge two, as before. On a cube axis-aligned up to 1e-15 with its edges as a curve
+#     (tetwild-curve-on-near-axis-aligned-cube-round-trip), the axis-aligned forcing triangles,
+#     a hair off the faces, had left 1,685 facets 1e-17 wide and 284 of 62,832 round-trip points
+#     off; now the curve changes nothing.
+#
+# Of the 21 registered tetwild and simwild 3D configs, 18 are byte-identical. tetwild_features
+# moves (its points lose their forcing triangles: 7270 -> 7319 vertices, Hausdorff 0.0018 ->
+# 0.0014, every vertex rounded, Euler characteristic 2), and tetwild_crown and tetwild_octocat,
+# on 10 threads, differ from run to run anyway.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 0258037c05a4339ec7104f0736e44cc828f924ba
+    GIT_TAG c10f9170af61d3b0bde27e19b8008154368eaed1
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )
