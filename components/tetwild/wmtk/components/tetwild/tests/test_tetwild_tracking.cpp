@@ -842,9 +842,7 @@ TEST_CASE(
     }
 }
 
-TEST_CASE(
-    "tetwild-near-axis-aligned-cube-fine-round-trip",
-    "[tetwild][tracking]" + release_only)
+TEST_CASE("tetwild-near-axis-aligned-cube-fine-round-trip", "[tetwild][tracking]" + release_only)
 {
     // The same cube with each face an 8 x 8 grid: every face now has many vertices that are in
     // one plane only up to 1e-15, and the insertion has flat facets (no area once rounded) with
