@@ -596,7 +596,10 @@ double TopoOffsetTetMesh::swap_swept_change(
     // every band cell is of one piece B_r keeps its region and its boundary
     const SwapRecord& rec = m_swap_record.local();
     std::vector<int> new_piece;
-    for (const auto& t : new_band) new_piece.push_back(place_piece(t.data(), 4));
+    for (const auto& t : new_band) { // candidates or the cells made: the tags they carry
+        const CellTag tag = candidate_tag(t);
+        new_piece.push_back(place_piece(t.data(), 4, &tag));
+    }
     const int r = !rec.old_piece.empty() ? rec.old_piece.front()
                   : new_piece.empty()    ? -1
                                          : new_piece.front();
@@ -604,10 +607,22 @@ double TopoOffsetTetMesh::swap_swept_change(
     for (const int q : rec.old_piece) one = one && q == r;
     for (const int q : new_piece) one = one && q == r;
     if (one) return flip ? band_chain_change(rec.old_band, new_band, nullptr, r) : 0.;
-    double s = 0.;
-    for (size_t i = 0; i < new_band.size(); ++i) s += band_cell_term(new_band[i], new_piece[i]);
+    // Cells of several pieces: each piece's own region change, as one piece's above. Until
+    // 2026-11-26 the sum of the new cells' band_cell_term() less the old's, which differs from
+    // the region change where value() takes rule (a)'s bound: the swaps' changes were then two
+    // bookkeepings of one energy, and a pass could descend forever. MEASURED before (Geneva's
+    // one-shot, three touching In bodies, turn 11): a flip of the base|cross wall booked
+    // -1.2e-8 as its cells' sum, an interior swap 3 -> 2 of one body booked 0 while its cells'
+    // sum rose by +1.2e-8, and the three swaps of the loop repeated without end.
+    std::map<int, std::pair<std::vector<std::array<size_t, 4>>, std::vector<std::array<size_t, 4>>>>
+        by_piece;
     for (size_t i = 0; i < rec.old_band.size(); ++i)
-        s -= band_cell_term(rec.old_band[i], rec.old_piece[i]);
+        by_piece[rec.old_piece[i]].first.push_back(rec.old_band[i]);
+    for (size_t i = 0; i < new_band.size(); ++i)
+        by_piece[new_piece[i]].second.push_back(new_band[i]);
+    double s = 0.;
+    for (const auto& [q, cells] : by_piece)
+        s += band_chain_change(cells.first, cells.second, nullptr, q);
     return s;
 }
 
@@ -683,6 +698,18 @@ int TopoOffsetTetMesh::candidate_label(const std::array<size_t, 4>& vids)
     return label;
 }
 
+CellTag TopoOffsetTetMesh::candidate_tag(const std::array<size_t, 4>& vids)
+{
+    // As candidate_label(): the ring's single tag set, or the side of a ring vertex it contains.
+    if (!m_swap_record.local().flip) return m_swap_tag.local();
+    const SwapSurfaceSides& sides = m_swap_sides.local();
+    for (const size_t v : vids) {
+        const auto it = sides.by_vertex.find(v);
+        if (it != sides.by_vertex.end()) return it->second.first;
+    }
+    return CellTag();
+}
+
 double TopoOffsetTetMesh::candidate_energy(const std::array<size_t, 4>& vids)
 {
     const SwapRecord& rec = m_swap_record.local();
@@ -704,7 +731,8 @@ double TopoOffsetTetMesh::candidate_energy(const std::array<size_t, 4>& vids)
     }
     // A swap whose band term cancels leaves it out (tet_energy(), BAND TERM THAT CANCELS), as a
     // TetWild pass leaves it out of every cell.
-    return cell_energy(vids, a3, label == 2 && !rec.band_cancels && !m_tetwild_pass);
+    const CellTag tag = candidate_tag(vids);
+    return cell_energy(vids, a3, label == 2 && !rec.band_cancels && !m_tetwild_pass, &tag);
 }
 
 void TopoOffsetTetMesh::swap_record_fill(const bool flip)
@@ -787,6 +815,8 @@ bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
         SwapSurfaceSides& sides = m_swap_sides.local();
         sides.worthwhile = false;
         sides.saw_case = false;
+        sides.on_complex = false;
+        sides.on_sheet = false;
     }
     m_swap_record.local().clear(); // see SwapRecord
     m_swap_turned_before.local() = -1; // an interior swap changes no offset face
@@ -840,6 +870,8 @@ bool TopoOffsetTetMesh::swap_before_surface(
         SwapSurfaceSides& sides = m_swap_sides.local();
         sides.worthwhile = false;
         sides.saw_case = false;
+        sides.on_complex = false;
+        sides.on_sheet = false;
     }
     m_swap_record.local().clear(); // see SwapRecord
     m_swap_turned_before.local() = -1; // set below for a flip of the offset surface
@@ -881,6 +913,24 @@ bool TopoOffsetTetMesh::swap_before_surface(
         if (sides(ftup_abc) != sides(ftup_abd)) {
             return swap_reject(SwapReject::app_mask_mismatch);
         }
+    }
+    // The input complex's label goes with the flip (swap_after_cells()): a face of the complex
+    // carries its 1 itself, and where no cell beside it is labelled 1 -- an In entry's selection
+    // boundary, the wall two In entries share, a sheet, a 'both' entry's boundary -- the closure
+    // from the cells (close_labels()) cannot give it back, and the new faces would read as the
+    // band. The engine carries the surface's own attributes across a flip the same way
+    // (sf_face_attr). A flip replacing a face of the complex and a face off it would move the
+    // complex's border, so it is refused as a mixed flip: two face tags side by side, one of them
+    // the selection, pass every test above.
+    {
+        const FaceExtra& x = m_face_extra[fid_abc];
+        const FaceExtra& y = m_face_extra[fid_abd];
+        if ((x.label == 1) != (y.label == 1)) {
+            return swap_reject(SwapReject::app_class_mismatch);
+        }
+        SwapSurfaceSides& sides = m_swap_sides.local();
+        sides.on_complex = x.label == 1;
+        sides.on_sheet = x.on_sheet || y.on_sheet; // as FaceExtra::merge()
     }
     // A flip OF THE OFFSET SURFACE -- both faces it replaces on the front, band on one side and
     // background on the other, asked live of the labels rather than read from the cached
@@ -1594,6 +1644,14 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         m_tet_attribute[t].label = side->second;
         stamp_rest_cell(t); // created by the swap: stamped at creation, as above
     }
+    // The two new surface faces take what the two old ones carried (swap_before_surface()).
+    for (const auto& f :
+         {std::array<size_t, 3>{{sides.abcd[0], sides.abcd[2], sides.abcd[3]}},
+          std::array<size_t, 3>{{sides.abcd[1], sides.abcd[2], sides.abcd[3]}}}) {
+        FaceExtra& x = m_face_extra[std::get<1>(tuple_from_face(f))];
+        if (sides.on_complex) x.label = 1;
+        x.on_sheet = sides.on_sheet;
+    }
     close_labels(tids);
     // growth_mode "individual_op_reject": the flip may not raise the turned faces among the two it
     // changes -- (a,b,c), (a,b,d) out, (a,c,d), (b,c,d) in, whose band cells are new cells now.
@@ -1621,6 +1679,7 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     // m_vertex_attr_group, so these writes roll back with it.
     for (const size_t v : sides.abcd) refresh_offset_membership(v);
     if (sides.worthwhile) ++funnel_committed;
+    if (sides.on_complex) ++m_complex_flips;
     ++iter_cnt_swap;
     return true;
 }
@@ -3744,11 +3803,88 @@ int TopoOffsetTetMesh::nearest_piece(const Vector3d& p) const
     return best;
 }
 
-int TopoOffsetTetMesh::place_piece(const size_t* vids, const size_t n) const
+int TopoOffsetTetMesh::cell_piece(const size_t* vids, const CellTag* tag) const
+{
+    // See the declaration.
+    Vector3d c = Vector3d::Zero();
+    for (int i = 0; i < 4; ++i) c += m_vertex_attribute[vids[i]].m_posf;
+    c /= 4.;
+    // The entry the cell's tag set names, where exactly one entry writes it: `tag`, else the band
+    // cell with these corners' own.
+    if (!tag && !m_band_tags_entry.empty()) {
+        for (const size_t t : get_one_ring_tids_for_vertex(vids[0])) {
+            if (!cell_is_offset_band(t)) continue;
+            const std::array<size_t, 4> tv = oriented_tet_vids(t);
+            bool same = true;
+            for (int i = 1; i < 4; ++i)
+                same = same && std::find(tv.begin(), tv.end(), vids[i]) != tv.end();
+            if (same) {
+                tag = &m_tet_attribute[t].tag;
+                break;
+            }
+        }
+    }
+    int own = -1;
+    if (tag) {
+        if (const auto it = m_band_tags_entry.find(*tag); it != m_band_tags_entry.end())
+            own = int(it->second);
+    }
+    // Else the entry whose level set holds the centroid most deeply: (d_k - delta_k) / delta_k least,
+    // d_k its one-sided distance (side_distance()), delta_k its target (its stage's, as
+    // region_delta()). Only the entries whose side holds the centroid compete: an In entry's side
+    // is its selection, +infinity outside, and the In selections are disjoint, so where no entry
+    // of another kind competes the one In selection holding the centroid decides, no distance
+    // read.
+    using Direction = Parameters::Offset::Direction;
+    bool all_in = true;
+    for (size_t k = 0; k < m_offset_params.offsets.size(); ++k)
+        all_in = all_in && m_offset_params.direction(k) == Direction::In;
+    std::vector<size_t> competing;
+    for (size_t k = 0; own < 0 && k < m_offset_params.offsets.size(); ++k) {
+        if (m_offset_params.direction(k) == Direction::In && !inside_selection(k, c)) continue;
+        competing.push_back(k);
+        if (all_in) break; // the In selections are disjoint
+    }
+    if (competing.size() == 1) own = int(competing.front());
+    if (competing.size() > 1) {
+        double own_s = std::numeric_limits<double>::infinity();
+        for (const size_t k : competing) {
+            const double d = side_distance(k, c);
+            if (!(d < std::numeric_limits<double>::infinity())) continue;
+            const double delta = m_offset_levels.empty()
+                                     ? m_offset_params.offsets[k].target_distance
+                                     : m_offset_levels[k];
+            const double s = (d - delta) / delta;
+            if (s < own_s) {
+                own_s = s;
+                own = int(k);
+            }
+        }
+    }
+    // its nearest piece; an entry of one piece reads no distance
+    if (std::count(m_region_offset.begin(), m_region_offset.end(), own) == 1)
+        return int(
+            std::find(m_region_offset.begin(), m_region_offset.end(), own) -
+            m_region_offset.begin());
+    int best = -1;
+    double best_d = std::numeric_limits<double>::infinity();
+    for (size_t r = 0; r < m_region_envelopes.size() && r < m_region_offset.size(); ++r) {
+        if (m_region_offset[r] != own) continue;
+        const double d = m_region_envelopes[r]->squared_distance(c);
+        if (d < best_d) {
+            best_d = d;
+            best = int(r);
+        }
+    }
+    return best >= 0 ? best : nearest_piece(c);
+}
+
+int TopoOffsetTetMesh::place_piece(const size_t* vids, const size_t n, const CellTag* tag) const
 {
     // See the declaration.
     if (m_offset_params.offsets.size() <= 1 || m_region_potentials.empty()) return -1;
     if (m_region_potentials.size() == 1) return 0;
+    if (n == 4) return cell_piece(vids, tag);
     int best = -1;
     double best_delta = std::numeric_limits<double>::infinity();
     const auto consider = [&](const int r) {
@@ -6495,22 +6631,57 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         return label_flip_surface_change(tid) < 0.;
     };
 
+    // The tag the flipped cell takes, of the label it joins. The band: the one tag of the band
+    // cells at t's corners (two pieces' bands, of two tags, refuse). The non-band: that of t's
+    // non-band face neighbours across faces that are not held (a held face's far side is another
+    // region); they must agree, and there must be one. Until 2026-11-10 both labels' tags were
+    // read over every cell at t's corners, which next to a region boundary sees both regions.
+    const auto joined_tag = [&](const size_t tid, CellTag& tag) {
+        const int o = label_of(tid) == 2 ? 0 : 2;
+        const CellTag* found = nullptr;
+        if (o == 2) {
+            for (const size_t v : oriented_tet_vids(tid)) {
+                for (const size_t s : get_one_ring_tids_for_vertex(v)) {
+                    if (label_of(s) != 2) continue;
+                    const CellTag& tg = m_tet_attribute[s].tag;
+                    if (found && *found != tg) return false;
+                    found = &tg;
+                }
+            }
+        } else {
+            for (int k = 0; k < 4; ++k) {
+                const Tuple f = tuple_from_face(tid, k);
+                if (held_object_face(f)) continue;
+                const size_t n = f.switch_tetrahedron(*this)->tid(*this);
+                if (label_of(n) != o) continue;
+                const CellTag& tg = m_tet_attribute[n].tag;
+                if (found && *found != tg) return false;
+                found = &tg;
+            }
+        }
+        if (!found) return false;
+        tag = *found;
+        return true;
+    };
+
     const auto wants_flip = [&](const size_t tid) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        const bool band = cell_is_offset_band(tid);
+        // A non-band cell is read as a cell of the band it would join: its piece is that of the
+        // tag joined_tag() gives it (cell_piece()); with none (joined_tag() refuses the flip
+        // below), its own reading.
+        CellTag joins;
+        const CellTag* as = !band && joined_tag(tid, joins) ? &joins : nullptr;
         // Never across an In entry's complex: a non-band cell outside its selection is off the
         // side the band grows on (cell_off_offset_side()).
-        if (!cell_is_offset_band(tid)) {
-            const std::array<size_t, 4> vs = oriented_tet_vids(tid);
-            if (cell_off_offset_side(tid, place_piece(vs.data(), 4))) return false;
-        }
+        if (!band && cell_off_offset_side(tid, place_piece(vs.data(), 4, as))) return false;
         if (energy_decrease) {
             if (get_quality(tuple_from_tet(tid)) >= MAX_ENERGY) return false;
             return surface_flip_lowers(tid);
         }
-        const std::array<size_t, 4> vs = oriented_tet_vids(tid);
-        const bool band = cell_is_offset_band(tid);
         // The cell's piece's target distance, its front_conv (front_conv_rel of it) and its
         // integral (one entry: the run's and the whole complex's).
-        const int piece = place_piece(vs.data(), 4);
+        const int piece = place_piece(vs.data(), 4, as);
         const double delta = region_delta(piece);
         const double front_conv = front_conv_of(piece);
         const ExactBandIntegral& band_exact = *band_exact_for(piece);
@@ -6542,7 +6713,7 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
         // label: the flip changes E by the faces' term alone, and is taken iff that strictly
         // falls. Every flip lowers E, so the passes still end.
         if (surface_energy()) return surface_flip_lowers(tid);
-        const double b = band_cell_term(vs);
+        const double b = band_cell_term(vs, as);
         return band ? b > 0. : b < 0.;
     };
 
@@ -6653,38 +6824,6 @@ void TopoOffsetTetMesh::label_cleanup(const std::string& where)
     // simplices of X. So the front stops a layer of cells short of a held surface it did not
     // touch as constructed, as of a held point or curve.
     const auto held_face = [&](const Tuple& f) { return held_object_face(f); };
-    // The tag the flipped cell takes, of the label it joins. The band: the one tag of the band
-    // cells at t's corners (two pieces' bands, of two tags, refuse). The non-band: that of t's
-    // non-band face neighbours across faces that are not held (a held face's far side is another
-    // region); they must agree, and there must be one. Until 2026-11-10 both labels' tags were
-    // read over every cell at t's corners, which next to a region boundary sees both regions.
-    const auto joined_tag = [&](const size_t tid, CellTag& tag) {
-        const int o = label_of(tid) == 2 ? 0 : 2;
-        const CellTag* found = nullptr;
-        if (o == 2) {
-            for (const size_t v : oriented_tet_vids(tid)) {
-                for (const size_t s : get_one_ring_tids_for_vertex(v)) {
-                    if (label_of(s) != 2) continue;
-                    const CellTag& tg = m_tet_attribute[s].tag;
-                    if (found && *found != tg) return false;
-                    found = &tg;
-                }
-            }
-        } else {
-            for (int k = 0; k < 4; ++k) {
-                const Tuple f = tuple_from_face(tid, k);
-                if (held_face(f)) continue;
-                const size_t n = f.switch_tetrahedron(*this)->tid(*this);
-                if (label_of(n) != o) continue;
-                const CellTag& tg = m_tet_attribute[n].tag;
-                if (found && *found != tg) return false;
-                found = &tg;
-            }
-        }
-        if (!found) return false;
-        tag = *found;
-        return true;
-    };
     const auto face_has = [&](const std::array<size_t, 3>& fv, const size_t x) {
         return fv[0] == x || fv[1] == x || fv[2] == x;
     };

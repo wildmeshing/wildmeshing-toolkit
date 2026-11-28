@@ -329,6 +329,10 @@ public:
     /// offset_distance() off its one side: +infinity where an In entry is 0 (outside its
     /// selection), so that the union of entries (input_complex_distance()) is not 0 there.
     double side_distance(size_t k, const Vector3d& p) const;
+    /// Whether p is inside entry k's selection, by OffsetQuery::winding (the test side_distance()
+    /// reads); true for an entry that has none, whose side is all of space. The 2D twin is
+    /// TopoOffsetTriMesh::inside_selection().
+    bool inside_selection(size_t k, const Vector3d& p) const;
     /// Per entry of Parameters::offsets: its selection has cells (label_input_complex()). An In
     /// entry without is dropped; the repulsion passes need one with.
     std::vector<bool> m_offset_has_cells;
@@ -473,8 +477,37 @@ public:
      * assigned yet (an operation's new vertex, until assign_band_regions() runs again), the
      * nearest piece (nearest_piece()). -1 with one entry, or before the per-piece fields exist:
      * the whole complex's field (m_offset_potential) and the run's distance, as before 2026-11.
+     * A cell (n = 4) is the piece of its own band instead (cell_piece(), which takes `tag`).
      */
-    int place_piece(const size_t* vids, size_t n) const;
+    int place_piece(const size_t* vids, size_t n, const CellTag* tag = nullptr) const;
+    /**
+     * @brief place_piece() of a cell: the nearest piece, at the cell's centroid, of the entry
+     * whose band it is. Its tag set, where exactly one entry writes it (m_band_tags_entry), names
+     * that entry: `tag` (the one a cell not yet band, or not yet made, will carry: the tag a
+     * clean-up flip joins, a swap's candidate's), else that of the band cell with these corners.
+     * The operations carry the tags, so this is the band the cell is in. Otherwise (shared output
+     * tags, none, or no such cell) the entry whose level set holds the centroid most deeply, (d_k -
+     * delta_k) / delta_k least, d_k the one-sided distance (side_distance(), +infinity outside an
+     * In entry's selection: inside an In body, that body's entry). MEASURED before the tag
+     * (2026-11-27, #1208's label-growth-two-bands-3d: boxes a and b, Out at 0.3, level sets
+     * overlapping): a cell beyond a's level set and inside b's, at a's band's corners, was read at
+     * b's integral, its band term negative, and growth took it into a's band, whose corners then
+     * reached 0.42 from a. Not the nearest piece of all:
+     * between two Out entries a cell of the farther one's band lies nearer the other's input
+     * (several-offsets-optimize-distances, b's band at 0.3 reaching to 0.24 from a at 0.1, read at
+     * a's integral beyond a's target, did not converge). A function of the cell's corners'
+     * positions and its tags alone, never of the
+     * cells around it nor of a table an operation leaves stale: the band term of a cell
+     * (band_cell_term()) is its piece's integral, and E must be a function of the mesh for a
+     * pass of strictly descending operations to end. An In piece's integral is one-sided (0
+     * outside its selection), so a cell read at another body's piece loses its whole band term.
+     * MEASURED before (2026-11-26, test offset-several-in-crease): b fills a corner notch of a,
+     * both inward at one target; a cell with no corner of one piece read its piece from the
+     * regions of the cells around it, b's when a swap made it and a's when the next swap removed
+     * it, and three swaps then cycled without end, each booking 1.3e-5 of band term the cells
+     * never lost.
+     */
+    int cell_piece(const size_t* vids, const CellTag* tag = nullptr) const;
     /// The piece nearest to p, by the per-piece envelopes (m_region_envelopes); -1 without them.
     int nearest_piece(const Vector3d& p) const;
     /// Piece r's target distance: its entry's (m_region_offset), its growth_mode stage's while a
@@ -1032,9 +1065,17 @@ public:
      *     are renamed in place and keep their slots.
      *   - swap: the old cells' faces are captured (swap_before_interior() /
      *     swap_before_surface()); a new cell's face that was one of them keeps its value, every
-     *     other face of the new cells is reset (swap_after_cells()).
-     * close_labels() and the label flip read the label live -- a face of a sheet complex has no
-     * complex cell beside it, so only the carry keeps its 1 -- which is why it has to be carried.
+     *     other face of the new cells is reset (swap_after_cells()) -- but a flip's two new
+     *     surface faces, which take the complex's 1 and on_sheet from the two faces they replace
+     *     (SwapSurfaceSides::on_complex).
+     * close_labels() and the label flip read the label live -- a face of the complex with no
+     * label-1 cell beside it (an In entry's selection boundary, the wall two In entries share, a
+     * sheet, a 'both' entry's boundary) has nothing to take its 1 from but the carry -- which is
+     * why it has to be carried. MEASURED before the flip carried it (2026-11-26, test
+     * offset-complex-keeps-its-label): 32, 109 and 10 faces of the complex read 2 after three
+     * rounds on the wall, the 'both' box (13 of its corners off the input) and the sheet. A rule
+     * in close_labels() that labelled 1 a face between an In band cell and a cell outside the
+     * selection covered the one-box case alone (d1f522bea5); with the carry it is not needed.
      *
      * The edge label is carried the same way (edge_label_capture() / edge_label_assign()): an
      * edge's slot is its lowest incident tet's, so an operation that changes the tets around an
@@ -1208,17 +1249,33 @@ public:
         if (m_offset_params.band_volume_rule != "exact" &&
             m_offset_params.band_volume_rule != "front_flux")
             return false;
+        // The cells' sum keeps its value only within one piece's integral: every cell of one
+        // piece, and a body of no other piece, which a new cell of the same region could take
+        // instead (cell_piece()). Until 2026-11-26 the ring's vertices together picked one piece,
+        // so a ring of two bodies' cells (a flip of the wall two In entries share) was tested on
+        // one body's integral alone.
         std::vector<size_t> vids;
-        for (const size_t tid : tids) {
-            if (!cell_is_offset_band(tid)) return false;
-            for (const size_t v : oriented_tet_vids(tid)) vids.push_back(v);
+        int piece = -1;
+        for (size_t i = 0; i < tids.size(); ++i) {
+            if (!cell_is_offset_band(tids[i])) return false;
+            const std::array<size_t, 4> vs = oriented_tet_vids(tids[i]);
+            const int r = place_piece(vs.data(), 4);
+            if (i == 0) piece = r;
+            if (r != piece) return false;
+            for (const size_t v : vs) vids.push_back(v);
         }
+        if (piece >= 0 && size_t(piece) < m_region_offset.size() &&
+            std::count(
+                m_region_offset.begin(),
+                m_region_offset.end(),
+                m_region_offset[size_t(piece)]) > 1)
+            return false;
         wmtk::vector_unique(vids);
         std::vector<Vector3d> pts;
         pts.reserve(vids.size());
         for (const size_t v : vids) pts.push_back(m_vertex_attribute[v].m_posf);
         const int n = int(pts.size());
-        const ExactBandIntegral& eb = *band_exact_for(place_piece(vids.data(), vids.size()));
+        const ExactBandIntegral& eb = *band_exact_for(piece);
         if (eb.front_flux_flag(pts.data(), n)) return false;
         return eb.distance_bound(pts.data(), n) <= eb.front_flux_reach();
     }
@@ -1273,8 +1330,9 @@ public:
      *     corner's position) adds b_{r1}(t) - b_{r0}(t) on the cell after the operation
      *     (band_relabel_change()).
      *   - a swap: band_chain_change() at the cells' piece where its band cells, old and new, are
-     *     all of one; otherwise the change of its cells' own terms, sum of b(t) over the new band
-     *     cells less the old (swap_swept_change()).
+     *     all of one; otherwise, per piece, band_chain_change() of that piece's old and new band
+     *     cells (swap_swept_change(); until 2026-11-26 the change of its cells' own terms, see
+     *     there).
      * With one entry every cell is piece -1, and every change is the one above, bit for bit.
      * MEASURED (several-offsets-optimize-distances, its case b one cube at 0.3, a at 0.1, 0.5
      * apart, 5 turns, 1 thread), each change against the change of its cells' band_cell_term():
@@ -1339,8 +1397,8 @@ public:
     /// cells (by candidate_label() in the case search, by the labels written in the rule), the
     /// old ones SwapRecord::old_band. Where the band cells, old and new, are all of one piece
     /// (place_piece(); the old ones' read before the swap): 0 for an interior swap,
-    /// band_chain_change() at that piece for a flip. Otherwise the sum of the new band cells'
-    /// band_cell_term() less the old's, each at its piece (EXACT SWEPT CHANGE, several entries).
+    /// band_chain_change() at that piece for a flip. Otherwise, per piece, band_chain_change() of
+    /// its old and new band cells (EXACT SWEPT CHANGE, several entries).
     double swap_swept_change(const std::vector<std::array<size_t, 4>>& new_band, bool flip);
     /// "exact_swept": the smoother's acceptance after a solve moved vid from x0 to where it is.
     /// The move stands iff the ring's AMIPS change (tet_energy_sum(ring, false) - amips_before)
@@ -1497,9 +1555,10 @@ public:
      * int_t (d - delta) dV by the divergence theorem, so the operations, the veto and the global
      * energy read it as value() computes it. The two can differ only on rule-(a) pieces, where
      * value() takes an upper bound and the front form labels the piece exactly, or throws where
-     * a curved bisector crosses it. See the spec doc.
+     * a curved bisector crosses it. See the spec doc. `tag`: the tag set the cell carries as a
+     * band cell where it is not one yet (cell_piece()).
      */
-    double band_cell_term(const std::array<size_t, 4>& vids) const
+    double band_cell_term(const std::array<size_t, 4>& vids, const CellTag* tag = nullptr) const
     {
         if (m_offset_params.band_volume_rule == "exact" ||
             m_offset_params.band_volume_rule == "front_flux" || swept_rule()) {
@@ -1507,10 +1566,10 @@ public:
             // it is, see above): J_t / delta, J_t = int_t (d - delta) dV in closed form
             // (ExactBandIntegral), in place of the corner bound. The cell's own piece's distance
             // and integral (place_piece(); the run's and the whole complex's with one entry).
-            return band_cell_term(vids, place_piece(vids.data(), 4));
+            return band_cell_term(vids, place_piece(vids.data(), 4, tag));
         }
         int64_t best = -1;
-        return band_cell_corner_bound(vids, best);
+        return band_cell_corner_bound(vids, best, tag);
     }
     /// band_cell_term()'s J_t / delta ("exact" and the rules that take its term) at piece r's
     /// distance and integral, whatever the cell's piece: EXACT SWEPT CHANGE's change of a cell's
@@ -1526,9 +1585,12 @@ public:
         return band_exact_for(r)->value(p, delta) / delta;
     }
     /// band_cell_term()'s value, with its minimising triangle in `best`.
-    double band_cell_corner_bound(const std::array<size_t, 4>& vids, int64_t& best) const
+    double band_cell_corner_bound(
+        const std::array<size_t, 4>& vids,
+        int64_t& best,
+        const CellTag* tag = nullptr) const
     {
-        const int r = place_piece(vids.data(), 4);
+        const int r = place_piece(vids.data(), 4, tag);
         const double delta = region_delta(r);
         std::array<Vector3d, 4> p;
         for (int j = 0; j < 4; ++j) p[size_t(j)] = m_vertex_attribute[vids[size_t(j)]].m_posf;
@@ -1568,14 +1630,18 @@ public:
         return m_offset_params.offset_amips_weight / (s * s * s);
     }
     /// One cell's energy from its corners, its AMIPS^3 and its band label; see tet_energy().
-    double cell_energy(const std::array<size_t, 4>& vids, const double amips3, const bool band)
-        const
+    /// `tag`: a candidate's tag set (candidate_tag()), as band_cell_term() takes it.
+    double cell_energy(
+        const std::array<size_t, 4>& vids,
+        const double amips3,
+        const bool band,
+        const CellTag* tag = nullptr) const
     {
         if (amips3 >= MAX_ENERGY) return MAX_ENERGY;
         double a = band_amips_weight() * vol_amips3(vids, amips3);
         // EXPERIMENTAL_band_volume_rule "surface": no cell carries an offset term; it lives on the
         // front's faces (surface_face_term()), which every rule adds beside the cells' sums.
-        if (band && !surface_energy()) a += band_cell_term(vids);
+        if (band && !surface_energy()) a += band_cell_term(vids, tag);
         if (m_repulsion_potential) a += repulsion_cell_term(vids);
         return a;
     }
@@ -1587,6 +1653,9 @@ public:
     /// The label swap_after_cells() will write on the candidate cell vids (candidate_energy(),
     /// and "exact_swept"'s case search).
     int candidate_label(const std::array<size_t, 4>& vids);
+    /// The tag set swap_after_cells() will write on the candidate cell vids, as candidate_label()
+    /// the label (cell_piece() reads a band cell's entry from it).
+    CellTag candidate_tag(const std::array<size_t, 4>& vids);
     /// Collapses and swaps refused for raising E over the cells they change, per operation group
     /// ([band volume energy]).
     mutable std::atomic<int> m_volume_reject_collapse{0}, m_volume_reject_swap{0};
@@ -2166,6 +2235,9 @@ public:
     mutable std::atomic<long long> funnel_after_cells{0};
     mutable std::atomic<long long> funnel_energy{0};
     mutable std::atomic<long long> funnel_committed{0};
+    /// Flips of the input complex that swap_after_cells() let through (a later refusal by the
+    /// engine's envelope check can still roll one back).
+    mutable std::atomic<long long> m_complex_flips{0};
     std::string flip_funnel_report() const;
     void flip_funnel_reset();
     /// Splits of an offset-surface edge: offered, accepted. Real attempts only: a screened pass's
@@ -3672,7 +3744,9 @@ public:
      */
     void untrack_covered_boundaries();
 
-    /// verify that the closed offset region (simplices labelled 1 or 2) form a manifold region.
+    /// Whether the front is a manifold surface: the boundary of the closed offset region (cells
+    /// labelled 1 or 2) less its faces on the input complex, which may be non-manifold (see the
+    /// definition).
     bool offset_is_manifold();
 
     //// output stuff
@@ -3834,6 +3908,12 @@ private:
         bool saw_case = false;
         /// tids.size() as swap_before_surface() saw it: 3, 4 or 5, i.e. which swap this is.
         int kind = 0;
+        /// The two faces the flip replaces are faces of the input complex (label 1), and whether
+        /// either lies on the envelope surface group (FaceExtra::on_sheet): what
+        /// swap_after_cells() gives the two new faces, which face_extra_assign() resets. Set by
+        /// swap_before_surface().
+        bool on_complex = false;
+        bool on_sheet = false;
     };
     bool swap_capture_surface_sides(
         const std::vector<size_t>& tids,

@@ -350,6 +350,73 @@ TEST_CASE("exact-swept-identities-2d", "[offset][exact_swept][2d]")
     }
 }
 
+TEST_CASE("exact-swept-chain-2d", "[offset][exact_swept][2d]")
+{
+    // TopoOffsetTriMesh::band_chain_change(), what swap_swept_change() books for a flip whose
+    // faces are of several pieces, each piece's region change: on the quad (a, b, c, d), the old
+    // faces (a, b, c), (a, c, d) and the new (a, b, d), (b, c, d), any subset of each the band, the
+    // chain change against the difference of the subsets' sums of value() -- equal where value()
+    // is exact (not rule (a)), whatever the band subsets -- and the reverse swap's chain change its
+    // negative, bit for bit.
+    std::printf("exact-swept-chain-2d\n");
+    std::mt19937 rng(20261127);
+    std::uniform_real_distribution<double> U(-1., 1.);
+    const auto sq = square();
+    const auto va = valley();
+    std::vector<Fixture> fixtures;
+    for (const double w : {0.004, 0.04, 0.4}) {
+        fixtures.push_back({"square corner", sq, Vec2(1.04, 1.03), w});
+        fixtures.push_back({"square side", sq, Vec2(1.0, 0.3), w});
+        fixtures.push_back({"valley bisector", va, Vec2(0.05, 0.052), w});
+    }
+    double worst = 0., scale = 0.;
+    int antisymmetric = 0, n = 0;
+    for (const Fixture& fx : fixtures) {
+        for (int trial = 0; trial < 20; ++trial) {
+            std::vector<Vec2> pts;
+            for (int k = 0; k < 4; ++k) {
+                const double ang = 0.5 * M_PI * (k + 0.3 * U(rng));
+                pts.push_back(
+                    fx.c + fx.w * (0.7 + 0.2 * U(rng)) * Vec2(std::cos(ang), std::sin(ang)));
+            }
+            Parameters param;
+            auto mesh = make_mesh(param, pts, {{{0, 1, 2}}, {{0, 2, 3}}}, {2, 2}, fx.eb);
+            const std::array<std::array<size_t, 3>, 2> old_f = {{{{0, 1, 2}}, {{0, 2, 3}}}};
+            const std::array<std::array<size_t, 3>, 2> new_f = {{{{0, 1, 3}}, {{1, 2, 3}}}};
+            const auto value = [&](const std::array<size_t, 3>& f) {
+                return fx.eb->value({{pts[f[0]], pts[f[1]], pts[f[2]]}}, kDelta) / kDelta;
+            };
+            for (int mask = 1; mask < 16; ++mask) {
+                std::vector<std::array<size_t, 3>> ob, nb;
+                double sums = 0.;
+                for (int i = 0; i < 2; ++i) {
+                    if (mask & (1 << i)) {
+                        ob.push_back(old_f[size_t(i)]);
+                        sums -= value(old_f[size_t(i)]);
+                    }
+                    if (mask & (1 << (i + 2))) {
+                        nb.push_back(new_f[size_t(i)]);
+                        sums += value(new_f[size_t(i)]);
+                    }
+                }
+                const double ch = mesh->band_chain_change(ob, nb);
+                worst = std::max(worst, std::abs(ch - sums));
+                scale = std::max(scale, std::abs(sums));
+                antisymmetric += mesh->band_chain_change(nb, ob) == -ch;
+                ++n;
+            }
+        }
+    }
+    CHECK(worst <= 1e-12 * scale);
+    CHECK(antisymmetric == n);
+    std::printf(
+        "  chain change against the sums: %.1e (scale %.1e); reverse its negative %d of %d\n",
+        worst,
+        scale,
+        antisymmetric,
+        n);
+}
+
 TEST_CASE("exact-swept-search-model-2d", "[offset][exact_swept][2d]")
 {
     // The 2D twin of exact-swept-search-model: BandVolumeEnergy2D::set_swept(), built as the

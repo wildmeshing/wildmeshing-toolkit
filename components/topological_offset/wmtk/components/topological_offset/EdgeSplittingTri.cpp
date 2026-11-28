@@ -79,8 +79,8 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
             c.parent_q_max = std::max(c.parent_q_max, get_quality(fid));
             c.parent_flatness = std::min(c.parent_flatness, face_flatness(fid));
         }
-        // An In entry's complex has no face to carry it: read it here, on the parents. As 3D's
-        // close_labels(), which labels such a face 1 after the operation.
+        // An In entry's complex has no face to carry it: read it here, on the parents. 3D's
+        // faces there carry their 1 through the operations (swap_before_surface()).
         c.on_in_complex = false;
         {
             const std::array<size_t, 2> vids{{c.v1_id, c.v2_id}};

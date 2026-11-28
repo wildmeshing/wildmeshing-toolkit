@@ -113,15 +113,6 @@ class FaceExtra2d
 {
 public:
     int label = 0;
-    /**
-     * Rest shape (deform_others): the face's corners when it last changed topologically, in the
-     * oriented order consolidate_mesh() preserves. Stamped for every deformable face at release
-     * and re-stamped by the operation after-hooks for every face an accepted split / collapse /
-     * swap changed, never by smoothing -- a child left on its parent's rest reads det F ~ 1/2 and
-     * fights to regrow.
-     */
-    bool rest_valid = false;
-    std::array<Eigen::Vector2d, 3> rest_pos;
 };
 
 
@@ -305,7 +296,7 @@ public:
     /// read off their label; Both: the band covers both sides of the complex. The 2D twin of
     /// TopoOffsetTetMesh::band_face_on_in_complex(): every test of the front from the face labels
     /// (edge_is_offset_surface_live(), vertex_has_live_offset_edge(), split_adjust_position())
-    /// excludes these edges, which 3D's close_labels() labels 1.
+    /// excludes these edges, where 3D's faces carry their 1 (swap_before_surface()).
     bool band_edge_on_in_complex(
         const size_t band,
         const size_t other,
@@ -460,9 +451,18 @@ public:
      * band, or on vertices not assigned yet (an operation's new
      * vertex, until assign_band_regions() runs again), the nearest piece (nearest_piece()). -1
      * with one entry, or before the per-piece fields exist: the whole complex's field and
-     * integral and the run's distance.
+     * integral and the run's distance. A face (n = 3) is the piece of its own band instead
+     * (face_piece(), which takes `tag`).
      */
-    int place_piece(const size_t* vids, size_t n) const;
+    int place_piece(const size_t* vids, size_t n, const CellTag* tag = nullptr) const;
+    /// place_piece() of a face: a piece of the entry whose band it is -- the entry its tag set
+    /// names where exactly one entry writes it (m_band_tags_entry; `tag`, else that of the band
+    /// face with these corners), else the entry whose level set holds the centroid most deeply, as
+    /// 3D's cell_piece(): its only piece, else the nearest piece (nearest_piece()) if it is one of
+    /// the entry's, else the entry's first. A function of the face's corners' positions and its
+    /// tags alone, as 3D's cell_piece() (see there); 2D has no per-piece envelopes, so among an
+    /// entry's several pieces the nearest is found only when it is the nearest of all.
+    int face_piece(const size_t* vids, const CellTag* tag = nullptr) const;
     /// The piece nearest to p: that of the input-complex BVH's nearest feature (m_phi_vert_region,
     /// m_phi_seg_region), as assign_band_regions() reads a seed's piece; -1 for none. 3D asks its
     /// per-piece envelopes (m_region_envelopes), which 2D does not build.
@@ -543,8 +543,7 @@ public:
     std::map<int64_t, std::shared_ptr<Envelope>> m_tag_envelopes;
 
     /// Input tag id -> its label in VertexExtra2d::m_boundary_labels. Assigned in
-    /// init_from_image() once the tag maps are complete, the domain wall's and the input
-    /// complex's last; at most max_labels.
+    /// init_from_image() once the tag maps are complete; at most max_labels.
     std::map<int64_t, LabelId> m_tag_label;
 
     /// m_tag_envelopes by label (m_tag_label): member l is the tube of the tag of label l, null
@@ -597,43 +596,21 @@ public:
     /// The final pass: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
 
-    /**
-     * @brief Which boundaries the region-class envelopes hold, and how they are built.
-     *
-     * PerTag (deform_others false): one exact tube per input tag around that tag's boundary
-     * segments, the domain wall in the tags of its wall faces. A vertex carries the bit of every
-     * tube it lies on and is contained in their intersection, so every region boundary -- the
-     * input complex and the wall included -- is held.
-     *
-     * WallComplex (deform_others true): exactly two tubes, the domain wall and the boundary of
-     * the input complex (any dimension, any manifoldness: it is a set of segments), under the
-     * pseudo-tags m_wall_tag / m_complex_tag. Every other region boundary carries no bit and is
-     * held by nothing; the medium around it is plastic, see face_is_plastic().
-     *
-     * Either way build_boundary_envelopes() derives the masks and tubes from the mesh as it
-     * stands when called: at load (PerTag, before the complex is labelled) and when deform_others
-     * switches the setup at construction; not at the final pass, which holds the region
-     * boundaries where the load did, as 3D's. The offset tube is separate and unchanged.
-     */
-    enum class EnvelopeSetup { PerTag, WallComplex };
-    EnvelopeSetup envelope_setup() const
-    {
-        // deform_others was removed on the 3D-only branch spenbert/offsets-cleanup (2026-10-13);
-        // its default, false, is hard-wired here until the 2D port.
-        return /* deform_others */ false ? EnvelopeSetup::WallComplex : EnvelopeSetup::PerTag;
-    }
-    static constexpr int64_t m_wall_tag = -2; ///< pseudo-tag: the domain wall's tube
-    static constexpr int64_t m_complex_tag = -3; ///< pseudo-tag: the input complex boundary
-    /// The name a tag or pseudo-tag prints under.
+    /// The name a tag prints under.
     std::string envelope_key_name(int64_t tag) const;
-    /// Whether this edge lies on the boundary of the input complex: exactly one incident face
-    /// carries label 1, or the edge itself does while neither face does (a curve or edge piece).
-    bool edge_is_complex_boundary(const Tuple& e) const;
-    /// Rebuild every region-class tube and every vertex's boundary mask from the current mesh
-    /// under `setup`. PerTag at load (the complex is not labelled yet), WallComplex when
-    /// deform_others switches it at construction. The tracked-edge flags are left alone: they are
-    /// the topology the operations maintain. `when` labels the log line.
-    void build_boundary_envelopes(const char* when, EnvelopeSetup setup);
+    /**
+     * @brief Build every region-class tube and every vertex's boundary mask from the mesh as it
+     * stands: one exact tube per input tag around that tag's boundary segments, the domain wall in
+     * the tags of its wall faces. A vertex carries the bit of every tube it lies on and is
+     * contained in their intersection, so every region boundary -- the input complex and the wall
+     * included -- is held.
+     *
+     * Called at load, before the complex is labelled; not at the final pass, which holds the
+     * region boundaries where the load did, as 3D's. The offset tube is separate and unchanged.
+     * The tracked-edge flags are left alone: they are the topology the operations maintain.
+     * `when` labels the log line.
+     */
+    void build_boundary_envelopes(const char* when);
 
     /**
      * @brief The tube the offset boundary may not leave during the frozen-front final pass, of
@@ -645,11 +622,8 @@ public:
     std::shared_ptr<Envelope> m_offset_envelope;
 
     /// Rebuild m_offset_envelope from the current offset-boundary segments, and drop the
-    /// intersections memoized against the old one; also refresh_released_envelope().
+    /// intersections memoized against the old one.
     void rebuild_offset_envelope();
-    /// Rebuild deform_others' released-boundary tube now, between passes (see
-    /// released_envelope(), which never rebuilds mid-operation).
-    void refresh_released_envelope();
 
     /// Hard error if any vertex is on both the input complex and the offset boundary -- a state
     /// no placement satisfies. Called at construction.
@@ -1087,8 +1061,8 @@ public:
      *   - BAND TERM THAT CANCELS (band_term_cancels()) is false for every operation but under
      *     "exact_swept", where every rule adds the band term's exact change instead (EXACT SWEPT
      *     CHANGE below), as in 3D.
-     *   - use_rest_pose: no 2D plastic face reads a rest here; 2D's plastic medium is
-     *     deform_others', hard-wired off (envelope_setup()).
+     *   - use_rest_pose: 2D has no plastic medium; every face's AMIPS term is against the regular
+     *     triangle.
      */
     double tri_energy(size_t fid, bool band_term = true) const;
     /// Whether an operation whose old faces are `fids` leaves the band term unchanged exactly, so
@@ -1204,9 +1178,20 @@ public:
         const std::vector<std::pair<size_t, int>>& before) const;
     /// "exact_swept": a swap's band term change, the faces it made `made` (EXACT SWEPT CHANGE):
     /// 0 where its faces, old (m_swap_old_band) and new, are all of one piece -- 2D's only swap
-    /// is the interior flip, which keeps B_r's region and boundary -- and the sum of the new
-    /// band faces' band_cell_term() less the old's, each at its piece, where they are not.
+    /// is the interior flip, which keeps B_r's region and boundary -- and, where they are not,
+    /// each piece's region change, band_chain_change() of its old and new band faces. Until
+    /// 2026-11-27 the sum of the new band faces' band_cell_term() less the old's, which differs
+    /// from the region change where value() takes rule (a)'s bound (ExactBandIntegral2D): two
+    /// bookkeepings of one energy, as 3D's swap_swept_change() had (see there).
     double swap_swept_change(const std::vector<size_t>& made) const;
+    /// "exact_swept": dE* / delta for the band faces `old_band` replaced by `new_band`, all of
+    /// piece `piece`, at the current positions: the cone from a vertex over the boundary chain of
+    /// (new) - (old), each edge with the multiplicity of its orientation, the 2D twin of 3D's
+    /// band_chain_change().
+    double band_chain_change(
+        const std::vector<std::array<size_t, 3>>& old_band,
+        const std::vector<std::array<size_t, 3>>& new_band,
+        int piece = -1) const;
     /// "exact_swept": the smoother's acceptance after a solve moved vid from x0 to where it is,
     /// 3D's swept_accept(). The move stands iff the ring's AMIPS change (tri_energy_sum(ring,
     /// false) - amips_before) plus band_swept_change() is <= 0 (a tie passes, a NaN refuses); if
@@ -1322,11 +1307,12 @@ public:
      * distance and integral (place_piece(); the run's and the whole complex's with one entry), as
      * 3D's.
      */
-    double band_cell_term(const std::array<size_t, 3>& vids) const
+    double band_cell_term(const std::array<size_t, 3>& vids, const CellTag* tag = nullptr) const
     {
-        if (band_rule_exact()) return band_cell_term(vids, place_piece(vids.data(), 3));
+        // `tag`: the tag set the face carries as a band face where it is not one yet (face_piece())
+        if (band_rule_exact()) return band_cell_term(vids, place_piece(vids.data(), 3, tag));
         int64_t best = -1;
-        return band_cell_corner_bound(vids, best);
+        return band_cell_corner_bound(vids, best, tag);
     }
     /// band_cell_term()'s J_t / delta ("exact" and the rules that take its term) at piece r's
     /// distance and integral, whatever the face's piece: EXACT SWEPT CHANGE's change of a face's
@@ -1359,9 +1345,12 @@ public:
     /// unsigned area (the face is valid wherever this is read) times (md - delta) / delta, md the
     /// min mean (ExactBandIntegral2D::min_mean_distance(), 3D's min_mean_distance() on its input
     /// envelope, which 2D does not have) on the face's piece.
-    double band_cell_corner_bound(const std::array<size_t, 3>& vids, int64_t& best) const
+    double band_cell_corner_bound(
+        const std::array<size_t, 3>& vids,
+        int64_t& best,
+        const CellTag* tag = nullptr) const
     {
-        const int r = place_piece(vids.data(), 3);
+        const int r = place_piece(vids.data(), 3, tag);
         const double delta = region_delta(r);
         std::array<Vector2d, 3> p;
         for (int j = 0; j < 3; ++j) p[size_t(j)] = m_vertex_attribute[vids[size_t(j)]].m_posf;
@@ -1649,7 +1638,7 @@ public:
         /// The split edge is on an In entry's complex, the boundary of its selection
         /// (band_edge_on_in_complex(), read on the parents): its midpoint is on the input and not
         /// on the front, which the parents' labels (a band face and one that is neither band nor
-        /// input complex) would say. 3D labels such a face 1 (close_labels()).
+        /// input complex) would say. In 3D such a face carries its 1 (swap_before_surface()).
         bool on_in_complex = false;
     };
     wmtk::threading::enumerable_thread_specific<OptSplitCache2d> m_opt_split_cache;
@@ -1711,8 +1700,8 @@ public:
     bool collapse_edge_before(const Tuple& t) override;
     /**
      * @brief THE ENERGY RULE for a collapse (see tri_energy()), on the real mesh once the
-     * connectivity is committed, then the base's after-hook, the coarsening bar, the sizing
-     * restore and the rest re-stamp. A refusal returns false, which the engine rolls back.
+     * connectivity is committed, then the base's after-hook, the coarsening bar and the sizing
+     * restore. A refusal returns false, which the engine rolls back.
      *
      * The 3D twin applies the rule in collapse_after_connectivity(), a hook the 2D engine does
      * not have; here it runs as the first thing in the after-hook, BEFORE
@@ -1875,8 +1864,7 @@ public:
     /// How the solves this class makes itself ended, per smoothing pass. Background: every
     /// off-front smooth_vertex_under_energy() solve -- the 3D engine counts these itself (its m_newton), the
     /// 2D engine does not, so the component keeps the counter. Front: every front placement.
-    /// Plastic: the rest-shape solve of smooth_plastic_vertex(). Logged and reset by
-    /// log_smoothing_pass_accounting().
+    /// Logged and reset by log_smoothing_pass_accounting().
     ///
     /// One difference from 3D, read before comparing the two logs: the 2D engine's smoother
     /// (optimization::smooth_vertex_2d) catches a solver throw internally and reports nothing,
@@ -2023,7 +2011,6 @@ public:
     /// norm, read from polysolve's Criteria after the solve. As in 3D.
     static constexpr int kGradBins = 22;
     std::array<std::atomic<size_t>, kGradBins> m_front_grad_abs{}, m_front_grad_rel{};
-    optimization::NewtonCounters m_newton_plastic;
 
     /// DEBUG_crossings (log-only). The ring measure of every front vertex as the last pass left
     /// it (NaN where a vertex has none), the positions it was taken at, and whether it is current
@@ -2471,18 +2458,7 @@ public:
         // Both families compose: whatever holds this segment holds it at once. The offset side
         // holds only in the frozen-front final pass (see containment_for()); in the loop the
         // front is what the optimization moves, so it contributes nothing there.
-        const std::shared_ptr<Envelope> base = containment_for(labels, all_offset);
-        if (base || m_deform_tags.empty()) return base;
-        // deform_others' ops-only tube: a released boundary is held by no mask -- its vertices
-        // were freed so smoothing can carry the object -- which would leave the operations free
-        // to decimate and reposition it. A segment the masks and the offset class do not claim,
-        // but which lies on a released boundary by its incident faces' current tags, is held to
-        // the tube around the boundary's current shape. A fresh split child can misread its
-        // recycled face slots for this one check, and is at worst skipped or over-held once.
-        if (const auto found = try_tuple_from_edge(vids)) {
-            if (edge_borders_released_boundary(std::get<0>(*found))) return released_envelope();
-        }
-        return nullptr;
+        return containment_for(labels, all_offset);
     }
 
     // smoothing_position_is_allowed(): the base's, the anchors' balls (hold_curves_and_points()),
@@ -2556,8 +2532,8 @@ public:
      */
     bool smooth_repulsion_vertex(const Tuple& t);
     /**
-     * @brief Every vertex the loop smooths off the plastic medium, front or not (front): the shared
-     * smoother with TriWild's options (TriOptimizerMesh::smooth_after()), except that it minimises
+     * @brief Every vertex the loop smooths, front or not (front): the shared smoother with
+     * TriWild's options (TriOptimizerMesh::smooth_after()), except that it minimises
      * smoothing_extra_energy() -- the smoother adding no AMIPS term of its own -- and the engine's
      * AMIPS veto is replaced by the energy's: the sum of tri_energy() over the ring may not rise.
      * A vertex held on a region boundary is judged by it inside the engine's projected step
@@ -2586,8 +2562,8 @@ public:
      * @brief THE definition of "placed" for a vertex on the offset boundary, applied to its
      * already-measured front_vertex_conv_ratio(): finite and within the one bar. Every caller that
      * asks "is the placement of this front vertex done" -- energy_criterion()'s vertex count and
-     * the placed split of the chords over the bar, and the adaptive-smoothing stop -- goes through
-     * here. Unmeasurable (a non-finite ratio) is NOT placed.
+     * the placed split of the chords over the bar -- goes through here. Unmeasurable (a
+     * non-finite ratio) is NOT placed.
      */
     bool front_placed_by_ratio(const double ratio) const
     {
@@ -2618,9 +2594,8 @@ public:
     Vector2d front_vertex_normal(size_t vid) const;
     /// The objective of front vertex vid, as the smoother assembles it for a front vertex it
     /// places against the offset term (smoothing_extra_energy()): the AMIPS term over the one-ring
-    /// (amips3_energy()), the rest-shape AMIPS of its plastic faces (rest_energy_for_vertex(),
-    /// null without the plastic medium), and front_energy(). What
-    /// front_vertex_normal_gradient() differentiates. As in 3D.
+    /// (amips3_energy()) and front_energy(). What front_vertex_normal_gradient() differentiates.
+    /// As in 3D.
     std::shared_ptr<polysolve::nonlinear::Problem> front_objective(size_t vid) const;
     /// Whether vid is held on the input complex: on it (m_is_on_input) and held by an input
     /// envelope (a boundary mask, the one smoothing_containment_envelope() holds it to). There d =
@@ -2643,13 +2618,6 @@ public:
         return !m_freeze_front && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
                !vertex_is_held_on_input(vid);
     }
-    /// The AMIPS weight the rest-shape term uses at vid: offset_amips_weight for a vertex placed
-    /// against the offset term, the engine's w_amips factor otherwise. As in 3D.
-    double smoother_amips_weight(const size_t vid) const
-    {
-        if (vertex_carries_offset_term(vid)) return m_offset_params.offset_amips_weight;
-        return m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
-    }
     /// THE smoothing objective at vid, for every vertex the shared smoother places: vid's part of
     /// the energy E, the sum of tri_energy() over vid's ring up to the terms that do not move with
     /// vid. The AMIPS term over the ring (amips3_energy()) for every vertex -- the smoother adds no
@@ -2657,15 +2625,14 @@ public:
     /// ring's band faces (band_volume_energy_at(); through front_energy() for a front vertex the
     /// loop places) unless an input envelope holds vid on the input (vertex_is_held_on_input()),
     /// or, in the passes before the march, a repulsion vertex's term once per ring face that
-    /// carries it (repulsion_energy(), repulsion_cell_term()). Under deform_others the rest-shape
-    /// AMIPS of the deformable faces in the ring is added. As in 3D, where TetWild's rules give
-    /// null (2D has none, see tri_energy()).
+    /// carries it (repulsion_energy(), repulsion_cell_term()). As in 3D, where TetWild's rules
+    /// give null (2D has none, see tri_energy()).
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
         auto sum = std::make_shared<optimization::EnergySum>();
         sum->add_energy(amips3_energy(vid));
-        // Before the march (repulsion_smoothing()) there is no front and nothing is plastic.
+        // Before the march (repulsion_smoothing()) there is no front.
         if (is_repulsion_vertex(vid)) {
             sum->add_energy(repulsion_energy(vid));
             return sum;
@@ -2685,66 +2652,9 @@ public:
             // passes through vid (band_volume_energy_at()), as in 3D.
             if (const auto bv = band_volume_energy_at(vid)) sum->add_energy(bv);
         }
-        if (const auto rest = rest_energy_for_vertex(vid)) sum->add_energy(rest);
         return sum;
     }
 
-    // ------- deform_others: other input regions deform instead of being envelope-held -------
-
-    /// The released tags. Filled by release_deformable_regions(); empty = feature inactive.
-    std::set<int64_t> m_deform_tags;
-    /// The source tags (the selection's tags_involved), stored at release so the ops-only
-    /// tube's edge classification applies the same never-freed rule the release did.
-    std::set<int64_t> m_source_tags;
-    /// The released boundaries' ops-only tube: an Envelope around the current deformed
-    /// boundaries, consulted only by surface_envelope_for_edge() -- the dispatch every operation
-    /// containment check goes through and no smoothing path does -- so operations preserve the
-    /// current shape through remeshing while smoothing stays free to carry the object. Rebuilt
-    /// lazily by released_envelope() when m_released_tube_dirty says a smoothing accept may have
-    /// moved the boundary.
-    mutable std::shared_ptr<Envelope> m_released_envelope;
-    mutable std::atomic<bool> m_released_tube_dirty{false};
-    mutable std::mutex m_released_mutex;
-    /// The current released-boundary tube, rebuilt first if dirty. Null when nothing is
-    /// released or no released-boundary segment exists.
-    std::shared_ptr<Envelope> released_envelope() const;
-    /// Whether this edge lies on a released region's boundary, by the incident faces' current
-    /// tag symmetric difference -- the same test the release freed vertices by.
-    bool edge_borders_released_boundary(const Tuple& e) const;
-    /// Under deform_others the same set as face_is_plastic(): every face outside the band.
-    bool face_is_deformable(size_t fid) const;
-    /// Plastic medium: under deform_others every background face -- ambient and the other objects
-    /// alike -- is plastic, its rest shape re-stamped before every operation group, so smoothing
-    /// resists only the increment since the group started and the medium flows instead of behaving
-    /// as an elastic solid glued to the walls. The band (label 2) and the complex (label 1) are
-    /// not plastic; element quality in the medium is the operation passes' job.
-    bool m_plastic_active = false; ///< set in optimize_offset() when deform_others
-    bool face_is_plastic(size_t fid) const
-    {
-        // Everything outside the band: ambient, the other objects and the input complex's
-        // interior alike -- one material. The complex's boundary is what its tube holds.
-        return m_plastic_active && m_face_extra[fid].label != 2;
-    }
-    /// Stamp rest := current for every plastic face; called before every operation group.
-    void stamp_plastic_rests();
-    /// The plastic vertex's smoothing: rest-shape AMIPS over its ring, nothing else -- no
-    /// equilateral term, no quality veto, exact inversion as the only accept test.
-    bool smooth_plastic_vertex(const Tuple& t);
-    /// A band cell that is a released object's material: every non-output tag released, at
-    /// least one present. Read by the front placement objective and the rest stamping only --
-    /// see the definition for why the band's interior smoothing is left equilateral.
-    bool face_is_released_band(size_t fid) const;
-    /// Stamp rest := the face's current corner positions (oriented order). No-op for
-    /// non-deformable faces.
-    void stamp_rest_face(size_t fid);
-    /// Drop the released tags' envelopes and stamp every deformable face's rest. Called once
-    /// from optimize_offset() when deform_others is set; see the FaceExtra2d::rest_valid doc
-    /// for the tracking contract.
-    void release_deformable_regions();
-    /// The rest-shape AMIPS over the deformable faces of vid's one-ring, weighted like the
-    /// shared smoother weights its AMIPS term at vid (smoother_amips_weight()); null when the
-    /// ring has none.
-    std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
     /// The offset term for a front vertex: the band term of its band faces
     /// (band_volume_energy_at()), in an EnergySum, empty when it has none. Defined in
     /// FrontSmooth2d.cpp. As in 3D.
@@ -3103,30 +3013,6 @@ public:
     /// the scalar the caller gave them. Returns the number of vertices lowered.
     size_t grade_sizing_by_distance(const std::vector<size_t>& seeds);
 
-    /// What one interleaved smoothing pass achieved, measured after it against the positions
-    /// before it. See smooth_group_to_convergence() and the adaptive_smoothing keys.
-    struct SmoothingProgress
-    {
-        /// Max front_vertex_conv_ratio over the measurable front vertices (1 = the bar).
-        double front_max_ratio = 0.;
-        size_t front_worst_vid = static_cast<size_t>(-1);
-        size_t n_front = 0; ///< front vertices the max was taken over
-        size_t n_front_unmeasurable = 0; ///< ratio not finite: left out of the max
-        double front_max_step = 0.; ///< max front step in the pass, in tube half-widths
-        /// Max over non-front vertices of the step in the pass divided by the vertex's target
-        /// edge length s_v * l.
-        double background_max_step = 0.;
-        size_t background_worst_vid = static_cast<size_t>(-1);
-        size_t n_background = 0;
-    };
-    /// Measure a pass: `before` holds every live vertex's position before it, indexed by vid.
-    SmoothingProgress smoothing_progress(const std::vector<Vector2d>& before);
-    /// The interleaved smoothing of one operation group under adaptive_smoothing: one pass at a
-    /// time through local_operations({0,0,0,1}), each followed by smoothing_progress(), until
-    /// the front has converged (max ratio <= 1) or stalled (max ratio fell by less than
-    /// adaptive_smoothing_stall_rel) AND the background has settled (max step <=
-    /// adaptive_smoothing_step_rel x its target edge), or adaptive_smoothing_max_passes.
-    void smooth_group_to_convergence(const char* group_name);
     /// The energy criterion as measured when the loop converged; the final pass runs after
     /// it and the verdict must not be re-measured on that mesh.
     std::optional<EnergyCriterion> m_energy_verdict;
@@ -3576,8 +3462,9 @@ public:
     void set_offset_tri_tags();
 
     /**
-     * @brief verify that the closed offset region (simplices labelled 1 or 2) form a manifold
-     * region. This should be true for any offset. This function is for verification
+     * @brief Whether the front is a manifold curve: the boundary of the closed offset region less
+     * its edges on the input complex, which may be non-manifold. True for any offset; for
+     * verification. The twin of TopoOffsetTetMesh::offset_is_manifold().
      */
     bool offset_is_manifold();
 

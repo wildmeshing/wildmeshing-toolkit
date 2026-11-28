@@ -2036,6 +2036,14 @@ double TopoOffsetTetMesh::side_distance(const size_t k, const Vector3d& p) const
     return std::sqrt(q.envelope->squared_distance(p));
 }
 
+bool TopoOffsetTetMesh::inside_selection(const size_t k, const Vector3d& p) const
+{
+    // See the declaration.
+    if (k >= m_offset_queries.size() || !m_offset_queries[k].winding) return true;
+    return wmtk::utils::winding_number_inside(
+        m_offset_queries[k].winding->winding_number(p.transpose()));
+}
+
 double TopoOffsetTetMesh::input_complex_distance(const Vector3d& p) const
 {
     // Several entries: the nearest entry's own distance on its side (side_distance()), whatever
@@ -3417,8 +3425,27 @@ bool TopoOffsetTetMesh::offset_is_manifold()
     }
 
     // extract boundary
-    MatrixXi F;
-    igl::boundary_facets(T, F);
+    MatrixXi F_all;
+    igl::boundary_facets(T, F_all);
+
+    // The front: the region's boundary less its faces on the input complex. The input may be
+    // non-manifold; the check judges the surface the offset makes. By the simplicial embedding a
+    // face with all three corners on the input is a face of the complex (face_on_input_complex()),
+    // and no front vertex is on the input, so what is left is the front and the box faces the
+    // region reaches. Until 2026-11-17 an inward offset's complex was every cell outside its body,
+    // so the body's surface lay inside the region; since then the complex is the body's surface and
+    // has no cell, and the whole boundary of the band included it: MEASURED (2026-11-26), a body of
+    // two boxes sharing one edge, and piece01_in (Thingi10K 70565, one such edge), were refused
+    // with manifold fronts (offset-direction-in-pinched-body).
+    std::vector<int> front_rows;
+    for (int i = 0; i < F_all.rows(); i++) {
+        const std::array<size_t, 3> fv = {
+            {size_t(F_all(i, 0)), size_t(F_all(i, 1)), size_t(F_all(i, 2))}};
+        if (!face_on_input_complex(fv)) front_rows.push_back(i);
+    }
+    if (front_rows.empty()) return true;
+    MatrixXi F(front_rows.size(), 3);
+    for (int i = 0; i < int(front_rows.size()); i++) F.row(i) = F_all.row(front_rows[size_t(i)]);
 
     // remove unreferenced
     VectorXi I;

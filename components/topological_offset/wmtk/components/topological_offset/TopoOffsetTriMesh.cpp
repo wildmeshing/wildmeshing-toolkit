@@ -1,6 +1,4 @@
 #include "TopoOffsetTriMesh.h"
-#include <igl/is_edge_manifold.h>
-#include <igl/is_vertex_manifold.h>
 #include <paraviewo/VTUWriter.hpp>
 #include <queue>
 #include <utility>
@@ -119,11 +117,10 @@ void TopoOffsetTriMesh::init_from_image(
     // introduced later (the band's output tag) get no label: boundary membership is a property of
     // the input partition, which is why the labels are propagated rather than recomputed from
     // current tags. Until 2026-11 one bit of a 64-bit mask each, at most 62 input tags.
-    if (m_tag_id_to_name.size() + 2 > max_labels) {
+    if (m_tag_id_to_name.size() > max_labels) {
         log_and_throw_error(
-            "Per-tag boundary envelopes support at most {} input tags (two labels are reserved "
-            "for the domain wall and the input complex boundary), got {}",
-            max_labels - 2,
+            "Per-tag boundary envelopes support at most {} input tags, got {}",
+            max_labels,
             m_tag_id_to_name.size());
     }
     m_tag_label.clear();
@@ -131,9 +128,6 @@ void TopoOffsetTriMesh::init_from_image(
         const LabelId label = LabelId(m_tag_label.size());
         m_tag_label[tag_id] = label;
     }
-    // The two reserved labels of the WallComplex setup, see EnvelopeSetup.
-    m_tag_label[m_wall_tag] = LabelId(m_tag_label.size());
-    m_tag_label[m_complex_tag] = LabelId(m_tag_label.size());
 
     // propagate tags to faces
     auto faces = get_faces();
@@ -272,7 +266,7 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
         m_vertex_attribute[v1].m_is_on_surface = true;
         m_vertex_attribute[v2].m_is_on_surface = true;
     }
-    if (n_edges_tracked > 0) build_boundary_envelopes("load", EnvelopeSetup::PerTag);
+    if (n_edges_tracked > 0) build_boundary_envelopes("load");
 
     // track bounding box. box_min/box_max are only set by Parameters::init(), which a mesh built
     // from a default-constructed Parameters never calls -- skip rather than index out of bounds.
@@ -315,25 +309,11 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
 
 std::string TopoOffsetTriMesh::envelope_key_name(const int64_t tag) const
 {
-    if (tag == m_wall_tag) return "wall";
-    if (tag == m_complex_tag) return "input_complex";
     const auto it = m_tag_id_to_name.find(tag);
     return it == m_tag_id_to_name.end() ? fmt::format("tag#{}", tag) : it->second;
 }
 
-bool TopoOffsetTriMesh::edge_is_complex_boundary(const Tuple& e) const
-{
-    const bool a = m_face_extra[e.fid(*this)].label == 1;
-    const std::optional<Tuple> opp = e.switch_face(*this);
-    const bool b = opp ? (m_face_extra[opp->fid(*this)].label == 1) : false;
-    if (a != b) return true; // a face of the complex on exactly one side
-    if (a && b) return false; // interior to the complex
-    // No complex face on either side: the edge is itself a piece of the complex (a curve
-    // selection, or an edge the selection expression labelled), or it is not on it at all.
-    return m_edge_extra[e.eid(*this)].label == 1;
-}
-
-void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const EnvelopeSetup setup)
+void TopoOffsetTriMesh::build_boundary_envelopes(const char* when)
 {
     m_envelope_eps = m_offset_params.envelope_size;
     // Always the exact envelope, as in 3D (build_envelopes()). An eps that is not a positive
@@ -350,7 +330,7 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
     for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].m_boundary_labels.clear();
 
     std::map<int64_t, std::vector<Eigen::Vector2i>> buckets;
-    size_t n_tracked = 0, n_wall = 0, n_complex = 0, n_free = 0;
+    size_t n_tracked = 0, n_wall = 0;
     for (const Tuple& e : get_edges()) {
         const size_t eid = e.eid(*this);
         // Region-class tracked edges only: the front has its own tube.
@@ -358,41 +338,29 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
         ++n_tracked;
         const std::optional<Tuple> f_opp = e.switch_face(*this);
         CellTag keys;
-        if (setup == EnvelopeSetup::WallComplex) {
-            if (!f_opp) {
-                keys.insert(m_wall_tag);
-                ++n_wall;
-            }
-            if (edge_is_complex_boundary(e)) {
-                keys.insert(m_complex_tag);
-                ++n_complex;
-            }
-            if (keys.empty()) ++n_free;
-        } else {
-            // Whose boundary this edge is. Interior edge: every tag on exactly one side (the
-            // symmetric difference; a tag present on both sides has no boundary here). Wall
-            // edge: every tag of its one face, which is how ambient's tube comes to hold the
-            // box. The curve group's edges are in its tube too, and an edge tag's in its own.
-            if (m_edge_extra[eid].on_curve) keys.insert(m_curve_tag);
-            for (size_t j = 0; j < m_edge_tag_id.size(); ++j) {
-                if (edge_has_tag(eid, int(j))) keys.insert(m_edge_tag_id[j]);
-            }
-            if (f_opp) {
-                const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
-                const auto& tag1 = m_face_attribute[f_opp->fid(*this)].tags;
-                std::set_symmetric_difference(
-                    tag0.begin(),
-                    tag0.end(),
-                    tag1.begin(),
-                    tag1.end(),
-                    std::inserter(keys, keys.begin()));
-            } else {
-                keys = m_face_attribute[e.fid(*this)].tags;
-                ++n_wall;
-            }
-            // The band's output tags are not region boundaries: the front is the offset tube's.
-            for (const int64_t t : m_offset_output_tag_ids) keys.erase(t);
+        // Whose boundary this edge is. Interior edge: every tag on exactly one side (the
+        // symmetric difference; a tag present on both sides has no boundary here). Wall edge:
+        // every tag of its one face, which is how ambient's tube comes to hold the box. The
+        // curve group's edges are in its tube too, and an edge tag's in its own.
+        if (m_edge_extra[eid].on_curve) keys.insert(m_curve_tag);
+        for (size_t j = 0; j < m_edge_tag_id.size(); ++j) {
+            if (edge_has_tag(eid, int(j))) keys.insert(m_edge_tag_id[j]);
         }
+        if (f_opp) {
+            const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
+            const auto& tag1 = m_face_attribute[f_opp->fid(*this)].tags;
+            std::set_symmetric_difference(
+                tag0.begin(),
+                tag0.end(),
+                tag1.begin(),
+                tag1.end(),
+                std::inserter(keys, keys.begin()));
+        } else {
+            keys = m_face_attribute[e.fid(*this)].tags;
+            ++n_wall;
+        }
+        // The band's output tags are not region boundaries: the front is the offset tube's.
+        for (const int64_t t : m_offset_output_tag_ids) keys.erase(t);
         const size_t v1 = e.vid(*this);
         const size_t v2 = e.switch_vertex(*this).vid(*this);
         const LabelIds labels = tag_label_set(keys);
@@ -434,20 +402,13 @@ void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const Envelop
     m_envelope = members.empty() ? nullptr : std::make_shared<UnionEnvelope>(std::move(members));
 
     logger().info(
-        "\t[envelopes @ {}] {}: {} region-boundary segments tracked ({} on the wall), eps {:.6g}, "
-        "EXACT |{}{}",
+        "\t[envelopes @ {}] per tag: {} region-boundary segments tracked ({} on the wall), eps "
+        "{:.6g}, EXACT |{}",
         when,
-        setup == EnvelopeSetup::WallComplex ? "wall + input complex" : "per tag",
         n_tracked,
         n_wall,
         m_envelope_eps,
-        per_tag_log,
-        setup == EnvelopeSetup::WallComplex
-            ? fmt::format(
-                  " | {} on the input complex boundary, {} held by nothing (plastic)",
-                  n_complex,
-                  n_free)
-            : std::string());
+        per_tag_log);
 }
 
 void TopoOffsetTriMesh::mark_input_complex_vertices()
@@ -1924,11 +1885,11 @@ void TopoOffsetTriMesh::repulsion_smoothing()
     }
 
     // repulsion_rounds: the loop's turn -- split, collapse and swap, each followed by its
-    // smoothing passes (interleaved_smoothing, as optimize_offset_loop() shapes it; adaptive
-    // smoothing is not used here) -- with no refinement (the sizing field is never lowered, so
-    // every operation aims at the base edge length) and no split of a marched edge
-    // (split_edge_before()): its midpoint would be a new outer end nearer the input. The
-    // repulsion vertices follow every operation, since is_repulsion_vertex() asks the mesh.
+    // smoothing passes (interleaved_smoothing, as optimize_offset_loop() shapes it) -- with no
+    // refinement (the sizing field is never lowered, so every operation aims at the base edge
+    // length) and no split of a marched edge (split_edge_before()): its midpoint would be a new
+    // outer end nearer the input. The repulsion vertices follow every operation, since
+    // is_repulsion_vertex() asks the mesh.
     int r = 0;
     if (!done && n_rounds > 0) {
         // simplex_in_input_complex() reads the complex off the faces: exact when it is a body's
@@ -2536,51 +2497,28 @@ void TopoOffsetTriMesh::set_offset_tri_tags()
 
 bool TopoOffsetTriMesh::offset_is_manifold()
 {
-    // vertex map
-    std::map<size_t, bool> included_vids;
-    auto verts = get_vertices();
-    for (const Tuple& v : verts) {
-        included_vids[v.vid(*this)] = false;
+    // 3D's rule one dimension down: the front must be a manifold curve -- the boundary of the
+    // closed offset region (face_in_region(): from the tags, which every operation propagates, not
+    // from the label derived alongside them) less its edges on the input complex (both corners on
+    // the input, edge_on_input_complex(): by the simplicial embedding an edge of the complex), so
+    // at most two of its edges at any vertex. The input may be non-manifold: the region itself,
+    // tested before 2026-11-26 (one fan of faces at every vertex), is not, where an inward offset's
+    // body pinches at a vertex (offset-direction-in-pinched-body-2d); see the 3D definition.
+    std::map<size_t, int> front_edges_at;
+    for (const Tuple& e : get_edges()) {
+        const std::optional<Tuple> opp = e.switch_face(*this);
+        const bool here = face_in_region(e.fid(*this));
+        const bool there = opp && face_in_region(opp->fid(*this));
+        if (here == there) continue; // not on the region's boundary
+        const std::array<size_t, 2> ev = get_edge_vids(e);
+        if (edge_on_input_complex(ev)) continue;
+        ++front_edges_at[ev[0]];
+        ++front_edges_at[ev[1]];
     }
-
-    // collect faces in closed offset region (labelled 1 or 2)
-    auto tris = get_faces();
-    std::vector<Vector3i> offset_tris;
-    for (const Tuple& t : tris) {
-        size_t t_id = t.fid(*this);
-        // Region membership from the tags, which every operation propagates -- not from the
-        // label derived alongside them. See face_in_region().
-        if (face_in_region(t_id)) {
-            auto vs = oriented_tri_vids(t_id);
-            offset_tris.emplace_back(vs[0], vs[1], vs[2]);
-            included_vids[vs[0]] = true;
-            included_vids[vs[1]] = true;
-            included_vids[vs[2]] = true;
-        }
+    for (const auto& [v, n] : front_edges_at) {
+        if (n > 2) return false;
     }
-
-    // create consolidated v_id map
-    int vert_count = 0;
-    std::map<size_t, size_t> v_id_map;
-    for (const auto& pair : included_vids) {
-        if (pair.second) {
-            v_id_map[pair.first] = vert_count++;
-        }
-    }
-
-    // form matrix
-    MatrixXi F(offset_tris.size(), 3);
-    for (int i = 0; i < offset_tris.size(); i++) {
-        for (int j = 0; j < 3; j++) {
-            F(i, j) = v_id_map[offset_tris[i](j)];
-        }
-    }
-
-    // check manifoldness
-    bool is_edge_man = igl::is_edge_manifold(F);
-    VectorXi B;
-    bool is_vert_man = igl::is_vertex_manifold(F, B);
-    return (is_edge_man && is_vert_man);
+    return true;
 }
 
 
