@@ -102,7 +102,7 @@ std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Extra 1D/0D features to force into the output mesh, exactly. </p>
-<p>The remesher pins each edge as the shared crease of two forcing triangles and each point as the apex of a corner of three, then tracks them through the arrangement like the surface. Flat arrays, same conventions as the surface inputs. Everything &ndash; the features AND the forcing-triangle apexes, which stick out by up to 0.1x the edge length &ndash; must lie inside the background tet mesh's domain. </p>
+<p>The remesher inserts each point as a vertex, and pins each edge with up to two forcing triangles through it &ndash; none when the arrangement has it already, as an edge of one input triangle or of two that are not coplanar, one inside a flat region of the surface &ndash; then tracks them through the arrangement like the surface. Flat arrays, same conventions as the surface inputs. Everything &ndash; the features AND the forcing-triangle apexes, which stick out by up to 0.1x the edge length &ndash; must lie inside the background tet mesh's domain. </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>src/wmtk/utils/<a class="el" href="_embed_triangles_8hpp_source.html">EmbedTriangles.hpp</a></li>
 </ul>

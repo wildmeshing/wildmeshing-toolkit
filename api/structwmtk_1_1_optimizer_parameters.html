@@ -233,6 +233,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>debug_output</b> = fa
 <tr class="memitem:ac78f40a4db015f3df60e8078dc803d3b" id="r_ac78f40a4db015f3df60e8078dc803d3b"><td class="memItemLeft" align="right" valign="top"><a id="ac78f40a4db015f3df60e8078dc803d3b" name="ac78f40a4db015f3df60e8078dc803d3b"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks</b> = false</td></tr>
 <tr class="separator:ac78f40a4db015f3df60e8078dc803d3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4680d4cbb4e1df0737625013e045bb67" id="r_a4680d4cbb4e1df0737625013e045bb67"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a4680d4cbb4e1df0737625013e045bb67">lattice_jitter</a> = true</td></tr>
+<tr class="separator:a4680d4cbb4e1df0737625013e045bb67"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The parameters tetwild, triwild and simwild all share. </p>
@@ -483,6 +485,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 <p>"input": the original input, at eps times each one's ratio. What a simplification made and the input does not have (rims, non-manifold edges, curve ends) is held around itself as the insertion leaves it, since a free one erodes the input along its curve (<a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_input_curves.html" title="The input&#39;s own curves, when the envelopes are built around the input (envelope_reference &quot;input&quot;) an...">TetOptimizerMesh::InputCurves</a>).</p>
 <p>"simplified": the SIMPLIFIED geometry, which replaces the input, at eps times each one's ratio: the output is within eps of the simplification, so within simplify_eps + eps of the input, and any simplify_eps is allowed &ndash; a coarse simplification of a dense input included. The geometry starts at the centre of the envelope it is held to, where around the input it starts up to simplify_eps off it; the envelope is a hard veto, not a penalty, so a surface handed to the optimizer close to the boundary has most of its moves refused. Starving that headroom on tetwild (a simplification at 0.95 eps, simplify_envelope_ratio 0.95 until 2026-11: the simplification free to use nearly the whole tolerance) turned a converging run into a diverging one on Thingi10K 1368052.</p>
 <p>Refused without a simplification, and "input" with simplify_eps at or above eps (utils::check_envelope_reference()). Until 2026-11 "simplified" built at eps - simplify_eps, keeping the output within eps of the input, and fell back to the full eps with a warning when nothing was left. </p>
+
+</div>
+</div>
+<a id="a4680d4cbb4e1df0737625013e045bb67" name="a4680d4cbb4e1df0737625013e045bb67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4680d4cbb4e1df0737625013e045bb67">&#9670;&#160;</a></span>lattice_jitter</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::OptimizerParameters::lattice_jitter = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Move the background lattice's points inside its box off the regular lattice, so that its faces do not miss an axis-aligned input's edges by an ulp (utils::delaunay_box_mesh()). </p>
 
 </div>
 </div>

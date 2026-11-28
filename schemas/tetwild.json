@@ -62,6 +62,11 @@
       "description": "If true, the input surface is simplified first. False inserts it as it is.",
       "default": true
     },
+    "lattice_jitter": {
+      "type": "boolean",
+      "description": "Move each point of the background lattice, strictly inside its box, by up to 1e-3 of a voxel along each axis, by a hash of its grid index: the same on every platform. The regular lattice is symmetric about an axis-aligned input in exact arithmetic but not in doubles, so its Delaunay faces and edges miss the input's edges by an ulp, and the insertion leaves facets that thin: on the unit cube 408 of 7,320 tracked facets, 1e-18 wide, with no area once rounded. The surface map from history_output cannot lay them out, and the volume map finds tets inverted at the recorded positions. With the jitter the cube has none. Changes the output mesh; false is the regular lattice, as before.",
+      "default": true
+    },
     "simplify_use_sample_envelope": {
       "type": "boolean",
       "description": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. Off by default, like use_sample_envelope; the opt-in buys speed, since the exact envelope dominates the cost of simplifying a large input. On thin lattice geometry it has been observed to over-collapse badly.",

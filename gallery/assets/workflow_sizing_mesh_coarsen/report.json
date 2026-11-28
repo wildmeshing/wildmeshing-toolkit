@@ -1,35 +1,35 @@
 {
   "views": {
     "input": {
-      "cells": 32650,
-      "bytes": 719392
+      "cells": 33316,
+      "bytes": 761959
     },
     "output": {
-      "cells": 14555,
-      "bytes": 324945
+      "cells": 2902,
+      "bytes": 63403
     }
   },
   "report": {
     "#iterations": 1,
-    "#t": 14555,
-    "#v": 3029,
+    "#t": 2902,
+    "#v": 763,
     "all_rounded": true,
-    "avg_energy": 3.6561765783284885,
-    "coarsen_accepted": 13993,
-    "coarsen_max_energy_after": 5.301142488273158,
-    "coarsen_max_energy_before": 5.909674818894526,
-    "coarsen_t_after": 71767,
-    "coarsen_t_before": 143158,
+    "avg_energy": 4.35910554166532,
+    "coarsen_accepted": 29111,
+    "coarsen_max_energy_after": 7.94032055684934,
+    "coarsen_max_energy_before": 8.693367746665794,
+    "coarsen_t_after": 18166,
+    "coarsen_t_before": 175019,
     "coverage": -1.0,
     "eps": 0.002424871130596428,
     "hausdorff": -1.0,
     "inserted_crossing_pairs": -1,
     "inserted_degenerate_triangles": -1,
-    "insertion_and_preprocessing": 0.242537,
+    "insertion_and_preprocessing": 0.258666,
     "length": 0.1212435565298214,
-    "max_energy": 5.301142488273158,
+    "max_energy": 7.94032055684934,
     "sizing_mesh": true,
     "threads": 0,
-    "time": 16.781689
+    "time": 21.076072999999997
   }
 }

@@ -2461,6 +2461,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#lattice_jitter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        lattice_jitter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tag_from_winding_number" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4597,6 +4608,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#lattice_jitter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        lattice_jitter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tag_from_winding_number" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5531,6 +5553,9 @@
 <p><strong>int</strong> · default <code>0</code></p>
 <p>Number of threads. 0 runs sequentially and gives the same result on every run; with more threads the order of the operations depends on the schedule, and the result can change slightly from run to run.</p>
 <h2 id="other-options">Other options<a class="headerlink" href="#other-options" title="Permanent link">&para;</a></h2>
+<h3 id="lattice_jitter"><code>lattice_jitter</code><a class="headerlink" href="#lattice_jitter" title="Permanent link">&para;</a></h3>
+<p><strong>bool</strong> · default <code>true</code></p>
+<p>Move each point of the background lattice, strictly inside its box, by up to 1e-3 of a voxel along each axis, by a hash of its grid index: the same on every platform. The regular lattice is symmetric about an axis-aligned input in exact arithmetic but not in doubles, so its Delaunay faces and edges miss the input's edges by an ulp, and the insertion leaves facets that thin: on the unit cube 408 of 7,320 tracked facets, 1e-18 wide, with no area once rounded. The surface map from history_output cannot lay them out, and the volume map finds tets inverted at the recorded positions. With the jitter the cube has none. Changes the output mesh; false is the regular lattice, as before. Surface inputs only: a .msh input is not inserted.</p>
 <h3 id="tag_from_winding_number"><code>tag_from_winding_number</code><a class="headerlink" href="#tag_from_winding_number" title="Permanent link">&para;</a></h3>
 <p><strong>bool</strong> · default <code>true</code></p>
 <p>How the cells of the arrangement are tagged. True evaluates the winding number of every input at each cell's centroid. False propagates the tags across the arrangement's own surface provenance instead: combinatorial and exact, starting from a cell of the padded box (which is outside everything) and flipping membership of an input whenever a face belonging to that input is crossed. The provenance route needs every input surface to be closed, and says which crossings disagree rather than returning a tagging that depends on the traversal order. 3D surface input only -- a .msh input arrives already tagged.</p>

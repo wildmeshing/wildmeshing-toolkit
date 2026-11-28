@@ -102,6 +102,11 @@
       "description": "If true, the input is simplified: a surface or curve input before insertion when preserve_topology is false; in 3D, the tet mesh after insertion when preserve_topology is true and the operation is remeshing -- a tagged mesh input included, whose envelope is then the mesh's tracked faces as read (see envelope_reference). The 2D route has no simplification after insertion.",
       "default": true
     },
+    "lattice_jitter": {
+      "type": "boolean",
+      "description": "Move each point of the background lattice, strictly inside its box, by up to 1e-3 of a voxel along each axis, by a hash of its grid index: the same on every platform. The regular lattice is symmetric about an axis-aligned input in exact arithmetic but not in doubles, so its Delaunay faces and edges miss the input's edges by an ulp, and the insertion leaves facets that thin: on the unit cube 408 of 7,320 tracked facets, 1e-18 wide, with no area once rounded. The surface map from history_output cannot lay them out, and the volume map finds tets inverted at the recorded positions. With the jitter the cube has none. Changes the output mesh; false is the regular lattice, as before. Surface inputs only: a .msh input is not inserted.",
+      "default": true
+    },
     "tag_from_winding_number": {
       "type": "boolean",
       "description": "How the cells of the arrangement are tagged. True evaluates the winding number of every input at each cell's centroid. False propagates the tags across the arrangement's own surface provenance instead: combinatorial and exact, starting from a cell of the padded box (which is outside everything) and flipping membership of an input whenever a face belonging to that input is crossed. The provenance route needs every input surface to be closed, and says which crossings disagree rather than returning a tagging that depends on the traversal order. 3D surface input only -- a .msh input arrives already tagged.",
